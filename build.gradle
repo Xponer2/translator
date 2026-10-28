@@ -1,0 +1,20 @@
+plugins {
+    id 'java-library'
+    id 'com.gtnewhorizons.retrofuturagradle' version '1.4.9'
+}
+
+apply from: rootProject.file('gradle/scripts/mod.gradle')
+
+dependencies {
+    // Codec/MapCodec/RecordCodecBuilder (last Java 8 build, as used by MC 1.16.5). MIT licensed.
+    // Bundled into the Translator jar and part of its API, so the mods built on it compile against it too.
+    shade('com.mojang:datafixerupper:4.0.26') {
+        transitive = false
+    }
+    api('com.mojang:datafixerupper:4.0.26') {
+        transitive = false
+    }
+
+    // the JEI 1.21 API shapes (jei/**) are built on JEI 4.16; optional at runtime
+    compileOnly 'mezz.jei:jei_1.12.2:4.16.1.1013:api'
+}

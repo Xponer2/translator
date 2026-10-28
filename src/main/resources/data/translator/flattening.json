@@ -1,0 +1,1299 @@
+{
+  "minecraft:acacia_leaves": {
+    "id": "minecraft:leaves2",
+    "meta": 0
+  },
+  "minecraft:acacia_log": {
+    "id": "minecraft:log2",
+    "meta": 0
+  },
+  "minecraft:acacia_planks": {
+    "id": "minecraft:planks",
+    "meta": 4
+  },
+  "minecraft:acacia_sapling": {
+    "id": "minecraft:sapling",
+    "meta": 4
+  },
+  "minecraft:acacia_slab": {
+    "id": "minecraft:wooden_slab",
+    "meta": 4
+  },
+  "minecraft:acacia_wood": {
+    "id": "minecraft:log2",
+    "meta": 12
+  },
+  "minecraft:allium": {
+    "id": "minecraft:red_flower",
+    "meta": 2
+  },
+  "minecraft:amethyst_shard": {
+    "id": "minecraft:quartz",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:andesite": {
+    "id": "minecraft:stone",
+    "meta": 5
+  },
+  "minecraft:azure_bluet": {
+    "id": "minecraft:red_flower",
+    "meta": 3
+  },
+  "minecraft:bamboo": {
+    "id": "minecraft:reeds",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:basalt": {
+    "id": "minecraft:stone",
+    "meta": 6,
+    "similar": true
+  },
+  "minecraft:birch_leaves": {
+    "id": "minecraft:leaves",
+    "meta": 2
+  },
+  "minecraft:birch_log": {
+    "id": "minecraft:log",
+    "meta": 2
+  },
+  "minecraft:birch_planks": {
+    "id": "minecraft:planks",
+    "meta": 2
+  },
+  "minecraft:birch_sapling": {
+    "id": "minecraft:sapling",
+    "meta": 2
+  },
+  "minecraft:birch_slab": {
+    "id": "minecraft:wooden_slab",
+    "meta": 2
+  },
+  "minecraft:birch_wood": {
+    "id": "minecraft:log",
+    "meta": 14
+  },
+  "minecraft:black_bed": {
+    "id": "minecraft:bed",
+    "meta": 15
+  },
+  "minecraft:black_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 15
+  },
+  "minecraft:black_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 15
+  },
+  "minecraft:black_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 15
+  },
+  "minecraft:black_dye": {
+    "id": "minecraft:dye",
+    "meta": 0
+  },
+  "minecraft:black_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 15
+  },
+  "minecraft:black_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 15
+  },
+  "minecraft:black_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 15
+  },
+  "minecraft:black_wool": {
+    "id": "minecraft:wool",
+    "meta": 15
+  },
+  "minecraft:blackstone": {
+    "id": "minecraft:nether_brick",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:blue_bed": {
+    "id": "minecraft:bed",
+    "meta": 11
+  },
+  "minecraft:blue_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 11
+  },
+  "minecraft:blue_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 11
+  },
+  "minecraft:blue_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 11
+  },
+  "minecraft:blue_dye": {
+    "id": "minecraft:dye",
+    "meta": 4
+  },
+  "minecraft:blue_orchid": {
+    "id": "minecraft:red_flower",
+    "meta": 1
+  },
+  "minecraft:blue_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 11
+  },
+  "minecraft:blue_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 11
+  },
+  "minecraft:blue_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 11
+  },
+  "minecraft:blue_wool": {
+    "id": "minecraft:wool",
+    "meta": 11
+  },
+  "minecraft:bone_meal": {
+    "id": "minecraft:dye",
+    "meta": 15
+  },
+  "minecraft:brain_coral": {
+    "id": "minecraft:red_flower",
+    "meta": 7,
+    "similar": true
+  },
+  "minecraft:brain_coral_block": {
+    "id": "minecraft:concrete",
+    "meta": 6,
+    "similar": true
+  },
+  "minecraft:brain_coral_fan": {
+    "id": "minecraft:red_flower",
+    "meta": 7,
+    "similar": true
+  },
+  "minecraft:breeze_rod": {
+    "id": "minecraft:blaze_rod",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:brown_bed": {
+    "id": "minecraft:bed",
+    "meta": 12
+  },
+  "minecraft:brown_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 12
+  },
+  "minecraft:brown_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 12
+  },
+  "minecraft:brown_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 12
+  },
+  "minecraft:brown_dye": {
+    "id": "minecraft:dye",
+    "meta": 3
+  },
+  "minecraft:brown_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 12
+  },
+  "minecraft:brown_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 12
+  },
+  "minecraft:brown_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 12
+  },
+  "minecraft:brown_wool": {
+    "id": "minecraft:wool",
+    "meta": 12
+  },
+  "minecraft:bubble_coral": {
+    "id": "minecraft:red_flower",
+    "meta": 2,
+    "similar": true
+  },
+  "minecraft:bubble_coral_block": {
+    "id": "minecraft:concrete",
+    "meta": 2,
+    "similar": true
+  },
+  "minecraft:bubble_coral_fan": {
+    "id": "minecraft:red_flower",
+    "meta": 2,
+    "similar": true
+  },
+  "minecraft:calcite": {
+    "id": "minecraft:stone",
+    "meta": 3,
+    "similar": true
+  },
+  "minecraft:carved_pumpkin": {
+    "id": "minecraft:pumpkin",
+    "meta": 0
+  },
+  "minecraft:charcoal": {
+    "id": "minecraft:coal",
+    "meta": 1
+  },
+  "minecraft:cherry_log": {
+    "id": "minecraft:log2",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:cherry_sapling": {
+    "id": "minecraft:sapling",
+    "meta": 4,
+    "similar": true
+  },
+  "minecraft:chiseled_quartz_block": {
+    "id": "minecraft:quartz_block",
+    "meta": 1
+  },
+  "minecraft:chiseled_sandstone": {
+    "id": "minecraft:sandstone",
+    "meta": 1
+  },
+  "minecraft:chiseled_stone_bricks": {
+    "id": "minecraft:stonebrick",
+    "meta": 3
+  },
+  "minecraft:coarse_dirt": {
+    "id": "minecraft:dirt",
+    "meta": 1
+  },
+  "minecraft:cobbled_deepslate": {
+    "id": "minecraft:cobblestone",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:cobweb": {
+    "id": "minecraft:web",
+    "meta": 0
+  },
+  "minecraft:cocoa_beans": {
+    "id": "minecraft:dye",
+    "meta": 3
+  },
+  "minecraft:cod": {
+    "id": "minecraft:fish",
+    "meta": 0
+  },
+  "minecraft:cooked_cod": {
+    "id": "minecraft:cooked_fish",
+    "meta": 0
+  },
+  "minecraft:cooked_salmon": {
+    "id": "minecraft:cooked_fish",
+    "meta": 1
+  },
+  "minecraft:cracked_stone_bricks": {
+    "id": "minecraft:stonebrick",
+    "meta": 2
+  },
+  "minecraft:creeper_head": {
+    "id": "minecraft:skull",
+    "meta": 4
+  },
+  "minecraft:crimson_fungus": {
+    "id": "minecraft:red_mushroom",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:crimson_nylium": {
+    "id": "minecraft:netherrack",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:crimson_stem": {
+    "id": "minecraft:log2",
+    "meta": 1,
+    "similar": true
+  },
+  "minecraft:crossbow": {
+    "id": "minecraft:bow",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:cut_sandstone": {
+    "id": "minecraft:sandstone",
+    "meta": 2
+  },
+  "minecraft:cyan_bed": {
+    "id": "minecraft:bed",
+    "meta": 9
+  },
+  "minecraft:cyan_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 9
+  },
+  "minecraft:cyan_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 9
+  },
+  "minecraft:cyan_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 9
+  },
+  "minecraft:cyan_dye": {
+    "id": "minecraft:dye",
+    "meta": 6
+  },
+  "minecraft:cyan_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 9
+  },
+  "minecraft:cyan_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 9
+  },
+  "minecraft:cyan_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 9
+  },
+  "minecraft:cyan_wool": {
+    "id": "minecraft:wool",
+    "meta": 9
+  },
+  "minecraft:dandelion": {
+    "id": "minecraft:yellow_flower",
+    "meta": 0
+  },
+  "minecraft:dark_oak_leaves": {
+    "id": "minecraft:leaves2",
+    "meta": 1
+  },
+  "minecraft:dark_oak_log": {
+    "id": "minecraft:log2",
+    "meta": 1
+  },
+  "minecraft:dark_oak_planks": {
+    "id": "minecraft:planks",
+    "meta": 5
+  },
+  "minecraft:dark_oak_sapling": {
+    "id": "minecraft:sapling",
+    "meta": 5
+  },
+  "minecraft:dark_oak_slab": {
+    "id": "minecraft:wooden_slab",
+    "meta": 5
+  },
+  "minecraft:dark_oak_wood": {
+    "id": "minecraft:log2",
+    "meta": 13
+  },
+  "minecraft:dark_prismarine": {
+    "id": "minecraft:prismarine",
+    "meta": 2
+  },
+  "minecraft:dead_bush": {
+    "id": "minecraft:deadbush",
+    "meta": 0
+  },
+  "minecraft:deepslate": {
+    "id": "minecraft:stone",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:diorite": {
+    "id": "minecraft:stone",
+    "meta": 3
+  },
+  "minecraft:dragon_head": {
+    "id": "minecraft:skull",
+    "meta": 5
+  },
+  "minecraft:dripstone_block": {
+    "id": "minecraft:hardened_clay",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:enchanted_golden_apple": {
+    "id": "minecraft:golden_apple",
+    "meta": 1
+  },
+  "minecraft:end_stone_bricks": {
+    "id": "minecraft:end_bricks",
+    "meta": 0
+  },
+  "minecraft:fern": {
+    "id": "minecraft:tallgrass",
+    "meta": 2
+  },
+  "minecraft:fire_coral": {
+    "id": "minecraft:red_flower",
+    "meta": 4,
+    "similar": true
+  },
+  "minecraft:fire_coral_block": {
+    "id": "minecraft:concrete",
+    "meta": 14,
+    "similar": true
+  },
+  "minecraft:fire_coral_fan": {
+    "id": "minecraft:red_flower",
+    "meta": 4,
+    "similar": true
+  },
+  "minecraft:firework_rocket": {
+    "id": "minecraft:fireworks",
+    "meta": 0
+  },
+  "minecraft:firework_star": {
+    "id": "minecraft:firework_charge",
+    "meta": 0
+  },
+  "minecraft:glistering_melon_slice": {
+    "id": "minecraft:speckled_melon",
+    "meta": 0
+  },
+  "minecraft:glow_ink_sac": {
+    "id": "minecraft:dye",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:granite": {
+    "id": "minecraft:stone",
+    "meta": 1
+  },
+  "minecraft:grass_block": {
+    "id": "minecraft:grass",
+    "meta": 0
+  },
+  "minecraft:gray_bed": {
+    "id": "minecraft:bed",
+    "meta": 7
+  },
+  "minecraft:gray_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 7
+  },
+  "minecraft:gray_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 7
+  },
+  "minecraft:gray_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 7
+  },
+  "minecraft:gray_dye": {
+    "id": "minecraft:dye",
+    "meta": 8
+  },
+  "minecraft:gray_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 7
+  },
+  "minecraft:gray_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 7
+  },
+  "minecraft:gray_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 7
+  },
+  "minecraft:gray_wool": {
+    "id": "minecraft:wool",
+    "meta": 7
+  },
+  "minecraft:green_bed": {
+    "id": "minecraft:bed",
+    "meta": 13
+  },
+  "minecraft:green_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 13
+  },
+  "minecraft:green_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 13
+  },
+  "minecraft:green_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 13
+  },
+  "minecraft:green_dye": {
+    "id": "minecraft:dye",
+    "meta": 2
+  },
+  "minecraft:green_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 13
+  },
+  "minecraft:green_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 13
+  },
+  "minecraft:green_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 13
+  },
+  "minecraft:green_wool": {
+    "id": "minecraft:wool",
+    "meta": 13
+  },
+  "minecraft:horn_coral": {
+    "id": "minecraft:yellow_flower",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:horn_coral_block": {
+    "id": "minecraft:concrete",
+    "meta": 4,
+    "similar": true
+  },
+  "minecraft:horn_coral_fan": {
+    "id": "minecraft:yellow_flower",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:ink_sac": {
+    "id": "minecraft:dye",
+    "meta": 0
+  },
+  "minecraft:jack_o_lantern": {
+    "id": "minecraft:lit_pumpkin",
+    "meta": 0
+  },
+  "minecraft:jungle_leaves": {
+    "id": "minecraft:leaves",
+    "meta": 3
+  },
+  "minecraft:jungle_log": {
+    "id": "minecraft:log",
+    "meta": 3
+  },
+  "minecraft:jungle_planks": {
+    "id": "minecraft:planks",
+    "meta": 3
+  },
+  "minecraft:jungle_sapling": {
+    "id": "minecraft:sapling",
+    "meta": 3
+  },
+  "minecraft:jungle_slab": {
+    "id": "minecraft:wooden_slab",
+    "meta": 3
+  },
+  "minecraft:jungle_wood": {
+    "id": "minecraft:log",
+    "meta": 15
+  },
+  "minecraft:kelp": {
+    "id": "minecraft:waterlily",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:lapis_lazuli": {
+    "id": "minecraft:dye",
+    "meta": 4
+  },
+  "minecraft:large_fern": {
+    "id": "minecraft:double_plant",
+    "meta": 3
+  },
+  "minecraft:light_blue_bed": {
+    "id": "minecraft:bed",
+    "meta": 3
+  },
+  "minecraft:light_blue_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 3
+  },
+  "minecraft:light_blue_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 3
+  },
+  "minecraft:light_blue_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 3
+  },
+  "minecraft:light_blue_dye": {
+    "id": "minecraft:dye",
+    "meta": 12
+  },
+  "minecraft:light_blue_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 3
+  },
+  "minecraft:light_blue_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 3
+  },
+  "minecraft:light_blue_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 3
+  },
+  "minecraft:light_blue_wool": {
+    "id": "minecraft:wool",
+    "meta": 3
+  },
+  "minecraft:light_gray_bed": {
+    "id": "minecraft:bed",
+    "meta": 8
+  },
+  "minecraft:light_gray_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 8
+  },
+  "minecraft:light_gray_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 8
+  },
+  "minecraft:light_gray_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 8
+  },
+  "minecraft:light_gray_dye": {
+    "id": "minecraft:dye",
+    "meta": 7
+  },
+  "minecraft:light_gray_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 8
+  },
+  "minecraft:light_gray_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 8
+  },
+  "minecraft:light_gray_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 8
+  },
+  "minecraft:light_gray_wool": {
+    "id": "minecraft:wool",
+    "meta": 8
+  },
+  "minecraft:lilac": {
+    "id": "minecraft:double_plant",
+    "meta": 1
+  },
+  "minecraft:lily_pad": {
+    "id": "minecraft:waterlily",
+    "meta": 0
+  },
+  "minecraft:lime_bed": {
+    "id": "minecraft:bed",
+    "meta": 5
+  },
+  "minecraft:lime_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 5
+  },
+  "minecraft:lime_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 5
+  },
+  "minecraft:lime_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 5
+  },
+  "minecraft:lime_dye": {
+    "id": "minecraft:dye",
+    "meta": 10
+  },
+  "minecraft:lime_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 5
+  },
+  "minecraft:lime_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 5
+  },
+  "minecraft:lime_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 5
+  },
+  "minecraft:lime_wool": {
+    "id": "minecraft:wool",
+    "meta": 5
+  },
+  "minecraft:magenta_bed": {
+    "id": "minecraft:bed",
+    "meta": 2
+  },
+  "minecraft:magenta_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 2
+  },
+  "minecraft:magenta_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 2
+  },
+  "minecraft:magenta_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 2
+  },
+  "minecraft:magenta_dye": {
+    "id": "minecraft:dye",
+    "meta": 13
+  },
+  "minecraft:magenta_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 2
+  },
+  "minecraft:magenta_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 2
+  },
+  "minecraft:magenta_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 2
+  },
+  "minecraft:magenta_wool": {
+    "id": "minecraft:wool",
+    "meta": 2
+  },
+  "minecraft:magma_block": {
+    "id": "minecraft:magma",
+    "meta": 0
+  },
+  "minecraft:mangrove_log": {
+    "id": "minecraft:log",
+    "meta": 3,
+    "similar": true
+  },
+  "minecraft:mangrove_propagule": {
+    "id": "minecraft:sapling",
+    "meta": 3,
+    "similar": true
+  },
+  "minecraft:melon": {
+    "id": "minecraft:melon_block",
+    "meta": 0
+  },
+  "minecraft:melon_slice": {
+    "id": "minecraft:melon",
+    "meta": 0
+  },
+  "minecraft:mossy_stone_bricks": {
+    "id": "minecraft:stonebrick",
+    "meta": 1
+  },
+  "minecraft:mud": {
+    "id": "minecraft:dirt",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:mushroom_stem": {
+    "id": "minecraft:brown_mushroom_block",
+    "meta": 10
+  },
+  "minecraft:music_disc_11": {
+    "id": "minecraft:record_11",
+    "meta": 0
+  },
+  "minecraft:music_disc_13": {
+    "id": "minecraft:record_13",
+    "meta": 0
+  },
+  "minecraft:music_disc_blocks": {
+    "id": "minecraft:record_blocks",
+    "meta": 0
+  },
+  "minecraft:music_disc_cat": {
+    "id": "minecraft:record_cat",
+    "meta": 0
+  },
+  "minecraft:music_disc_chirp": {
+    "id": "minecraft:record_chirp",
+    "meta": 0
+  },
+  "minecraft:music_disc_far": {
+    "id": "minecraft:record_far",
+    "meta": 0
+  },
+  "minecraft:music_disc_mall": {
+    "id": "minecraft:record_mall",
+    "meta": 0
+  },
+  "minecraft:music_disc_mellohi": {
+    "id": "minecraft:record_mellohi",
+    "meta": 0
+  },
+  "minecraft:music_disc_stal": {
+    "id": "minecraft:record_stal",
+    "meta": 0
+  },
+  "minecraft:music_disc_strad": {
+    "id": "minecraft:record_strad",
+    "meta": 0
+  },
+  "minecraft:music_disc_wait": {
+    "id": "minecraft:record_wait",
+    "meta": 0
+  },
+  "minecraft:music_disc_ward": {
+    "id": "minecraft:record_ward",
+    "meta": 0
+  },
+  "minecraft:nether_brick": {
+    "id": "minecraft:netherbrick",
+    "meta": 0
+  },
+  "minecraft:nether_bricks": {
+    "id": "minecraft:nether_brick",
+    "meta": 0
+  },
+  "minecraft:oak_leaves": {
+    "id": "minecraft:leaves",
+    "meta": 0
+  },
+  "minecraft:oak_log": {
+    "id": "minecraft:log",
+    "meta": 0
+  },
+  "minecraft:oak_planks": {
+    "id": "minecraft:planks",
+    "meta": 0
+  },
+  "minecraft:oak_sapling": {
+    "id": "minecraft:sapling",
+    "meta": 0
+  },
+  "minecraft:oak_slab": {
+    "id": "minecraft:wooden_slab",
+    "meta": 0
+  },
+  "minecraft:oak_wood": {
+    "id": "minecraft:log",
+    "meta": 12
+  },
+  "minecraft:orange_bed": {
+    "id": "minecraft:bed",
+    "meta": 1
+  },
+  "minecraft:orange_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 1
+  },
+  "minecraft:orange_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 1
+  },
+  "minecraft:orange_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 1
+  },
+  "minecraft:orange_dye": {
+    "id": "minecraft:dye",
+    "meta": 14
+  },
+  "minecraft:orange_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 1
+  },
+  "minecraft:orange_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 1
+  },
+  "minecraft:orange_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 1
+  },
+  "minecraft:orange_tulip": {
+    "id": "minecraft:red_flower",
+    "meta": 5
+  },
+  "minecraft:orange_wool": {
+    "id": "minecraft:wool",
+    "meta": 1
+  },
+  "minecraft:oxeye_daisy": {
+    "id": "minecraft:red_flower",
+    "meta": 8
+  },
+  "minecraft:peony": {
+    "id": "minecraft:double_plant",
+    "meta": 5
+  },
+  "minecraft:pink_bed": {
+    "id": "minecraft:bed",
+    "meta": 6
+  },
+  "minecraft:pink_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 6
+  },
+  "minecraft:pink_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 6
+  },
+  "minecraft:pink_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 6
+  },
+  "minecraft:pink_dye": {
+    "id": "minecraft:dye",
+    "meta": 9
+  },
+  "minecraft:pink_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 6
+  },
+  "minecraft:pink_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 6
+  },
+  "minecraft:pink_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 6
+  },
+  "minecraft:pink_tulip": {
+    "id": "minecraft:red_flower",
+    "meta": 7
+  },
+  "minecraft:pink_wool": {
+    "id": "minecraft:wool",
+    "meta": 6
+  },
+  "minecraft:player_head": {
+    "id": "minecraft:skull",
+    "meta": 3
+  },
+  "minecraft:podzol": {
+    "id": "minecraft:dirt",
+    "meta": 2
+  },
+  "minecraft:polished_andesite": {
+    "id": "minecraft:stone",
+    "meta": 6
+  },
+  "minecraft:polished_diorite": {
+    "id": "minecraft:stone",
+    "meta": 4
+  },
+  "minecraft:polished_granite": {
+    "id": "minecraft:stone",
+    "meta": 2
+  },
+  "minecraft:popped_chorus_fruit": {
+    "id": "minecraft:chorus_fruit_popped",
+    "meta": 0
+  },
+  "minecraft:poppy": {
+    "id": "minecraft:red_flower",
+    "meta": 0
+  },
+  "minecraft:prismarine_bricks": {
+    "id": "minecraft:prismarine",
+    "meta": 1
+  },
+  "minecraft:pufferfish": {
+    "id": "minecraft:fish",
+    "meta": 3
+  },
+  "minecraft:purple_bed": {
+    "id": "minecraft:bed",
+    "meta": 10
+  },
+  "minecraft:purple_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 10
+  },
+  "minecraft:purple_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 10
+  },
+  "minecraft:purple_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 10
+  },
+  "minecraft:purple_dye": {
+    "id": "minecraft:dye",
+    "meta": 5
+  },
+  "minecraft:purple_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 10
+  },
+  "minecraft:purple_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 10
+  },
+  "minecraft:purple_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 10
+  },
+  "minecraft:purple_wool": {
+    "id": "minecraft:wool",
+    "meta": 10
+  },
+  "minecraft:quartz_pillar": {
+    "id": "minecraft:quartz_block",
+    "meta": 2
+  },
+  "minecraft:red_bed": {
+    "id": "minecraft:bed",
+    "meta": 14
+  },
+  "minecraft:red_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 14
+  },
+  "minecraft:red_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 14
+  },
+  "minecraft:red_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 14
+  },
+  "minecraft:red_dye": {
+    "id": "minecraft:dye",
+    "meta": 1
+  },
+  "minecraft:red_nether_bricks": {
+    "id": "minecraft:red_nether_brick",
+    "meta": 0
+  },
+  "minecraft:red_sand": {
+    "id": "minecraft:sand",
+    "meta": 1
+  },
+  "minecraft:red_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 14
+  },
+  "minecraft:red_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 14
+  },
+  "minecraft:red_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 14
+  },
+  "minecraft:red_tulip": {
+    "id": "minecraft:red_flower",
+    "meta": 4
+  },
+  "minecraft:red_wool": {
+    "id": "minecraft:wool",
+    "meta": 14
+  },
+  "minecraft:rose_bush": {
+    "id": "minecraft:double_plant",
+    "meta": 4
+  },
+  "minecraft:salmon": {
+    "id": "minecraft:fish",
+    "meta": 1
+  },
+  "minecraft:short_grass": {
+    "id": "minecraft:tallgrass",
+    "meta": 1
+  },
+  "minecraft:skeleton_skull": {
+    "id": "minecraft:skull",
+    "meta": 0
+  },
+  "minecraft:smooth_stone": {
+    "id": "minecraft:double_stone_slab",
+    "meta": 8
+  },
+  "minecraft:snow": {
+    "id": "minecraft:snow_layer",
+    "meta": 0
+  },
+  "minecraft:snow_block": {
+    "id": "minecraft:snow",
+    "meta": 0
+  },
+  "minecraft:soul_soil": {
+    "id": "minecraft:soul_sand",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:spawner": {
+    "id": "minecraft:mob_spawner",
+    "meta": 0
+  },
+  "minecraft:spruce_leaves": {
+    "id": "minecraft:leaves",
+    "meta": 1
+  },
+  "minecraft:spruce_log": {
+    "id": "minecraft:log",
+    "meta": 1
+  },
+  "minecraft:spruce_planks": {
+    "id": "minecraft:planks",
+    "meta": 1
+  },
+  "minecraft:spruce_sapling": {
+    "id": "minecraft:sapling",
+    "meta": 1
+  },
+  "minecraft:spruce_slab": {
+    "id": "minecraft:wooden_slab",
+    "meta": 1
+  },
+  "minecraft:spruce_wood": {
+    "id": "minecraft:log",
+    "meta": 13
+  },
+  "minecraft:stone": {
+    "id": "minecraft:stone",
+    "meta": 0
+  },
+  "minecraft:stone_bricks": {
+    "id": "minecraft:stonebrick",
+    "meta": 0
+  },
+  "minecraft:sugar_cane": {
+    "id": "minecraft:reeds",
+    "meta": 0
+  },
+  "minecraft:sunflower": {
+    "id": "minecraft:double_plant",
+    "meta": 0
+  },
+  "minecraft:tall_grass": {
+    "id": "minecraft:double_plant",
+    "meta": 2
+  },
+  "minecraft:terracotta": {
+    "id": "minecraft:hardened_clay",
+    "meta": 0
+  },
+  "minecraft:tropical_fish": {
+    "id": "minecraft:fish",
+    "meta": 2
+  },
+  "minecraft:tube_coral": {
+    "id": "minecraft:red_flower",
+    "meta": 1,
+    "similar": true
+  },
+  "minecraft:tube_coral_block": {
+    "id": "minecraft:concrete",
+    "meta": 11,
+    "similar": true
+  },
+  "minecraft:tube_coral_fan": {
+    "id": "minecraft:red_flower",
+    "meta": 1,
+    "similar": true
+  },
+  "minecraft:tuff": {
+    "id": "minecraft:stone",
+    "meta": 5,
+    "similar": true
+  },
+  "minecraft:warped_fungus": {
+    "id": "minecraft:brown_mushroom",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:warped_nylium": {
+    "id": "minecraft:netherrack",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:warped_stem": {
+    "id": "minecraft:log",
+    "meta": 1,
+    "similar": true
+  },
+  "minecraft:wet_sponge": {
+    "id": "minecraft:sponge",
+    "meta": 1
+  },
+  "minecraft:white_bed": {
+    "id": "minecraft:bed",
+    "meta": 0
+  },
+  "minecraft:white_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 0
+  },
+  "minecraft:white_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 0
+  },
+  "minecraft:white_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 0
+  },
+  "minecraft:white_dye": {
+    "id": "minecraft:dye",
+    "meta": 15
+  },
+  "minecraft:white_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 0
+  },
+  "minecraft:white_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 0
+  },
+  "minecraft:white_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 0
+  },
+  "minecraft:white_tulip": {
+    "id": "minecraft:red_flower",
+    "meta": 6
+  },
+  "minecraft:white_wool": {
+    "id": "minecraft:wool",
+    "meta": 0
+  },
+  "minecraft:wind_charge": {
+    "id": "minecraft:fire_charge",
+    "meta": 0,
+    "similar": true
+  },
+  "minecraft:wither_skeleton_skull": {
+    "id": "minecraft:skull",
+    "meta": 1
+  },
+  "minecraft:yellow_bed": {
+    "id": "minecraft:bed",
+    "meta": 4
+  },
+  "minecraft:yellow_carpet": {
+    "id": "minecraft:carpet",
+    "meta": 4
+  },
+  "minecraft:yellow_concrete": {
+    "id": "minecraft:concrete",
+    "meta": 4
+  },
+  "minecraft:yellow_concrete_powder": {
+    "id": "minecraft:concrete_powder",
+    "meta": 4
+  },
+  "minecraft:yellow_dye": {
+    "id": "minecraft:dye",
+    "meta": 11
+  },
+  "minecraft:yellow_stained_glass": {
+    "id": "minecraft:stained_glass",
+    "meta": 4
+  },
+  "minecraft:yellow_stained_glass_pane": {
+    "id": "minecraft:stained_glass_pane",
+    "meta": 4
+  },
+  "minecraft:yellow_terracotta": {
+    "id": "minecraft:stained_hardened_clay",
+    "meta": 4
+  },
+  "minecraft:yellow_wool": {
+    "id": "minecraft:wool",
+    "meta": 4
+  },
+  "minecraft:zombie_head": {
+    "id": "minecraft:skull",
+    "meta": 2
+  }
+}

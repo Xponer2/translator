@@ -1,0 +1,9 @@
+{
+  "values": [
+    "minecraft:nether_wart_block",
+    "minecraft:hay_block",
+    "minecraft:sponge",
+    "minecraft:wet_sponge",
+    "#minecraft:leaves"
+  ]
+}
