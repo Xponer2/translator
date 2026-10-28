@@ -30,6 +30,16 @@ public final class Platform {
 		return !world.isRemote && world.spawnEntity(entity);
 	}
 
+	/**
+	 * Whether the server has sent the chunk at the position to the player. The 1.21 client ignores block entity data
+	 * for a chunk it doesn't have; the 1.12.2 client logs an error for it ("invalid update packet for null tile
+	 * entity"), e.g. for a machine that ticks while the player joins.
+	 */
+	public static boolean isChunkSentTo(net.minecraft.entity.player.EntityPlayerMP player, BlockPos pos) {
+		return player.world instanceof net.minecraft.world.WorldServer server
+				&& server.getPlayerChunkMap().isPlayerWatchingChunk(player, pos.getX() >> 4, pos.getZ() >> 4);
+	}
+
 	public static ItemStack copyWithCount(ItemStack stack, int count) {
 		if (stack.isEmpty()) {
 			return ItemStack.EMPTY;
