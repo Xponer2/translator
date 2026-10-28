@@ -63,7 +63,11 @@ import java.util.stream.IntStream;
  */
 public final class Codecs {
     private static final Map<ResourceLocation, Codec<? extends Ingredient>> INGREDIENT_TYPES = new ConcurrentHashMap<>();
-    private static volatile Function<ResourceLocation, List<ItemStack>> itemTagResolver = tag -> Collections.emptyList();
+    private static volatile Function<ResourceLocation, List<ItemStack>> itemTagResolver = tag -> {
+        org.apache.logging.log4j.LogManager.getLogger("Translator").debug("Item tag {} used before the tags were loaded", tag, new Throwable());
+        return Collections.emptyList();
+    };
+    private static volatile int tagGeneration;
 
     public static final Codec<ResourceLocation> RESOURCE_LOCATION = Codec.STRING.comapFlatMap(Codecs::parseLocation, ResourceLocation::toString);
 
@@ -172,6 +176,8 @@ public final class Codecs {
      */
     public static void setItemTagResolver(Function<ResourceLocation, List<ItemStack>> resolver) {
         itemTagResolver = resolver;
+        // tag ingredients resolved before (empty, or with the old tags) resolve again
+        tagGeneration++;
     }
 
     /**
@@ -184,7 +190,7 @@ public final class Codecs {
 
     private static DataResult<ResourceLocation> parseLocation(String location) {
         try {
-            return DataResult.success(new ResourceLocation(location));
+            return DataResult.success(io.github.xponer2.translator.util.ResourceLocations.parse(location));
         } catch (RuntimeException e) {
             return DataResult.error("Not a valid resource location: " + location);
         }
@@ -235,7 +241,7 @@ public final class Codecs {
         }
         var type = input.get("type").asString().result();
         if (type.isPresent()) {
-            var id = new ResourceLocation(type.get());
+            var id = io.github.xponer2.translator.util.ResourceLocations.parse(type.get());
             var codec = INGREDIENT_TYPES.get(id);
             if (codec != null) {
                 return codec.parse(input).map(i -> (Ingredient) i);
@@ -246,7 +252,7 @@ public final class Codecs {
         }
         var item = input.get("item").asString().result();
         if (item.isPresent()) {
-            var stack = ItemIds.stack(new ResourceLocation(item.get()), 1);
+            var stack = ItemIds.stack(io.github.xponer2.translator.util.ResourceLocations.parse(item.get()), 1);
             if (stack.isEmpty()) {
                 return DataResult.error("Unknown item " + item.get());
             }
@@ -257,7 +263,7 @@ public final class Codecs {
         }
         var tag = input.get("tag").asString().result();
         if (tag.isPresent()) {
-            return DataResult.success(new TagIngredient(new ResourceLocation(tag.get())));
+            return DataResult.success(new TagIngredient(io.github.xponer2.translator.util.ResourceLocations.parse(tag.get())));
         }
         return DataResult.error("Not an ingredient: " + input.getValue());
     }
@@ -316,6 +322,7 @@ public final class Codecs {
         private ItemStack[] stacks;
         @Nullable
         private IntList packed;
+        private int generation = -1;
 
         TagIngredient(ResourceLocation tag) {
             super(0);
@@ -324,8 +331,10 @@ public final class Codecs {
 
         @Override
         public ItemStack[] getMatchingStacks() {
-            if (this.stacks == null) {
+            if (this.stacks == null || this.generation != tagGeneration) {
+                this.generation = tagGeneration;
                 this.stacks = itemTagResolver.apply(this.tag).toArray(new ItemStack[0]);
+                this.packed = null;
             }
             return this.stacks;
         }
@@ -345,7 +354,8 @@ public final class Codecs {
 
         @Override
         public IntList getValidItemStacksPacked() {
-            if (this.packed == null) {
+            if (this.packed == null || this.generation != tagGeneration) {
+                this.getMatchingStacks();
                 var packed = new IntArrayList();
                 for (var stack : this.getMatchingStacks()) {
                     packed.add(RecipeItemHelper.pack(stack));

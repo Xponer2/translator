@@ -42,7 +42,7 @@ public final class Aliases {
 			for (var registry : new JsonParser().parse(reader).getAsJsonObject().entrySet()) {
 				var map = new HashMap<ResourceLocation, ResourceLocation>();
 				for (var entry : registry.getValue().getAsJsonObject().entrySet()) {
-					map.put(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
+					map.put(io.github.xponer2.translator.util.ResourceLocations.parse(entry.getKey()), io.github.xponer2.translator.util.ResourceLocations.parse(entry.getValue().getAsString()));
 				}
 				result.put(registry.getKey(), map);
 			}

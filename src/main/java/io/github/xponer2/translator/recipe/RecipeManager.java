@@ -207,6 +207,12 @@ public final class RecipeManager {
         }
         this.replaceRecipes(recipes);
         LOGGER.info("Loaded {} recipes ({} skipped by their conditions or errors)", recipes.size(), skipped);
+        if (!this.skippedBy.isEmpty()) {
+            this.skippedBy.forEach((type, ids) -> LOGGER.info("Skipped by {}: {} recipes, e.g. {}", type, ids.size(),
+                    String.join(", ", ids.stream().limit(6).collect(java.util.stream.Collectors.toList()))));
+            this.skippedBy.forEach((type, ids) -> LOGGER.debug("Skipped by {}: {}", type, ids));
+            this.skippedBy.clear();
+        }
         if (withMissing > 0) {
             LOGGER.info("Skipped {} recipes with vanilla content 1.12.2 doesn't have: {}", withMissing, String.join(", ", missing));
         }
@@ -230,7 +236,7 @@ public final class RecipeManager {
                 collectMissingVanilla(element, key, missing);
             }
         } else if (key != null && json.isJsonPrimitive() && json.getAsJsonPrimitive().isString() && json.getAsString().startsWith("minecraft:")) {
-            var id = new ResourceLocation(json.getAsString());
+            var id = io.github.xponer2.translator.util.ResourceLocations.parse(json.getAsString());
             boolean known = switch (key) {
                 // inputs need the item itself, results may be a similar one
                 case "item" -> !io.github.xponer2.translator.util.ItemIds.stack(id, 1).isEmpty();
@@ -250,6 +256,9 @@ public final class RecipeManager {
      * One recipe file: null if its conditions don't hold or it can't be read (reported to the consumer).
      */
     @Nullable
+    // condition type -> recipes it left out, for the load summary
+    private final java.util.Map<String, java.util.Set<String>> skippedBy = new java.util.TreeMap<>();
+
     public RecipeHolder<?> parse(ResourceLocation id, JsonElement json, Consumer<String> errors) {
         if (!json.isJsonObject()) {
             errors.accept("not a JSON object");
@@ -265,6 +274,8 @@ public final class RecipeManager {
             }
             for (var condition : conditions.result().orElse(Collections.emptyList())) {
                 if (!condition.test(this.context)) {
+                    var type = io.github.xponer2.translator.registry.NeoForgeRegistries.CONDITION_SERIALIZERS.getKey(condition.codec());
+                    this.skippedBy.computeIfAbsent(String.valueOf(type), t -> new java.util.TreeSet<>()).add(id.toString());
                     return null;
                 }
             }
@@ -274,7 +285,7 @@ public final class RecipeManager {
             return null;
         }
         var type = object.get("type").getAsString();
-        var serializer = BuiltInRegistries.byKey(Registries.RECIPE_SERIALIZER).get(new ResourceLocation(type));
+        var serializer = BuiltInRegistries.byKey(Registries.RECIPE_SERIALIZER).get(io.github.xponer2.translator.util.ResourceLocations.parse(type));
         if (serializer == null) {
             errors.accept("unknown recipe serializer " + type);
             return null;

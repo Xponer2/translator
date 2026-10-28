@@ -195,13 +195,13 @@ public final class TagManager {
         }
         for (var entry : FILES.getOrDefault("item", Collections.emptyMap()).getOrDefault(tag, Collections.emptyList())) {
             if (entry.tag) {
-                collectItems(new ResourceLocation(entry.id), result, seen);
+                collectItems(io.github.xponer2.translator.util.ResourceLocations.parse(entry.id), result, seen);
             } else if (entry.id.startsWith("ore:")) {
                 for (var stack : OreDictionary.getOres(entry.id.substring(4), false)) {
                     addItem(result, stack);
                 }
             } else {
-                var stack = ItemIds.stack(new ResourceLocation(entry.id), 1);
+                var stack = ItemIds.stack(io.github.xponer2.translator.util.ResourceLocations.parse(entry.id), 1);
                 if (!stack.isEmpty()) {
                     addItem(result, stack);
                 }
@@ -227,7 +227,7 @@ public final class TagManager {
         }
         for (var entry : FILES.getOrDefault("block", Collections.emptyMap()).getOrDefault(tag, Collections.emptyList())) {
             if (entry.tag) {
-                collectBlocks(new ResourceLocation(entry.id), result, seen);
+                collectBlocks(io.github.xponer2.translator.util.ResourceLocations.parse(entry.id), result, seen);
             } else if (entry.id.startsWith("ore:")) {
                 for (var stack : OreDictionary.getOres(entry.id.substring(4), false)) {
                     if (stack.getItem() instanceof ItemBlock itemBlock) {
@@ -236,7 +236,7 @@ public final class TagManager {
                     }
                 }
             } else {
-                var id = new ResourceLocation(entry.id);
+                var id = io.github.xponer2.translator.util.ResourceLocations.parse(entry.id);
                 var flattened = FLATTENED_BLOCKS.get(id);
                 if (flattened != null) {
                     result.add(new BlockEntry(flattened.getBlock(), flattened.getBlock().getMetaFromState(flattened)));
@@ -290,8 +290,8 @@ public final class TagManager {
         try (var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             for (var entry : new JsonParser().parse(reader).getAsJsonObject().entrySet()) {
                 var target = entry.getValue().getAsJsonObject();
-                var id = new ResourceLocation(entry.getKey());
-                var oldId = new ResourceLocation(target.get("id").getAsString());
+                var id = io.github.xponer2.translator.util.ResourceLocations.parse(entry.getKey());
+                var oldId = io.github.xponer2.translator.util.ResourceLocations.parse(target.get("id").getAsString());
                 var meta = target.get("meta").getAsInt();
                 var item = ForgeRegistries.ITEMS.getValue(oldId);
                 if (target.has("similar") && target.get("similar").getAsBoolean()) {

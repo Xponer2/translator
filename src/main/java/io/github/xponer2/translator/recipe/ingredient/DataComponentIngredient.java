@@ -123,9 +123,9 @@ public class DataComponentIngredient implements ICustomIngredient {
             var stacks = new ArrayList<ItemStack>();
             for (var entry : this.items) {
                 if (entry.startsWith("#")) {
-                    stacks.addAll(Codecs.itemsOfTag(new ResourceLocation(entry.substring(1))));
+                    stacks.addAll(Codecs.itemsOfTag(io.github.xponer2.translator.util.ResourceLocations.parse(entry.substring(1))));
                 } else {
-                    var stack = ItemIds.stack(new ResourceLocation(entry), 1);
+                    var stack = ItemIds.stack(io.github.xponer2.translator.util.ResourceLocations.parse(entry), 1);
                     if (!stack.isEmpty()) {
                         if (!stack.getHasSubtypes()) {
                             stack.setItemDamage(OreDictionary.WILDCARD_VALUE);

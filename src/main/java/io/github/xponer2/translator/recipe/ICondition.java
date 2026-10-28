@@ -26,7 +26,7 @@ public interface ICondition {
                 NeoForgeConditions.bootstrap();
                 ResourceLocation id;
                 try {
-                    id = new ResourceLocation(type);
+                    id = io.github.xponer2.translator.util.ResourceLocations.parse(type);
                 } catch (RuntimeException e) {
                     return DataResult.error("Not a valid condition type: " + type);
                 }

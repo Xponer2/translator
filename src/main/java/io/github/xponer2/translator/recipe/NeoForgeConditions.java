@@ -18,7 +18,7 @@ import java.util.List;
  * {@code mod_loaded}, {@code item_exists}, {@code tag_empty}).
  */
 public final class NeoForgeConditions {
-    private static final Codec<ResourceLocation> ID = Codec.STRING.xmap(ResourceLocation::new, ResourceLocation::toString);
+    private static final Codec<ResourceLocation> ID = Codec.STRING.xmap(io.github.xponer2.translator.util.ResourceLocations::parse, ResourceLocation::toString);
     private static boolean registered;
 
     private NeoForgeConditions() { }

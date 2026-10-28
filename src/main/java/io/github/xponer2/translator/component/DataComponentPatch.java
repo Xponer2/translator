@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 public final class DataComponentPatch {
     public static final DataComponentPatch EMPTY = new DataComponentPatch(Collections.emptyMap());
     public static final Codec<DataComponentPatch> CODEC = Codec.unboundedMap(
-            Codec.STRING.xmap(ResourceLocation::new, ResourceLocation::toString), Codec.PASSTHROUGH)
+            Codec.STRING.xmap(io.github.xponer2.translator.util.ResourceLocations::parse, ResourceLocation::toString), Codec.PASSTHROUGH)
             .comapFlatMap(DataComponentPatch::decode, DataComponentPatch::encode);
 
     private final Map<DataComponentType<?>, Object> values;

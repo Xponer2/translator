@@ -66,7 +66,7 @@ public interface Registry<T> extends Iterable<T> {
         return Codec.STRING.comapFlatMap(s -> {
             ResourceLocation location;
             try {
-                location = new ResourceLocation(s);
+                location = io.github.xponer2.translator.util.ResourceLocations.parse(s);
             } catch (RuntimeException e) {
                 return DataResult.error("Not a valid resource location: " + s);
             }

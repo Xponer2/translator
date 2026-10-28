@@ -10,7 +10,8 @@ import javax.annotation.Nullable;
 
 /**
  * A block with a tile entity (1.21 {@code EntityBlock}). A 1.12.2 block also has to answer {@code hasTileEntity} and
- * {@code createTileEntity} (Cucumber's BaseTileEntityBlock does).
+ * {@code createTileEntity}: the converter adds them to the classes implementing this. The ticker is asked for by the
+ * tile entity ({@link BlockEntity}).
  */
 public interface EntityBlock {
     @Nullable

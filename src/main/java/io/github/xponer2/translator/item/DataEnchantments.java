@@ -113,7 +113,7 @@ public final class DataEnchantments {
 		private static ResourceLocation tag(JsonObject json, String key, String fallback) {
 			JsonElement value = json.has(key) ? json.get(key) : json.get(fallback);
 			var text = value.getAsString();
-			return new ResourceLocation(text.startsWith("#") ? text.substring(1) : text);
+			return io.github.xponer2.translator.util.ResourceLocations.parse(text.startsWith("#") ? text.substring(1) : text);
 		}
 
 		// the 1.12.2 rarities have the weights 10, 5, 2 and 1

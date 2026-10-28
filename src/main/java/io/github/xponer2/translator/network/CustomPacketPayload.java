@@ -10,7 +10,7 @@ public interface CustomPacketPayload {
     Type<? extends CustomPacketPayload> type();
 
     static <T extends CustomPacketPayload> Type<T> createType(String id) {
-        return new Type<>(new ResourceLocation(id));
+        return new Type<>(io.github.xponer2.translator.util.ResourceLocations.parse(id));
     }
 
     /**

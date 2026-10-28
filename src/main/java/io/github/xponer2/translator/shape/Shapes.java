@@ -73,4 +73,17 @@ public final class Shapes {
 	public static boolean isFullBlock(IBlockState state, VoxelShape shape) {
 		return shape.toAabbs().size() == 1 && shape.toAabbs().get(0).equals(Block.FULL_BLOCK_AABB);
 	}
+
+	/**
+	 * Whether the 1.21 shape of a state fills its block: 1.12.2 asks without a world (isOpaqueCube, isFullCube), and a
+	 * block that isn't full mustn't hide the faces of its neighbours. A shape that needs the world counts as not full.
+	 */
+	public static boolean isFullBlock(java.util.function.Supplier<VoxelShape> shape) {
+		try {
+			var boxes = shape.get().toAabbs();
+			return boxes.size() == 1 && boxes.get(0).equals(Block.FULL_BLOCK_AABB);
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
 }

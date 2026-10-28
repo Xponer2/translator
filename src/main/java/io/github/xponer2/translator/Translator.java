@@ -1,8 +1,6 @@
 package io.github.xponer2.translator;
 
 import io.github.xponer2.translator.capabilities.CapabilityAttacher;
-import io.github.xponer2.translator.client.ItemTooltipEvent;
-import io.github.xponer2.translator.menu.MenuScreens;
 import io.github.xponer2.translator.menu.Menus;
 import io.github.xponer2.translator.network.RegisterPayloadHandlersEvent;
 import io.github.xponer2.translator.recipe.RecipeLoader;
@@ -47,18 +45,14 @@ public final class Translator {
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		ModList.setScanData(event.getAsmData());
+		io.github.xponer2.translator.content.Copper.readConfig(new net.minecraftforge.common.config.Configuration(event.getSuggestedConfigurationFile()));
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.content.Copper.Registrar());
 		MinecraftForge.EVENT_BUS.register(new RegisterEvent.Forwarder());
 		Menus.init();
 		MinecraftForge.EVENT_BUS.register(new CapabilityAttacher());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.item.DataEnchantments());
 		if (event.getSide().isClient()) {
-			MinecraftForge.EVENT_BUS.register(new ItemTooltipEvent.Forwarder());
-			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.client.ItemModels.Registrar());
-			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.client.ModelEvent.Forwarder());
-			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.client.RegisterColorHandlersEvent.Forwarder());
-			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.client.RegisterClientExtensionsEvent.HandRenderer());
-			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.client.AtlasTextures());
-			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.client.SingleVariantModels());
+			io.github.xponer2.translator.client.ClientSetup.preInit();
 		}
 	}
 
@@ -68,19 +62,18 @@ public final class Translator {
 		RegisterPayloadHandlersEvent.fire();
 		CapabilityAttacher.registerAll();
 		if (event.getSide().isClient()) {
-			// renderers and client extensions of the mods (subscribed in pre-init)
-			MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.client.EntityRenderersEvent.RegisterRenderers());
-			MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.client.RegisterClientExtensionsEvent());
+			io.github.xponer2.translator.client.ClientSetup.init();
 		}
 	}
 
 	@Mod.EventHandler
 	public void postInit(FMLPostInitializationEvent event) {
-		// tags and recipes of the 1.21 data, once every mod has registered its items and OreDictionary entries
+		// whose copper minecraft:copper_ingot is, then the tags and recipes of the 1.21 data (every mod has registered
+		// its items and OreDictionary entries)
+		io.github.xponer2.translator.content.Copper.setup();
 		RecipeLoader.load();
 		if (event.getSide().isClient()) {
-			// the mods subscribed to RegisterMenuScreensEvent in pre-init or init
-			MenuScreens.registerAll();
+			io.github.xponer2.translator.client.ClientSetup.postInit();
 		}
 	}
 }

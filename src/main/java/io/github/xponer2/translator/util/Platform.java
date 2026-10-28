@@ -12,6 +12,14 @@ public final class Platform {
 	private Platform() {
 	}
 
+	/**
+	 * 1.21 {@code Level#addFreshEntity}: only the server adds entities (a client world adds nothing). 1.12.2
+	 * {@code World#spawnEntity} adds them on the client too, as copies that can't be picked up or hit.
+	 */
+	public static boolean addFreshEntity(net.minecraft.world.World world, net.minecraft.entity.Entity entity) {
+		return !world.isRemote && world.spawnEntity(entity);
+	}
+
 	public static ItemStack copyWithCount(ItemStack stack, int count) {
 		if (stack.isEmpty()) {
 			return ItemStack.EMPTY;
