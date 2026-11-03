@@ -304,6 +304,82 @@ public final class MiscBridges {
 		return value;
 	}
 
+	/*
+	 * computeIfAbsent with a fastutil function (fastutil 8): its default asks the function containsKey first, which a
+	 * lambda made for fastutil 7's interface doesn't implement (AbstractMethodError in AE2's block entity ticking, on
+	 * every machine placed). The lambda's own method only.
+	 */
+
+	public static int computeIfAbsent(it.unimi.dsi.fastutil.objects.Object2IntMap<Object> map, Object key,
+			it.unimi.dsi.fastutil.objects.Object2IntFunction<Object> function) {
+		if (map.containsKey(key)) {
+			return map.getInt(key);
+		}
+		int value = function.getInt(key);
+		map.put(key, value);
+		return value;
+	}
+
+	public static Object computeIfAbsent(it.unimi.dsi.fastutil.longs.Long2ObjectMap<Object> map, long key,
+			it.unimi.dsi.fastutil.longs.Long2ObjectFunction<Object> function) {
+		if (map.containsKey(key)) {
+			return map.get(key);
+		}
+		Object value = function.get(key);
+		map.put(key, value);
+		return value;
+	}
+
+	public static Object computeIfAbsent(it.unimi.dsi.fastutil.ints.Int2ObjectMap<Object> map, int key,
+			it.unimi.dsi.fastutil.ints.Int2ObjectFunction<Object> function) {
+		if (map.containsKey(key)) {
+			return map.get(key);
+		}
+		Object value = function.get(key);
+		map.put(key, value);
+		return value;
+	}
+
+	public static Object computeIfAbsent(it.unimi.dsi.fastutil.objects.Object2ObjectMap<Object, Object> map, Object key,
+			it.unimi.dsi.fastutil.objects.Object2ObjectFunction<Object, Object> function) {
+		if (map.containsKey(key)) {
+			return map.get(key);
+		}
+		Object value = function.get(key);
+		map.put(key, value);
+		return value;
+	}
+
+	public static Object computeIfAbsent(it.unimi.dsi.fastutil.objects.Reference2ObjectMap<Object, Object> map, Object key,
+			it.unimi.dsi.fastutil.objects.Reference2ObjectFunction<Object, Object> function) {
+		if (map.containsKey(key)) {
+			return map.get(key);
+		}
+		Object value = function.get(key);
+		map.put(key, value);
+		return value;
+	}
+
+	public static Object computeIfAbsent(it.unimi.dsi.fastutil.longs.Long2ObjectMap<Object> map, long key,
+			java.util.function.LongFunction<Object> function) {
+		if (map.containsKey(key)) {
+			return map.get(key);
+		}
+		Object value = function.apply(key);
+		map.put(key, value);
+		return value;
+	}
+
+	public static Object computeIfAbsent(it.unimi.dsi.fastutil.ints.Int2ObjectMap<Object> map, int key,
+			java.util.function.IntFunction<Object> function) {
+		if (map.containsKey(key)) {
+			return map.get(key);
+		}
+		Object value = function.apply(key);
+		map.put(key, value);
+		return value;
+	}
+
 	public static boolean isEmpty(com.google.gson.JsonArray array) {
 		return array.size() == 0;
 	}

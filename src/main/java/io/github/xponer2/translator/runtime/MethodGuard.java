@@ -31,6 +31,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.Type;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.AbstractInsnNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.ClassNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.FieldInsnNode;
+import xyz.wagyourtail.jvmdg.shade.asm.tree.FieldNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.FrameNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.InsnList;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode;
@@ -299,6 +300,69 @@ final class MethodGuard {
 		return false;
 	}
 
+	/** The classes a mixin applies to: its {@code @Mixin} value and targets. */
+	private static List<String> mixinTargets(ClassNode node) {
+		var targets = new ArrayList<String>();
+		for (var annotations : java.util.Arrays.asList(node.visibleAnnotations, node.invisibleAnnotations)) {
+			for (var annotation : annotations == null ? java.util.Collections.<xyz.wagyourtail.jvmdg.shade.asm.tree.AnnotationNode>emptyList() : annotations) {
+				if (!ClassInfo.MIXIN.equals(annotation.desc) || annotation.values == null) {
+					continue;
+				}
+				for (int i = 0; i + 1 < annotation.values.size(); i += 2) {
+					if (annotation.values.get(i + 1) instanceof List<?> values) {
+						for (Object value : values) {
+							if (value instanceof Type type) {
+								targets.add(type.getInternalName());
+							} else if (value instanceof String target) {
+								targets.add(target.replace('.', '/'));
+							}
+						}
+					}
+				}
+			}
+		}
+		return targets;
+	}
+
+	/**
+	 * A mixin's {@code @Shadow} of a field the 1.12.2 target doesn't have (Xaero's ClientPacketListener
+	 * {@code serverChunkRadius}): Mixin refuses the whole mixin, the interface it adds with it (a ClassCastException
+	 * later). The field becomes the mixin's own ({@code @Unique}): the mixin applies, the field holds what the mod
+	 * writes into it.
+	 */
+	private boolean uniqueMissingShadows(ClassNode node) {
+		List<String> targets = mixinTargets(node);
+		if (targets.isEmpty()) {
+			return false;
+		}
+		boolean changed = false;
+		for (FieldNode field : node.fields) {
+			for (var annotations : java.util.Arrays.asList(field.visibleAnnotations, field.invisibleAnnotations)) {
+				if (annotations == null || annotations.stream().noneMatch(annotation -> SHADOW.equals(annotation.desc))) {
+					continue;
+				}
+				boolean missing = false;
+				for (String target : targets) {
+					missing |= this.info(target) != null && !this.hasMember(target, field.name, field.desc, false);
+				}
+				if (missing) {
+					annotations.removeIf(annotation -> SHADOW.equals(annotation.desc) || FINAL.equals(annotation.desc)
+							|| MUTABLE.equals(annotation.desc));
+					annotations.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.AnnotationNode(UNIQUE));
+					field.access &= ~Opcodes.ACC_FINAL;
+					this.stubbed.add(node.name + "." + field.name + ": @Shadow of a field 1.12.2 doesn't have, the mixin's own field now");
+					changed = true;
+				}
+			}
+		}
+		return changed;
+	}
+
+	private static final String SHADOW = "Lorg/spongepowered/asm/mixin/Shadow;";
+	private static final String UNIQUE = "Lorg/spongepowered/asm/mixin/Unique;";
+	private static final String FINAL = "Lorg/spongepowered/asm/mixin/Final;";
+	private static final String MUTABLE = "Lorg/spongepowered/asm/mixin/Mutable;";
+
 	private boolean hasPublicInstanceField(String owner, String member) {
 		var seen = new java.util.HashSet<String>();
 		for (String current = owner; current != null && seen.add(current); ) {
@@ -429,13 +493,30 @@ final class MethodGuard {
 		}
 	}
 
+	/**
+	 * The {@code @Mod} of a jar built for Forge 1.13+ (a multi-loader library a mod bundles: MixinSquared's Forge jar)
+	 * has the name of the 1.12.2 one: Forge 1.12.2 found it on the class path, took it for a 1.13 mod and stopped the
+	 * game. The Translator starts the 1.21.1 mods itself, nothing converted is a 1.12.2 mod.
+	 */
+	private static boolean dropForgeModAnnotation(ClassNode node) {
+		boolean dropped = false;
+		for (var annotations : java.util.Arrays.asList(node.visibleAnnotations, node.invisibleAnnotations)) {
+			if (annotations != null) {
+				dropped |= annotations.removeIf(annotation -> "Lnet/minecraftforge/fml/common/Mod;".equals(annotation.desc));
+			}
+		}
+		return dropped;
+	}
+
 	private byte[] guardClass(byte[] bytes) {
 		var node = new ClassNode();
 		new ClassReader(bytes).accept(node, 0);
 		boolean changed = this.renameFinalOverrides(node);
+		changed |= dropForgeModAnnotation(node);
 		changed |= publicSubscribers(node);
 		if (isMixin(node)) {
 			changed |= guardHandlers(node);
+			changed |= this.uniqueMissingShadows(node);
 		}
 		changed |= this.addBridges(node);
 		changed |= this.addDefaultConstructor(node);

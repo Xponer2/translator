@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "69";
+	static final String VERSION = "74";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
@@ -145,6 +145,16 @@ final class JarConverter {
 	}
 
 	private static Set<java.nio.file.Path> downgradedApi;
+
+	/**
+	 * The downgrader (its stubs of every Java version) and the class caches let go once every jar is converted: they
+	 * held about a gigabyte for the rest of the game.
+	 */
+	static synchronized void release() {
+		downgrader = null;
+		downgradedApi = null;
+		JDK_DECLARATIONS.clear();
+	}
 
 	/** JvmDowngrader's Java API downgraded to Java 8, made once (several jars making it at once would collide). */
 	private static synchronized Set<java.nio.file.Path> downgradedApi() throws IOException {

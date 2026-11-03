@@ -131,6 +131,22 @@ public final class Conversion {
 	}
 
 	/**
+	 * After the mods started: what only the conversion needed goes (the members of every class of every jar, the
+	 * downgrader). The scan data the mods read later (their annotations and class hierarchy) is made first.
+	 */
+	static void release() {
+		Result done = result();
+		if (done == null) {
+			return;
+		}
+		RuntimeMods.scanData();
+		for (ModJar jar : done.mods) {
+			jar.classes.clear();
+		}
+		JarConverter.release();
+	}
+
+	/**
 	 * The conversion from the coremod, before Minecraft's classes load: the mods' mixin configs go to Mixin now, so
 	 * their mixins into Minecraft classes apply. On failure the mods are converted in pre-init as without the coremod.
 	 */
