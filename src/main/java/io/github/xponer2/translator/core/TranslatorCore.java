@@ -35,7 +35,8 @@ public final class TranslatorCore implements IFMLLoadingPlugin {
 	@Override
 	public String[] getASMTransformerClass() {
 		// wraps Mixin's transformer once Mixin has registered it (SafeMixins)
-		return new String[] { SafeMixins.Installer.class.getName(), EnumExtender.class.getName(), AccessWidener.class.getName() };
+		return new String[] { SafeMixins.Installer.class.getName(), EnumExtender.class.getName(), AccessWidener.class.getName(),
+				BlockIdLimit.class.getName() };
 	}
 
 	@Override

@@ -188,7 +188,7 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 
 	@Override
 	protected BlockStateContainer createBlockState() {
-		var builder = new BlockStateContainer.Builder(this);
+		var builder = new io.github.xponer2.translator.block.LazyStateContainer.Builder(this);
 		this.createBlockStateDefinition(builder);
 		return builder.build();
 	}
