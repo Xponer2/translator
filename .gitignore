@@ -31,3 +31,7 @@ __pycache__/
 # local only
 run/
 *.log
+
+# local runs
+.jvmdg/
+logs/

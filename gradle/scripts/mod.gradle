@@ -27,7 +27,7 @@ minecraft {
     mcpMappingVersion.set(propertyString('mapping_version'))
     useDependencyAccessTransformers.set(true)
     username.set(propertyString('minecraft_username'))
-    extraRunJvmArguments.addAll(['-ea:com.blakebr0', '-Dfml.coreMods.load='])
+    extraRunJvmArguments.addAll(['-ea:com.blakebr0', '-Dfml.coreMods.load=io.github.xponer2.translator.core.TranslatorCore'])
 
     injectedTags.set([
             'VERSION' : propertyString('mod_version'),

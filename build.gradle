@@ -15,6 +15,34 @@ dependencies {
         transitive = false
     }
 
+    // Runtime loading of original NeoForge 1.21.1 jars (runtime/**): downgrades their Java 21 bytecode to Java 8.
+    // The "all" jar carries its own (relocated) ASM 9 and the Java API stubs. LGPL-2.1, bundled unchanged.
+    shade('xyz.wagyourtail.jvmdowngrader:jvmdowngrader:2.0.1:all') {
+        transitive = false
+    }
+
     // the JEI 1.21 API shapes (jei/**) are built on JEI 4.16; optional at runtime
     compileOnly 'mezz.jei:jei_1.12.2:4.16.1.1013:api'
+
+    // the config files of original 1.21.1 mods (runtime/neoforge/ConfigLoader): night-config comes at runtime from the
+    // player's Minecraft 1.21.1 libraries (runtime/ApiCarry), never bundled
+    compileOnly 'com.electronwill.night-config:core:3.8.3'
+    compileOnly 'com.electronwill.night-config:toml:3.8.3'
+    // the 1.21 render math of the original 1.21.1 mods (Quaternionf, Matrix4f in PoseStack and Axis calls): JOML comes
+    // at runtime from the player's Minecraft 1.21.1 libraries (runtime/ApiCarry), never bundled
+    compileOnly 'org.joml:joml:1.10.5'
+}
+
+// JvmDowngrader finds its Java API stubs (META-INF/lib) and providers (META-INF/services) in its own jar: keep them
+jar {
+    from({ configurations.shade.findAll { it.name.startsWith('jvmdowngrader') }.collect { zipTree(it) } }) {
+        include 'META-INF/lib/**', 'META-INF/services/**'
+    }
+    // a coremod too: the 1.21.1 mods are converted before Minecraft's classes load, so their mixins apply
+    manifest {
+        attributes([
+                'FMLCorePlugin'               : 'io.github.xponer2.translator.core.TranslatorCore',
+                'FMLCorePluginContainsFMLMod' : 'true',
+        ])
+    }
 }
