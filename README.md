@@ -25,6 +25,9 @@ At startup each 1.21.1 jar is converted for 1.12.2, then loaded like any mod:
 - **Missing calls.** A call the Translator can't run yet is reported in the log and skipped where that is safe, so
   one missing piece doesn't crash the game.
 - **Cache.** Converted jars are kept in `translator/cache/` and rebuilt when the jar or the Translator changes.
+- **More than 4096 blocks.** Many 1.21.1 mods together have more blocks than Forge 1.12.2 takes. The Translator raises
+  the limit to 65536: the extra id bits of a chunk are saved next to 1.12.2's own (worlds without such blocks are
+  saved as before), and world generation keeps them too. No JustEnoughIDs or RoughlyEnoughIDs needed.
 
 The Minecraft 1.21.1 and NeoForge classes without a 1.12.2 or Translator counterpart come from a 1.21.1 API jar on
 your own machine: the NeoForge development cache, or `-Dtranslator.api=<jar>`. Libraries the mods use (JOML,
