@@ -201,23 +201,26 @@ public final class RuntimeMods {
 				containers(jar);
 			}
 		}
-		for (ModJar jar : result.mods) {
-			File file = result.converted.get(jar);
-			if (file == null) {
-				for (Map<String, String> mod : jar.mods) {
-					FmlMods.FAILED.putIfAbsent(mod.get("modId"), "the jar couldn't be converted");
+		try (var bar = io.github.xponer2.translator.util.LoadingBar.push("Translator: starting the 1.21.1 mods", result.mods.size())) {
+			for (ModJar jar : result.mods) {
+				bar.step(jar.displayName());
+				File file = result.converted.get(jar);
+				if (file == null) {
+					for (Map<String, String> mod : jar.mods) {
+						FmlMods.FAILED.putIfAbsent(mod.get("modId"), "the jar couldn't be converted");
+					}
+					continue;
 				}
-				continue;
-			}
-			try {
-				if (FMLEnvironment.dist == Side.CLIENT) {
-					io.github.xponer2.translator.runtime.client.RuntimeResourcePack.add(file, jar.displayName());
-				}
-				start(jar);
-			} catch (Throwable t) {
-				LOGGER.error("Can't load the 1.21.1 mod {}", jar.file.getName(), t);
-				for (Map<String, String> mod : jar.mods) {
-					FmlMods.FAILED.putIfAbsent(mod.get("modId"), reason(t));
+				try {
+					if (FMLEnvironment.dist == Side.CLIENT) {
+						io.github.xponer2.translator.runtime.client.RuntimeResourcePack.add(file, jar.displayName());
+					}
+					start(jar);
+				} catch (Throwable t) {
+					LOGGER.error("Can't load the 1.21.1 mod {}", jar.file.getName(), t);
+					for (Map<String, String> mod : jar.mods) {
+						FmlMods.FAILED.putIfAbsent(mod.get("modId"), reason(t));
+					}
 				}
 			}
 		}
@@ -227,6 +230,7 @@ public final class RuntimeMods {
 		} catch (Throwable t) {
 			LOGGER.error("NewRegistryEvent failed", t);
 		}
+		Conversion.release();
 	}
 
 	/**
@@ -323,7 +327,10 @@ public final class RuntimeMods {
 	/** Post-init of the Translator: the last NeoForge lifecycle event; then the mods join Forge's mod list. */
 	public static void complete() {
 		if (!MODS.isEmpty()) {
-			MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.runtime.neoforge.FMLLoadCompleteEvent());
+			try (var bar = io.github.xponer2.translator.util.LoadingBar.push("Translator: finishing the 1.21.1 mods", 1)) {
+				bar.step("load complete");
+				MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.runtime.neoforge.FMLLoadCompleteEvent());
+			}
 			FmlMods.add(MODS);
 		}
 	}
@@ -344,15 +351,21 @@ public final class RuntimeMods {
 		if (MODS.isEmpty()) {
 			return;
 		}
-		MinecraftForge.EVENT_BUS.post(new FMLCommonSetupEvent());
-		if (FMLEnvironment.dist == Side.CLIENT) {
-			io.github.xponer2.translator.runtime.neoforge.ClientEvents.setup();
-			MinecraftForge.EVENT_BUS.post(new FMLClientSetupEvent());
-		} else {
-			MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.runtime.neoforge.FMLDedicatedServerSetupEvent());
+		try (var bar = io.github.xponer2.translator.util.LoadingBar.push("Translator: setting up the 1.21.1 mods", 4)) {
+			bar.step("common setup");
+			MinecraftForge.EVENT_BUS.post(new FMLCommonSetupEvent());
+			bar.step(FMLEnvironment.dist == Side.CLIENT ? "client setup" : "server setup");
+			if (FMLEnvironment.dist == Side.CLIENT) {
+				io.github.xponer2.translator.runtime.neoforge.ClientEvents.setup();
+				MinecraftForge.EVENT_BUS.post(new FMLClientSetupEvent());
+			} else {
+				MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.runtime.neoforge.FMLDedicatedServerSetupEvent());
+			}
+			bar.step("messages between mods");
+			MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.runtime.neoforge.InterModEnqueueEvent());
+			bar.step("processing the messages");
+			MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.runtime.neoforge.InterModProcessEvent());
 		}
-		MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.runtime.neoforge.InterModEnqueueEvent());
-		MinecraftForge.EVENT_BUS.post(new io.github.xponer2.translator.runtime.neoforge.InterModProcessEvent());
 		for (var mod : MODS) {
 			var items = new ArrayList<String>();
 			for (var id : net.minecraft.item.Item.REGISTRY.getKeys()) {

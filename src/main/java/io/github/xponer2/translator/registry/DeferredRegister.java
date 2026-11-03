@@ -51,6 +51,22 @@ public class DeferredRegister<T> {
     public DeferredRegister(ResourceKey<? extends Registry<T>> registryKey, String namespace) {
         this.registryKey = registryKey;
         this.namespace = namespace;
+        ALL.add(this);
+    }
+
+    /** Every DeferredRegister made: how many a registry event goes through (the loading screen's bar). */
+    private static final java.util.List<DeferredRegister<?>> ALL = Collections.synchronizedList(new java.util.ArrayList<>());
+
+    static int countFor(IForgeRegistry<?> forge) {
+        int count = 0;
+        synchronized (ALL) {
+            for (DeferredRegister<?> register : ALL) {
+                if (register.registry() instanceof ForgeRegistryWrapper<?> wrapper && wrapper.forge() == forge) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     public static <T> DeferredRegister<T> create(ResourceKey<? extends Registry<T>> registryKey, String namespace) {
@@ -189,6 +205,7 @@ public class DeferredRegister<T> {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void registerAll(IForgeRegistry registry) {
         this.seenRegisterEvent = true;
+        RegisterEvent.Forwarder.step(this.namespace);
         boolean lenient = io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(this.namespace);
         for (var entry : this.entries.entrySet()) {
             var holder = (DeferredHolder) entry.getKey();

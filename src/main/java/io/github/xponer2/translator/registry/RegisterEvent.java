@@ -208,6 +208,34 @@ public class RegisterEvent extends Event implements IContextSetter {
 	}
 
 	public static final class Forwarder {
+		/** The loading screen's bar of the registry event going on: a step per DeferredRegister (the mod's id). */
+		@javax.annotation.Nullable
+		private static io.github.xponer2.translator.util.LoadingBar bar;
+
+		@SubscribeEvent(priority = EventPriority.HIGHEST)
+		@SuppressWarnings("rawtypes")
+		public void onRegisterStart(RegistryEvent.Register event) {
+			int count = DeferredRegister.countFor(event.getRegistry());
+			if (count > 0 && bar == null) {
+				bar = io.github.xponer2.translator.util.LoadingBar.push("Translator: registering " + event.getName().getPath(), count);
+			}
+		}
+
+		@SubscribeEvent(priority = EventPriority.LOWEST)
+		@SuppressWarnings("rawtypes")
+		public void onRegisterEnd(RegistryEvent.Register event) {
+			if (bar != null) {
+				bar.close();
+				bar = null;
+			}
+		}
+
+		static void step(String namespace) {
+			if (bar != null) {
+				bar.step(namespace);
+			}
+		}
+
 		// raw event type: a parameterized one would only get the events of that type (1.12.2 filters generic events)
 		@SuppressWarnings("rawtypes")
 		/** The registries posted early, in the block event: their own 1.12.2 events come later and are not posted again. */
