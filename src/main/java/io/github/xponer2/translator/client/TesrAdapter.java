@@ -43,11 +43,19 @@ public final class TesrAdapter<T extends TileEntity> extends TileEntitySpecialRe
     public void render(T tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         var world = tile.getWorld();
         var light = world != null ? world.getCombinedLight(tile.getPos(), 0) : 0xF000F0;
+        int depth = PoseStack.depth();
         GlStateManager.pushMatrix();
         GlStateManager.translate(x, y, z);
-        this.renderer.render(tile, partialTicks, PoseStack.INSTANCE, MultiBufferSource.INSTANCE, light, OverlayTexture.NO_OVERLAY);
-        MultiBufferSource.INSTANCE.endBatch();
-        GlStateManager.popMatrix();
+        try {
+            this.renderer.render(tile, partialTicks, PoseStack.INSTANCE, MultiBufferSource.INSTANCE, light, OverlayTexture.NO_OVERLAY);
+        } catch (RuntimeException | LinkageError e) {
+            // a renderer of an original 1.21.1 mod that fails: logged once, the block entity is drawn without it
+            io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.renderer.getClass().getName() + ".render", e);
+        } finally {
+            PoseStack.restore(depth);
+            MultiBufferSource.INSTANCE.endBatch();
+            GlStateManager.popMatrix();
+        }
     }
 
     @Override

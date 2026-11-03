@@ -42,6 +42,15 @@ public final class RenderSystem {
         GlStateManager.blendFunc(source, dest);
     }
 
+    public static void blendFuncSeparate(GlStateManager.SourceFactor source, GlStateManager.DestFactor dest,
+            GlStateManager.SourceFactor sourceAlpha, GlStateManager.DestFactor destAlpha) {
+        GlStateManager.tryBlendFuncSeparate(source, dest, sourceAlpha, destAlpha);
+    }
+
+    public static void blendFuncSeparate(int source, int dest, int sourceAlpha, int destAlpha) {
+        GlStateManager.tryBlendFuncSeparate(source, dest, sourceAlpha, destAlpha);
+    }
+
     public static void enableDepthTest() {
         GlStateManager.enableDepth();
     }

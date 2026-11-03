@@ -55,6 +55,25 @@ public class PayloadRegistrar {
         return this;
     }
 
+    // there is no configuration phase (1.20.2+) on 1.12.2: its payloads are play payloads
+    public <T extends CustomPacketPayload> PayloadRegistrar configurationBidirectional(CustomPacketPayload.Type<T> type,
+                                                                                       StreamCodec<? super RegistryFriendlyByteBuf, T> codec,
+                                                                                       IPayloadHandler<T> handler) {
+        return this.playBidirectional(type, codec, handler);
+    }
+
+    public <T extends CustomPacketPayload> PayloadRegistrar configurationToClient(CustomPacketPayload.Type<T> type,
+                                                                                  StreamCodec<? super RegistryFriendlyByteBuf, T> codec,
+                                                                                  IPayloadHandler<T> handler) {
+        return this.playToClient(type, codec, handler);
+    }
+
+    public <T extends CustomPacketPayload> PayloadRegistrar configurationToServer(CustomPacketPayload.Type<T> type,
+                                                                                  StreamCodec<? super RegistryFriendlyByteBuf, T> codec,
+                                                                                  IPayloadHandler<T> handler) {
+        return this.playToServer(type, codec, handler);
+    }
+
     public <T extends CustomPacketPayload> PayloadRegistrar commonToClient(CustomPacketPayload.Type<T> type,
                                                                            StreamCodec<? super RegistryFriendlyByteBuf, T> codec,
                                                                            IPayloadHandler<T> handler) {

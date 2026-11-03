@@ -24,8 +24,8 @@ public final class Particles {
 	/** Sends particles to the players near the position; returns how many were sent (1.21 returns the count). */
 	public static int sendParticles(World level, ParticleOptions particle, double x, double y, double z, int count,
 			double xOffset, double yOffset, double zOffset, double speed) {
-		if (level instanceof WorldServer server) {
-			server.spawnParticle(particle.getType(), x, y, z, count, xOffset, yOffset, zOffset, speed, particle.getArguments());
+		if (level instanceof WorldServer server && particle instanceof VanillaParticle legacy) {
+			server.spawnParticle(legacy.legacyType(), x, y, z, count, xOffset, yOffset, zOffset, speed, legacy.legacyArguments());
 			return count;
 		}
 
@@ -33,6 +33,8 @@ public final class Particles {
 	}
 
 	public static void addParticle(World level, ParticleOptions particle, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-		level.spawnParticle(particle.getType(), x, y, z, xSpeed, ySpeed, zSpeed, particle.getArguments());
+		if (particle instanceof VanillaParticle legacy) {
+			level.spawnParticle(legacy.legacyType(), x, y, z, xSpeed, ySpeed, zSpeed, legacy.legacyArguments());
+		}
 	}
 }

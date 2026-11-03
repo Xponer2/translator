@@ -32,17 +32,28 @@ import java.util.function.Consumer;
  * {@link #requiresCorrectToolForDrops()} unless set with {@link #material(Material)}.
  */
 public class BlockProperties {
+    // the fields 1.21 BlockBehaviour.Properties has under the same name and type are public: mods read and write
+    // them directly (access transformers; Twilight Forest copies destroyTime), a private one is an IllegalAccessError
     private Material material;
     private MapColor mapColor;
-    private SoundType soundType = SoundType.STONE;
-    private float destroyTime;
-    private float explosionResistance;
+    public SoundType soundType = SoundType.STONE;
+    public float destroyTime;
+    public float explosionResistance;
     private int lightLevel;
-    private boolean requiresCorrectToolForDrops;
+    public java.util.function.ToIntFunction<IBlockState> lightEmission;
+    @Nullable
+    public net.minecraft.block.material.EnumPushReaction pushReaction;
+    public boolean requiresCorrectToolForDrops;
     private boolean randomTicks;
-    private boolean hasCollision = true;
-    private boolean canOcclude = true;
+    public boolean hasCollision = true;
+    public boolean canOcclude = true;
     private boolean noLootTable;
+    /**
+     * 1.21 {@code BlockBehaviour.Properties.drops} (the loot table key): Registrate resets it by reflection for every
+     * block it makes (ObfuscationReflectionHelper by name), so it has to exist. 1.12.2 blocks drop by their own code.
+     */
+    @SuppressWarnings("unused")
+    private Object drops;
     private StateArgumentPredicate<Object> isValidSpawn;
     private StatePredicate isRedstoneConductor;
     private StatePredicate isSuffocating;
@@ -59,6 +70,10 @@ public class BlockProperties {
      */
     @SuppressWarnings("deprecation")
     public static BlockProperties ofFullCopy(Block block) {
+        if (block == null || block == net.minecraft.init.Blocks.AIR) {
+            // a 1.21 block 1.12.2 doesn't have (Blocks.BARREL): the default properties
+            return of();
+        }
         var state = block.getDefaultState();
         var properties = new BlockProperties();
         properties.material = state.getMaterial();
@@ -75,9 +90,92 @@ public class BlockProperties {
         return properties;
     }
 
+    /** 1.21 {@code ofLegacyCopy}: like {@link #ofFullCopy} (1.12.2 has no newer properties to leave out). */
+    public static BlockProperties ofLegacyCopy(Block block) {
+        return ofFullCopy(block);
+    }
+
+    /** 1.21 {@code lootFrom}: drops like another block. 1.12.2 blocks drop by their own code: the block keeps its own. */
+    public BlockProperties lootFrom(java.util.function.Supplier<?> block) {
+        return this;
+    }
+
     public BlockProperties material(Material material) {
         this.material = material;
         return this;
+    }
+
+    /** The note a note block plays on this block (1.21): 1.12.2 note blocks ask the material. */
+    public BlockProperties instrument(Object instrument) {
+        return this;
+    }
+
+    /** A map color by state (logs: top and side): the default state's. */
+    public BlockProperties mapColor(java.util.function.Function<net.minecraft.block.state.IBlockState, MapColor> mapColor) {
+        this.mapColorFunction = mapColor;
+        return this;
+    }
+
+    @javax.annotation.Nullable
+    private java.util.function.Function<net.minecraft.block.state.IBlockState, MapColor> mapColorFunction;
+
+    public BlockProperties mapColor(net.minecraft.item.EnumDyeColor color) {
+        return this.mapColor(MapColor.getBlockColor(color));
+    }
+
+    /** How slippery the block is (ice 0.98): the 1.12.2 block's slipperiness. */
+    public BlockProperties friction(float friction) {
+        this.friction = friction;
+        return this;
+    }
+
+    public float friction = 0.6F;
+
+    public float friction() {
+        return this.friction;
+    }
+
+    // 1.21 properties 1.12.2 blocks don't have: taken, not applied
+    public BlockProperties speedFactor(float factor) {
+        return this;
+    }
+
+    public BlockProperties jumpFactor(float factor) {
+        return this;
+    }
+
+    public BlockProperties emissiveRendering(Object predicate) {
+        return this;
+    }
+
+    public BlockProperties hasPostProcess(Object predicate) {
+        return this;
+    }
+
+    /** Random offsets of plants in a block (1.21): 1.12.2 offsets by the block's own offset type. */
+    public BlockProperties offsetType(Object offsetType) {
+        return this;
+    }
+
+    public BlockProperties requiredFeatures(Object... features) {
+        return this;
+    }
+
+    public BlockProperties dropsLike(net.minecraft.block.Block block) {
+        return this;
+    }
+
+    public BlockProperties overrideLootTable(Object lootTable) {
+        return this;
+    }
+
+    public BlockProperties overrideDescription(String description) {
+        return this;
+    }
+
+    /** The block of a fluid (1.21 liquid()): no collision, replaceable. */
+    public BlockProperties liquid() {
+        return this.noCollission().replaceable();
     }
 
     public BlockProperties mapColor(MapColor mapColor) {
@@ -86,7 +184,8 @@ public class BlockProperties {
     }
 
     public BlockProperties sound(SoundType soundType) {
-        this.soundType = soundType;
+        // a 1.21 sound type can miss sounds 1.12.2 doesn't have (null): placing the block would stop the game
+        this.soundType = io.github.xponer2.translator.runtime.redirect.SoundFallback.complete(soundType);
         return this;
     }
 
@@ -112,6 +211,51 @@ public class BlockProperties {
 
     public BlockProperties instabreak() {
         return this.strength(0.0F);
+    }
+
+    /** 1.21 form: the light of each state (1.12.2 blocks have one light level; the default state's is used). */
+    public BlockProperties lightLevel(java.util.function.ToIntFunction<IBlockState> lightEmission) {
+        this.lightEmission = lightEmission;
+        return this;
+    }
+
+    public BlockProperties pushReaction(net.minecraft.block.material.EnumPushReaction pushReaction) {
+        this.pushReaction = pushReaction;
+        return this;
+    }
+
+    @Nullable
+    public net.minecraft.block.material.EnumPushReaction pushReaction() {
+        return this.pushReaction;
+    }
+
+    /** 1.21 properties 1.12.2 blocks have no counterpart for: accepted, no effect. */
+    public BlockProperties replaceable() {
+        return this;
+    }
+
+    public BlockProperties noTerrainParticles() {
+        return this;
+    }
+
+    public BlockProperties dynamicShape() {
+        return this;
+    }
+
+    public BlockProperties forceSolidOn() {
+        return this;
+    }
+
+    public BlockProperties forceSolidOff() {
+        return this;
+    }
+
+    public BlockProperties ignitedByLava() {
+        return this;
+    }
+
+    public BlockProperties air() {
+        return this.noCollission().noLootTable();
     }
 
     public BlockProperties lightLevel(int lightLevel) {
@@ -203,9 +347,11 @@ public class BlockProperties {
      * Sets hardness, resistance, light and random ticks; the sound type through the block's protected setter.
      */
     public void applyTo(Block block, Consumer<SoundType> soundTypeSetter) {
+        block.setDefaultSlipperiness(this.friction);
         block.setHardness(this.destroyTime);
         block.setResistance(this.explosionResistance * 5.0F / 3.0F);
-        block.setLightLevel(this.lightLevel / 15.0F);
+        int light = this.lightEmission != null ? this.lightEmission.applyAsInt(block.getDefaultState()) : this.lightLevel;
+        block.setLightLevel(light / 15.0F);
         block.setTickRandomly(this.randomTicks);
         soundTypeSetter.accept(this.soundType);
     }

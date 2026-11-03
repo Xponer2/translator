@@ -45,6 +45,9 @@ public final class ForgeRegistryWrapper<T extends IForgeRegistryEntry<T>> implem
     @Nullable
     @Override
     public ResourceLocation getKey(T value) {
+        if (value == null) {
+            return null;
+        }
         var location = value.getRegistryName();
         // a registry name is set before registration, only a registered object has a key
         return location != null && this.registry.getValue(location) == value ? location : null;
@@ -99,6 +102,24 @@ public final class ForgeRegistryWrapper<T extends IForgeRegistryEntry<T>> implem
     @Override
     public Iterator<T> iterator() {
         return this.registry.iterator();
+    }
+
+    @Nullable
+    @Override
+    public ResourceLocation getDefaultKey() {
+        var value = this.defaultValue();
+        return value == null ? null : value.getRegistryName();
+    }
+
+    @Override
+    public int getId(@Nullable T value) {
+        return value == null ? -1 : this.registry instanceof net.minecraftforge.registries.ForgeRegistry<?> forge ? forge.getID(value.getRegistryName()) : Registry.super.getId(value);
+    }
+
+    @Nullable
+    @Override
+    public T byId(int id) {
+        return this.registry instanceof net.minecraftforge.registries.ForgeRegistry<?> forge ? (T) forge.getValue(id) : Registry.super.byId(id);
     }
 
     @Override

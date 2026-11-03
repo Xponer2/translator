@@ -26,7 +26,7 @@ public final class WeightedRandomList<E extends WeightedEntry> {
 	private final int totalWeight;
 	private final List<E> items;
 
-	private WeightedRandomList(List<? extends E> items) {
+	public WeightedRandomList(List<? extends E> items) {
 		this.items = ImmutableList.copyOf(items);
 		int total = 0;
 		for (var item : this.items) {

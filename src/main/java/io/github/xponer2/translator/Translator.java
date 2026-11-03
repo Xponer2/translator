@@ -49,7 +49,7 @@ public final class Translator {
 			}
 			portedMods = mods;
 		}
-		return portedMods.contains(modId);
+		return portedMods.contains(modId) || io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(modId);
 	}
 
 	@Mod.EventHandler
@@ -58,12 +58,16 @@ public final class Translator {
 		io.github.xponer2.translator.content.Copper.readConfig(new net.minecraftforge.common.config.Configuration(event.getSuggestedConfigurationFile()));
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.content.Copper.Registrar());
 		MinecraftForge.EVENT_BUS.register(new RegisterEvent.Forwarder());
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.redirect.VanillaPlaceholders());
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.ChunkUnloadGuard());
 		Menus.init();
 		MinecraftForge.EVENT_BUS.register(new CapabilityAttacher());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.item.DataEnchantments());
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.client.ClientSetup.preInit();
 		}
+		// original NeoForge 1.21.1 jars in mods/: converted and started now, before the registry events
+		io.github.xponer2.translator.runtime.RuntimeMods.load(event.getModConfigurationDirectory().getParentFile());
 	}
 
 	@Mod.EventHandler
@@ -71,19 +75,31 @@ public final class Translator {
 		// the mods registered their payload and capability handlers on the event bus in pre-init
 		RegisterPayloadHandlersEvent.fire();
 		CapabilityAttacher.registerAll();
+		// every registry filled (DeferredRegisters too): baked once more, as NeoForge does after registration
+		io.github.xponer2.translator.registry.RegistryCallbacks.bakeAll();
+		io.github.xponer2.translator.runtime.neoforge.ConfigLoader.loadServerConfigs();
+		io.github.xponer2.translator.runtime.RuntimeMods.setup();
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.client.ClientSetup.init();
 		}
 	}
 
 	@Mod.EventHandler
+	public void serverStarting(net.minecraftforge.fml.common.event.FMLServerStartingEvent event) {
+		event.registerServerCommand(new io.github.xponer2.translator.selftest.SelfTest.Command());
+	}
+
+	@Mod.EventHandler
 	public void postInit(FMLPostInitializationEvent event) {
+		io.github.xponer2.translator.runtime.RuntimeMods.complete();
 		// whose copper minecraft:copper_ingot is, then the tags and recipes of the 1.21 data (every mod has registered
 		// its items and OreDictionary entries)
 		io.github.xponer2.translator.content.Copper.setup();
 		RecipeLoader.load();
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.client.ClientSetup.postInit();
+			// -Dtranslator.autotest=<world>: the self-test on its own, then the game quits
+			io.github.xponer2.translator.selftest.AutoTest.init();
 		}
 	}
 }

@@ -48,6 +48,12 @@ public final class ArmorMaterialData {
         this.knockbackResistance = knockbackResistance;
     }
 
+    /** 1.21 {@code new ArmorMaterial(defense, enchantability, Holder<SoundEvent> equipSound, ...)}. */
+    public ArmorMaterialData(Map<ArmorType, Integer> defense, int enchantmentValue, io.github.xponer2.translator.registry.Holder<SoundEvent> equipSound,
+                             Supplier<Ingredient> repairIngredient, List<Layer> layers, float toughness, float knockbackResistance) {
+        this(defense, enchantmentValue, equipSound == null ? null : equipSound.value(), repairIngredient, layers, toughness, knockbackResistance);
+    }
+
     public int getDefense(ArmorType type) {
         return this.defense.getOrDefault(type, 0);
     }

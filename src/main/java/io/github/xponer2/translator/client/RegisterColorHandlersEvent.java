@@ -68,6 +68,18 @@ public class RegisterColorHandlersEvent extends Event {
 		public void register(IItemColor color, net.minecraft.block.Block... blocks) {
 			this.colors.registerItemColorHandler(color, blocks);
 		}
+
+		/** Items given as ItemLike (blocks, items, holders of them). */
+		public void register(IItemColor color, io.github.xponer2.translator.util.ItemLike... items) {
+			var resolved = new java.util.ArrayList<net.minecraft.item.Item>();
+			for (var item : items) {
+				var asItem = item == null ? null : item.asItem();
+				if (asItem != null && asItem != net.minecraft.init.Items.AIR) {
+					resolved.add(asItem);
+				}
+			}
+			this.colors.registerItemColorHandler(color, resolved.toArray(new net.minecraft.item.Item[0]));
+		}
 	}
 
 	public static final class Forwarder {

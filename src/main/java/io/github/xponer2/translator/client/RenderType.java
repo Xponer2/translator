@@ -19,10 +19,61 @@ public class RenderType {
     private final Runnable setup;
     private final Runnable clear;
 
+    @javax.annotation.Nullable
+    private net.minecraft.client.renderer.vertex.VertexFormat format;
+    @javax.annotation.Nullable
+    private Object mode;
+    private int bufferSize = 256;
+    private boolean sortOnUpload;
+
     public RenderType(String name, Runnable setup, Runnable clear) {
         this.name = name;
         this.setup = setup;
         this.clear = clear;
+    }
+
+    /** 1.21 {@code new RenderType(name, format, mode, bufferSize, crumbling, sortOnUpload, setup, clear)}. */
+    public RenderType(String name, net.minecraft.client.renderer.vertex.VertexFormat format, Object mode, int bufferSize, boolean affectsCrumbling,
+            boolean sortOnUpload, Runnable setup, Runnable clear) {
+        this(name, setup, clear);
+        this.format = format;
+        this.mode = mode;
+        this.bufferSize = bufferSize;
+        this.sortOnUpload = sortOnUpload;
+    }
+
+    public net.minecraft.client.renderer.vertex.VertexFormat format() {
+        return this.format != null ? this.format : net.minecraft.client.renderer.vertex.DefaultVertexFormats.BLOCK;
+    }
+
+    /** The 1.21 vertex mode (VertexFormat.Mode, carried with the API), null for the Translator's own types (quads). */
+    @javax.annotation.Nullable
+    public Object mode() {
+        return this.mode;
+    }
+
+    public int bufferSize() {
+        return this.bufferSize;
+    }
+
+    public boolean sortOnUpload() {
+        return this.sortOnUpload;
+    }
+
+    /** The chunk layer of a block render type (solid 0, cutout mipped 1, cutout 2, translucent 3), -1 for the others. */
+    public int getChunkLayerId() {
+        switch (this.name) {
+        case "solid":
+            return 0;
+        case "cutout_mipped":
+            return 1;
+        case "cutout":
+            return 2;
+        case "translucent":
+            return 3;
+        default:
+            return -1;
+        }
     }
 
     // the 1.21 chunk/entity layers used by immediate rendering (blocks atlas)
@@ -54,6 +105,11 @@ public class RenderType {
 
     public static RenderType cutoutMipped() {
         return CUTOUT;
+    }
+
+    /** The block layers (Registrate checks a block's layer is one of them). */
+    public static java.util.List<RenderType> chunkBufferLayers() {
+        return java.util.Arrays.asList(SOLID, CUTOUT, TRANSLUCENT);
     }
 
     public static RenderType translucent() {

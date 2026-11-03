@@ -300,7 +300,14 @@ public final class RecipeManager {
             errors.accept("unknown recipe serializer " + type);
             return null;
         }
-        var recipe = serializer.codec().codec().parse(JsonOps.INSTANCE, object);
+        com.mojang.serialization.DataResult<?> recipe;
+        try {
+            recipe = serializer.codec().codec().parse(JsonOps.INSTANCE, object);
+        } catch (RuntimeException | LinkageError e) {
+            // a serializer whose codec doesn't work yet (an original 1.21.1 mod's, partly converted): this recipe only
+            errors.accept("the serializer " + type + " failed: " + e);
+            return null;
+        }
         var error = recipe.error();
         if (error.isPresent()) {
             errors.accept(error.get().message());

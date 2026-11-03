@@ -33,6 +33,7 @@ public final class ClientSetup {
 		MinecraftForge.EVENT_BUS.register(new AtlasTextures());
 		MinecraftForge.EVENT_BUS.register(new SingleVariantModels());
 		MinecraftForge.EVENT_BUS.register(new CopperTextures());
+		MinecraftForge.EVENT_BUS.register(new PoseStack.FrameEnd());
 	}
 
 	// renderers and client extensions of the mods (subscribed in pre-init)

@@ -35,4 +35,17 @@ public interface IPayloadContext {
      * Sends a payload back: to the server on the client, to the sender on the server.
      */
     void reply(CustomPacketPayload payload);
+
+    /** Where the payload went: to the client when the receiving player is the client's own. */
+    default PacketFlow flow() {
+        EntityPlayer player = this.player();
+        return player == null || player.world.isRemote ? PacketFlow.CLIENTBOUND : PacketFlow.SERVERBOUND;
+    }
+
+    /** Disconnects the sender (on the server). */
+    default void disconnect(net.minecraft.util.text.ITextComponent reason) {
+        if (this.player() instanceof net.minecraft.entity.player.EntityPlayerMP player) {
+            player.connection.disconnect(reason);
+        }
+    }
 }

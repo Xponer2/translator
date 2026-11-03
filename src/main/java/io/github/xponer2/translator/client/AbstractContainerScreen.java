@@ -10,6 +10,11 @@
  */
 package io.github.xponer2.translator.client;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
@@ -21,8 +26,10 @@ import net.minecraft.util.text.ITextComponent;
 /**
  * 1.21 container screen on the 1.12.2 GuiContainer: the 1.12.2 draw calls go to the 1.21 render, renderBg and
  * renderLabels with a GuiGraphics, and the 1.21 fields (menu, title, font, minecraft, label positions) are kept.
+ * Widgets (GuiButtons) go to the 1.12.2 button list; other listeners (panels) are drawn over the background and get
+ * the mouse from the 1.21 input methods.
  */
-public abstract class AbstractContainerScreen<T extends Container> extends GuiContainer {
+public abstract class AbstractContainerScreen<T extends Container> extends GuiContainer implements ContainerEventHandler, Renderable {
 	protected final T menu;
 	protected final ITextComponent title;
 	protected final InventoryPlayer playerInventory;
@@ -33,6 +40,11 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 	protected int titleLabelY = 6;
 	protected int inventoryLabelX = 8;
 	protected int inventoryLabelY;
+	private final List<GuiEventListener> children = new ArrayList<>();
+	private final List<Renderable> panels = new ArrayList<>();
+	@Nullable
+	private GuiEventListener focused;
+	private boolean dragging;
 
 	public AbstractContainerScreen(T menu, InventoryPlayer playerInventory, ITextComponent title) {
 		super(menu);
@@ -49,6 +61,8 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 		this.font = this.fontRenderer;
 		this.minecraft = this.mc;
 		this.inventoryLabelY = this.ySize - 94;
+		this.children.clear();
+		this.panels.clear();
 		this.init();
 	}
 
@@ -56,12 +70,45 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 	protected void init() {
 	}
 
+	/** 1.21 per-tick work of a container screen (a cooking pot's progress, a slot's animation). */
+	protected void containerTick() {
+	}
+
+	/** 1.21 {@code tick}: the container tick. */
+	public void tick() {
+		this.containerTick();
+	}
+
+	@Override
+	public void updateScreen() {
+		try {
+			super.updateScreen();
+			this.tick();
+		} catch (RuntimeException | LinkageError e) {
+			ScreenFailures.closeBroken(this, "tick", e);
+		}
+	}
+
+	@Override
+	public void handleInput() throws java.io.IOException {
+		try {
+			super.handleInput();
+		} catch (RuntimeException | LinkageError e) {
+			ScreenFailures.closeBroken(this, "input", e);
+		}
+	}
+
 	@Override
 	public final void drawScreen(int mouseX, int mouseY, float partialTicks) {
-		this.render(new GuiGraphics(this.mc), mouseX, mouseY, partialTicks);
+		try {
+			this.render(new GuiGraphics(this.mc), mouseX, mouseY, partialTicks);
+		} catch (RuntimeException | LinkageError e) {
+			ScreenFailures.closeBroken(this, e);
+		}
 	}
 
 	/** Draws background, slots, widgets and labels; 1.21 subclasses call it as super.render. */
+	@Override
 	public void render(GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
 		super.drawScreen(mouseX, mouseY, partialTicks);
 	}
@@ -76,7 +123,12 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 
 	@Override
 	protected final void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-		this.renderBg(new GuiGraphics(this.mc), partialTicks, mouseX, mouseY);
+		GuiGraphics gfx = new GuiGraphics(this.mc);
+		this.renderBg(gfx, partialTicks, mouseX, mouseY);
+		// 1.21 draws the renderables after the background, under the slots
+		for (Renderable panel : new ArrayList<>(this.panels)) {
+			panel.render(gfx, mouseX, mouseY, partialTicks);
+		}
 	}
 
 	protected abstract void renderBg(GuiGraphics gfx, float partialTicks, int mouseX, int mouseY);
@@ -91,9 +143,57 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 		gfx.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0x404040, false);
 	}
 
-	protected <W extends GuiButton> W addRenderableWidget(W widget) {
-		this.buttonList.add(widget);
-		return widget;
+	protected <W extends GuiEventListener> W addRenderableWidget(W widget) {
+		if (!(widget instanceof GuiButton) && widget instanceof Renderable) {
+			this.panels.add((Renderable) widget);
+		}
+		return this.addWidget(widget);
+	}
+
+	protected <W extends GuiEventListener> W addWidget(W listener) {
+		if (listener instanceof GuiButton) {
+			this.buttonList.add((GuiButton) listener);
+		}
+		this.children.add(listener);
+		return listener;
+	}
+
+	protected void removeWidget(GuiEventListener listener) {
+		this.panels.remove(listener);
+		this.buttonList.remove(listener);
+		this.children.remove(listener);
+	}
+
+	@Override
+	public List<? extends GuiEventListener> children() {
+		return this.children;
+	}
+
+	@Nullable
+	@Override
+	public GuiEventListener getFocused() {
+		return this.focused;
+	}
+
+	@Override
+	public void setFocused(@Nullable GuiEventListener focused) {
+		if (this.focused != null) {
+			this.focused.setFocused(false);
+		}
+		if (focused != null) {
+			focused.setFocused(true);
+		}
+		this.focused = focused;
+	}
+
+	@Override
+	public boolean isDragging() {
+		return this.dragging;
+	}
+
+	@Override
+	public void setDragging(boolean dragging) {
+		this.dragging = dragging;
 	}
 
 	/** The white highlight of a hovered slot. */
@@ -114,5 +214,114 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 
 	public ITextComponent getTitle() {
 		return this.title;
+	}
+
+	public Minecraft getMinecraft() {
+		return this.mc;
+	}
+
+	// --- input: the 1.12.2 handlers call the 1.21 ones (which a subclass overrides); their defaults give the event to the
+	// listeners that aren't buttons (panels), then to the 1.12.2 handling. Keys are GLFW codes in 1.21.
+
+	private int dragX;
+	private int dragY;
+
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		for (GuiEventListener child : new ArrayList<>(this.children)) {
+			if (!(child instanceof GuiButton) && child.mouseClicked(mouseX, mouseY, button)) {
+				this.setFocused(child);
+				if (button == 0) {
+					this.dragging = true;
+				}
+				return true;
+			}
+		}
+		try {
+			super.mouseClicked((int) mouseX, (int) mouseY, button);
+		} catch (java.io.IOException e) {
+			throw new java.io.UncheckedIOException(e);
+		}
+		return true;
+	}
+
+	@Override
+	protected void mouseClicked(int mouseX, int mouseY, int button) throws java.io.IOException {
+		this.dragX = mouseX;
+		this.dragY = mouseY;
+		this.mouseClicked((double) mouseX, (double) mouseY, button);
+	}
+
+	@Override
+	public boolean mouseReleased(double mouseX, double mouseY, int button) {
+		if (button == 0 && this.dragging) {
+			this.dragging = false;
+			if (this.focused != null && !(this.focused instanceof GuiButton) && this.focused.mouseReleased(mouseX, mouseY, button)) {
+				return true;
+			}
+		}
+		super.mouseReleased((int) mouseX, (int) mouseY, button);
+		return true;
+	}
+
+	@Override
+	protected void mouseReleased(int mouseX, int mouseY, int state) {
+		this.mouseReleased((double) mouseX, (double) mouseY, state);
+	}
+
+	@Override
+	public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+		if (this.focused != null && !(this.focused instanceof GuiButton) && this.dragging && button == 0
+				&& this.focused.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
+			return true;
+		}
+		super.mouseClickMove((int) mouseX, (int) mouseY, button, 0L);
+		return true;
+	}
+
+	@Override
+	protected void mouseClickMove(int mouseX, int mouseY, int button, long timeSinceLastClick) {
+		this.mouseDragged(mouseX, mouseY, button, mouseX - this.dragX, mouseY - this.dragY);
+		this.dragX = mouseX;
+		this.dragY = mouseY;
+	}
+
+	/** Wheel up is a positive scrollY (1.12.2 has no horizontal wheel). */
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		return ContainerEventHandler.super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+	}
+
+	@Override
+	public void handleMouseInput() throws java.io.IOException {
+		super.handleMouseInput();
+		int wheel = org.lwjgl.input.Mouse.getEventDWheel();
+		if (wheel != 0) {
+			double mouseX = org.lwjgl.input.Mouse.getEventX() * this.width / (double) this.mc.displayWidth;
+			double mouseY = this.height - org.lwjgl.input.Mouse.getEventY() * this.height / (double) this.mc.displayHeight - 1;
+			this.mouseScrolled(mouseX, mouseY, 0.0D, wheel > 0 ? 1.0D : -1.0D);
+		}
+	}
+
+	@Override
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		return ContainerEventHandler.super.keyPressed(keyCode, scanCode, modifiers);
+	}
+
+	@Override
+	public boolean charTyped(char codePoint, int modifiers) {
+		return ContainerEventHandler.super.charTyped(codePoint, modifiers);
+	}
+
+	@Override
+	protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
+		int glfw = io.github.xponer2.translator.runtime.neoforge.KeyMapping.toGlfw(keyCode);
+		if (this.keyPressed(glfw, keyCode, 0)) {
+			return;
+		}
+		if (typedChar >= ' ' && this.charTyped(typedChar, 0)) {
+			return;
+		}
+		super.keyTyped(typedChar, keyCode);
 	}
 }

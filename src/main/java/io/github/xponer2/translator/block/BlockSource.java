@@ -12,11 +12,13 @@ package io.github.xponer2.translator.block;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.block.BlockSourceImpl;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.dispenser.IBlockSource;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.WorldServer;
 
 /**
  * 1.21 dispenser source (a record there) on the 1.12.2 IBlockSource.
@@ -28,8 +30,13 @@ public final class BlockSource {
 		this.source = source;
 	}
 
-	public World level() {
-		return this.source.getWorld();
+	/** 1.21 {@code new BlockSource(level, pos, state, blockEntity)}: the 1.12.2 source of that block. */
+	public BlockSource(WorldServer level, BlockPos pos, IBlockState state, Object blockEntity) {
+		this(new BlockSourceImpl(level, pos));
+	}
+
+	public WorldServer level() {
+		return (WorldServer) this.source.getWorld();
 	}
 
 	public BlockPos pos() {
@@ -43,6 +50,10 @@ public final class BlockSource {
 	@Nullable
 	public TileEntity blockEntity() {
 		return this.source.getBlockTileEntity();
+	}
+
+	public Vec3d center() {
+		return new Vec3d(this.source.getX(), this.source.getY(), this.source.getZ());
 	}
 
 	public IBlockSource source() {

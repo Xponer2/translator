@@ -45,6 +45,11 @@ public final class TooltipContext {
         return this.level;
     }
 
+    /** Ticks per second (1.21 tick rate manager): 1.12.2 runs at 20. */
+    public float tickRate() {
+        return 20.0F;
+    }
+
     @Nullable
     public HolderLookup.Provider registries() {
         return RegistryAccess.INSTANCE;

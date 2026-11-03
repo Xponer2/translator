@@ -16,6 +16,12 @@ import net.minecraft.util.text.TextComponentString;
  * 1.21 {@code Component.literal(text)}.
  */
 public class LiteralComponent extends TextComponentString implements MutableComponent {
+	@Override
+	public LiteralComponent setStyle(net.minecraft.util.text.Style style) {
+		super.setStyle(style);
+		return this;
+	}
+
 	public LiteralComponent(String text) {
 		super(text);
 	}

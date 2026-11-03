@@ -54,6 +54,14 @@ public final class CapabilityAttacher {
 		BY_TILE_CLASS.clear();
 	}
 
+	/** A provider for the tile entities of a class (NeoForge registerBlock: the tile entity class of the blocks). */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	static synchronized <T, C> void addTileClass(BlockCapability<T, C> capability, Class<? extends TileEntity> tileClass,
+			ICapabilityProvider<TileEntity, C, T> provider) {
+		BLOCK_ENTRIES.add(new BlockEntry(capability, tileClass, provider));
+		BY_TILE_CLASS.clear();
+	}
+
 	static synchronized <T, C> void addItem(ItemCapability<T, C> capability, Item item, ICapabilityProvider<ItemStack, C, T> provider) {
 		BY_ITEM.computeIfAbsent(item, i -> new ArrayList<>()).add(new ItemEntry<>(capability, provider));
 	}
@@ -62,7 +70,7 @@ public final class CapabilityAttacher {
 		return BY_TILE_CLASS.computeIfAbsent(tileClass, c -> {
 			var list = new ArrayList<BlockEntry<?, ?, ?>>();
 			for (var entry : BLOCK_ENTRIES) {
-				if (entry.type.getTileClass() == c) {
+				if (entry.tileClass == c) {
 					list.add(entry);
 				}
 			}
@@ -91,12 +99,16 @@ public final class CapabilityAttacher {
 
 	private static final class BlockEntry<T, C, BE extends TileEntity> {
 		final BlockCapability<T, C> capability;
-		final BlockEntityType<BE> type;
+		final Class<?> tileClass;
 		final ICapabilityProvider<? super BE, C, T> provider;
 
 		BlockEntry(BlockCapability<T, C> capability, BlockEntityType<BE> type, ICapabilityProvider<? super BE, C, T> provider) {
+			this(capability, type.getTileClass(), provider);
+		}
+
+		BlockEntry(BlockCapability<T, C> capability, Class<?> tileClass, ICapabilityProvider<? super BE, C, T> provider) {
 			this.capability = capability;
-			this.type = type;
+			this.tileClass = tileClass;
 			this.provider = provider;
 		}
 	}

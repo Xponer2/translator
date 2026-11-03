@@ -18,4 +18,26 @@ public final class RegistryAccess implements HolderLookup.Provider {
     public static final RegistryAccess EMPTY = INSTANCE;
 
     private RegistryAccess() { }
+
+    /** A registry by its key: the 1.12.2 Forge registry or the Translator's own (BuiltInRegistries). */
+    public <T> Registry<T> registryOrThrow(ResourceKey<? extends Registry<? extends T>> key) {
+        return this.lookupOrThrow(key);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> java.util.Optional<Registry<T>> registry(ResourceKey<? extends Registry<? extends T>> key) {
+        try {
+            return java.util.Optional.ofNullable((Registry<T>) this.lookupOrThrow(key));
+        } catch (RuntimeException e) {
+            return java.util.Optional.empty();
+        }
+    }
+
+    public <T> java.util.Optional<Registry<T>> lookup(ResourceKey<? extends Registry<? extends T>> key) {
+        return this.registry(key);
+    }
+
+    public RegistryAccess freeze() {
+        return this;
+    }
 }

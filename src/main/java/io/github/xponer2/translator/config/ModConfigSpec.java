@@ -79,6 +79,11 @@ public final class ModConfigSpec {
         private final List<String[]> categoryComments = new ArrayList<>();
         private String comment;
 
+        /** The one-line overload of 1.21 (a call with one string has this descriptor). */
+        public Builder comment(String comment) {
+            return this.comment(new String[] {comment});
+        }
+
         public Builder comment(String... comment) {
             this.comment = String.join("\n", comment);
             return this;

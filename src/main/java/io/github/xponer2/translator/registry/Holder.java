@@ -29,7 +29,27 @@ public interface Holder<T> {
     }
 
     default boolean is(ResourceKey<T> key) {
-        return this.unwrapKey().map(k -> k == key).orElse(false);
+        return this.unwrapKey().map(k -> k == key || k.equals(key)).orElse(false);
+    }
+
+    /** In a tag of the mods' data: items, blocks, entity types. */
+    @SuppressWarnings("unchecked")
+    default boolean is(io.github.xponer2.translator.util.TagKey<?> tag) {
+        Object value = this.value();
+        if (value instanceof net.minecraft.item.Item item) {
+            return io.github.xponer2.translator.tags.TagManager.is(item, (io.github.xponer2.translator.util.TagKey<net.minecraft.item.Item>) tag);
+        }
+        if (value instanceof net.minecraft.block.Block block) {
+            return io.github.xponer2.translator.tags.TagManager.is(block, (io.github.xponer2.translator.util.TagKey<net.minecraft.block.Block>) tag);
+        }
+        if (value instanceof EntityType<?> type) {
+            return type.is(tag);
+        }
+        return false;
+    }
+
+    default java.util.stream.Stream<io.github.xponer2.translator.util.TagKey<T>> tags() {
+        return java.util.stream.Stream.empty();
     }
 
     static <T> Holder<T> direct(T value) {

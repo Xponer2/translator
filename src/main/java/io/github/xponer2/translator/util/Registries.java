@@ -48,6 +48,22 @@ public final class Registries {
     public static final ResourceKey<Registry<CreativeModeTab>> CREATIVE_MODE_TAB = create("creative_mode_tab");
     public static final ResourceKey<Registry<RecipeSerializer<?>>> RECIPE_SERIALIZER = create("recipe_serializer");
 
+    // more 1.21 registries, for original 1.21.1 mods (runtime): MappedRegistry until the Translator uses them
+    public static final ResourceKey<Registry<Object>> PARTICLE_TYPE = create("particle_type");
+    public static final ResourceKey<Registry<Object>> POTION = create("potion");
+    public static final ResourceKey<Registry<Object>> ATTRIBUTE = create("attribute");
+    public static final ResourceKey<Registry<Object>> FLUID = create("fluid");
+    public static final ResourceKey<Registry<Object>> VILLAGER_PROFESSION = create("villager_profession");
+    public static final ResourceKey<Registry<Object>> POINT_OF_INTEREST_TYPE = create("point_of_interest_type");
+    public static final ResourceKey<Registry<Object>> STAT_TYPE = create("stat_type");
+    public static final ResourceKey<Registry<Object>> CUSTOM_STAT = create("custom_stat");
+    public static final ResourceKey<Registry<Object>> LOOT_CONDITION_TYPE = create("loot_condition_type");
+    public static final ResourceKey<Registry<Object>> LOOT_FUNCTION_TYPE = create("loot_function_type");
+    public static final ResourceKey<Registry<Object>> COMMAND_ARGUMENT_TYPE = create("command_argument_type");
+    public static final ResourceKey<Registry<Object>> TRIGGER_TYPE = create("trigger_type");
+    public static final ResourceKey<Registry<Object>> GAME_EVENT = create("game_event");
+    public static final ResourceKey<Registry<Object>> ENCHANTMENT_EFFECT_COMPONENT_TYPE = create("enchantment_effect_component_type");
+
     private Registries() { }
 
     private static <T> ResourceKey<Registry<T>> create(String name) {

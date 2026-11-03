@@ -24,6 +24,22 @@ public interface HolderLookup {
             return registry;
         }
 
+        default <T> java.util.Optional<Holder<T>> holder(ResourceKey<T> key) {
+            try {
+                return java.util.Optional.of(this.holderOrThrow(key));
+            } catch (RuntimeException e) {
+                return java.util.Optional.empty();
+            }
+        }
+
+        default <T> java.util.Optional<Registry<T>> lookup(ResourceKey<? extends Registry<? extends T>> key) {
+            try {
+                return java.util.Optional.ofNullable(this.lookupOrThrow(key));
+            } catch (RuntimeException e) {
+                return java.util.Optional.empty();
+            }
+        }
+
         default <T> Holder<T> holderOrThrow(ResourceKey<T> key) {
             var registry = BuiltInRegistries.byKey(ResourceKey.<T>createRegistryKey(key.registry()));
             return registry.getHolder(key.location()).orElseThrow(() -> new IllegalStateException("Missing element " + key));

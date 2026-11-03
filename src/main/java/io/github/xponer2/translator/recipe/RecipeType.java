@@ -20,6 +20,11 @@ public interface RecipeType<T extends Recipe<?>> {
     RecipeType<CraftingRecipe> CRAFTING = simple(new ResourceLocation("minecraft", "crafting"));
     RecipeType<VanillaRecipes.SmeltingRecipe> SMELTING = simple(new ResourceLocation("minecraft", "smelting"));
     RecipeType<Recipe<SingleRecipeInput>> STONECUTTING = simple(new ResourceLocation("minecraft", "stonecutting"));
+    // vanilla recipe types 1.12.2 has no recipes of: the mods' recipes of them are kept, nothing makes them
+    RecipeType<Recipe<?>> BLASTING = simple(new ResourceLocation("minecraft", "blasting"));
+    RecipeType<Recipe<?>> SMOKING = simple(new ResourceLocation("minecraft", "smoking"));
+    RecipeType<Recipe<?>> CAMPFIRE_COOKING = simple(new ResourceLocation("minecraft", "campfire_cooking"));
+    RecipeType<Recipe<?>> SMITHING = simple(new ResourceLocation("minecraft", "smithing"));
 
     static <T extends Recipe<?>> RecipeType<T> simple(ResourceLocation id) {
         return new RecipeType<T>() {

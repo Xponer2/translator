@@ -44,8 +44,11 @@ public class DeferredRegister<T> {
     private final String namespace;
     private final Map<DeferredHolder<T, ? extends T>, Supplier<? extends T>> entries = new LinkedHashMap<>();
     private boolean registered;
+    /** The registry's event has registered the entries: later ones would never be registered (NeoForge throws then). */
+    private boolean seenRegisterEvent;
 
-    protected DeferredRegister(ResourceKey<? extends Registry<T>> registryKey, String namespace) {
+    // public: the shadow of NeoForge's DeferredRegister (another package) makes them (createItems, createBlocks)
+    public DeferredRegister(ResourceKey<? extends Registry<T>> registryKey, String namespace) {
         this.registryKey = registryKey;
         this.namespace = namespace;
     }
@@ -58,16 +61,44 @@ public class DeferredRegister<T> {
         return new DeferredRegister<>(registry.key(), namespace);
     }
 
+    /** NeoForge {@code DeferredRegister.createDataComponents}. */
+    public static DataComponents createDataComponents(String namespace) {
+        return new DataComponents(io.github.xponer2.translator.util.Registries.DATA_COMPONENT_TYPE, namespace);
+    }
+
+    public static DataComponents createDataComponents(ResourceKey<? extends Registry<io.github.xponer2.translator.component.DataComponentType<?>>> key,
+            String namespace) {
+        return new DataComponents(key, namespace);
+    }
+
+    /** NeoForge {@code DeferredRegister.DataComponents}: data component types made from a builder. */
+    public static class DataComponents extends DeferredRegister<io.github.xponer2.translator.component.DataComponentType<?>> {
+        protected DataComponents(ResourceKey<? extends Registry<io.github.xponer2.translator.component.DataComponentType<?>>> key, String namespace) {
+            super(key, namespace);
+        }
+
+        public <D> DeferredHolder<io.github.xponer2.translator.component.DataComponentType<?>, io.github.xponer2.translator.component.DataComponentType<D>> registerComponentType(
+                String name, java.util.function.UnaryOperator<io.github.xponer2.translator.component.DataComponentType.Builder<D>> builder) {
+            return this.register(name, () -> builder.apply(io.github.xponer2.translator.component.DataComponentType.builder()).build());
+        }
+    }
+
+    /** An old id of an entry (worlds saved with it load the entry): 1.12.2 remaps missing ids itself, nothing kept. */
+    public void addAlias(ResourceLocation from, ResourceLocation to) {
+    }
+
     public <I extends T> DeferredHolder<T, I> register(String name, Supplier<? extends I> supplier) {
         return this.register(name, id -> supplier.get());
     }
 
     public <I extends T> DeferredHolder<T, I> register(String name, Function<ResourceLocation, ? extends I> factory) {
-        if (this.registered && !(this.registry() instanceof MappedRegistry)) {
-            throw new IllegalStateException("Cannot register new entries to " + this.registryKey.location() + " after register() was called");
+        // like NeoForge: entries may be added after register(bus) (Twilight Forest's block items, made when TFBlocks
+        // loads), until the registry event has run
+        if (this.seenRegisterEvent && !(this.registry() instanceof MappedRegistry)) {
+            throw new IllegalStateException("Cannot register new entries to " + this.registryKey.location() + " after its registry event has run");
         }
         var location = new ResourceLocation(this.namespace, name);
-        DeferredHolder<T, I> holder = DeferredHolder.create(this.registryKey, location);
+        DeferredHolder<T, I> holder = this.createHolder(this.registryKey, location);
         if (this.entries.putIfAbsent(holder, () -> factory.apply(location)) != null) {
             throw new IllegalArgumentException("Duplicate registration " + location);
         }
@@ -79,6 +110,14 @@ public class DeferredRegister<T> {
     }
 
     /**
+     * NeoForge {@code createHolder}: the holder of a new entry. NeoForge's DeferredRegister.Items and Blocks (carried
+     * from 1.21.1) override it to make DeferredItem / DeferredBlock holders.
+     */
+    protected <I extends T> DeferredHolder<T, I> createHolder(ResourceKey<? extends Registry<T>> registryKey, ResourceLocation key) {
+        return DeferredHolder.create(registryKey, key);
+    }
+
+    /**
      * Hooks the registration into the 1.12.2 registry events. The argument is the 1.21 mod event bus, it is ignored.
      */
     public void register(Object modEventBus) {
@@ -87,6 +126,11 @@ public class DeferredRegister<T> {
         }
         this.registered = true;
         MinecraftForge.EVENT_BUS.register(this);
+    }
+
+    /** The same for an original 1.21.1 mod (runtime): its mod event bus. */
+    public void register(io.github.xponer2.translator.runtime.neoforge.IEventBus modEventBus) {
+        this.register((Object) modEventBus);
     }
 
     public Collection<DeferredHolder<T, ? extends T>> getEntries() {
@@ -101,8 +145,10 @@ public class DeferredRegister<T> {
         return this.namespace;
     }
 
+    /** null for a register without a registry key (a key from a class the Translator can't load yet): it registers nothing. */
+    @javax.annotation.Nullable
     private Registry<T> registry() {
-        return BuiltInRegistries.byKey(this.registryKey);
+        return this.registryKey == null ? null : BuiltInRegistries.byKey(this.registryKey);
     }
 
     // raw event type: a parameterized one would only get the events of that type (1.12.2 filters generic events)
@@ -110,9 +156,23 @@ public class DeferredRegister<T> {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onRegister(RegistryEvent.Register event) {
         var registry = this.registry();
-        if (registry instanceof ForgeRegistryWrapper wrapper && wrapper.forge() == event.getRegistry()) {
-            this.registerAll((IForgeRegistry) event.getRegistry());
+        if (!(registry instanceof ForgeRegistryWrapper wrapper) || this.registeredEarly) {
+            return;
         }
+        if (wrapper.forge() == event.getRegistry()) {
+            this.registerAll((IForgeRegistry) event.getRegistry());
+        } else if (event.getRegistry().getRegistrySuperType() == Block.class && isBeforeBlocks(wrapper.forge())) {
+            // 1.21 fills these before the blocks (a block's constructor takes its sounds), 1.12.2 after the items
+            this.registeredEarly = true;
+            this.registerAll(wrapper.forge());
+        }
+    }
+
+    private boolean registeredEarly;
+
+    private static boolean isBeforeBlocks(IForgeRegistry<?> registry) {
+        Class<?> type = registry.getRegistrySuperType();
+        return type == net.minecraft.util.SoundEvent.class || type == net.minecraft.potion.Potion.class;
     }
 
     // the entries of mapped registries not used yet, once all items exist
@@ -128,24 +188,48 @@ public class DeferredRegister<T> {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void registerAll(IForgeRegistry registry) {
+        this.seenRegisterEvent = true;
+        boolean lenient = io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(this.namespace);
         for (var entry : this.entries.entrySet()) {
             var holder = (DeferredHolder) entry.getKey();
-            var value = (IForgeRegistryEntry) entry.getValue().get();
+            IForgeRegistryEntry value;
+            try {
+                value = (IForgeRegistryEntry) entry.getValue().get();
+            } catch (RuntimeException | LinkageError e) {
+                if (!lenient) {
+                    throw e;
+                }
+                // an original 1.21.1 mod (runtime): one entry the Translator can't make doesn't stop the game
+                io.github.xponer2.translator.runtime.RuntimeMods.skipped(holder.getId(), e);
+                continue;
+            }
             var location = holder.getId();
-            if (value.getRegistryName() == null) {
-                value.setRegistryName(location);
+            if (value == null && lenient) {
+                // its supplier can't run on 1.12.2 yet (a stubbed constructor of the mod returns nothing)
+                io.github.xponer2.translator.runtime.RuntimeMods.skipped(location, new IllegalStateException("the entry is null"));
+                continue;
             }
-            var key = location.getNamespace() + "." + location.getPath();
-            if (value instanceof Item item && "item.null".equals(item.getTranslationKey())) {
-                item.setTranslationKey(key);
-            } else if (value instanceof Block block && "tile.null".equals(block.getTranslationKey())) {
-                block.setTranslationKey(key);
+            try {
+                if (value.getRegistryName() == null) {
+                    value.setRegistryName(location);
+                }
+                var key = location.getNamespace() + "." + location.getPath();
+                if (value instanceof Item item && "item.null".equals(item.getTranslationKey())) {
+                    item.setTranslationKey(key);
+                } else if (value instanceof Block block && "tile.null".equals(block.getTranslationKey())) {
+                    block.setTranslationKey(key);
+                }
+                registry.register(value);
+                if (value instanceof Item item) {
+                    io.github.xponer2.translator.client.ItemModels.track(item);
+                }
+                holder.bind(value);
+            } catch (RuntimeException | LinkageError e) {
+                if (!lenient) {
+                    throw e;
+                }
+                io.github.xponer2.translator.runtime.RuntimeMods.skipped(location, e);
             }
-            registry.register(value);
-            if (value instanceof Item item) {
-                io.github.xponer2.translator.client.ItemModels.track(item);
-            }
-            holder.bind(value);
         }
     }
 
@@ -153,12 +237,34 @@ public class DeferredRegister<T> {
         if (holder.isBound()) {
             return;
         }
-        @SuppressWarnings("unchecked")
-        var value = (I) this.entries.get(holder).get();
-        registry.register(holder.getId(), value);
+        I value;
+        try {
+            @SuppressWarnings("unchecked")
+            var made = (I) this.entries.get(holder).get();
+            value = made;
+        } catch (RuntimeException | LinkageError e) {
+            if (!io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(this.namespace)) {
+                throw e;
+            }
+            io.github.xponer2.translator.runtime.RuntimeMods.skipped(holder.getId(), e);
+            return;
+        }
+        try {
+            registry.register(holder.getId(), value);
+        } catch (RuntimeException e) {
+            // an original 1.21.1 mod's entry the registry refuses (null, or the same object as another entry because
+            // what made it fell back to a shared default): skipped, the game goes on
+            if (!io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(this.namespace)) {
+                throw e;
+            }
+            io.github.xponer2.translator.runtime.RuntimeMods.skipped(holder.getId(), e);
+            return;
+        }
         holder.bind(value);
-        if (value instanceof RegistrationCallback callback) {
-            callback.onRegistered(holder.getId());
+        // its callback once the holder is bound (a block entity's constructor reads the holder of its type)
+        RegistrationCallback callback = registry.takePending(holder.getId());
+        if (callback != null) {
+            MappedRegistry.runCallback(holder.getId(), callback);
         }
     }
 }

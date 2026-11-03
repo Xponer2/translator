@@ -18,7 +18,7 @@ import net.minecraft.entity.ai.attributes.IAttribute;
  * 1.21 attribute: a 1.12.2 IAttribute, or one 1.12.2 keeps elsewhere (step height in a field, creative flight in the
  * player capabilities), applied by {@link AttributeInstance}.
  */
-public final class Attribute {
+public class Attribute {
 	@Nullable
 	private final IAttribute forge;
 	private final String name;
@@ -45,6 +45,22 @@ public final class Attribute {
 
 	String name() {
 		return this.name;
+	}
+
+	private boolean syncable;
+
+	/** Sent to the client (1.21): 1.12.2 syncs the attributes it knows. */
+	public Attribute setSyncable(boolean syncable) {
+		this.syncable = syncable;
+		return this;
+	}
+
+	public boolean isClientSyncable() {
+		return this.syncable;
+	}
+
+	public double sanitizeValue(double value) {
+		return value;
 	}
 
 	@Override

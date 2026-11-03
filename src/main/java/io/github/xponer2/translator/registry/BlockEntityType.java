@@ -92,6 +92,11 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
         /**
          * The argument is the 1.21 data fixer type (always null in the mods), ignored.
          */
+        /** 1.21 signature (the data fixer type, unused). */
+        public BlockEntityType<T> build(@Nullable com.mojang.datafixers.types.Type<?> dataType) {
+            return this.build((Object) dataType);
+        }
+
         public BlockEntityType<T> build(@Nullable Object dataType) {
             return new BlockEntityType<>(this.factory, this.validBlocks);
         }

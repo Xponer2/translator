@@ -10,15 +10,26 @@
  */
 package io.github.xponer2.translator.util.particle;
 
+import io.github.xponer2.translator.runtime.mc.VanillaOptionType;
+
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumParticleTypes;
 
-/**
- * 1.21 item particle: 1.12.2 ITEM_CRACK with the item id and meta as arguments.
- */
-public class ItemParticleOption extends ParticleOptions {
+public class ItemParticleOption extends LegacyParticleOptions {
+	private final ItemStack stack;
+
 	public ItemParticleOption(EnumParticleTypes type, ItemStack stack) {
 		super(type, Item.getIdFromItem(stack.getItem()), stack.getMetadata());
+		this.stack = stack;
+	}
+
+	/** 1.21 {@code new ItemParticleOption(ParticleTypes.ITEM, stack)}. */
+	public ItemParticleOption(io.github.xponer2.translator.runtime.mc.ParticleType<?> type, ItemStack stack) {
+		this(VanillaOptionType.legacyOf(type, EnumParticleTypes.ITEM_CRACK), stack);
+	}
+
+	public ItemStack getItem() {
+		return this.stack;
 	}
 }

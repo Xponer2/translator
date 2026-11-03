@@ -44,7 +44,45 @@ public final class MappedRegistry<T> implements Registry<T> {
         }
         this.byLocation.put(location, value);
         this.byValue.put(value, location);
+        if (value instanceof RegistrationCallback callback) {
+            this.pending.put(location, callback);
+        }
         return value;
+    }
+
+    /**
+     * The callbacks of entries registered straight into the registry or in a RegisterEvent (Refurbished's block entity
+     * types, whose classes 1.12.2 then couldn't save), run once registration is done (RegistryCallbacks.bakeAll): the
+     * mod's static fields are set then. A DeferredRegister takes its own and runs them once its holder is bound.
+     */
+    private final java.util.Map<ResourceLocation, RegistrationCallback> pending = new java.util.LinkedHashMap<>();
+
+    @Nullable
+    synchronized RegistrationCallback takePending(ResourceLocation location) {
+        return this.pending.remove(location);
+    }
+
+    void runPendingCallbacks() {
+        java.util.List<java.util.Map.Entry<ResourceLocation, RegistrationCallback>> todo;
+        synchronized (this) {
+            todo = new java.util.ArrayList<>(this.pending.entrySet());
+            this.pending.clear();
+        }
+        for (var entry : todo) {
+            runCallback(entry.getKey(), entry.getValue());
+        }
+    }
+
+    static void runCallback(ResourceLocation location, RegistrationCallback callback) {
+        try {
+            callback.onRegistered(location);
+        } catch (RuntimeException | LinkageError e) {
+            if (!io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(location.getNamespace())) {
+                throw e;
+            }
+            // a block entity type whose block entity can't be made yet, a tab whose list fails: skipped, the game goes on
+            io.github.xponer2.translator.runtime.RuntimeMods.skipped(location, e);
+        }
     }
 
     @Override

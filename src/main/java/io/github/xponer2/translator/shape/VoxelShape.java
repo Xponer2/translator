@@ -21,7 +21,7 @@ import net.minecraft.util.math.AxisAlignedBB;
  * 1.21 block shape as the list of its boxes (block units, 0..1). 1.12.2 uses the boxes for collision and their
  * bounds for the selection box (see Shapes for the block overrides the converter adds).
  */
-public final class VoxelShape {
+public class VoxelShape {
 	static final VoxelShape EMPTY = new VoxelShape(Collections.emptyList());
 	static final VoxelShape BLOCK = new VoxelShape(Collections.singletonList(Block.FULL_BLOCK_AABB));
 
@@ -33,6 +33,32 @@ public final class VoxelShape {
 
 	public boolean isEmpty() {
 		return this.boxes.isEmpty();
+	}
+
+	/** Each box of the shape to a 1.21 Shapes.DoubleLineConsumer (carried with the API): its one method takes 6 doubles. */
+	public void forAllBoxes(Object consumer) {
+		java.lang.reflect.Method accept = null;
+		for (var method : consumer.getClass().getMethods()) {
+			if (method.getParameterCount() == 6 && method.getDeclaringClass() != Object.class) {
+				accept = method;
+				break;
+			}
+		}
+		if (accept == null) {
+			return;
+		}
+		accept.setAccessible(true);
+		for (AxisAlignedBB box : this.boxes) {
+			try {
+				accept.invoke(consumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+			} catch (ReflectiveOperationException e) {
+				return;
+			}
+		}
+	}
+
+	public void forAllEdges(Object consumer) {
+		this.forAllBoxes(consumer);
 	}
 
 	public List<AxisAlignedBB> toAabbs() {

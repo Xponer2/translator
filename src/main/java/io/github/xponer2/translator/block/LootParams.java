@@ -27,12 +27,37 @@ import net.minecraft.world.World;
  * The converter adds the 1.12.2 getDrops override to blocks declaring the 1.21 one.
  */
 public final class LootParams {
-	private LootParams() {
+	private final Builder builder;
+
+	private LootParams(Builder builder) {
+		this.builder = builder;
+	}
+
+	public World getLevel() {
+		return this.builder.getLevel();
+	}
+
+	@Nullable
+	public <T> T getOptionalParameter(LootContextParams.Param<T> param) {
+		return this.builder.getOptionalParameter(param);
+	}
+
+	public <T> T getParameter(LootContextParams.Param<T> param) {
+		return this.builder.getParameter(param);
+	}
+
+	public float getLuck() {
+		return 0.0F;
 	}
 
 	public static final class Builder {
 		private final IBlockAccess level;
 		private final Map<LootContextParams.Param<?>, Object> params = new HashMap<>();
+
+		/** 1.21 {@code new LootParams.Builder(level)}: the parameters come with withParameter. */
+		public Builder(net.minecraft.world.WorldServer level) {
+			this.level = level;
+		}
 
 		public Builder(IBlockAccess level, BlockPos pos, @Nullable EntityPlayer harvester, @Nullable net.minecraft.block.state.IBlockState state) {
 			this.level = level;
@@ -70,6 +95,24 @@ public final class LootParams {
 			return value;
 		}
 
+		/** The parameters for a set of them (1.21 LootContextParamSet, carried with the API: not checked). */
+		public LootParams create(Object paramSet) {
+			return new LootParams(this);
+		}
+
+		public Builder withLuck(float luck) {
+			return this;
+		}
+
+		public <T> Builder withOptionalParameter(LootContextParams.Param<T> param, @Nullable T value) {
+			if (value == null) {
+				this.params.remove(param);
+			} else {
+				this.params.put(param, value);
+			}
+			return this;
+		}
+
 		public <T> Builder withParameter(LootContextParams.Param<T> param, T value) {
 			this.params.put(param, value);
 			return this;
@@ -78,6 +121,25 @@ public final class LootParams {
 		@Nullable
 		public ItemStack tool() {
 			return this.getOptionalParameter(LootContextParams.TOOL);
+		}
+
+		private static final ThreadLocal<Boolean> DROPPING = new ThreadLocal<>();
+
+		/** The 1.12.2 drops of a block at the origin of these parameters (a block whose 1.21 getDrops calls super's). */
+		public java.util.List<ItemStack> drops(net.minecraft.block.Block block, net.minecraft.block.state.IBlockState state) {
+			var drops = net.minecraft.util.NonNullList.<ItemStack>create();
+			if (DROPPING.get() != null) {
+				return drops;
+			}
+			Vec3d origin = this.getOptionalParameter(LootContextParams.ORIGIN);
+			BlockPos pos = origin == null ? BlockPos.ORIGIN : new BlockPos(origin);
+			DROPPING.set(Boolean.TRUE);
+			try {
+				block.getDrops(drops, this.level, pos, state, 0);
+			} finally {
+				DROPPING.remove();
+			}
+			return drops;
 		}
 	}
 }

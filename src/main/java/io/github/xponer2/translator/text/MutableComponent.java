@@ -19,6 +19,9 @@ import net.minecraft.util.text.TextFormatting;
  * translated texts as {@link LiteralComponent} / {@link TranslatableComponent}, which implement it.
  */
 public interface MutableComponent extends ITextComponent {
+	@Override
+	MutableComponent setStyle(Style style);
+
 	default MutableComponent withStyle(TextFormatting... formats) {
 		var style = this.getStyle();
 		for (var format : formats) {
@@ -46,6 +49,11 @@ public interface MutableComponent extends ITextComponent {
 	/** 1.12.2 has no RGB text colors: the nearest of the 16 formatting colors. */
 	default MutableComponent withColor(int rgb) {
 		return this.withStyle(nearestColor(rgb));
+	}
+
+	default MutableComponent withStyle(java.util.function.UnaryOperator<Style> change) {
+		this.setStyle(change.apply(this.getStyle()));
+		return this;
 	}
 
 	default MutableComponent copy() {

@@ -10,15 +10,11 @@
  */
 package io.github.xponer2.translator.block;
 
-import net.minecraft.dispenser.BehaviorDefaultDispenseItem;
-import net.minecraft.dispenser.IBlockSource;
-import net.minecraft.item.ItemStack;
-
 /**
- * 1.21 dispenser behavior that may fail (then the dispenser plays the fail sound): subclasses implement
+ * 1.21 dispenser behavior that may fail (then the dispenser plays the fail sound): subclasses override
  * {@link #execute} and call {@link #setSuccess}.
  */
-public abstract class OptionalDispenseItemBehavior extends BehaviorDefaultDispenseItem {
+public class OptionalDispenseItemBehavior extends DefaultDispenseItemBehavior {
 	private boolean success = true;
 
 	public boolean isSuccess() {
@@ -29,15 +25,8 @@ public abstract class OptionalDispenseItemBehavior extends BehaviorDefaultDispen
 		this.success = success;
 	}
 
-	protected abstract ItemStack execute(BlockSource source, ItemStack stack);
-
 	@Override
-	protected final ItemStack dispenseStack(IBlockSource source, ItemStack stack) {
-		return this.execute(new BlockSource(source), stack);
-	}
-
-	@Override
-	protected void playDispenseSound(IBlockSource source) {
-		source.getWorld().playEvent(this.success ? 1000 : 1001, source.getBlockPos(), 0);
+	protected void playSound(BlockSource source) {
+		source.level().playEvent(this.success ? 1000 : 1001, source.pos(), 0);
 	}
 }

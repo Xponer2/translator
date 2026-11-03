@@ -34,6 +34,24 @@ public final class Attributes {
 	public static final Holder<Attribute> BLOCK_INTERACTION_RANGE = ENTITY_REACH;
 	/** Entity#stepHeight in 1.12.2. */
 	public static final Holder<Attribute> STEP_HEIGHT = Holder.direct(new Attribute(null, "generic.step_height", 0.6D));
+	// 1.21 attributes 1.12.2 doesn't have: their default value
+	public static final Holder<Attribute> SAFE_FALL_DISTANCE = Holder.direct(new Attribute(null, "generic.safe_fall_distance", 3.0D));
+	public static final Holder<Attribute> FALL_DAMAGE_MULTIPLIER = Holder.direct(new Attribute(null, "generic.fall_damage_multiplier", 1.0D));
+	public static final Holder<Attribute> GRAVITY = Holder.direct(new Attribute(null, "generic.gravity", 0.08D));
+	public static final Holder<Attribute> JUMP_STRENGTH = Holder.direct(new Attribute(null, "generic.jump_strength", 0.42D));
+	public static final Holder<Attribute> SCALE = Holder.direct(new Attribute(null, "generic.scale", 1.0D));
+	public static final Holder<Attribute> ATTACK_KNOCKBACK = Holder.direct(new Attribute(null, "generic.attack_knockback", 0.0D));
+	public static final Holder<Attribute> MINING_EFFICIENCY = Holder.direct(new Attribute(null, "player.mining_efficiency", 0.0D));
+	public static final Holder<Attribute> BLOCK_BREAK_SPEED = Holder.direct(new Attribute(null, "player.block_break_speed", 1.0D));
+	public static final Holder<Attribute> SUBMERGED_MINING_SPEED = Holder.direct(new Attribute(null, "player.submerged_mining_speed", 0.2D));
+	public static final Holder<Attribute> SNEAKING_SPEED = Holder.direct(new Attribute(null, "player.sneaking_speed", 0.3D));
+	public static final Holder<Attribute> OXYGEN_BONUS = Holder.direct(new Attribute(null, "generic.oxygen_bonus", 0.0D));
+	public static final Holder<Attribute> MAX_ABSORPTION = Holder.direct(new Attribute(null, "generic.max_absorption", 0.0D));
+	public static final Holder<Attribute> BURNING_TIME = Holder.direct(new Attribute(null, "generic.burning_time", 1.0D));
+	public static final Holder<Attribute> EXPLOSION_KNOCKBACK_RESISTANCE = Holder.direct(new Attribute(null, "generic.explosion_knockback_resistance", 0.0D));
+	public static final Holder<Attribute> MOVEMENT_EFFICIENCY = Holder.direct(new Attribute(null, "generic.movement_efficiency", 0.0D));
+	public static final Holder<Attribute> WATER_MOVEMENT_EFFICIENCY = Holder.direct(new Attribute(null, "generic.water_movement_efficiency", 0.0D));
+	public static final Holder<Attribute> SWEEPING_DAMAGE_RATIO = Holder.direct(new Attribute(null, "player.sweeping_damage_ratio", 0.0D));
 	/** NeoForge's creative flight: the player's allowFlying capability in 1.12.2. */
 	public static final Holder<Attribute> CREATIVE_FLIGHT = Holder.direct(new Attribute(null, "neoforge.creative_flight", 0.0D));
 

@@ -25,5 +25,14 @@ public class EntityRenderersEvent extends Event {
 		public <T extends TileEntity> void registerBlockEntityRenderer(BlockEntityType<? extends T> type, BlockEntityRendererProvider<T> provider) {
 			TesrAdapter.register(type, provider);
 		}
+
+		/** An entity type's renderer from the mod's provider (see EntityRenderers). */
+		public void registerEntityRenderer(io.github.xponer2.translator.registry.EntityType<?> type, Object provider) {
+			try {
+				EntityRenderers.register(type, provider);
+			} catch (Throwable t) {
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed("the renderer of " + type, t);
+			}
+		}
 	}
 }

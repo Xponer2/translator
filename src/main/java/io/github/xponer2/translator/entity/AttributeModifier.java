@@ -54,6 +54,14 @@ public final class AttributeModifier {
 	public enum Operation {
 		ADD_VALUE,
 		ADD_MULTIPLIED_BASE,
-		ADD_MULTIPLIED_TOTAL
+		ADD_MULTIPLIED_TOTAL;
+
+		/** By the 1.21 names (add_value, add_multiplied_base, add_multiplied_total). */
+		public static final com.mojang.serialization.Codec<Operation> CODEC = com.mojang.serialization.Codec.STRING.xmap(
+				name -> valueOf(name.toUpperCase(java.util.Locale.ROOT)), operation -> operation.name().toLowerCase(java.util.Locale.ROOT));
+
+		public int id() {
+			return this.ordinal();
+		}
 	}
 }

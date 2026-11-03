@@ -16,6 +16,12 @@ import net.minecraft.util.text.TextComponentTranslation;
  * 1.21 {@code Component.translatable(key, args)}.
  */
 public class TranslatableComponent extends TextComponentTranslation implements MutableComponent {
+	@Override
+	public TranslatableComponent setStyle(net.minecraft.util.text.Style style) {
+		super.setStyle(style);
+		return this;
+	}
+
 	public TranslatableComponent(String key, Object... args) {
 		super(key, args);
 	}

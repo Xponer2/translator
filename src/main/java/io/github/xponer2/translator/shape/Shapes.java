@@ -50,10 +50,103 @@ public final class Shapes {
 		return box(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
 	}
 
+	/**
+	 * 1.21 {@code Shapes.join}. The shapes here are lists of boxes: a union is exact, the other operations keep the
+	 * first shape (the boxes 1.12.2 uses for selection and collision don't need more).
+	 */
+	public static VoxelShape join(VoxelShape first, VoxelShape second, BooleanOp operation) {
+		if (operation == BooleanOp.OR) {
+			return or(first, second);
+		}
+		return operation == BooleanOp.SECOND ? second : first;
+	}
+
+	/** 1.21 {@code Shapes.create(x1, y1, z1, x2, y2, z2)} (block units, like {@link #box}). */
+	public static VoxelShape create(double x1, double y1, double z1, double x2, double y2, double z2) {
+		return box(x1, y1, z1, x2, y2, z2);
+	}
+
+	/** 1.21 {@code Shapes.INFINITY}: a box larger than any world. */
+	public static final VoxelShape INFINITY = box(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
+			Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+
+	public static VoxelShape joinUnoptimized(VoxelShape first, VoxelShape second, BooleanOp operation) {
+		return join(first, second, operation);
+	}
+
+	/**
+	 * 1.21 {@code Shapes.joinIsNotEmpty}: whether combining the shapes leaves anything, from where the boxes are: in
+	 * both, only in the first, only in the second (a box counts as covered when one box of the other shape holds it).
+	 */
+	public static boolean joinIsNotEmpty(VoxelShape first, VoxelShape second, BooleanOp operation) {
+		var a = first == null ? java.util.Collections.<AxisAlignedBB>emptyList() : first.toAabbs();
+		var b = second == null ? java.util.Collections.<AxisAlignedBB>emptyList() : second.toAabbs();
+		if (operation.apply(true, true) && intersects(a, b)) {
+			return true;
+		}
+		if (operation.apply(true, false) && notCovered(a, b)) {
+			return true;
+		}
+		return operation.apply(false, true) && notCovered(b, a);
+	}
+
+	private static boolean intersects(List<AxisAlignedBB> a, List<AxisAlignedBB> b) {
+		for (var x : a) {
+			for (var y : b) {
+				if (x.intersects(y)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean notCovered(List<AxisAlignedBB> boxes, List<AxisAlignedBB> cover) {
+		for (var box : boxes) {
+			boolean covered = false;
+			for (var other : cover) {
+				if (other.minX <= box.minX && other.minY <= box.minY && other.minZ <= box.minZ
+						&& other.maxX >= box.maxX && other.maxY >= box.maxY && other.maxZ >= box.maxZ) {
+					covered = true;
+					break;
+				}
+			}
+			if (!covered) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** 1.21 {@code Shapes.collide}: how far an entity box can move along an axis past the shapes (1.12.2 offsets). */
+	public static double collide(net.minecraft.util.EnumFacing.Axis axis, AxisAlignedBB box, Iterable<VoxelShape> shapes, double distance) {
+		for (var shape : shapes) {
+			if (shape == null) {
+				continue;
+			}
+			for (var other : shape.toAabbs()) {
+				distance = switch (axis) {
+					case X -> other.calculateXOffset(box, distance);
+					case Y -> other.calculateYOffset(box, distance);
+					case Z -> other.calculateZOffset(box, distance);
+				};
+			}
+		}
+		return distance;
+	}
+
+	/** The common 2-shape {@code or} (another method than the varargs one for compiled code). */
+	public static VoxelShape or(VoxelShape first, VoxelShape second) {
+		return or(first, new VoxelShape[] {second});
+	}
+
 	public static VoxelShape or(VoxelShape first, VoxelShape... others) {
-		var list = new ArrayList<>(first.toAabbs());
+		// a shape a mod made with what the Translator lacks is null: left out
+		var list = first == null ? new ArrayList<net.minecraft.util.math.AxisAlignedBB>() : new ArrayList<>(first.toAabbs());
 		for (var shape : others) {
-			list.addAll(shape.toAabbs());
+			if (shape != null) {
+				list.addAll(shape.toAabbs());
+			}
 		}
 
 		return new VoxelShape(list);

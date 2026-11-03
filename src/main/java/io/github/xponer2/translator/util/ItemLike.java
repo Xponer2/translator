@@ -20,4 +20,18 @@ public interface ItemLike {
     default Item asItem() {
         return (Item) this;
     }
+
+    /**
+     * The item of anything a 1.21 call passes as an ItemLike: 1.12.2 items and blocks don't implement this interface
+     * (an original 1.21.1 mod passes them as ItemLike anyway), so calls on it go through here.
+     */
+    static Item item(Object value) {
+        if (value instanceof Item item) {
+            return item;
+        }
+        if (value instanceof net.minecraft.block.Block block) {
+            return Item.getItemFromBlock(block);
+        }
+        return value instanceof ItemLike like ? like.asItem() : net.minecraft.init.Items.AIR;
+    }
 }

@@ -27,9 +27,48 @@ public class RegisterCapabilitiesEvent extends Event {
 		CapabilityAttacher.addBlockEntity(capability, type, provider);
 	}
 
+	/**
+	 * NeoForge registerBlock: on 1.12.2 only blocks with a tile entity can have capabilities, so the provider goes on
+	 * the tile entities of those blocks (their class is found by making one).
+	 */
+	/** Capabilities through proxy blocks (multiblocks): 1.12.2 asks each block's own provider. */
+	public void setProxyable(BlockCapability<?, ?> capability) {
+	}
+
+	public boolean isBlockRegistered(BlockCapability<?, ?> capability, net.minecraft.block.Block block) {
+		return false;
+	}
+
+	public boolean isEntityRegistered(Object capability, Object entityType) {
+		return false;
+	}
+
+	public boolean isItemRegistered(Object capability, net.minecraft.item.Item item) {
+		return false;
+	}
+
+	public <T, C> void registerBlock(BlockCapability<T, C> capability, IBlockCapabilityProvider<T, C> provider, net.minecraft.block.Block... blocks) {
+		for (var block : blocks) {
+			var state = block.getDefaultState();
+			if (!block.hasTileEntity(state)) {
+				continue;
+			}
+			TileEntity probe;
+			try {
+				probe = block.createTileEntity(null, state);
+			} catch (RuntimeException e) {
+				probe = null;
+			}
+			if (probe != null) {
+				CapabilityAttacher.addTileClass(capability, probe.getClass(), (tile, context) -> provider.getCapability(tile.getWorld(), tile.getPos(),
+						tile.getWorld() == null ? state : tile.getWorld().getBlockState(tile.getPos()), tile, context));
+			}
+		}
+	}
+
 	public <T, C> void registerItem(ItemCapability<T, C> capability, ICapabilityProvider<ItemStack, C, T> provider, ItemLike... items) {
 		for (var item : items) {
-			CapabilityAttacher.addItem(capability, item.asItem(), provider);
+			CapabilityAttacher.addItem(capability, io.github.xponer2.translator.util.ItemLike.item(item), provider);
 		}
 	}
 

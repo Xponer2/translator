@@ -33,6 +33,13 @@ public interface WeightedEntry {
 			return this.data;
 		}
 
+		/** The codec of a wrapper: {data, weight}. */
+		public static <E> com.mojang.serialization.Codec<Wrapper<E>> codec(com.mojang.serialization.Codec<E> elementCodec) {
+			return com.mojang.serialization.codecs.RecordCodecBuilder.create(instance -> instance.group(
+					elementCodec.fieldOf("data").forGetter(Wrapper::data),
+					Weight.CODEC.fieldOf("weight").forGetter(Wrapper::weight)).apply(instance, Wrapper::new));
+		}
+
 		public Weight weight() {
 			return this.weight;
 		}

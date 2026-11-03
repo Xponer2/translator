@@ -28,13 +28,18 @@ public class PropertiesBlock extends Block {
 	protected final BlockProperties properties;
 
 	public PropertiesBlock(BlockProperties properties) {
-		super(properties.material(), properties.mapColor());
-		this.properties = properties;
-		properties.applyTo(this, this::setSoundType);
+		super(orDefault(properties).material(), orDefault(properties).mapColor());
+		this.properties = orDefault(properties);
+		this.properties.applyTo(this, this::setSoundType);
 		// the Block constructor asked isOpaqueCube before the properties were set; blocks with a 1.21 shape answer from
 		// the shape (a pedestal lets the light in, so the item on it isn't drawn black)
 		this.fullBlock = this.isOpaqueCube(this.getDefaultState());
 		this.lightOpacity = this.fullBlock ? 255 : 0;
+	}
+
+	/** Null when a builder call couldn't run (a part of 1.21 the Translator lacks): the defaults, the block still made. */
+	private static BlockProperties orDefault(@javax.annotation.Nullable BlockProperties properties) {
+		return properties != null ? properties : BlockProperties.of();
 	}
 
 	public BlockProperties getProperties() {
@@ -71,6 +76,13 @@ public class PropertiesBlock extends Block {
 	public boolean isNormalCube(IBlockState state, IBlockAccess world, BlockPos pos) {
 		var conductor = this.properties.isRedstoneConductor(state, world, pos);
 		return conductor != null ? conductor : super.isNormalCube(state, world, pos);
+	}
+
+	@Override
+	@SuppressWarnings("deprecation")
+	public net.minecraft.block.material.EnumPushReaction getPushReaction(IBlockState state) {
+		var reaction = this.properties == null ? null : this.properties.pushReaction();
+		return reaction != null ? reaction : super.getPushReaction(state);
 	}
 
 	@Override

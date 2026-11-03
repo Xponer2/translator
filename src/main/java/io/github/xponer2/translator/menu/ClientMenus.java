@@ -44,6 +44,9 @@ final class ClientMenus {
 		}
 
 		var container = type.create(message.windowId, player.inventory, new RegistryFriendlyByteBuf(message.data));
+		if (container instanceof AbstractContainerMenu menu) {
+			menu.setPlayer(player);
+		}
 		var screen = MenuScreens.create(type, container, player.inventory, message.title);
 		if (screen == null) {
 			LOGGER.warn("Can't open menu {}: no screen registered", message.type);

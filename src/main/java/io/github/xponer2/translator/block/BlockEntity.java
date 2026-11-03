@@ -37,9 +37,14 @@ public class BlockEntity extends TileEntity implements ITickable {
 	private BlockEntityTicker<TileEntity> ticker;
 	private boolean tickerResolved;
 
+	/** The state it was made for (1.21 keeps it): what getBlockState gives before the block entity is in a world. */
+	@Nullable
+	private IBlockState blockState;
+
 	public BlockEntity(BlockEntityType<?> type, BlockPos pos, @Nullable IBlockState state) {
 		this.type = type;
 		this.pos = pos.toImmutable();
+		this.blockState = state;
 	}
 
 	public BlockEntityType<?> getType() {
@@ -47,7 +52,19 @@ public class BlockEntity extends TileEntity implements ITickable {
 	}
 
 	public IBlockState getBlockState() {
-		return this.world != null ? this.world.getBlockState(this.pos) : this.getBlockType().getDefaultState();
+		if (this.world != null) {
+			return this.world.getBlockState(this.pos);
+		}
+		if (this.blockState != null) {
+			return this.blockState;
+		}
+		// made without a state (1.12.2 loading a saved block entity): its block's, else air
+		return this.blockType != null ? this.blockType.getDefaultState() : net.minecraft.init.Blocks.AIR.getDefaultState();
+	}
+
+	/** 1.21 {@code setBlockState}: the state it is for (a block that changed its state). */
+	public void setBlockState(IBlockState state) {
+		this.blockState = state;
 	}
 
 	// 1.21 save/load
@@ -58,12 +75,26 @@ public class BlockEntity extends TileEntity implements ITickable {
 
 	@Override
 	public void readFromNBT(NBTTagCompound tag) {
+		// 1.21 tags without the position (update tags from saveWithoutMetadata, update packets) keep it: 1.12.2 would
+		// move the block entity to 0,0,0, and lookups by its position (capabilities, menus) would find nothing
+		BlockPos pos = this.pos;
 		super.readFromNBT(tag);
+		if (!tag.hasKey("x") || !tag.hasKey("y") || !tag.hasKey("z")) {
+			this.pos = pos;
+		}
 		this.loadAdditional(tag, RegistryAccess.INSTANCE);
 	}
 
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound tag) {
+		if (TileEntity.getKey(this.getClass()) == null && this.type != null) {
+			// a class its type didn't register (its sample was another class): 1.12.2 can't save it otherwise
+			var id = io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.BLOCK_ENTITY_TYPE)
+					.getKey(this.type);
+			if (id != null) {
+				net.minecraftforge.fml.common.registry.GameRegistry.registerTileEntity(this.getClass(), id);
+			}
+		}
 		super.writeToNBT(tag);
 		this.saveAdditional(tag, RegistryAccess.INSTANCE);
 		return tag;
@@ -72,7 +103,32 @@ public class BlockEntity extends TileEntity implements ITickable {
 	// NeoForge loads the tag of an update packet (1.12.2 ignores it)
 	@Override
 	public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity packet) {
+		this.onDataPacket(net, packet, RegistryAccess.INSTANCE);
+	}
+
+	/** 1.21 signature, what original 1.21.1 mods override. */
+	public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity packet, HolderLookup.Provider registries) {
 		this.readFromNBT(packet.getNbtCompound());
+	}
+
+	/** 1.21 {@code getUpdateTag(registries)}; the 1.12.2 one calls it. */
+	public NBTTagCompound getUpdateTag(HolderLookup.Provider registries) {
+		return super.getUpdateTag();
+	}
+
+	@Override
+	public NBTTagCompound getUpdateTag() {
+		return this.getUpdateTag(RegistryAccess.INSTANCE);
+	}
+
+	/** 1.21 {@code handleUpdateTag(tag, registries)}; the 1.12.2 one calls it. */
+	public void handleUpdateTag(NBTTagCompound tag, HolderLookup.Provider registries) {
+		super.handleUpdateTag(tag);
+	}
+
+	@Override
+	public void handleUpdateTag(NBTTagCompound tag) {
+		this.handleUpdateTag(tag, RegistryAccess.INSTANCE);
 	}
 
 	// a state change of the same block (facing, running) keeps the block entity, like on 1.21
@@ -97,6 +153,25 @@ public class BlockEntity extends TileEntity implements ITickable {
 	}
 
 	// 1.21 setChanged
+	/** The components a placed item gives (1.21): 1.12.2 block items set the block entity's NBT instead. */
+	protected void applyImplicitComponents(Object input) {
+	}
+
+	protected void collectImplicitComponents(io.github.xponer2.translator.component.DataComponentMap.Builder builder) {
+	}
+
+	public void removeComponentsFromTag(NBTTagCompound tag) {
+	}
+
+	/** The 1.21 name of onChunkUnload. */
+	public void onChunkUnloaded() {
+	}
+
+	@Override
+	public void onChunkUnload() {
+		this.onChunkUnloaded();
+	}
+
 	public void setChanged() {
 		this.markDirty();
 	}

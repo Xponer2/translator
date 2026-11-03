@@ -41,6 +41,10 @@ public enum EquipmentSlotGroup {
 		};
 	}
 
+	/** By the 1.21 names (any, mainhand, offhand, hand, feet, legs, chest, head, armor, body). */
+	public static final com.mojang.serialization.Codec<EquipmentSlotGroup> CODEC = com.mojang.serialization.Codec.STRING.xmap(
+			name -> valueOf(name.toUpperCase(java.util.Locale.ROOT)), group -> group.name().toLowerCase(java.util.Locale.ROOT));
+
 	public static EquipmentSlotGroup bySlot(EntityEquipmentSlot slot) {
 		return switch (slot) {
 			case MAINHAND -> MAINHAND;

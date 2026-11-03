@@ -43,6 +43,8 @@ public class ItemProperties {
     private Item craftingRemainingItem;
     private EnumRarity rarity = EnumRarity.COMMON;
     private boolean fireResistant;
+    @Nullable
+    private FoodProperties food;
     private final Map<DataComponentType<?>, Object> components = new LinkedHashMap<>();
 
     public ItemProperties stacksTo(int maxStackSize) {
@@ -77,6 +79,50 @@ public class ItemProperties {
     public ItemProperties fireResistant() {
         this.fireResistant = true;
         return this;
+    }
+
+    /** 1.21 attribute modifiers of the item (a tool's damage and speed): the 1.21 tool facades give them. */
+    public ItemProperties attributes(Object modifiers) {
+        if (modifiers instanceof ItemAttributeModifiers itemModifiers) {
+            this.attributeModifiers = itemModifiers;
+        }
+        return this;
+    }
+
+    @Nullable
+    public ItemAttributeModifiers attributeModifiers() {
+        return this.attributeModifiers;
+    }
+
+    /** A music disc's song (1.21 jukebox songs): 1.12.2 records are items of their own. */
+    public ItemProperties jukeboxPlayable(Object song) {
+        return this;
+    }
+
+    public ItemProperties requiredFeatures(Object... features) {
+        return this;
+    }
+
+    public ItemProperties overrideDescription(String description) {
+        return this;
+    }
+
+    public ItemProperties overrideModel(Object model) {
+        return this;
+    }
+
+    /** Eaten like 1.12.2 food (the 1.21 item facades eat with it). */
+    @Nullable
+    private ItemAttributeModifiers attributeModifiers;
+
+    public ItemProperties food(FoodProperties food) {
+        this.food = food;
+        return this;
+    }
+
+    @Nullable
+    public FoodProperties getFood() {
+        return this.food;
     }
 
     /**

@@ -40,7 +40,102 @@ public final class DataComponents {
     public static final DataComponentType<Unbreakable> UNBREAKABLE = register("unbreakable", DataComponentType.<Unbreakable>builder()
             .persistent(Unbreakable.CODEC).networkSynchronized(Unbreakable.STREAM_CODEC).storage(new UnbreakableStorage()).build());
 
+    /** The stack's display name (1.12.2 "display"/"Name"). */
+    public static final DataComponentType<net.minecraft.util.text.ITextComponent> CUSTOM_NAME = register("custom_name",
+            DataComponentType.<net.minecraft.util.text.ITextComponent>builder().storage(new StackStorage<>() {
+                @Nullable
+                @Override
+                public net.minecraft.util.text.ITextComponent get(ItemStack stack) {
+                    return stack.hasDisplayName() ? new net.minecraft.util.text.TextComponentString(stack.getDisplayName()) : null;
+                }
+
+                @Override
+                public void set(ItemStack stack, @Nullable net.minecraft.util.text.ITextComponent value) {
+                    if (value == null) {
+                        stack.clearCustomName();
+                    } else {
+                        stack.setStackDisplayName(value.getFormattedText());
+                    }
+                }
+            }).build());
+    /** The stack's damage (1.12.2 item damage). */
+    public static final DataComponentType<Integer> DAMAGE = register("damage", DataComponentType.<Integer>builder().storage(new StackStorage<>() {
+        @Nullable
+        @Override
+        public Integer get(ItemStack stack) {
+            return stack.isItemStackDamageable() ? stack.getItemDamage() : null;
+        }
+
+        @Override
+        public void set(ItemStack stack, @Nullable Integer value) {
+            stack.setItemDamage(value == null ? 0 : value);
+        }
+    }).build());
+    /** The data of the block entity a placed block item gets (1.12.2 "BlockEntityTag"). */
+    public static final DataComponentType<NBTTagCompound> BLOCK_ENTITY_DATA = register("block_entity_data",
+            DataComponentType.<NBTTagCompound>builder().storage(new StackStorage<>() {
+                @Nullable
+                @Override
+                public NBTTagCompound get(ItemStack stack) {
+                    return stack.getSubCompound("BlockEntityTag");
+                }
+
+                @Override
+                public void set(ItemStack stack, @Nullable NBTTagCompound value) {
+                    if (value == null) {
+                        stack.removeSubCompound("BlockEntityTag");
+                    } else {
+                        stack.setTagInfo("BlockEntityTag", value.copy());
+                    }
+                }
+            }).build());
+    public static final DataComponentType<Integer> MAX_STACK_SIZE = plain("max_stack_size");
+    public static final DataComponentType<Integer> MAX_DAMAGE = plain("max_damage");
+    public static final DataComponentType<Integer> REPAIR_COST = plain("repair_cost");
+    public static final DataComponentType<Object> CONTAINER = plain("container");
+    public static final DataComponentType<Object> POTION_CONTENTS = plain("potion_contents");
+    public static final DataComponentType<Object> ENCHANTMENTS = plain("enchantments");
+    public static final DataComponentType<Object> STORED_ENCHANTMENTS = plain("stored_enchantments");
+    public static final DataComponentType<Object> FOOD = plain("food");
+    public static final DataComponentType<Object> ATTRIBUTE_MODIFIERS = plain("attribute_modifiers");
+    public static final DataComponentType<Object> JUKEBOX_PLAYABLE = plain("jukebox_playable");
+    public static final DataComponentType<Object> WRITTEN_BOOK_CONTENT = plain("written_book_content");
+    public static final DataComponentType<Object> WRITABLE_BOOK_CONTENT = plain("writable_book_content");
+    public static final DataComponentType<Object> DYED_COLOR = plain("dyed_color");
+    public static final DataComponentType<Object> CONTAINER_LOOT = plain("container_loot");
+    public static final DataComponentType<Object> TRIM = plain("trim");
+    public static final DataComponentType<Object> MAP_ID = plain("map_id");
+    public static final DataComponentType<Object> PROFILE = plain("profile");
+    public static final DataComponentType<Object> FIRE_RESISTANT = plain("fire_resistant");
+    public static final DataComponentType<Object> BLOCK_STATE = plain("block_state");
+    public static final DataComponentType<Object> HIDE_TOOLTIP = plain("hide_tooltip");
+    public static final DataComponentType<Object> HIDE_ADDITIONAL_TOOLTIP = plain("hide_additional_tooltip");
+    public static final DataComponentType<Object> SUSPICIOUS_STEW_EFFECTS = plain("suspicious_stew_effects");
+    public static final DataComponentType<Object> FIREWORKS = plain("fireworks");
+    public static final DataComponentType<Object> LODESTONE_TRACKER = plain("lodestone_tracker");
+    public static final DataComponentType<Object> LOCK = plain("lock");
+    public static final DataComponentType<Object> NOTE_BLOCK_SOUND = plain("note_block_sound");
+    public static final DataComponentType<Object> LORE = plain("lore");
+    public static final DataComponentType<Object> INTANGIBLE_PROJECTILE = plain("intangible_projectile");
+    public static final DataComponentType<Object> ENCHANTMENT_GLINT_OVERRIDE = plain("enchantment_glint_override");
+    public static final DataComponentType<Object> RARITY = plain("rarity");
+    public static final DataComponentType<Object> TOOL = plain("tool");
+    public static final DataComponentType<Object> BUNDLE_CONTENTS = plain("bundle_contents");
+    public static final DataComponentType<Object> CHARGED_PROJECTILES = plain("charged_projectiles");
+    public static final DataComponentType<Object> ENTITY_DATA = plain("entity_data");
+    public static final DataComponentType<Object> BUCKET_ENTITY_DATA = plain("bucket_entity_data");
+    public static final DataComponentType<Object> CUSTOM_MODEL_DATA = plain("custom_model_data");
+    public static final DataComponentType<Object> ITEM_NAME = plain("item_name");
+
     private DataComponents() { }
+
+    /**
+     * A vanilla type 1.12.2 has no place for: its values stay with the stack in memory (no codec, see StackComponents),
+     * the item's default otherwise.
+     */
+    private static <T> DataComponentType<T> plain(String name) {
+        return register(name, DataComponentType.<T>builder().build());
+    }
 
     private static <T> DataComponentType<T> register(String name, DataComponentType<T> type) {
         var registry = BuiltInRegistries.byKey(Registries.DATA_COMPONENT_TYPE);

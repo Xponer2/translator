@@ -26,6 +26,15 @@ public final class MultiBufferSource {
     }
 
     /** Draws what the consumers got (the renderer adapters call it after each render, 1.21 endBatch). */
+    /** Draws a render type's batch: every batch is drawn (they are immediate here). */
+    public void endBatch(RenderType type) {
+        this.endBatch();
+    }
+
+    public void endLastBatch() {
+        this.endBatch();
+    }
+
     public void endBatch() {
         for (var consumer : this.consumers.values()) {
             consumer.flush();

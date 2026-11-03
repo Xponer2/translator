@@ -219,6 +219,29 @@ public final class TagManager {
         }
     }
 
+    /**
+     * The ids in a tag of any registry by the tag folder's name ("entity_type", "fluid"), nested tags included.
+     */
+    public static synchronized Set<ResourceLocation> ids(String type, ResourceLocation tag) {
+        readFiles();
+        var result = new java.util.LinkedHashSet<ResourceLocation>();
+        collectIds(type, tag, result, new HashSet<>());
+        return result;
+    }
+
+    private static void collectIds(String type, ResourceLocation tag, Set<ResourceLocation> result, Set<ResourceLocation> seen) {
+        if (!seen.add(tag)) {
+            return;
+        }
+        for (var entry : FILES.getOrDefault(type, Collections.emptyMap()).getOrDefault(tag, Collections.emptyList())) {
+            if (entry.tag) {
+                collectIds(type, io.github.xponer2.translator.util.ResourceLocations.parse(entry.id), result, seen);
+            } else {
+                result.add(io.github.xponer2.translator.util.ResourceLocations.parse(entry.id));
+            }
+        }
+    }
+
     private static void addItem(List<ItemStack> result, ItemStack stack) {
         for (var existing : result) {
             if (existing.getItem() == stack.getItem() && existing.getMetadata() == stack.getMetadata()) {

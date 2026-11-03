@@ -15,8 +15,13 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.block.Block;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.ClickType;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IContainerListener;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.NonNullList;
 
 /**
  * 1.21 container on the 1.12.2 Container: keeps its menu type and window id, and syncs its {@link ContainerData}
@@ -27,6 +32,10 @@ public abstract class AbstractContainerMenu extends Container {
 	private final MenuType<?> menuType;
 	private final List<ContainerData> dataSlots = new ArrayList<>();
 	private final List<int[]> lastData = new ArrayList<>();
+	/** The player using the menu (1.12.2 keeps the carried stack in the player's inventory). */
+	@Nullable
+	private EntityPlayer player;
+	private ItemStack clickResult = ItemStack.EMPTY;
 
 	protected AbstractContainerMenu(@Nullable MenuType<?> menuType, int windowId) {
 		this.menuType = menuType;
@@ -61,8 +70,16 @@ public abstract class AbstractContainerMenu extends Container {
 		return this.stillValid(player);
 	}
 
-	// 1.21 names of the slot helpers; `slots` is the same list as inventorySlots
-	public final List<net.minecraft.inventory.Slot> slots = this.inventorySlots;
+	// 1.21 names of the slot helpers; `slots` is the same list as inventorySlots. It stays a List (released ports
+	// read it so); the list is a NonNullList as in 1.21, for original 1.21.1 jars (VanillaRedirects.inventorySlots)
+	public final List<net.minecraft.inventory.Slot> slots = this.shareSlots();
+
+	private NonNullList<net.minecraft.inventory.Slot> shareSlots() {
+		NonNullList<net.minecraft.inventory.Slot> list = NonNullList.create();
+		list.addAll(this.inventorySlots);
+		this.inventorySlots = list;
+		return list;
+	}
 
 	protected net.minecraft.inventory.Slot addSlot(net.minecraft.inventory.Slot slot) {
 		return this.addSlotToContainer(slot);
@@ -80,6 +97,56 @@ public abstract class AbstractContainerMenu extends Container {
 		return this.inventorySlots.get(index);
 	}
 
+	// --- the player and the carried stack ------------------------------------------------------------------------------
+
+	void setPlayer(EntityPlayer player) {
+		this.player = player;
+	}
+
+	@Nullable
+	private EntityPlayer player() {
+		if (this.player == null) {
+			for (IContainerListener listener : this.listeners) {
+				if (listener instanceof EntityPlayer listening) {
+					this.player = listening;
+				}
+			}
+		}
+		return this.player;
+	}
+
+	public ItemStack getCarried() {
+		EntityPlayer user = this.player();
+		return user == null ? ItemStack.EMPTY : user.inventory.getItemStack();
+	}
+
+	public void setCarried(ItemStack stack) {
+		EntityPlayer user = this.player();
+		if (user != null) {
+			user.inventory.setItemStack(stack);
+		}
+	}
+
+	// --- clicks: 1.21 clicked(..) returns nothing, 1.12.2 slotClick(..) returns the clicked stack ----------------------
+
+	public void clicked(int slotId, int button, ClickType clickType, EntityPlayer player) {
+		this.clickResult = super.slotClick(slotId, button, clickType, player);
+	}
+
+	@Override
+	public ItemStack slotClick(int slotId, int dragType, ClickType clickType, EntityPlayer player) {
+		this.player = player;
+		this.clickResult = ItemStack.EMPTY;
+		this.clicked(slotId, dragType, clickType, player);
+		return this.clickResult;
+	}
+
+	/** 1.21 {@code stillValid(access, player, block)}: the block is still there and the player is near it. */
+	protected static boolean stillValid(ContainerLevelAccess access, EntityPlayer player, Block block) {
+		return access.evaluate((level, pos) -> level.getBlockState(pos).getBlock() == block
+				&& player.getDistanceSq(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) <= 64.0D, true);
+	}
+
 	protected void addDataSlots(ContainerData data) {
 		this.dataSlots.add(data);
 		this.lastData.add(new int[data.getCount()]);
@@ -87,6 +154,9 @@ public abstract class AbstractContainerMenu extends Container {
 
 	@Override
 	public void addListener(IContainerListener listener) {
+		if (listener instanceof EntityPlayer listening) {
+			this.player = listening;
+		}
 		super.addListener(listener);
 		this.forEachDataSlot((index, value) -> listener.sendWindowProperty(this, index, value));
 	}

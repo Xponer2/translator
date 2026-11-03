@@ -61,9 +61,34 @@ public class DeferredHolder<R, T extends R> implements Holder<R>, Supplier<T> {
             this.lookup(true);
         }
         if (this.value == null) {
+            T missing = this.missingRuntimeEntry();
+            if (missing != null) {
+                return missing;
+            }
             throw new NullPointerException("Trying to access unbound value: " + this.key);
         }
         return this.value;
+    }
+
+    /**
+     * An item or block of an original 1.21.1 mod that couldn't be made on 1.12.2 (skipped at registration) is air for
+     * the code that asks for it (creative tabs, recipes, other registrations): what a missing item is in Minecraft,
+     * instead of a crash of the whole game.
+     */
+    @SuppressWarnings("unchecked")
+    @javax.annotation.Nullable
+    private T missingRuntimeEntry() {
+        if (!io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(this.key.location().getNamespace())) {
+            return null;
+        }
+        String registry = this.key.registry().toString();
+        if ("minecraft:item".equals(registry)) {
+            return (T) net.minecraft.init.Items.AIR;
+        }
+        if ("minecraft:block".equals(registry)) {
+            return (T) net.minecraft.init.Blocks.AIR;
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")
