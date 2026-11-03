@@ -510,6 +510,12 @@ public final class VanillaRedirects {
 	}
 
 	public static boolean add(NBTTagList list, NBTBase value) {
+		if (value == null) {
+			// a part the Translator can't save yet gave null (Create's fluid tanks): 1.12.2's list throws on it, in the
+			// save of a block entity every tick; an empty tag keeps the list's order
+			io.github.xponer2.translator.runtime.RuntimeStubs.missing("ListTag.add(null): a 1.21.1 mod saved nothing for an entry");
+			value = new NBTTagCompound();
+		}
 		list.appendTag(value);
 		return true;
 	}

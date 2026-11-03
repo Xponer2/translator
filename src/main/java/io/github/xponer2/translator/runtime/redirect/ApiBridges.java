@@ -47,6 +47,11 @@ public final class ApiBridges {
 	private static final ResourceKey<io.github.xponer2.translator.registry.Registry<World>> DIMENSION = ResourceKey.createRegistryKey(
 			new ResourceLocation("dimension"));
 
+	/** 1.21 {@code Level.OVERWORLD / NETHER / END} (Powah's ender network lives in the overworld's data). */
+	public static final ResourceKey<World> OVERWORLD = dimensionKey(0);
+	public static final ResourceKey<World> NETHER = dimensionKey(-1);
+	public static final ResourceKey<World> END = dimensionKey(1);
+
 	/** The 1.21 dimension key of a 1.12.2 dimension id (overworld, the_nether, the_end; others by their type name). */
 	public static ResourceKey<World> dimensionKey(int id) {
 		String name = switch (id) {

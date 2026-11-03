@@ -1108,11 +1108,17 @@ final class MethodGuard {
 
 	/** The helper class registered for the owner that declares a static field of that name and type, or null. */
 	private String fieldHelper(String owner, String name, String desc) {
-		for (String helper : this.redirects.getOrDefault(owner, java.util.Collections.emptyList())) {
-			ClassInfo info = this.info(helper);
-			if (info != null && info.fields.contains(name + " " + desc)) {
-				return helper;
+		// the helpers of the class and of its superclasses (ServerLevel.OVERWORLD is Level's: WorldServer, then World)
+		var seen = new java.util.HashSet<String>();
+		for (String current = owner; current != null && seen.add(current); ) {
+			for (String helper : this.redirects.getOrDefault(current, java.util.Collections.emptyList())) {
+				ClassInfo info = this.info(helper);
+				if (info != null && info.fields.contains(name + " " + desc)) {
+					return helper;
+				}
 			}
+			ClassInfo info = this.info(current);
+			current = info == null ? null : info.superName;
 		}
 		return null;
 	}
