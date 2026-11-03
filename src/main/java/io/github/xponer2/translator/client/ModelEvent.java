@@ -118,8 +118,27 @@ public class ModelEvent extends Event {
 
 		@SubscribeEvent(priority = EventPriority.LOW)
 		public void onModelRegistry(ModelRegistryEvent event) {
+			// NeoForge's setup events come before the models
+			io.github.xponer2.translator.Translator.setupMods();
 			this.standalone.clear();
-			MinecraftForge.EVENT_BUS.post(new RegisterAdditional(this.standalone));
+			// NeoForge loads the models on worker threads, and a mod may wait there for its setup (Patchouli for its
+			// books): here too, so a wait that never ends costs a minute, not the game
+			List<ResourceLocation> added = java.util.Collections.synchronizedList(new ArrayList<>());
+			var thread = new Thread(() -> MinecraftForge.EVENT_BUS.post(new RegisterAdditional(added)), "Translator model registration");
+			thread.setDaemon(true);
+			thread.start();
+			try {
+				thread.join(60_000L);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			if (thread.isAlive()) {
+				org.apache.logging.log4j.LogManager.getLogger("Translator").error(
+						"A 1.21.1 mod's model registration still waits after a minute (for something its setup didn't do): going on without it");
+			}
+			synchronized (added) {
+				this.standalone.addAll(added);
+			}
 		}
 
 		@SubscribeEvent(priority = EventPriority.HIGH)

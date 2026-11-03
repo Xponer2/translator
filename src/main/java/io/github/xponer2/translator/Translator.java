@@ -55,6 +55,11 @@ public final class Translator {
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		ModList.setScanData(event.getAsmData());
+		// more than 4096 blocks: before any registry event
+		io.github.xponer2.translator.world.BlockIds.raiseLimit();
+		if (!net.minecraftforge.fml.common.Loader.isModLoaded("jeid") && !net.minecraftforge.fml.common.Loader.isModLoaded("reid")) {
+			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.BlockIds.Saving());
+		}
 		io.github.xponer2.translator.content.Copper.readConfig(new net.minecraftforge.common.config.Configuration(event.getSuggestedConfigurationFile()));
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.content.Copper.Registrar());
 		MinecraftForge.EVENT_BUS.register(new RegisterEvent.Forwarder());
@@ -70,8 +75,19 @@ public final class Translator {
 		io.github.xponer2.translator.runtime.RuntimeMods.load(event.getModConfigurationDirectory().getParentFile());
 	}
 
-	@Mod.EventHandler
-	public void init(FMLInitializationEvent event) {
+	private static boolean setUp;
+
+	/**
+	 * Payload handlers, capabilities, the registries baked, configs, then NeoForge's setup events. NeoForge sets the
+	 * mods up before the models load (Patchouli's model event waits until its common setup has read the books: on 1.12.2,
+	 * where the models load between pre-init and init, the game hung): on the client this runs with the 1.12.2 model
+	 * registry event at the end of pre-init, on a server at init.
+	 */
+	public static synchronized void setupMods() {
+		if (setUp) {
+			return;
+		}
+		setUp = true;
 		// the mods registered their payload and capability handlers on the event bus in pre-init
 		RegisterPayloadHandlersEvent.fire();
 		CapabilityAttacher.registerAll();
@@ -79,6 +95,11 @@ public final class Translator {
 		io.github.xponer2.translator.registry.RegistryCallbacks.bakeAll();
 		io.github.xponer2.translator.runtime.neoforge.ConfigLoader.loadServerConfigs();
 		io.github.xponer2.translator.runtime.RuntimeMods.setup();
+	}
+
+	@Mod.EventHandler
+	public void init(FMLInitializationEvent event) {
+		setupMods();
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.client.ClientSetup.init();
 		}
@@ -94,8 +115,12 @@ public final class Translator {
 		io.github.xponer2.translator.runtime.RuntimeMods.complete();
 		// whose copper minecraft:copper_ingot is, then the tags and recipes of the 1.21 data (every mod has registered
 		// its items and OreDictionary entries)
-		io.github.xponer2.translator.content.Copper.setup();
-		RecipeLoader.load();
+		try (var bar = io.github.xponer2.translator.util.LoadingBar.push("Translator: copper, tags and recipes", 2)) {
+			bar.step("copper");
+			io.github.xponer2.translator.content.Copper.setup();
+			bar.step("tags and recipes of the 1.21 data");
+			RecipeLoader.load();
+		}
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.client.ClientSetup.postInit();
 			// -Dtranslator.autotest=<world>: the self-test on its own, then the game quits

@@ -35,6 +35,11 @@ public final class ModFile {
 		return this.file.getName();
 	}
 
+	/** The jar as cpw's SecureJar (its root path). */
+	public SecureJar getSecureJar() {
+		return new SecureJar(this);
+	}
+
 	/** NeoForge {@code getScanResult}: the annotations of this jar's classes. */
 	public io.github.xponer2.translator.util.ModList.ModFileScanData getScanResult() {
 		return io.github.xponer2.translator.runtime.RuntimeMods.scanData(this.file);

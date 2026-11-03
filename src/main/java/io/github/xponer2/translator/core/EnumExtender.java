@@ -47,6 +47,10 @@ public final class EnumExtender implements IClassTransformer {
 	private static final String PROXY = "net/neoforged/fml/common/asm/enumextension/EnumProxy";
 	private static final Map<String, List<Extension>> EXTENSIONS = new ConcurrentHashMap<>();
 
+	/** The class argument of a constant made with a 1.12.2 constructor: nothing is one. */
+	public interface NoClass {
+	}
+
 	/** One new constant: enum (internal name), name, constructor parameters, and where its arguments come from. */
 	public static final class Extension {
 		final String enumName;
@@ -208,6 +212,10 @@ public final class EnumExtender implements IClassTransformer {
 			Object constant = i < extension.constants.size() ? extension.constants.get(i) : null;
 			if (constant instanceof String[] reference) {
 				code.add(new FieldInsnNode(Opcodes.GETSTATIC, reference[0], reference[1], type.getDescriptor()));
+			} else if (constant == null && "Ljava/lang/Class;".equals(type.getDescriptor())) {
+				// a class no object is an instance of, not null: Aether's mob categories, made with EnumCreatureType's
+				// 1.12.2 constructor, crashed the mob spawner every tick (type.getCreatureClass().isAssignableFrom)
+				code.add(new LdcInsnNode(Type.getObjectType("io/github/xponer2/translator/core/EnumExtender$NoClass")));
 			} else if (constant == null) {
 				code.add(switch (type.getSort()) {
 					case Type.ARRAY, Type.OBJECT -> new InsnNode(Opcodes.ACONST_NULL);
