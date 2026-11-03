@@ -122,6 +122,23 @@ final class ModRemapper extends Remapper {
 		return internalName;
 	}
 
+	/**
+	 * A class name in a string (reflection: {@code Class.forName("org.lwjgl.stb.STBImageResize")}, JourneyMap's image
+	 * scaling) is the class the table maps it to, as in the code. Only exact table entries: other text stays.
+	 */
+	@Override
+	public Object mapValue(Object value) {
+		if (value instanceof String text && text.indexOf('.') > 0 && CLASS_NAME.matcher(text).matches()) {
+			String mapped = this.table.classes.get(text.replace('.', '/'));
+			if (mapped != null) {
+				return mapped.replace('/', '.');
+			}
+		}
+		return super.mapValue(value);
+	}
+
+	private static final java.util.regex.Pattern CLASS_NAME = java.util.regex.Pattern.compile("[A-Za-z_$][\\w$]*(\\.[A-Za-z_$][\\w$]*)+");
+
 	@Override
 	public String mapMethodName(String owner, String name, String descriptor) {
 		if (name.startsWith("<") || owner.startsWith("[")) {

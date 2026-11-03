@@ -262,3 +262,8 @@ C	net/minecraft/client/resources/PlayerSkin$Model	io/github/xponer2/translator/c
 C	net/minecraft/network/chat/Component$SerializerAdapter	io/github/xponer2/translator/text/ComponentSerializerAdapter
 # 1.21 StringRepresentable.fromEnum returns its EnumCodec (byName): the Translator method with that result
 M	net/minecraft/util/StringRepresentable	fromEnum(java.util.function.Supplier)	fromEnumCodec
+C	org/lwjgl/system/MemoryUtil	io/github/xponer2/translator/lwjgl/MemoryUtil
+C	org/lwjgl/system/MemoryStack	io/github/xponer2/translator/lwjgl/MemoryStack
+C	org/lwjgl/PointerBuffer	io/github/xponer2/translator/lwjgl/PointerBuffer
+C	org/lwjgl/stb/STBImageResize	io/github/xponer2/translator/lwjgl/STBImageResize
+C	cpw/mods/jarhandling/SecureJar	io/github/xponer2/translator/runtime/neoforge/SecureJar

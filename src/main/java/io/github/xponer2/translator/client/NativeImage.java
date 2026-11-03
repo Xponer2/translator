@@ -10,6 +10,8 @@
  */
 package io.github.xponer2.translator.client;
 
+import static io.github.xponer2.translator.lwjgl.Native.UNSAFE;
+
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -17,31 +19,30 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.nio.file.Path;
 import java.util.function.IntUnaryOperator;
 
 import javax.imageio.ImageIO;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
+import io.github.xponer2.translator.lwjgl.Native;
+import io.github.xponer2.translator.lwjgl.STBImageResize;
+
 /**
- * 1.21 {@code NativeImage} on the Java heap: 1.21 keeps the pixels in native memory and reads PNGs with LWJGL 3's
- * STB, neither of which 1.12.2 (LWJGL 2) has. Pixels are 1.21's RGBA ints (ABGR as a number: {@code getPixelRGBA}
- * gives 0xAABBGGRR); files go through ImageIO; upload / download use the texture bound in OpenGL, like 1.21.
+ * 1.21 {@code NativeImage}: the pixels in native memory as in 1.21 ({@link #pixels} is their address, which mods hand to
+ * LWJGL 3's MemoryUtil and STB: the Translator's versions of those work on it), {@code format.components()} bytes per
+ * pixel, RGBA as bytes (so {@code getPixelRGBA} gives 0xAABBGGRR). Files go through ImageIO (1.21 uses STB); upload and
+ * download use the texture bound in OpenGL, like 1.21.
  */
 public class NativeImage implements AutoCloseable {
     private final Format format;
     private final int width;
     private final int height;
-    private int[] data;
-    /**
-     * 1.21's native address of the pixels: mods check {@code image.pixels != 0} for an image that is still open
-     * (JourneyMap's texture cache). Not 0 until {@link #close()}.
-     */
-    public long pixels = 1L;
+    private final long size;
+    /** The address of the pixels, 0 once closed (mods check {@code image.pixels != 0} for an image still open). */
+    public long pixels;
 
     public NativeImage(int width, int height, boolean useCalloc) {
         this(Format.RGBA, width, height, useCalloc);
@@ -54,7 +55,9 @@ public class NativeImage implements AutoCloseable {
         this.format = format;
         this.width = width;
         this.height = height;
-        this.data = new int[width * height];
+        this.size = (long) width * height * format.components();
+        // always cleared: an image read before it is drawn shows black rather than old memory
+        this.pixels = Native.allocate(this.size, true);
     }
 
     // --- reading and writing files -------------------------------------------------------------------------------------
@@ -71,7 +74,7 @@ public class NativeImage implements AutoCloseable {
         var result = new NativeImage(format == null ? Format.RGBA : format, image.getWidth(), image.getHeight(), false);
         int[] argb = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
         for (int i = 0; i < argb.length; i++) {
-            result.data[i] = swapRedBlue(argb[i]);
+            result.putAbgr(i, swapRedBlue(argb[i]));
         }
         return result;
     }
@@ -129,12 +132,12 @@ public class NativeImage implements AutoCloseable {
 
     public int getPixelRGBA(int x, int y) {
         this.check(x, y);
-        return this.data[x + y * this.width];
+        return this.getAbgr(x + y * this.width);
     }
 
     public void setPixelRGBA(int x, int y, int abgr) {
         this.check(x, y);
-        this.data[x + y * this.width] = abgr;
+        this.putAbgr(x + y * this.width, abgr);
     }
 
     /** 1.21 blendPixel: the color drawn over the pixel by its alpha. */
@@ -156,20 +159,25 @@ public class NativeImage implements AutoCloseable {
     }
 
     public byte getLuminanceOrAlpha(int x, int y) {
-        int pixel = this.getPixelRGBA(x, y);
-        return (byte) (this.format.hasAlpha() ? pixel >>> 24 : pixel & 0xFF);
+        this.check(x, y);
+        long pixel = this.pixel(x + y * this.width);
+        return UNSAFE.getByte(pixel + (this.format.hasAlpha() ? this.format.components() - 1 : 0));
     }
 
     /** The pixels in 1.21's RGBA order (ABGR numbers). */
     public int[] getPixelsRGBA() {
-        return this.data.clone();
+        var abgr = new int[this.width * this.height];
+        for (int i = 0; i < abgr.length; i++) {
+            abgr[i] = this.getAbgr(i);
+        }
+        return abgr;
     }
 
     /** The pixels as ARGB (what Java images and 1.12.2 textures use). */
     public int[] makePixelArray() {
-        var argb = new int[this.data.length];
+        var argb = new int[this.width * this.height];
         for (int i = 0; i < argb.length; i++) {
-            argb[i] = swapRedBlue(this.data[i]);
+            argb[i] = swapRedBlue(this.getAbgr(i));
         }
         return argb;
     }
@@ -183,10 +191,12 @@ public class NativeImage implements AutoCloseable {
     }
 
     public void copyFrom(NativeImage other) {
-        if (other.width != this.width || other.height != this.height) {
-            throw new IllegalArgumentException("Image sizes don't match");
+        if (other.format != this.format || other.width != this.width || other.height != this.height) {
+            throw new IllegalArgumentException("Image formats don't match");
         }
-        System.arraycopy(other.data, 0, this.data, 0, this.data.length);
+        this.checkOpen();
+        other.checkOpen();
+        UNSAFE.copyMemory(other.pixels, this.pixels, this.size);
     }
 
     public void copyRect(int x, int y, int offsetX, int offsetY, int width, int height, boolean flipX, boolean flipY) {
@@ -210,27 +220,43 @@ public class NativeImage implements AutoCloseable {
     }
 
     public void flipY() {
-        var row = new int[this.width];
+        this.checkOpen();
+        int stride = this.width * this.format.components();
+        var row = new byte[stride];
         for (int y = 0; y < this.height / 2; y++) {
-            int top = y * this.width;
-            int bottom = (this.height - 1 - y) * this.width;
-            System.arraycopy(this.data, top, row, 0, this.width);
-            System.arraycopy(this.data, bottom, this.data, top, this.width);
-            System.arraycopy(row, 0, this.data, bottom, this.width);
+            long top = this.pixels + (long) y * stride;
+            long bottom = this.pixels + (long) (this.height - 1 - y) * stride;
+            UNSAFE.copyMemory(null, top, row, Native.BYTE_ARRAY_OFFSET, stride);
+            UNSAFE.copyMemory(bottom, top, stride);
+            UNSAFE.copyMemory(row, Native.BYTE_ARRAY_OFFSET, null, bottom, stride);
         }
+    }
+
+    /** 1.21 resizeSubRectTo: the part of this image scaled into the whole target (STB resize in 1.21). */
+    public void resizeSubRectTo(int x, int y, int width, int height, NativeImage target) {
+        this.checkOpen();
+        target.checkOpen();
+        if (target.format != this.format) {
+            throw new UnsupportedOperationException("resizeSubRectTo only works for images of the same format");
+        }
+        int components = this.format.components();
+        long start = this.pixels + ((long) x + (long) y * this.width) * components;
+        STBImageResize.resize(start, width, height, this.width * components, target.pixels, target.width, target.height, 0, components);
     }
 
     public NativeImage mappedCopy(IntUnaryOperator function) {
         var copy = new NativeImage(this.format, this.width, this.height, false);
-        for (int i = 0; i < this.data.length; i++) {
-            copy.data[i] = function.applyAsInt(this.data[i]);
+        int count = this.width * this.height;
+        for (int i = 0; i < count; i++) {
+            copy.putAbgr(i, function.applyAsInt(this.getAbgr(i)));
         }
         return copy;
     }
 
     public void applyToAllPixels(IntUnaryOperator function) {
-        for (int i = 0; i < this.data.length; i++) {
-            this.data[i] = function.applyAsInt(this.data[i]);
+        int count = this.width * this.height;
+        for (int i = 0; i < count; i++) {
+            this.putAbgr(i, function.applyAsInt(this.getAbgr(i)));
         }
     }
 
@@ -246,20 +272,27 @@ public class NativeImage implements AutoCloseable {
 
     public void upload(int level, int x, int y, int skipX, int skipY, int width, int height, boolean blur, boolean clamp, boolean mipmap,
             boolean autoClose) {
-        IntBuffer buffer = BufferUtils.createIntBuffer(width * height);
-        for (int j = 0; j < height; j++) {
-            for (int i = 0; i < width; i++) {
-                buffer.put(swapRedBlue(this.data[skipX + i + (skipY + j) * this.width]));
-            }
-        }
-        buffer.flip();
+        this.checkOpen();
         int filter = blur ? GL11.GL_LINEAR : GL11.GL_NEAREST;
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, mipmap ? GL11.GL_NEAREST_MIPMAP_LINEAR : filter);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, filter);
         int wrap = clamp ? GL12.GL_CLAMP_TO_EDGE : GL11.GL_REPEAT;
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, wrap);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, wrap);
-        GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, x, y, width, height, GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+        // the rows of the part straight from the image's memory, as 1.21 does
+        GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, this.width);
+        GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, skipX);
+        GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, skipY);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, this.format.components());
+        try {
+            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, x, y, width, height, this.format.glFormat(), GL11.GL_UNSIGNED_BYTE,
+                    Native.wrap(this.pixels, (int) this.size));
+        } finally {
+            GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, 0);
+            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
+            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
+            GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 4);
+        }
         if (autoClose) {
             this.close();
         }
@@ -267,22 +300,82 @@ public class NativeImage implements AutoCloseable {
 
     /** The bound texture's pixels into this image (its size). */
     public void downloadTexture(int level, boolean opaque) {
-        IntBuffer buffer = BufferUtils.createIntBuffer(this.width * this.height);
-        GL11.glGetTexImage(GL11.GL_TEXTURE_2D, level, GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
-        for (int i = 0; i < this.data.length; i++) {
-            int abgr = swapRedBlue(buffer.get(i));
-            this.data[i] = opaque ? abgr | 0xFF000000 : abgr;
+        this.checkOpen();
+        GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, this.format.components());
+        GL11.glGetTexImage(GL11.GL_TEXTURE_2D, level, this.format.glFormat(), GL11.GL_UNSIGNED_BYTE, Native.wrap(this.pixels, (int) this.size));
+        GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, 4);
+        if (opaque && this.format.hasAlpha()) {
+            int count = this.width * this.height;
+            int components = this.format.components();
+            for (int i = 0; i < count; i++) {
+                UNSAFE.putByte(this.pixels + (long) i * components + components - 1, (byte) 0xFF);
+            }
         }
     }
 
     @Override
     public void close() {
-        this.pixels = 0L;
+        if (this.pixels != 0L) {
+            UNSAFE.freeMemory(this.pixels);
+            this.pixels = 0L;
+        }
     }
 
     @Override
     public String toString() {
-        return "NativeImage[" + this.format + " " + this.width + "x" + this.height + "]";
+        return "NativeImage[" + this.format + " " + this.width + "x" + this.height + "@" + this.pixels + "]";
+    }
+
+    // --- memory ----------------------------------------------------------------------------------------------------------
+
+    private long pixel(int index) {
+        this.checkOpen();
+        return this.pixels + (long) index * this.format.components();
+    }
+
+    /** A pixel as an ABGR number; formats without all four channels are widened (gray to RGB, no alpha to opaque). */
+    private int getAbgr(int index) {
+        long pixel = this.pixel(index);
+        return switch (this.format) {
+            case RGBA -> UNSAFE.getInt(pixel);
+            case RGB -> 0xFF000000 | (UNSAFE.getByte(pixel + 2) & 0xFF) << 16 | (UNSAFE.getByte(pixel + 1) & 0xFF) << 8
+                    | UNSAFE.getByte(pixel) & 0xFF;
+            case LUMINANCE_ALPHA -> {
+                int l = UNSAFE.getByte(pixel) & 0xFF;
+                yield (UNSAFE.getByte(pixel + 1) & 0xFF) << 24 | l << 16 | l << 8 | l;
+            }
+            case LUMINANCE -> {
+                int l = UNSAFE.getByte(pixel) & 0xFF;
+                yield 0xFF000000 | l << 16 | l << 8 | l;
+            }
+        };
+    }
+
+    private void putAbgr(int index, int abgr) {
+        long pixel = this.pixel(index);
+        switch (this.format) {
+            case RGBA -> UNSAFE.putInt(pixel, abgr);
+            case RGB -> {
+                UNSAFE.putByte(pixel, (byte) abgr);
+                UNSAFE.putByte(pixel + 1, (byte) (abgr >> 8));
+                UNSAFE.putByte(pixel + 2, (byte) (abgr >> 16));
+            }
+            case LUMINANCE_ALPHA -> {
+                UNSAFE.putByte(pixel, (byte) luminance(abgr));
+                UNSAFE.putByte(pixel + 1, (byte) (abgr >>> 24));
+            }
+            case LUMINANCE -> UNSAFE.putByte(pixel, (byte) luminance(abgr));
+        }
+    }
+
+    private static int luminance(int abgr) {
+        return ((abgr & 0xFF) * 299 + (abgr >> 8 & 0xFF) * 587 + (abgr >> 16 & 0xFF) * 114) / 1000;
+    }
+
+    private void checkOpen() {
+        if (this.pixels == 0L) {
+            throw new IllegalStateException("Image is not allocated.");
+        }
     }
 
     private void check(int x, int y) {
@@ -298,17 +391,19 @@ public class NativeImage implements AutoCloseable {
 
     /** 1.21 NativeImage.Format. */
     public enum Format {
-        RGBA(4, true),
-        RGB(3, false),
-        LUMINANCE_ALPHA(2, true),
-        LUMINANCE(1, false);
+        RGBA(4, true, GL11.GL_RGBA),
+        RGB(3, false, GL11.GL_RGB),
+        LUMINANCE_ALPHA(2, true, GL11.GL_LUMINANCE_ALPHA),
+        LUMINANCE(1, false, GL11.GL_LUMINANCE);
 
         private final int components;
         private final boolean hasAlpha;
+        private final int glFormat;
 
-        Format(int components, boolean hasAlpha) {
+        Format(int components, boolean hasAlpha, int glFormat) {
             this.components = components;
             this.hasAlpha = hasAlpha;
+            this.glFormat = glFormat;
         }
 
         public int components() {
@@ -317,6 +412,10 @@ public class NativeImage implements AutoCloseable {
 
         public boolean hasAlpha() {
             return this.hasAlpha;
+        }
+
+        public int glFormat() {
+            return this.glFormat;
         }
     }
 }
