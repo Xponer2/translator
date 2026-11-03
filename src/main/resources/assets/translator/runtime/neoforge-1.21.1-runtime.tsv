@@ -1,0 +1,264 @@
+# Runtime-only entries (loaded after neoforge-1.21.1.tsv, they win): what the source converter handles by hand in
+# the main classes of the ports (event buses, mod bootstrap, lifecycle events), for original 1.21.1 jars.
+C	net/neoforged/bus/api/IEventBus	io/github/xponer2/translator/runtime/neoforge/IEventBus
+C	net/neoforged/bus/api/SubscribeEvent	net/minecraftforge/fml/common/eventhandler/SubscribeEvent
+C	net/neoforged/bus/api/Event	net/minecraftforge/fml/common/eventhandler/Event
+C	net/neoforged/bus/api/EventPriority	net/minecraftforge/fml/common/eventhandler/EventPriority
+C	net/neoforged/bus/api/ICancellableEvent	io/github/xponer2/translator/runtime/neoforge/ICancellableEvent
+C	net/neoforged/neoforge/common/NeoForge	io/github/xponer2/translator/runtime/neoforge/NeoForge
+C	net/neoforged/fml/ModContainer	io/github/xponer2/translator/runtime/neoforge/ModContainer
+C	net/neoforged/fml/common/Mod	io/github/xponer2/translator/runtime/neoforge/Mod
+C	net/neoforged/fml/common/EventBusSubscriber	io/github/xponer2/translator/runtime/neoforge/EventBusSubscriber
+C	net/neoforged/fml/common/EventBusSubscriber$Bus	io/github/xponer2/translator/runtime/neoforge/EventBusSubscriber$Bus
+C	net/neoforged/fml/loading/FMLLoader	io/github/xponer2/translator/runtime/neoforge/FMLLoader
+C	net/neoforged/fml/config/ModConfig	io/github/xponer2/translator/runtime/neoforge/ModConfig
+C	net/neoforged/fml/config/ModConfig$Type	io/github/xponer2/translator/runtime/neoforge/ModConfig$Type
+C	net/neoforged/fml/config/IConfigSpec	io/github/xponer2/translator/runtime/neoforge/IConfigSpec
+C	net/neoforged/fml/event/lifecycle/FMLCommonSetupEvent	io/github/xponer2/translator/runtime/neoforge/FMLCommonSetupEvent
+C	net/neoforged/fml/event/lifecycle/FMLClientSetupEvent	io/github/xponer2/translator/runtime/neoforge/FMLClientSetupEvent
+C	net/neoforged/api/distmarker/Dist	net/minecraftforge/fml/relauncher/Side
+F	net/neoforged/api/distmarker/Dist	DEDICATED_SERVER	SERVER
+M	net/neoforged/api/distmarker/Dist	isDedicatedServer()	isServer
+C	net/neoforged/api/distmarker/OnlyIn	net/minecraftforge/fml/relauncher/SideOnly
+C	net/minecraft/core/particles/ParticleType	io/github/xponer2/translator/runtime/mc/ParticleType
+C	net/minecraft/core/particles/SimpleParticleType	io/github/xponer2/translator/runtime/mc/SimpleParticleType
+C	net/minecraft/core/particles/ParticleOptions	io/github/xponer2/translator/util/particle/ParticleOptions
+C	net/neoforged/neoforge/common/extensions/IMenuTypeExtension	io/github/xponer2/translator/runtime/neoforge/IMenuTypeExtension
+C	net/minecraft/world/item/CreativeModeTabs	io/github/xponer2/translator/item/CreativeModeTabs
+C	net/minecraft/world/phys/shapes/BooleanOp	io/github/xponer2/translator/shape/BooleanOp
+C	net/neoforged/neoforge/event/tick/ServerTickEvent	io/github/xponer2/translator/runtime/neoforge/TickEvents$ServerTickEvent
+C	net/neoforged/neoforge/event/tick/ServerTickEvent$Pre	io/github/xponer2/translator/runtime/neoforge/TickEvents$ServerTickEvent$Pre
+C	net/neoforged/neoforge/event/tick/ServerTickEvent$Post	io/github/xponer2/translator/runtime/neoforge/TickEvents$ServerTickEvent$Post
+C	net/neoforged/neoforge/client/event/ClientTickEvent	io/github/xponer2/translator/runtime/neoforge/TickEvents$ClientTickEvent
+C	net/neoforged/neoforge/client/event/ClientTickEvent$Pre	io/github/xponer2/translator/runtime/neoforge/TickEvents$ClientTickEvent$Pre
+C	net/neoforged/neoforge/client/event/ClientTickEvent$Post	io/github/xponer2/translator/runtime/neoforge/TickEvents$ClientTickEvent$Post
+C	net/neoforged/neoforge/event/tick/PlayerTickEvent	io/github/xponer2/translator/runtime/neoforge/TickEvents$PlayerTickEvent
+C	net/neoforged/neoforge/event/tick/PlayerTickEvent$Pre	io/github/xponer2/translator/runtime/neoforge/TickEvents$PlayerTickEvent$Pre
+C	net/neoforged/neoforge/event/tick/PlayerTickEvent$Post	io/github/xponer2/translator/runtime/neoforge/TickEvents$PlayerTickEvent$Post
+C	net/neoforged/neoforge/event/tick/LevelTickEvent	io/github/xponer2/translator/runtime/neoforge/TickEvents$LevelTickEvent
+C	net/neoforged/neoforge/event/tick/LevelTickEvent$Pre	io/github/xponer2/translator/runtime/neoforge/TickEvents$LevelTickEvent$Pre
+C	net/neoforged/neoforge/event/tick/LevelTickEvent$Post	io/github/xponer2/translator/runtime/neoforge/TickEvents$LevelTickEvent$Post
+C	net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent	io/github/xponer2/translator/runtime/neoforge/ClientEvents$RegisterKeyMappingsEvent
+C	net/neoforged/neoforge/client/event/RegisterParticleProvidersEvent	io/github/xponer2/translator/runtime/neoforge/ClientEvents$RegisterParticleProvidersEvent
+C	net/neoforged/neoforge/client/event/InputEvent$Key	io/github/xponer2/translator/runtime/neoforge/ClientEvents$Key
+C	com/mojang/blaze3d/platform/InputConstants	io/github/xponer2/translator/runtime/neoforge/InputConstants
+C	com/mojang/blaze3d/platform/InputConstants$Key	io/github/xponer2/translator/runtime/neoforge/InputConstants$Key
+C	net/neoforged/neoforge/capabilities/IBlockCapabilityProvider	io/github/xponer2/translator/capabilities/IBlockCapabilityProvider
+C	net/minecraft/world/level/ClipContext	io/github/xponer2/translator/util/ClipContext
+C	net/minecraft/world/level/ClipContext$Block	io/github/xponer2/translator/util/ClipContext$Block
+C	net/minecraft/world/level/ClipContext$Fluid	io/github/xponer2/translator/util/ClipContext$Fluid
+C	net/minecraft/core/RegistryAccess$Frozen	io/github/xponer2/translator/registry/RegistryAccess
+C	net/minecraft/core/HolderLookup$RegistryLookup	io/github/xponer2/translator/registry/Registry
+C	net/minecraft/core/HolderGetter	io/github/xponer2/translator/registry/Registry
+C	net/minecraft/core/Holder$Reference	io/github/xponer2/translator/registry/Registry$Reference
+C	net/minecraft/world/level/material/FluidState	io/github/xponer2/translator/util/FluidState
+C	net/minecraft/world/level/material/FlowingFluid	net/minecraftforge/fluids/Fluid
+C	net/minecraft/world/level/material/WaterFluid	net/minecraftforge/fluids/Fluid
+C	net/minecraft/world/level/material/LavaFluid	net/minecraftforge/fluids/Fluid
+C	net/minecraft/stats/StatType	io/github/xponer2/translator/runtime/mc/StatType
+C	net/neoforged/neoforge/common/util/TriState	io/github/xponer2/translator/runtime/neoforge/TriState
+C	net/neoforged/neoforge/event/entity/player/ItemEntityPickupEvent	io/github/xponer2/translator/runtime/neoforge/ItemEntityPickupEvent
+C	net/neoforged/neoforge/event/entity/player/ItemEntityPickupEvent$Pre	io/github/xponer2/translator/runtime/neoforge/ItemEntityPickupEvent$Pre
+C	net/minecraft/world/inventory/ContainerLevelAccess	io/github/xponer2/translator/menu/ContainerLevelAccess
+C	net/minecraft/world/inventory/MenuConstructor	io/github/xponer2/translator/menu/MenuConstructor
+C	net/minecraft/world/SimpleMenuProvider	io/github/xponer2/translator/menu/SimpleMenuProvider
+# GUI: 1.21 listener interfaces, widgets and NeoForge widgets (Translator classes; Screen is a facade, see -supers.tsv)
+C	net/minecraft/client/gui/components/events/GuiEventListener	io/github/xponer2/translator/client/GuiEventListener
+C	net/minecraft/client/gui/components/events/ContainerEventHandler	io/github/xponer2/translator/client/ContainerEventHandler
+C	net/minecraft/client/gui/components/events/AbstractContainerEventHandler	io/github/xponer2/translator/client/AbstractContainerEventHandler
+C	net/minecraft/client/gui/components/Renderable	io/github/xponer2/translator/client/Renderable
+C	net/minecraft/client/gui/narration/NarratableEntry	io/github/xponer2/translator/client/NarratableEntry
+C	net/minecraft/client/gui/narration/NarratableEntry$NarrationPriority	io/github/xponer2/translator/client/NarratableEntry$NarrationPriority
+C	net/minecraft/client/gui/components/Button$Builder	io/github/xponer2/translator/client/Button$Builder
+C	net/minecraft/client/gui/components/AbstractSliderButton	io/github/xponer2/translator/client/AbstractSliderButton
+C	net/neoforged/neoforge/client/gui/widget/ExtendedSlider	io/github/xponer2/translator/client/ExtendedSlider
+C	net/neoforged/neoforge/client/gui/widget/ScrollPanel	io/github/xponer2/translator/client/ScrollPanel
+C	com/mojang/blaze3d/platform/GlStateManager	net/minecraft/client/renderer/GlStateManager
+C	net/minecraft/client/gui/components/WidgetSprites	io/github/xponer2/translator/client/WidgetSprites
+# FML loader seam: what a mod asks the loader (its container, the mod list, paths, lifecycle) is the Translator's;
+# the rest of the FML loader jar (events, interfaces) is carried with the 1.21.1 API
+C	net/neoforged/fml/ModLoadingContext	io/github/xponer2/translator/runtime/neoforge/ModLoadingContext
+C	net/neoforged/fml/IExtensionPoint	io/github/xponer2/translator/runtime/neoforge/IExtensionPoint
+C	net/neoforged/fml/loading/FMLPaths	io/github/xponer2/translator/runtime/neoforge/FMLPaths
+C	net/neoforged/fml/loading/LoadingModList	io/github/xponer2/translator/runtime/neoforge/LoadingModList
+C	net/neoforged/neoforgespi/language/IModInfo	io/github/xponer2/translator/runtime/neoforge/ModInfo
+C	net/neoforged/fml/loading/moddiscovery/ModInfo	io/github/xponer2/translator/runtime/neoforge/ModInfo
+C	net/neoforged/neoforgespi/language/IModFileInfo	io/github/xponer2/translator/runtime/neoforge/ModFileInfo
+C	net/neoforged/fml/loading/moddiscovery/ModFileInfo	io/github/xponer2/translator/runtime/neoforge/ModFileInfo
+C	net/neoforged/neoforgespi/locating/IModFile	io/github/xponer2/translator/runtime/neoforge/ModFile
+C	net/neoforged/fml/loading/moddiscovery/ModFile	io/github/xponer2/translator/runtime/neoforge/ModFile
+C	net/neoforged/fml/event/lifecycle/ParallelDispatchEvent	io/github/xponer2/translator/runtime/neoforge/ParallelDispatchEvent
+C	net/neoforged/fml/event/lifecycle/FMLLoadCompleteEvent	io/github/xponer2/translator/runtime/neoforge/FMLLoadCompleteEvent
+C	net/neoforged/fml/event/lifecycle/InterModEnqueueEvent	io/github/xponer2/translator/runtime/neoforge/InterModEnqueueEvent
+C	net/neoforged/fml/event/lifecycle/InterModProcessEvent	io/github/xponer2/translator/runtime/neoforge/InterModProcessEvent
+C	net/neoforged/fml/event/lifecycle/FMLDedicatedServerSetupEvent	io/github/xponer2/translator/runtime/neoforge/FMLDedicatedServerSetupEvent
+C	net/neoforged/fml/event/lifecycle/FMLConstructModEvent	io/github/xponer2/translator/runtime/neoforge/FMLConstructModEvent
+# carried as they are (the same name): the real 1.21.1 classes, complete; the Translator facades of the source
+# ports have only a part of them
+C	net/neoforged/neoforge/common/ModConfigSpec	net/neoforged/neoforge/common/ModConfigSpec
+C	net/minecraft/core/registries/Registries	net/minecraft/core/registries/Registries
+C	net/neoforged/neoforge/registries/NeoForgeRegistries	net/neoforged/neoforge/registries/NeoForgeRegistries
+C	net/minecraft/world/level/block/state/BlockBehaviour	net/minecraft/block/Block
+C	net/minecraft/world/food/FoodProperties	io/github/xponer2/translator/item/FoodProperties
+C	net/minecraft/world/food/FoodProperties$Builder	io/github/xponer2/translator/item/FoodProperties$Builder
+C	net/minecraft/world/food/FoodProperties$PossibleEffect	io/github/xponer2/translator/item/FoodProperties$PossibleEffect
+F	net/minecraft/world/item/DyeColor	LIGHT_GRAY	SILVER
+C	net/minecraft/world/item/Tiers	io/github/xponer2/translator/item/Tier
+C	net/minecraft/world/item/ItemNameBlockItem	net/minecraft/item/ItemBlock
+# entity data: 1.12.2 DataParameter / DataSerializer under the 1.21 names
+C	net/minecraft/network/syncher/EntityDataAccessor	net/minecraft/network/datasync/DataParameter
+C	net/minecraft/network/syncher/EntityDataSerializer	net/minecraft/network/datasync/DataSerializer
+M	net/minecraft/network/syncher/EntityDataAccessor	id()	getId
+M	net/minecraft/network/syncher/EntityDataAccessor	serializer()	getSerializer
+# DataFixerUpper 8 DataResult.Error: the DataFixerUpper 4 PartialResult (message(), partialResult())
+C	com/mojang/serialization/DataResult$Error	com/mojang/serialization/DataResult$PartialResult
+M	com/mojang/serialization/DataResult$Error	partialValue()	partialResult
+# 1.21 DefaultedRegistry (BuiltInRegistries.ITEM, BLOCK, ...): a Translator Registry
+C	net/minecraft/core/DefaultedRegistry	io/github/xponer2/translator/registry/Registry
+# NeoForge registries: a new registry is the registry of its key; the scan data of the mods
+C	net/neoforged/neoforge/registries/RegistryBuilder	io/github/xponer2/translator/registry/RegistryBuilder
+C	net/neoforged/neoforgespi/language/ModFileScanData	io/github/xponer2/translator/util/ModList$ModFileScanData
+C	net/neoforged/neoforgespi/language/ModFileScanData$AnnotationData	io/github/xponer2/translator/util/ModList$AnnotationData
+# the base of BlockState: what 1.21 code types as BlockStateBase is the same IBlockState
+C	net/minecraft/world/level/block/state/BlockBehaviour$BlockStateBase	net/minecraft/block/state/IBlockState
+# Minecraft.getWindow(): the sizes of the 1.12.2 display; FormattedText / FormattedCharSequence: text components
+C	com/mojang/blaze3d/platform/Window	io/github/xponer2/translator/client/Window
+C	net/minecraft/network/chat/FormattedText	net/minecraft/util/text/ITextComponent
+C	net/minecraft/util/FormattedCharSequence	net/minecraft/util/text/ITextComponent
+# 1.21 interfaces mods implement, mapped to unrelated 1.12.2 classes (Equipable -> ItemArmor, UnbakedModel ->
+# ModelBlock): an implementer can't be cast to that class, so the interface is carried as it is
+C	net/minecraft/client/resources/model/UnbakedModel	net/minecraft/client/resources/model/UnbakedModel
+C	net/minecraft/client/resources/model/ModelState	net/minecraft/client/resources/model/ModelState
+C	net/minecraft/world/item/Equipable	net/minecraft/world/item/Equipable
+C	net/minecraft/world/item/DispensibleContainerItem	net/minecraft/world/item/DispensibleContainerItem
+C	net/minecraft/world/entity/animal/FlyingAnimal	net/minecraft/world/entity/animal/FlyingAnimal
+C	net/minecraft/world/entity/projectile/ItemSupplier	net/minecraft/world/entity/projectile/ItemSupplier
+C	net/minecraft/world/inventory/RecipeCraftingHolder	net/minecraft/world/inventory/RecipeCraftingHolder
+C	net/minecraft/world/entity/vehicle/ContainerEntity	net/minecraft/world/entity/vehicle/ContainerEntity
+C	net/minecraft/world/entity/Saddleable	net/minecraft/world/entity/Saddleable
+C	net/minecraft/world/entity/HasCustomInventoryScreen	net/minecraft/world/entity/HasCustomInventoryScreen
+C	net/minecraft/world/inventory/StackedContentsCompatible	net/minecraft/world/inventory/StackedContentsCompatible
+C	net/minecraft/world/entity/monster/CrossbowAttackMob	net/minecraft/world/entity/monster/CrossbowAttackMob
+C	net/minecraft/world/entity/Targeting	net/minecraft/world/entity/Targeting
+C	net/minecraft/world/entity/ItemSteerable	net/minecraft/world/entity/ItemSteerable
+C	net/minecraft/world/level/storage/loot/providers/number/NumberProvider	net/minecraft/world/level/storage/loot/providers/number/NumberProvider
+C	net/minecraft/world/level/storage/loot/entries/LootPoolEntry	net/minecraft/world/level/storage/loot/entries/LootPoolEntry
+# the texture of a model (atlas + texture), not a block material
+C	net/minecraft/client/resources/model/Material	net/minecraft/client/resources/model/Material
+C	net/neoforged/neoforgespi/language/ModFileScanData$ClassData	io/github/xponer2/translator/util/ModList$ClassData
+# render seams of the Translator (client): a pose is the PoseStack (GL matrix), the immediate buffer source, the
+# frame timer, the mouse
+C	com/mojang/blaze3d/vertex/PoseStack$Pose	io/github/xponer2/translator/client/PoseStack
+C	net/minecraft/client/renderer/MultiBufferSource$BufferSource	io/github/xponer2/translator/client/MultiBufferSource
+C	net/minecraft/client/renderer/RenderBuffers	io/github/xponer2/translator/client/RenderBuffers
+C	net/minecraft/client/DeltaTracker	io/github/xponer2/translator/client/DeltaTracker
+C	net/minecraft/client/MouseHandler	io/github/xponer2/translator/client/MouseHandler
+# the 1.21 text field: a widget of the screen (constructor, responder, input events) on GuiTextField
+C	net/minecraft/client/gui/components/EditBox	io/github/xponer2/translator/client/EditBox
+# the scheduled ticks of a level: the 1.12.2 world's pending block updates (level.getBlockTicks())
+C	net/minecraft/world/ticks/LevelTickAccess	io/github/xponer2/translator/util/LevelTicks
+C	net/minecraft/world/ticks/TickAccess	io/github/xponer2/translator/util/LevelTicks
+# a sprite's contents (size, name) are the 1.12.2 sprite itself
+C	net/minecraft/client/renderer/texture/SpriteContents	net/minecraft/client/renderer/texture/TextureAtlasSprite
+# the 1.21 vertex path: Tesselator.begin gives the buffer, its vertices go through a VertexConsumer, the built mesh is drawn
+C	com/mojang/blaze3d/vertex/MeshData	io/github/xponer2/translator/client/MeshData
+C	com/mojang/blaze3d/vertex/BufferUploader	io/github/xponer2/translator/client/BufferUploader
+# saved data of the mods: built without a name, saved by save(tag, registries), read by their factory
+C	net/minecraft/world/level/saveddata/SavedData	io/github/xponer2/translator/world/SavedData
+C	net/minecraft/world/level/storage/DimensionDataStorage	io/github/xponer2/translator/world/DimensionDataStorage
+C	net/minecraft/world/ticks/LevelTicks	io/github/xponer2/translator/util/LevelTicks
+# sound instances are 1.12.2 sounds
+C	net/minecraft/client/resources/sounds/SoundInstance	net/minecraft/client/audio/ISound
+C	net/minecraft/client/resources/sounds/TickableSoundInstance	net/minecraft/client/audio/ITickableSound
+# a tool's attribute modifiers (createAttributes), armor types
+C	net/minecraft/world/item/component/ItemAttributeModifiers	io/github/xponer2/translator/item/ItemAttributeModifiers
+C	net/minecraft/world/item/component/ItemAttributeModifiers$Builder	io/github/xponer2/translator/item/ItemAttributeModifiers$Builder
+C	net/minecraft/world/item/ArmorItem$Type	io/github/xponer2/translator/item/ArmorType
+# 1.21 block types whose facade isn't the 1.12.2 class (leaves without decay, saplings on BlockBush, Forge fluid blocks): the type itself
+C	net/minecraft/world/level/block/LeavesBlock	io/github/xponer2/translator/runtime/mc/LeavesBlock
+C	net/minecraft/world/level/block/SaplingBlock	io/github/xponer2/translator/runtime/mc/SaplingBlock
+C	net/minecraft/world/level/block/LiquidBlock	io/github/xponer2/translator/runtime/mc/LiquidBlock
+# the resources of the game: the 1.12.2 client resource manager's (listed from the 1.21.1 mod jars)
+C	net/minecraft/server/packs/resources/ResourceManager	io/github/xponer2/translator/resources/ResourceManager
+C	net/minecraft/server/packs/resources/ResourceProvider	io/github/xponer2/translator/resources/ResourceManager
+C	net/minecraft/server/packs/resources/Resource	io/github/xponer2/translator/resources/Resource
+# packet direction; client options
+C	net/minecraft/network/protocol/PacketFlow	io/github/xponer2/translator/network/PacketFlow
+C	net/minecraft/client/OptionInstance	io/github/xponer2/translator/client/OptionInstance
+# block particles carry the state
+C	net/minecraft/core/particles/BlockParticleOption	io/github/xponer2/translator/util/particle/BlockParticleOption
+C	net/neoforged/neoforge/client/model/data/ModelData$Builder	io/github/xponer2/translator/client/ModelData$Builder
+# game rules by key, damage sources of a level, text colors, effect categories, loot context parameters
+C	net/minecraft/world/level/GameRules$Key	io/github/xponer2/translator/world/GameRuleKey
+C	net/minecraft/world/damagesource/DamageSources	io/github/xponer2/translator/world/DamageSources
+C	net/minecraft/network/chat/TextColor	io/github/xponer2/translator/text/TextColor
+C	net/minecraft/world/effect/MobEffectCategory	io/github/xponer2/translator/entity/MobEffectCategory
+C	net/minecraft/world/level/storage/loot/parameters/LootContextParam	io/github/xponer2/translator/block/LootContextParams$Param
+# 1.21 vanilla block types with no 1.12.2 class of the same build: facades on the Translator's Block (their 1.21 state properties)
+C	net/minecraft/world/level/block/HorizontalDirectionalBlock	io/github/xponer2/translator/runtime/mc/HorizontalDirectionalBlock
+C	net/minecraft/world/level/block/DirectionalBlock	io/github/xponer2/translator/runtime/mc/DirectionalBlock
+C	net/minecraft/world/level/block/GlazedTerracottaBlock	io/github/xponer2/translator/runtime/mc/GlazedTerracottaBlock
+C	net/minecraft/world/level/block/BushBlock	io/github/xponer2/translator/runtime/mc/BushBlock
+C	net/minecraft/world/level/block/FlowerBlock	io/github/xponer2/translator/runtime/mc/FlowerBlock
+C	net/minecraft/world/level/block/MushroomBlock	io/github/xponer2/translator/runtime/mc/MushroomBlock
+C	net/minecraft/world/level/block/WaterlilyBlock	io/github/xponer2/translator/runtime/mc/WaterlilyBlock
+C	net/minecraft/world/level/block/CropBlock	io/github/xponer2/translator/runtime/mc/CropBlock
+C	net/minecraft/world/level/block/DoublePlantBlock	io/github/xponer2/translator/runtime/mc/DoublePlantBlock
+C	net/minecraft/world/level/block/HugeMushroomBlock	io/github/xponer2/translator/runtime/mc/HugeMushroomBlock
+C	net/minecraft/world/level/block/LadderBlock	io/github/xponer2/translator/runtime/mc/LadderBlock
+C	net/minecraft/world/level/block/CarpetBlock	io/github/xponer2/translator/runtime/mc/CarpetBlock
+C	net/minecraft/world/level/block/FlowerPotBlock	io/github/xponer2/translator/runtime/mc/FlowerPotBlock
+C	net/minecraft/world/level/block/StandingSignBlock	io/github/xponer2/translator/runtime/mc/StandingSignBlock
+C	net/minecraft/world/level/block/WallSignBlock	io/github/xponer2/translator/runtime/mc/WallSignBlock
+C	net/minecraft/world/level/block/FallingBlock	io/github/xponer2/translator/runtime/mc/FallingBlock
+C	net/minecraft/world/level/block/HayBlock	io/github/xponer2/translator/runtime/mc/HayBlock
+C	net/minecraft/world/level/block/CeilingHangingSignBlock	io/github/xponer2/translator/runtime/mc/StandingSignBlock
+C	net/minecraft/world/level/block/WallHangingSignBlock	io/github/xponer2/translator/runtime/mc/WallSignBlock
+C	net/minecraft/world/level/block/state/properties/DoubleBlockHalf	io/github/xponer2/translator/block/DoubleBlockHalf
+C	net/minecraft/world/entity/ai/attributes/RangedAttribute	io/github/xponer2/translator/entity/RangedAttribute
+C	net/minecraft/world/level/block/FarmBlock	io/github/xponer2/translator/runtime/mc/FarmBlock
+C	net/minecraft/client/Camera	io/github/xponer2/translator/client/Camera
+C	net/minecraft/core/dispenser/DispenseItemBehavior	io/github/xponer2/translator/block/DispenseItemBehavior
+C	net/minecraft/core/dispenser/DefaultDispenseItemBehavior	io/github/xponer2/translator/block/DefaultDispenseItemBehavior
+C	net/minecraft/core/Position	net/minecraft/util/math/Vec3d
+C	net/minecraft/world/entity/WalkAnimationState	io/github/xponer2/translator/entity/WalkAnimationState
+C	net/minecraft/core/WritableRegistry	io/github/xponer2/translator/registry/Registry
+C	net/minecraft/core/RegistrationInfo	io/github/xponer2/translator/registry/RegistrationInfo
+# world saves (server.storageSource, map mods): the 1.12.2 save folder
+C	net/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess	io/github/xponer2/translator/world/LevelStorageAccess
+C	net/minecraft/world/level/storage/LevelResource	io/github/xponer2/translator/world/LevelResource
+# 1.21 RenderHandEvent is fired per hand: the 1.12.2 RenderSpecificHandEvent (hand, item, swing, equip progress)
+C	net/neoforged/neoforge/client/event/RenderHandEvent	net/minecraftforge/client/event/RenderSpecificHandEvent
+M	net/neoforged/neoforge/client/event/RenderHandEvent	getPartialTick()	getPartialTicks
+M	net/minecraft/client/color/item/ItemColor	getColor(net.minecraft.world.item.ItemStack,int)	colorMultiplier
+M	net/minecraft/client/color/block/BlockColor	getColor(net.minecraft.world.level.block.state.BlockState,net.minecraft.world.level.BlockAndTintGetter,net.minecraft.core.BlockPos,int)	colorMultiplier
+C	net/neoforged/neoforge/registries/NewRegistryEvent	io/github/xponer2/translator/registry/NewRegistryEvent
+# 1.21 widget tooltips (Tooltip.create, setTooltip, Button.Builder.tooltip): drawn after the screen
+C	net/minecraft/client/gui/components/Tooltip	io/github/xponer2/translator/client/Tooltip
+# images and dynamic textures (map mods, generated icons): the pixels on the Java heap (1.21 keeps them in native
+# memory and decodes with LWJGL 3 STB, which 1.12.2 lacks), PNG files through ImageIO, the 1.12.2 dynamic texture
+C	com/mojang/blaze3d/platform/NativeImage	io/github/xponer2/translator/client/NativeImage
+C	net/minecraft/client/renderer/texture/DynamicTexture	io/github/xponer2/translator/client/DynamicTexture
+C	net/minecraft/network/chat/ComponentSerialization	io/github/xponer2/translator/text/ComponentSerialization
+# the client resource manager as 1.21 ReloadableResourceManager (a cast map mods make to add a reload listener)
+C	net/minecraft/server/packs/resources/ReloadableResourceManager	io/github/xponer2/translator/resources/ResourceManager$Client
+C	net/minecraft/world/level/block/entity/BaseContainerBlockEntity	io/github/xponer2/translator/block/BaseContainerBlockEntity
+C	net/minecraft/world/level/block/entity/RandomizableContainerBlockEntity	io/github/xponer2/translator/block/RandomizableContainerBlockEntity
+# 1.21 Style is immutable: its with* methods give a new style (StyleStatics, MiscBridges), not the 1.12.2 setters
+M	net/minecraft/network/chat/Style	withBold(java.lang.Boolean)	withBold
+M	net/minecraft/network/chat/Style	withClickEvent(net.minecraft.network.chat.ClickEvent)	withClickEvent
+M	net/minecraft/network/chat/Style	withColor(net.minecraft.ChatFormatting)	withColor
+M	net/minecraft/network/chat/Style	withHoverEvent(net.minecraft.network.chat.HoverEvent)	withHoverEvent
+M	net/minecraft/network/chat/Style	withInsertion(java.lang.String)	withInsertion
+M	net/minecraft/network/chat/Style	withItalic(java.lang.Boolean)	withItalic
+m	withBold	withBold
+m	withClickEvent	withClickEvent
+m	withColor	withColor
+m	withHoverEvent	withHoverEvent
+m	withInsertion	withInsertion
+m	withItalic	withItalic
+C	net/minecraft/client/resources/PlayerSkin	io/github/xponer2/translator/client/PlayerSkin
+C	net/minecraft/client/resources/PlayerSkin$Model	io/github/xponer2/translator/client/PlayerSkin$Model
+C	net/minecraft/network/chat/Component$SerializerAdapter	io/github/xponer2/translator/text/ComponentSerializerAdapter
+# 1.21 StringRepresentable.fromEnum returns its EnumCodec (byName): the Translator method with that result
+M	net/minecraft/util/StringRepresentable	fromEnum(java.util.function.Supplier)	fromEnumCodec

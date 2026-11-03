@@ -1,0 +1,542 @@
+/*
+ * Translator: the Minecraft 1.21.1 / NeoForge API on Minecraft 1.12.2
+ * Copyright (c) 2026 Xponer2 (https://github.com/Xponer2/translator)
+ *
+ * Licensed under the PolyForm Noncommercial License 1.0.0 (see LICENSE or
+ * https://polyformproject.org/licenses/noncommercial/1.0.0): free to use, change and share for any noncommercial
+ * purpose, with credit to the author. This notice stays in this file and in every copy or changed version of it.
+ *
+ * Required Notice: Copyright (c) 2026 Xponer2 (https://github.com/Xponer2/translator)
+ */
+package io.github.xponer2.translator.runtime.redirect;
+
+import java.util.Random;
+
+import io.github.xponer2.translator.registry.ResourceKey;
+import io.github.xponer2.translator.text.LiteralComponent;
+import io.github.xponer2.translator.text.MutableComponent;
+
+import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.PlayerCapabilities;
+import net.minecraft.item.Item;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.DimensionType;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+
+/**
+ * The 1.21.1 methods mods use most that 1.12.2 has under another shape (tools/runtime/gap-report.md, by the number of
+ * mods using them): {@code receiver.name(args)} becomes {@code ApiBridges.name(receiver, args)} (runtime,
+ * neoforge-1.21.1-redirects.tsv). Each one is the 1.12.2 way of doing the same thing.
+ */
+public final class ApiBridges {
+	private ApiBridges() {
+	}
+
+	// --- worlds and dimensions ---------------------------------------------------------------------------------------
+
+	private static final ResourceKey<io.github.xponer2.translator.registry.Registry<World>> DIMENSION = ResourceKey.createRegistryKey(
+			new ResourceLocation("dimension"));
+
+	/** The 1.21 dimension key of a 1.12.2 dimension id (overworld, the_nether, the_end; others by their type name). */
+	public static ResourceKey<World> dimensionKey(int id) {
+		String name = switch (id) {
+			case 0 -> "overworld";
+			case -1 -> "the_nether";
+			case 1 -> "the_end";
+			default -> {
+				try {
+					yield DimensionType.getById(id).getName();
+				} catch (RuntimeException e) {
+					yield "dim" + id;
+				}
+			}
+		};
+		return ResourceKey.create(DIMENSION, name.contains(":") ? new ResourceLocation(name) : new ResourceLocation("minecraft", name));
+	}
+
+	/** The 1.12.2 dimension id of a 1.21 dimension key. */
+	public static int dimensionId(ResourceKey<?> key) {
+		String path = key.location().getPath();
+		switch (path) {
+			case "overworld":
+				return 0;
+			case "the_nether":
+				return -1;
+			case "the_end":
+				return 1;
+			default:
+				for (DimensionType type : DimensionType.values()) {
+					if (type.getName().equals(path) || ("dim" + type.getId()).equals(path)) {
+						return type.getId();
+					}
+				}
+				return 0;
+		}
+	}
+
+	public static ResourceKey<World> dimension(World world) {
+		return dimensionKey(world.provider.getDimension());
+	}
+
+	public static DimensionType dimensionType(World world) {
+		return world.provider.getDimensionType();
+	}
+
+	public static int getMinBuildHeight(World world) {
+		return 0;
+	}
+
+	public static int getMaxBuildHeight(World world) {
+		return world.getHeight();
+	}
+
+	public static Random getRandom(World world) {
+		return world.rand;
+	}
+
+	public static boolean removeBlock(World world, BlockPos pos, boolean moving) {
+		return world.setBlockToAir(pos);
+	}
+
+	public static io.github.xponer2.translator.recipe.RecipeManager getRecipeManager(World world) {
+		return io.github.xponer2.translator.recipe.RecipeManager.get();
+	}
+
+	public static net.minecraft.world.gen.ChunkProviderServer getChunkSource(World world) {
+		return world instanceof WorldServer server ? server.getChunkProvider() : null;
+	}
+
+	public static WorldServer getLevel(MinecraftServer server, ResourceKey<?> key) {
+		return server.getWorld(dimensionId(key));
+	}
+
+	// --- entities and players ----------------------------------------------------------------------------------------
+
+	public static BlockPos blockPosition(Entity entity) {
+		return entity.getPosition();
+	}
+
+	public static float getYRot(Entity entity) {
+		return entity.rotationYaw;
+	}
+
+	public static float getXRot(Entity entity) {
+		return entity.rotationPitch;
+	}
+
+	public static void setYRot(Entity entity, float yaw) {
+		entity.rotationYaw = yaw;
+	}
+
+	public static void setXRot(Entity entity, float pitch) {
+		entity.rotationPitch = pitch;
+	}
+
+	public static AxisAlignedBB getBoundingBox(Entity entity) {
+		return entity.getEntityBoundingBox();
+	}
+
+	public static io.github.xponer2.translator.registry.EntityType<?> getType(Entity entity) {
+		return io.github.xponer2.translator.registry.EntityType.of(entity);
+	}
+
+	public static PlayerCapabilities getAbilities(EntityPlayer player) {
+		return player.capabilities;
+	}
+
+	public static WorldServer serverLevel(EntityPlayerMP player) {
+		return player.getServerWorld();
+	}
+
+	// --- blocks and positions ----------------------------------------------------------------------------------------
+
+	public static Item asItem(Block block) {
+		return Item.getItemFromBlock(block);
+	}
+
+	public static long asLong(BlockPos pos) {
+		return pos.toLong();
+	}
+
+	// --- text --------------------------------------------------------------------------------------------------------
+
+	public static MutableComponent copy(ITextComponent text) {
+		if (text instanceof MutableComponent mutable) {
+			return mutable.copy();
+		}
+		return new LiteralComponent("").append(text.createCopy());
+	}
+
+	/** 1.12.2 has no RGB text colors: the nearest of the 16 formatting colors. */
+	public static Style withColor(Style style, int rgb) {
+		TextFormatting nearest = TextFormatting.WHITE;
+		long best = Long.MAX_VALUE;
+		for (TextFormatting format : TextFormatting.values()) {
+			if (!format.isColor()) {
+				continue;
+			}
+			int color = COLORS[format.getColorIndex()];
+			long dr = ((color >> 16) & 255) - ((rgb >> 16) & 255);
+			long dg = ((color >> 8) & 255) - ((rgb >> 8) & 255);
+			long db = (color & 255) - (rgb & 255);
+			long distance = dr * dr + dg * dg + db * db;
+			if (distance < best) {
+				best = distance;
+				nearest = format;
+			}
+		}
+		return style.createShallowCopy().setColor(nearest);
+	}
+
+	// --- block states (batch 2) ----------------------------------------------------------------------------------------
+
+	public static boolean is(net.minecraft.block.state.IBlockState state, io.github.xponer2.translator.util.TagKey<Block> tag) {
+		return io.github.xponer2.translator.tags.TagManager.is(state, tag);
+	}
+
+	public static boolean canSurvive(net.minecraft.block.state.IBlockState state, World world, BlockPos pos) {
+		return state.getBlock().canPlaceBlockAt(world, pos);
+	}
+
+	public static boolean isFaceSturdy(net.minecraft.block.state.IBlockState state, net.minecraft.world.IBlockAccess world, BlockPos pos,
+			net.minecraft.util.EnumFacing face) {
+		return state.getBlockFaceShape(world, pos, face) == net.minecraft.block.state.BlockFaceShape.SOLID;
+	}
+
+	public static io.github.xponer2.translator.shape.VoxelShape getShape(net.minecraft.block.state.IBlockState state, net.minecraft.world.IBlockAccess world,
+			BlockPos pos) {
+		return io.github.xponer2.translator.shape.Shapes.create(state.getBoundingBox(world, pos));
+	}
+
+	public static io.github.xponer2.translator.shape.VoxelShape getCollisionShape(net.minecraft.block.state.IBlockState state,
+			net.minecraft.world.IBlockAccess world, BlockPos pos) {
+		AxisAlignedBB box = state.getCollisionBoundingBox(world, pos);
+		return box == null ? io.github.xponer2.translator.shape.Shapes.empty() : io.github.xponer2.translator.shape.Shapes.create(box);
+	}
+
+	public static long getSeed(net.minecraft.block.state.IBlockState state, BlockPos pos) {
+		return net.minecraft.util.math.MathHelper.getPositionRandom(pos);
+	}
+
+	public static net.minecraft.block.state.IBlockState rotate(net.minecraft.block.state.IBlockState state, net.minecraft.util.Rotation rotation) {
+		return state.withRotation(rotation);
+	}
+
+	@SuppressWarnings("deprecation")
+	public static net.minecraft.block.SoundType getSoundType(net.minecraft.block.state.IBlockState state) {
+		return SoundFallback.complete(state.getBlock().getSoundType());
+	}
+
+	public static net.minecraft.block.SoundType getSoundType(net.minecraft.block.state.IBlockState state, World world, BlockPos pos, Entity entity) {
+		return SoundFallback.complete(state.getBlock().getSoundType(state, world, pos, entity));
+	}
+
+	public static java.util.Collection<net.minecraft.block.properties.IProperty<?>> getProperties(net.minecraft.block.state.IBlockState state) {
+		return state.getPropertyKeys();
+	}
+
+	public static Object cycle(net.minecraft.block.state.IBlockState state, net.minecraft.block.properties.IProperty<?> property) {
+		return state.cycleProperty(property);
+	}
+
+	public static boolean isCollisionShapeFullBlock(net.minecraft.block.state.IBlockState state, net.minecraft.world.IBlockAccess world, BlockPos pos) {
+		return state.isFullCube();
+	}
+
+	public static int getLightBlock(net.minecraft.block.state.IBlockState state, net.minecraft.world.IBlockAccess world, BlockPos pos) {
+		return state.getLightOpacity(world, pos);
+	}
+
+	public static boolean isSolidRender(net.minecraft.block.state.IBlockState state, net.minecraft.world.IBlockAccess world, BlockPos pos) {
+		return state.isOpaqueCube();
+	}
+
+	public static boolean canOcclude(net.minecraft.block.state.IBlockState state) {
+		return state.isOpaqueCube();
+	}
+
+	public static boolean requiresCorrectToolForDrops(net.minecraft.block.state.IBlockState state) {
+		return !state.getMaterial().isToolNotRequired();
+	}
+
+	public static boolean isRedstoneConductor(net.minecraft.block.state.IBlockState state, net.minecraft.world.IBlockAccess world, BlockPos pos) {
+		return state.isNormalCube();
+	}
+
+	public static float getDestroyProgress(net.minecraft.block.state.IBlockState state, EntityPlayer player, net.minecraft.world.IBlockAccess world, BlockPos pos) {
+		return world instanceof World level ? state.getPlayerRelativeBlockHardness(player, level, pos) : 0F;
+	}
+
+	// --- worlds (batch 2) --------------------------------------------------------------------------------------------
+
+	public static boolean isLoaded(World world, BlockPos pos) {
+		return world.isBlockLoaded(pos);
+	}
+
+	public static boolean hasNeighborSignal(World world, BlockPos pos) {
+		return world.isBlockPowered(pos);
+	}
+
+	public static void scheduleTick(World world, BlockPos pos, Block block, int delay) {
+		world.scheduleUpdate(pos, block, delay);
+	}
+
+	public static void scheduleTick(World world, BlockPos pos, net.minecraftforge.fluids.Fluid fluid, int delay) {
+		if (fluid.getBlock() != null) {
+			world.scheduleUpdate(pos, fluid.getBlock(), delay);
+		}
+	}
+
+	public static <T extends Entity> java.util.List<T> getEntitiesOfClass(World world, Class<T> type, AxisAlignedBB box,
+			java.util.function.Predicate<? super T> filter) {
+		return world.getEntitiesWithinAABB(type, box, filter::test);
+	}
+
+	public static <T extends Entity> java.util.List<T> getEntitiesOfClass(World world, Class<T> type, AxisAlignedBB box) {
+		return world.getEntitiesWithinAABB(type, box);
+	}
+
+	public static java.util.List<Entity> getEntities(World world, Entity except, AxisAlignedBB box, java.util.function.Predicate<? super Entity> filter) {
+		return world.getEntitiesInAABBexcluding(except, box, filter::test);
+	}
+
+	public static java.util.List<Entity> getEntities(World world, Entity except, AxisAlignedBB box) {
+		return world.getEntitiesWithinAABBExcludingEntity(except, box);
+	}
+
+	public static void blockUpdated(World world, BlockPos pos, Block block) {
+		world.notifyNeighborsOfStateChange(pos, block, false);
+	}
+
+	public static java.util.List<EntityPlayer> players(World world) {
+		return world.playerEntities;
+	}
+
+	public static void playSound(World world, EntityPlayer player, Entity at, net.minecraft.util.SoundEvent sound, net.minecraft.util.SoundCategory category,
+			float volume, float pitch) {
+		world.playSound(player, at.posX, at.posY, at.posZ, sound, category, volume, pitch);
+	}
+
+	public static void playSound(World world, EntityPlayer player, BlockPos pos, net.minecraft.util.SoundEvent sound, net.minecraft.util.SoundCategory category) {
+		world.playSound(player, pos, sound, category, 1F, 1F);
+	}
+
+	public static boolean isOutsideBuildHeight(World world, int y) {
+		return y < 0 || y >= world.getHeight();
+	}
+
+	public static int getRawBrightness(World world, BlockPos pos, int darkening) {
+		return Math.max(world.getLightFor(net.minecraft.world.EnumSkyBlock.SKY, pos) - darkening, world.getLightFor(net.minecraft.world.EnumSkyBlock.BLOCK, pos));
+	}
+
+	public static boolean noCollision(World world, Entity entity, AxisAlignedBB box) {
+		return world.getCollisionBoxes(entity, box).isEmpty();
+	}
+
+	/** Game events (sculk) don't exist on 1.12.2: nothing listens. */
+	public static void gameEvent(World world, Entity entity, io.github.xponer2.translator.registry.Holder<?> event, BlockPos pos) {
+	}
+
+	public static void gameEvent(World world, Entity entity, io.github.xponer2.translator.registry.Holder<?> event, net.minecraft.util.math.Vec3d pos) {
+	}
+
+	public static void addAlwaysVisibleParticle(World world, io.github.xponer2.translator.util.particle.ParticleOptions particle, double x, double y,
+			double z, double xSpeed, double ySpeed, double zSpeed) {
+		io.github.xponer2.translator.util.particle.Particles.addParticle(world, particle, x, y, z, xSpeed, ySpeed, zSpeed);
+	}
+
+	// --- item stacks (batch 2) ---------------------------------------------------------------------------------------
+
+	public static void hurtAndBreak(net.minecraft.item.ItemStack stack, int amount, net.minecraft.entity.EntityLivingBase entity,
+			net.minecraft.inventory.EntityEquipmentSlot slot) {
+		stack.damageItem(amount, entity);
+	}
+
+	public static void hurtAndBreak(net.minecraft.item.ItemStack stack, int amount, WorldServer world, EntityPlayerMP player,
+			java.util.function.Consumer<Item> broken) {
+		Item item = stack.getItem();
+		if (stack.attemptDamageItem(amount, world.rand, player)) {
+			stack.shrink(1);
+			broken.accept(item);
+		}
+	}
+
+	public static net.minecraft.item.ItemStack getCraftingRemainingItem(net.minecraft.item.ItemStack stack) {
+		return stack.getItem().getContainerItem(stack);
+	}
+
+	public static boolean hasCraftingRemainingItem(net.minecraft.item.ItemStack stack) {
+		return stack.getItem().hasContainerItem(stack);
+	}
+
+	public static void setDamageValue(net.minecraft.item.ItemStack stack, int damage) {
+		stack.setItemDamage(damage);
+	}
+
+	public static int getUseDuration(net.minecraft.item.ItemStack stack, net.minecraft.entity.EntityLivingBase entity) {
+		return stack.getMaxItemUseDuration();
+	}
+
+	public static void consume(net.minecraft.item.ItemStack stack, int amount, net.minecraft.entity.EntityLivingBase entity) {
+		if (!(entity instanceof EntityPlayer player && player.capabilities.isCreativeMode)) {
+			stack.shrink(amount);
+		}
+	}
+
+	public static void limitSize(net.minecraft.item.ItemStack stack, int max) {
+		if (stack.getCount() > max) {
+			stack.setCount(max);
+		}
+	}
+
+	public static net.minecraft.nbt.NBTBase saveOptional(net.minecraft.item.ItemStack stack, io.github.xponer2.translator.registry.HolderLookup.Provider registries) {
+		return stack.isEmpty() ? new net.minecraft.nbt.NBTTagCompound() : stack.writeToNBT(new net.minecraft.nbt.NBTTagCompound());
+	}
+
+	// --- entities and players (batch 2) --------------------------------------------------------------------------------
+
+	public static int getId(Entity entity) {
+		return entity.getEntityId();
+	}
+
+	public static net.minecraft.util.math.Vec3d getDeltaMovement(Entity entity) {
+		return new net.minecraft.util.math.Vec3d(entity.motionX, entity.motionY, entity.motionZ);
+	}
+
+	public static void setDeltaMovement(Entity entity, double x, double y, double z) {
+		entity.motionX = x;
+		entity.motionY = y;
+		entity.motionZ = z;
+	}
+
+	public static void setDeltaMovement(Entity entity, net.minecraft.util.math.Vec3d motion) {
+		setDeltaMovement(entity, motion.x, motion.y, motion.z);
+	}
+
+	public static ITextComponent getName(Entity entity) {
+		return new net.minecraft.util.text.TextComponentString(entity.getName());
+	}
+
+	public static float getBbWidth(Entity entity) {
+		return entity.width;
+	}
+
+	public static float getBbHeight(Entity entity) {
+		return entity.height;
+	}
+
+	public static void igniteForSeconds(Entity entity, float seconds) {
+		entity.setFire(Math.max(1, (int) seconds));
+	}
+
+	public static void setRemainingFireTicks(Entity entity, int ticks) {
+		if (ticks <= 0) {
+			entity.extinguish();
+		} else {
+			entity.setFire(Math.max(1, ticks / 20));
+		}
+	}
+
+	public static net.minecraft.nbt.NBTTagCompound getPersistentData(Entity entity) {
+		return entity.getEntityData();
+	}
+
+	public static net.minecraft.util.math.Vec3d getEyePosition(Entity entity) {
+		return entity.getPositionEyes(1F);
+	}
+
+	public static boolean isSpectator(Entity entity) {
+		return entity instanceof EntityPlayer player && player.isSpectator();
+	}
+
+	public static boolean isRemoved(Entity entity) {
+		return entity.isDead;
+	}
+
+	public static boolean isSteppingCarefully(Entity entity) {
+		return entity.isSneaking();
+	}
+
+	public static boolean isSuppressingBounce(Entity entity) {
+		return entity.isSneaking();
+	}
+
+	public static boolean causeFallDamage(Entity entity, float distance, float multiplier, net.minecraft.util.DamageSource source) {
+		entity.fall(distance, multiplier);
+		return true;
+	}
+
+	public static void makeStuckInBlock(Entity entity, net.minecraft.block.state.IBlockState state, net.minecraft.util.math.Vec3d factor) {
+		entity.setInWeb();
+	}
+
+	public static double distanceToSqr(Entity entity, net.minecraft.util.math.Vec3d pos) {
+		return entity.getDistanceSq(pos.x, pos.y, pos.z);
+	}
+
+	public static void playSound(Entity entity, net.minecraft.util.SoundEvent sound) {
+		entity.playSound(sound, 1F, 1F);
+	}
+
+	public static Random getRandom(Entity entity) {
+		return entity instanceof net.minecraft.entity.EntityLivingBase living ? living.getRNG() : entity.world.rand;
+	}
+
+	public static boolean isSwimming(Entity entity) {
+		return entity.isInWater() && entity.isSprinting();
+	}
+
+	public static boolean isCrouching(EntityPlayer player) {
+		return player.isSneaking();
+	}
+
+	public static boolean isSecondaryUseActive(EntityPlayer player) {
+		return player.isSneaking();
+	}
+
+	public static boolean hasInfiniteMaterials(EntityPlayer player) {
+		return player.capabilities.isCreativeMode;
+	}
+
+	public static boolean hasPermissions(EntityPlayer player, int level) {
+		return player.canUseCommand(level, "");
+	}
+
+	public static boolean canInteractWithBlock(EntityPlayer player, BlockPos pos, double extraReach) {
+		double reach = 4.5 + extraReach + 1;
+		return player.getDistanceSqToCenter(pos) <= reach * reach;
+	}
+
+	public static void playNotifySound(EntityPlayer player, net.minecraft.util.SoundEvent sound, net.minecraft.util.SoundCategory category, float volume,
+			float pitch) {
+		player.world.playSound(null, player.posX, player.posY, player.posZ, sound, category, volume, pitch);
+	}
+
+	/** The player's inventory menu (1.21 field {@code inventoryMenu}). */
+	public static net.minecraft.inventory.ContainerPlayer inventoryMenu(EntityPlayer player) {
+		return (net.minecraft.inventory.ContainerPlayer) player.inventoryContainer;
+	}
+
+	public static boolean addEffect(net.minecraft.entity.EntityLivingBase entity, net.minecraft.potion.PotionEffect effect) {
+		entity.addPotionEffect(effect);
+		return true;
+	}
+
+	public static boolean isHolding(net.minecraft.entity.EntityLivingBase entity, Item item) {
+		return entity.getHeldItemMainhand().getItem() == item || entity.getHeldItemOffhand().getItem() == item;
+	}
+
+	/** The RGB of the 16 formatting colors, by color index. */
+	private static final int[] COLORS = { 0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA, 0x555555, 0x5555FF,
+			0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF };
+}

@@ -1,0 +1,45 @@
+# Facades: Translator classes a 1.21.1 mod class extends instead of the 1.12.2 class (they keep the 1.21 method names
+# and bridge the 1.12.2 methods to them). Used for `extends`, `new`, super calls and static calls they declare; in
+# descriptors the 1.21.1 class still means the 1.12.2 class (neoforge-1.21.1.tsv).
+S	net/minecraft/world/item/Item	io/github/xponer2/translator/runtime/mc/Item
+S	net/minecraft/world/item/BlockItem	io/github/xponer2/translator/runtime/mc/BlockItem
+S	net/minecraft/world/level/block/Block	io/github/xponer2/translator/runtime/mc/Block
+S	net/minecraft/world/level/block/entity/BlockEntity	io/github/xponer2/translator/block/BlockEntity
+S	net/minecraft/world/inventory/AbstractContainerMenu	io/github/xponer2/translator/menu/AbstractContainerMenu
+S	net/minecraft/client/gui/screens/inventory/AbstractContainerScreen	io/github/xponer2/translator/client/AbstractContainerScreen
+S	net/minecraft/client/gui/components/AbstractWidget	io/github/xponer2/translator/client/AbstractWidget
+S	net/minecraft/client/gui/components/Button	io/github/xponer2/translator/client/Button
+S	net/minecraft/client/gui/screens/Screen	io/github/xponer2/translator/client/Screen
+S	net/neoforged/neoforge/items/ItemStackHandler	io/github/xponer2/translator/items/ItemStackHandler
+S	net/neoforged/neoforge/energy/EnergyStorage	io/github/xponer2/translator/energy/EnergyStorage
+S	net/minecraft/client/KeyMapping	io/github/xponer2/translator/runtime/neoforge/KeyMapping
+S	net/minecraft/world/item/ItemNameBlockItem	io/github/xponer2/translator/runtime/mc/BlockItem
+# 1.21 vanilla block and item types whose 1.12.2 classes are built otherwise: facades with the 1.21 constructors
+S	net/minecraft/world/level/block/StairBlock	io/github/xponer2/translator/runtime/mc/StairBlock
+S	net/minecraft/world/level/block/RotatedPillarBlock	io/github/xponer2/translator/runtime/mc/RotatedPillarBlock
+S	net/minecraft/world/level/block/FenceBlock	io/github/xponer2/translator/runtime/mc/FenceBlock
+S	net/minecraft/world/level/block/FenceGateBlock	io/github/xponer2/translator/runtime/mc/FenceGateBlock
+S	net/minecraft/world/level/block/DoorBlock	io/github/xponer2/translator/runtime/mc/DoorBlock
+S	net/minecraft/world/level/block/TrapDoorBlock	io/github/xponer2/translator/runtime/mc/TrapDoorBlock
+S	net/minecraft/world/level/block/ButtonBlock	io/github/xponer2/translator/runtime/mc/ButtonBlock
+S	net/minecraft/world/level/block/PressurePlateBlock	io/github/xponer2/translator/runtime/mc/PressurePlateBlock
+S	net/minecraft/world/level/block/LeavesBlock	io/github/xponer2/translator/runtime/mc/LeavesBlock
+S	net/minecraft/world/level/block/SaplingBlock	io/github/xponer2/translator/runtime/mc/SaplingBlock
+S	net/minecraft/world/item/SignItem	io/github/xponer2/translator/runtime/mc/SignItem
+S	net/minecraft/world/item/BoatItem	io/github/xponer2/translator/runtime/mc/BoatItem
+S	net/minecraft/world/item/SwordItem	io/github/xponer2/translator/runtime/mc/SwordItem
+S	net/minecraft/world/item/PickaxeItem	io/github/xponer2/translator/runtime/mc/PickaxeItem
+S	net/minecraft/world/item/AxeItem	io/github/xponer2/translator/runtime/mc/AxeItem
+S	net/minecraft/world/item/ShovelItem	io/github/xponer2/translator/runtime/mc/ShovelItem
+S	net/minecraft/world/item/HoeItem	io/github/xponer2/translator/runtime/mc/HoeItem
+S	net/minecraft/world/item/DiggerItem	io/github/xponer2/translator/runtime/mc/DiggerItem
+S	net/minecraft/world/item/ArmorItem	io/github/xponer2/translator/item/ArmorItem
+S	net/minecraft/world/level/block/LiquidBlock	io/github/xponer2/translator/runtime/mc/LiquidBlock
+S	net/minecraft/world/item/BucketItem	io/github/xponer2/translator/runtime/mc/BucketItem
+S	net/minecraft/world/effect/MobEffect	io/github/xponer2/translator/runtime/mc/MobEffect
+S	net/minecraft/world/item/ShieldItem	io/github/xponer2/translator/runtime/mc/ShieldItem
+S	net/minecraft/world/level/block/BaseRailBlock	io/github/xponer2/translator/runtime/mc/BaseRailBlock
+S	net/minecraft/world/level/block/ChestBlock	io/github/xponer2/translator/runtime/mc/ChestBlock
+S	net/minecraft/client/gui/screens/recipebook/RecipeBookComponent	io/github/xponer2/translator/client/RecipeBookComponent
+S	net/minecraft/client/resources/sounds/AbstractSoundInstance	io/github/xponer2/translator/client/AbstractSoundInstance
+S	net/minecraft/client/resources/sounds/AbstractTickableSoundInstance	io/github/xponer2/translator/client/AbstractTickableSoundInstance
