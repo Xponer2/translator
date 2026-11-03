@@ -287,6 +287,7 @@ public final class TagManager {
         }
         read = true;
         readFlattening();
+        readVanilla();
         for (var mod : Loader.instance().getActiveModList()) {
             CraftingHelper.findFiles(mod, "data", null, (root, file) -> {
                 var relative = root.relativize(file).toString().replace('\\', '/');
@@ -311,6 +312,45 @@ public final class TagManager {
         }
         LOGGER.info("Read {} item tags and {} block tags", FILES.getOrDefault("item", Collections.emptyMap()).size(),
                 FILES.getOrDefault("block", Collections.emptyMap()).size());
+    }
+
+    /**
+     * The vanilla 1.21.1 tags ({@code minecraft:dirt}, logs, flowers...), first so the mods' files add to them: from the
+     * player's own Minecraft 1.21.1 jar. Without them a mod's tag that includes a vanilla one ({@code #minecraft:dirt}
+     * in Twilight Forest's portal edge) missed every vanilla block.
+     */
+    @SuppressWarnings("deprecation")
+    private static void readVanilla() {
+        java.io.File jar = io.github.xponer2.translator.runtime.Minecraft1211.clientJar();
+        if (jar == null) {
+            LOGGER.info("No Minecraft 1.21.1 jar found (-Dtranslator.minecraft=<jar>): only the vanilla tags the mods bring");
+            return;
+        }
+        int count = 0;
+        try (var zip = new java.util.zip.ZipFile(jar)) {
+            for (var it = zip.entries(); it.hasMoreElements(); ) {
+                var entry = it.nextElement();
+                if (!entry.getName().startsWith("data/") || entry.isDirectory()) {
+                    continue;
+                }
+                var m = TAG_FILE.matcher(entry.getName().substring(5));
+                if (!m.matches()) {
+                    continue;
+                }
+                try (var reader = new InputStreamReader(zip.getInputStream(entry), StandardCharsets.UTF_8)) {
+                    var json = new JsonParser().parse(reader).getAsJsonObject();
+                    var entries = FILES.computeIfAbsent(m.group(2), k -> new LinkedHashMap<>())
+                            .computeIfAbsent(new ResourceLocation(m.group(1), m.group(3)), k -> new ArrayList<>());
+                    for (JsonElement value : json.getAsJsonArray("values")) {
+                        entries.add(Entry.of(value));
+                    }
+                    count++;
+                }
+            }
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Couldn't read the vanilla 1.21.1 tags of {}", jar, e);
+        }
+        LOGGER.info("Read {} vanilla 1.21.1 tag files from {}", count, jar);
     }
 
     @SuppressWarnings("deprecation")

@@ -45,6 +45,13 @@ public final class AccessWidener implements IClassTransformer {
 			@Override
 			public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 				this.self = name;
+				if ("net.minecraft.item.Item".equals(transformedName) || "net.minecraft.block.Block".equals(transformedName)) {
+					// every item and block is a 1.21 ItemLike: new ItemLike[] {Items.WHITE_WOOL} (Twilight Forest's
+					// Questing Ram) threw ArrayStoreException, a cast to ItemLike ClassCastException
+					interfaces = java.util.Arrays.copyOf(interfaces, interfaces.length + 1);
+					interfaces[interfaces.length - 1] = "io/github/xponer2/translator/util/ItemLike";
+					changed[0] = true;
+				}
 				super.visit(version, widen(access, changed), name, signature, superName, interfaces);
 			}
 

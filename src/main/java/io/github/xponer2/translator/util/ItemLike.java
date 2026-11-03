@@ -13,17 +13,20 @@ package io.github.xponer2.translator.util;
 import net.minecraft.item.Item;
 
 /**
- * Something that has an item (1.21 {@code ItemLike}). 1.12.2 items and blocks don't implement it; an item class that
- * does gets itself as its item.
+ * Something that has an item (1.21 {@code ItemLike}). Every 1.12.2 item and block is one (the coremod adds the
+ * interface to Item and Block): an item is its own item, a block's is its item block.
  */
 public interface ItemLike {
     default Item asItem() {
+        if (this instanceof net.minecraft.block.Block block) {
+            return Item.getItemFromBlock(block);
+        }
         return (Item) this;
     }
 
     /**
-     * The item of anything a 1.21 call passes as an ItemLike: 1.12.2 items and blocks don't implement this interface
-     * (an original 1.21.1 mod passes them as ItemLike anyway), so calls on it go through here.
+     * The item of anything a 1.21 call passes as an ItemLike (the converted calls on ItemLike go through here: also
+     * safe for a 1.12.2 class the coremod didn't reach).
      */
     static Item item(Object value) {
         if (value instanceof Item item) {
