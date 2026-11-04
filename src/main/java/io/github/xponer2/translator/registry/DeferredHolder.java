@@ -30,7 +30,7 @@ public class DeferredHolder<R, T extends R> implements Holder<R>, Supplier<T> {
     // the resolvers by key: holders made by create() for an object of a DeferredRegister (e.g. in an API) use them too
     private static final java.util.Map<ResourceKey<?>, Runnable> RESOLVERS = new java.util.concurrent.ConcurrentHashMap<>();
 
-    protected DeferredHolder(ResourceKey<R> key) {
+    public DeferredHolder(ResourceKey<R> key) {
         this.key = key;
     }
 

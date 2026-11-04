@@ -39,7 +39,7 @@ public final class DataComponentPatch {
 
     private final Map<DataComponentType<?>, Object> values;
 
-    DataComponentPatch(Map<DataComponentType<?>, Object> values) {
+    public DataComponentPatch(Map<DataComponentType<?>, Object> values) {
         this.values = values;
     }
 

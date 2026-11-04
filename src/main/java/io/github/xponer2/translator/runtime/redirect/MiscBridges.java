@@ -1612,6 +1612,16 @@ public final class MiscBridges {
 		return (MutableComponent) copy;
 	}
 
+	/**
+	 * 1.21 {@code getContents()}: what the component is made of, without its siblings. The 1.12.2 component is its own
+	 * content (the tables map PlainTextContents to TextComponentString, TranslatableContents to TextComponentTranslation),
+	 * so {@code getContents() instanceof PlainTextContents} and {@code .text()} read its own text (AE2 names a placed
+	 * block entity this way).
+	 */
+	public static ITextComponent getContents(ITextComponent text) {
+		return text;
+	}
+
 	public static String getString(ITextComponent text, int maxLength) {
 		String plain = text.getUnformattedText();
 		return plain.length() <= maxLength ? plain : plain.substring(0, maxLength);

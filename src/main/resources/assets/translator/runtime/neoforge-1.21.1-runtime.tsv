@@ -367,3 +367,8 @@ M	net/neoforged/neoforge/client/event/ModelEvent$ModifyBakingResult	getModels()	
 # 1.21 addAdditionalSaveData is 1.12.2 writeEntityToNBT (the read side has its row in the name table): mobs of
 # mods that extend LivingEntity / AbstractArrow saved none of their own data
 M	net/minecraft/world/entity/Entity	addAdditionalSaveData(net.minecraft.nbt.CompoundTag)	writeEntityToNBT
+C	net/minecraft/network/chat/ComponentContents	net/minecraft/util/text/ITextComponent
+C	net/minecraft/network/chat/contents/PlainTextContents	net/minecraft/util/text/TextComponentString
+C	net/minecraft/network/chat/contents/PlainTextContents$LiteralContents	net/minecraft/util/text/TextComponentString
+M	net/minecraft/network/chat/contents/PlainTextContents	text()	getText
+M	net/minecraft/network/chat/contents/PlainTextContents$LiteralContents	text()	getText
