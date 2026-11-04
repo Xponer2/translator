@@ -21,6 +21,48 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public class EntityRenderersEvent extends Event {
+	/** NeoForge: the mods' entity model layers (posted before the renderers, which bake them). */
+	public static class RegisterLayerDefinitions extends EntityRenderersEvent {
+		public void registerLayerDefinition(Object location, java.util.function.Supplier<?> definition) {
+			io.github.xponer2.translator.client.model.EntityModelSet.register(location, definition);
+		}
+	}
+
+	/** NeoForge: layers added to other mods' and vanilla renderers; 1.12.2's renderers take no 1.21 layers. */
+	public static class AddLayers extends EntityRenderersEvent {
+		public java.util.Set<Object> getSkins() {
+			return java.util.Collections.emptySet();
+		}
+
+		public java.util.Set<Object> getEntityTypes() {
+			return java.util.Collections.emptySet();
+		}
+
+		@javax.annotation.Nullable
+		public Object getRenderer(Object type) {
+			return null;
+		}
+
+		@javax.annotation.Nullable
+		public Object getSkin(Object model) {
+			return null;
+		}
+
+		public io.github.xponer2.translator.client.model.EntityModelSet getEntityModels() {
+			return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
+		}
+	}
+
+	/** NeoForge: skull models of the mods' skull types (1.12.2's skulls are its own). */
+	public static class CreateSkullModels extends EntityRenderersEvent {
+		public io.github.xponer2.translator.client.model.EntityModelSet getEntityModelSet() {
+			return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
+		}
+
+		public void registerSkullModel(Object type, Object model) {
+		}
+	}
+
 	public static class RegisterRenderers extends EntityRenderersEvent {
 		public <T extends TileEntity> void registerBlockEntityRenderer(BlockEntityType<? extends T> type, BlockEntityRendererProvider<T> provider) {
 			TesrAdapter.register(type, provider);

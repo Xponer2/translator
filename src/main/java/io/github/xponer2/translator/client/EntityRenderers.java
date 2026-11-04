@@ -82,7 +82,7 @@ public final class EntityRenderers {
 		Class<?>[] parameters = constructor.getParameterTypes();
 		Object[] args = new Object[parameters.length];
 		Object[] known = {mc.getRenderManager(), mc.getRenderItem(), mc.getBlockRendererDispatcher(), mc.getItemRenderer(), mc.fontRenderer,
-				mc.getResourceManager(), mc.getTextureManager()};
+				mc.getResourceManager(), mc.getTextureManager(), io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE};
 		for (int i = 0; i < parameters.length; i++) {
 			for (Object value : known) {
 				if (value != null && parameters[i].isInstance(value)) {

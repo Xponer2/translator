@@ -38,7 +38,10 @@ public final class ClientSetup {
 
 	// renderers and client extensions of the mods (subscribed in pre-init)
 	public static void init() {
+		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.RegisterLayerDefinitions());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.RegisterRenderers());
+		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.CreateSkullModels());
+		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.AddLayers());
 		MinecraftForge.EVENT_BUS.post(new RegisterClientExtensionsEvent());
 	}
 

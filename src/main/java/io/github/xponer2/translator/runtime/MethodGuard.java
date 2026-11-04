@@ -1050,11 +1050,26 @@ final class MethodGuard {
 					changed = true;
 					continue;
 				}
-				// a field typed by a type variable with a wider bound (T menu erased to Container): read it, cast it back
-				if (actual != null && this.isSubtype(field.desc, actual) && this.isTypeVariable(field.owner, field.name + " " + actual, false)) {
+				// a field typed by a type variable with a wider bound (T menu erased to Container), or a 1.12.2 field of the
+				// class the Translator's facade extends (HumanoidModel.head, a ModelPart, is ModelBiped's ModelRenderer
+				// bipedHead): read it, cast it back; a write needs no cast
+				boolean facade = field.desc.startsWith("Lio/github/xponer2/translator/");
+				if (actual != null && this.isSubtype(field.desc, actual) && (facade || this.isTypeVariable(field.owner, field.name + " " + actual, false))) {
+					if (field.getOpcode() == Opcodes.PUTFIELD || field.getOpcode() == Opcodes.PUTSTATIC) {
+						field.desc = actual;
+						this.redirected.incrementAndGet();
+						changed = true;
+						continue;
+					}
 					String expected = field.desc;
 					field.desc = actual;
-					method.instructions.insert(field, new TypeInsnNode(Opcodes.CHECKCAST, Type.getType(expected).getInternalName()));
+					if ("Lio/github/xponer2/translator/client/model/ModelPart;".equals(expected)) {
+						// a vanilla model's part is a plain ModelRenderer: a stand-in with its pose, not a failed cast
+						method.instructions.insert(field, new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/client/model/ModelPart", "of",
+								"(Lnet/minecraft/client/model/ModelRenderer;)Lio/github/xponer2/translator/client/model/ModelPart;", false));
+					} else {
+						method.instructions.insert(field, new TypeInsnNode(Opcodes.CHECKCAST, Type.getType(expected).getInternalName()));
+					}
 					this.redirected.incrementAndGet();
 					changed = true;
 					continue;

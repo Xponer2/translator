@@ -110,17 +110,33 @@ public final class RuntimeResourcePack implements IResourcePack {
 	 * AE2, the Aether, Create were missing), from the player's own Minecraft 1.21.1 jar. A model 1.12.2 has stays 1.12.2's.
 	 */
 	public static void addVanilla(File jar) throws IOException, ReflectiveOperationException {
-		install(new RuntimeResourcePack(jar, "Minecraft 1.21.1 models", true));
+		install(new RuntimeResourcePack(jar, "Minecraft 1.21.1 models and textures", true));
 	}
 
 	/** Whether the resource is one the 1.21.1 jar gives: a model of Minecraft that 1.12.2's own assets don't have. */
 	private boolean vanillaGives(ResourceLocation location) {
-		if (!"minecraft".equals(location.getNamespace()) || !location.getPath().startsWith("models/") || !location.getPath().endsWith(".json")
-				|| this.zip.getEntry(path(location)) == null) {
+		String file = location.getPath();
+		boolean model = file.startsWith("models/") && file.endsWith(".json");
+		boolean texture = file.startsWith("textures/") && (file.endsWith(".png") || file.endsWith(".png.mcmeta"));
+		if (!"minecraft".equals(location.getNamespace()) || !model && !texture || this.zip.getEntry(vanillaPath(location)) == null) {
 			return false;
 		}
 		var game = net.minecraft.client.Minecraft.getMinecraft().getResourcePackRepository().rprDefaultResourcePack;
 		return !game.resourceExists(location);
+	}
+
+	/**
+	 * Where the 1.21.1 jar has it: the textures 1.12.2 asks for in blocks/ and items/ are in block/ and item/ there
+	 * (the 755 vanilla textures the tested mods' models use that 1.12.2 lacks: deepslate, copper, cherry, bamboo...).
+	 */
+	private static String vanillaPath(ResourceLocation location) {
+		String file = location.getPath();
+		if (file.startsWith("textures/blocks/")) {
+			file = "textures/block/" + file.substring("textures/blocks/".length());
+		} else if (file.startsWith("textures/items/")) {
+			file = "textures/item/" + file.substring("textures/items/".length());
+		}
+		return "assets/minecraft/" + file;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -146,7 +162,7 @@ public final class RuntimeResourcePack implements IResourcePack {
 		if (this.vanilla && !this.vanillaGives(location)) {
 			throw new FileNotFoundException(location.toString());
 		}
-		String path = path(location);
+		String path = this.vanilla ? vanillaPath(location) : path(location);
 		ZipEntry entry = this.zip.getEntry(path);
 		if (entry == null && path.endsWith(".lang")) {
 			ZipEntry json = this.zip.getEntry(path.substring(0, path.length() - 5) + ".json");

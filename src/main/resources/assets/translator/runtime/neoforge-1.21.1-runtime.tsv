@@ -291,3 +291,27 @@ C	net/neoforged/neoforge/capabilities/EntityCapability	io/github/xponer2/transla
 # 1.21 RegistryOps (a format with the registries), the left arm of humanoid models
 C	net/minecraft/resources/RegistryOps	io/github/xponer2/translator/registry/RegistryOps
 F	net/minecraft/client/model/HumanoidModel	leftArm	bipedLeftArm
+# 1.21 entity models: the Translator's model parts (a 1.12.2 ModelRenderer with 1.21's named children and cubes),
+# baked from the mods' layer definitions (the 1.21 classes as they are)
+C	net/minecraft/client/model/geom/ModelPart	io/github/xponer2/translator/client/model/ModelPart
+C	net/minecraft/client/model/geom/ModelPart$Cube	io/github/xponer2/translator/client/model/ModelPart$Cube
+C	net/minecraft/client/model/geom/ModelPart$Polygon	io/github/xponer2/translator/client/model/ModelPart$Polygon
+C	net/minecraft/client/model/geom/ModelPart$Vertex	io/github/xponer2/translator/client/model/ModelPart$Vertex
+C	net/minecraft/client/model/geom/ModelPart$Visitor	io/github/xponer2/translator/client/model/ModelPart$Visitor
+C	net/minecraft/client/model/geom/PartPose	io/github/xponer2/translator/client/model/PartPose
+C	net/minecraft/client/model/geom/EntityModelSet	io/github/xponer2/translator/client/model/EntityModelSet
+F	net/minecraft/client/model/geom/ModelPart	children	children
+F	net/minecraft/client/model/geom/ModelPart	cubes	cubes
+F	net/minecraft/client/model/geom/ModelPart$Cube	minX	minX
+F	net/minecraft/client/model/geom/ModelPart$Cube	minY	minY
+F	net/minecraft/client/model/geom/ModelPart$Cube	minZ	minZ
+F	net/minecraft/client/model/geom/ModelPart$Cube	maxX	maxX
+F	net/minecraft/client/model/geom/ModelPart$Cube	maxY	maxY
+F	net/minecraft/client/model/geom/ModelPart$Cube	maxZ	maxZ
+F	net/minecraft/client/model/geom/ModelPart$Cube	polygons	polygons
+F	net/minecraft/client/model/geom/ModelPart$Polygon	vertices	vertices
+F	net/minecraft/client/model/geom/ModelPart$Polygon	normal	normal
+F	net/minecraft/client/model/geom/ModelPart$Vertex	pos	pos
+F	net/minecraft/client/model/geom/ModelPart$Vertex	u	u
+F	net/minecraft/client/model/geom/ModelPart$Vertex	v	v
+M	net/minecraft/client/model/geom/ModelPart$Vertex	remap(float,float)	remap
