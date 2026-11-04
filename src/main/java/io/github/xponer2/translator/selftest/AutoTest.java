@@ -43,6 +43,7 @@ public final class AutoTest {
 	private int state;
 	private int ticks;
 	private long started;
+	private ScreenTour tour;
 
 	private AutoTest(String folder) {
 		this.folder = folder;
@@ -110,8 +111,16 @@ public final class AutoTest {
 			case 2 -> {
 				// the test runs on the server thread; done when no run is left (after it started)
 				if (this.ticks > 40 && SelfTest.running() == null) {
-					LOGGER.info("Self-test finished, quitting");
-					this.state = 3;
+					// the first copy (or the only one) also tours the screens of the mods that change the interface
+					String shard = System.getProperty("translator.autotest.shard");
+					if (shard == null || shard.startsWith("1/")) {
+						LOGGER.info("Self-test finished, touring the screens");
+						this.tour = new ScreenTour(mc);
+						this.state = 4;
+					} else {
+						LOGGER.info("Self-test finished, quitting");
+						this.state = 3;
+					}
 					this.ticks = 0;
 				} else if (this.ticks > 40 && (mc.getIntegratedServer() == null || !mc.getIntegratedServer().isServerRunning() || mc.world == null)) {
 					// a crash of the server thread: the client stays, showing it; the script starts the game again
@@ -126,6 +135,13 @@ public final class AutoTest {
 			case 3 -> {
 				if (this.ticks > 40) {
 					mc.shutdown();
+				}
+			}
+			case 4 -> {
+				if (this.tour.tick()) {
+					LOGGER.info("Self-test finished, quitting");
+					this.state = 3;
+					this.ticks = 0;
 				}
 			}
 			default -> {

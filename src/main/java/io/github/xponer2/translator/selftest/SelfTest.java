@@ -130,6 +130,9 @@ public final class SelfTest {
 		final BlockPos cell;
 		final List<Block> blocks = new ArrayList<>();
 		final List<Item> items = new ArrayList<>();
+		final List<net.minecraftforge.fml.common.registry.EntityEntry> entities = new ArrayList<>();
+		final List<net.minecraft.world.biome.Biome> biomes = new ArrayList<>();
+		final List<String> dimensions = new ArrayList<>();
 		final ArrayDeque<Runnable> steps = new ArrayDeque<>();
 		final List<Record> records = new ArrayList<>();
 		/** Unbridged calls of other threads while the test ran (the client every frame): not caused by one block. */
@@ -180,6 +183,27 @@ public final class SelfTest {
 					this.items.add(item);
 				}
 			}
+			// beside the blocks and items: the mods' entities, biomes and dimensions
+			for (var entry : ForgeRegistries.ENTITIES) {
+				var id = entry.getRegistryName();
+				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && (filter == null || filter.equals(id.getNamespace()))
+						&& index++ % shards == shard) {
+					this.entities.add(entry);
+				}
+			}
+			for (var biome : ForgeRegistries.BIOMES) {
+				var id = biome.getRegistryName();
+				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && (filter == null || filter.equals(id.getNamespace()))
+						&& index++ % shards == shard) {
+					this.biomes.add(biome);
+				}
+			}
+			for (String dimension : WorldChecks.dimensionsOfMods(filter)) {
+				if (index++ % shards == shard) {
+					this.dimensions.add(dimension);
+				}
+			}
+			WorldChecks.reset();
 			// the automatic test goes on after a crash: what was tested before it, and what crashed the game, isn't again
 			this.progress = System.getProperty("translator.autotest") != null
 					? new File(this.world.getMinecraftServer().getDataDirectory(), "translator/selftest/autotest/records.jsonl") : null;
@@ -192,6 +216,21 @@ public final class SelfTest {
 			for (Item item : this.items) {
 				if (!done.contains("item " + item.getRegistryName())) {
 					this.planItem(item);
+				}
+			}
+			for (var entry : this.entities) {
+				if (!done.contains("entity " + entry.getRegistryName())) {
+					this.planEntity(entry);
+				}
+			}
+			for (var biome : this.biomes) {
+				if (!done.contains("biome " + biome.getRegistryName())) {
+					this.planBiome(biome);
+				}
+			}
+			for (String dimension : this.dimensions) {
+				if (!done.contains("dimension " + dimension)) {
+					this.planDimension(dimension);
 				}
 			}
 			this.steps.add(this::finish);
@@ -219,7 +258,8 @@ public final class SelfTest {
 				File crashed = new File(this.progress.getParentFile(), "crashed.txt");
 				if (crashed.isFile()) {
 					for (String line : java.nio.file.Files.readAllLines(crashed.toPath(), StandardCharsets.UTF_8)) {
-						String[] cols = line.split("\t", 2);
+						// a file written by Windows PowerShell starts with a byte order mark: "﻿block x" wasn't "block x"
+						String[] cols = line.replace("﻿", "").split("\t", 2);
 						String[] key = cols[0].trim().split(" ", 2);
 						if (key.length == 2 && done.add(cols[0].trim())) {
 							int colon = key[1].indexOf(':');
@@ -473,6 +513,85 @@ public final class SelfTest {
 					this.attempt("break", () -> this.world.destroyBlock(this.cell, true));
 				}
 				this.clearCell();
+			});
+		}
+
+		/**
+		 * An entity of a 1.21.1 mod: made (not added to the world: a failure in its tick there would stop the server),
+		 * spawned as a mob would be, ticked, saved and loaded, removed; on the client, whether it has a renderer.
+		 */
+		private void planEntity(net.minecraftforge.fml.common.registry.EntityEntry entry) {
+			String id = String.valueOf(entry.getRegistryName());
+			this.steps.add(() -> {
+				this.begin(id, "entity");
+				this.closeMenu();
+				this.clearCell();
+				net.minecraft.entity.Entity[] made = new net.minecraft.entity.Entity[1];
+				if (!this.attempt("create", () -> made[0] = entry.newInstance(this.world))) {
+					return;
+				}
+				net.minecraft.entity.Entity entity = made[0];
+				if (entity == null) {
+					this.current.problems.add("create: nothing made");
+					return;
+				}
+				this.current.notes.add(entity.getClass().getSimpleName());
+				entity.setPosition(this.cell.getX() + 0.5, this.cell.getY(), this.cell.getZ() + 0.5);
+				if (entity instanceof net.minecraft.entity.EntityLiving living) {
+					this.attempt("first spawn", () -> living.onInitialSpawn(this.world.getDifficultyForLocation(this.cell), null));
+				}
+				this.attempt("tick", () -> {
+					for (int i = 0; i < 5; i++) {
+						entity.onUpdate();
+					}
+				});
+				this.attempt("save/load", () -> {
+					NBTTagCompound tag = new NBTTagCompound();
+					entity.writeToNBT(tag);
+					entity.readFromNBT(tag);
+				});
+				this.attempt("remove", entity::setDead);
+				if (FMLCommonHandler.instance().getSide().isClient()) {
+					this.waitFor(SelfTestClient.checkEntityRenderer(this, id, entity.getClass())::get, 40);
+				}
+			});
+		}
+
+		/** A biome of a 1.21.1 mod: its properties, and whether any world generates it. */
+		private void planBiome(net.minecraft.world.biome.Biome biome) {
+			String id = String.valueOf(biome.getRegistryName());
+			this.steps.add(() -> {
+				this.begin(id, "biome");
+				this.attempt("properties", () -> {
+					biome.getBiomeName();
+					biome.getTemperature(this.cell);
+					biome.getRainfall();
+					biome.getSpawnableList(net.minecraft.entity.EnumCreatureType.MONSTER);
+				});
+				if (!WorldChecks.generatedBiomes(this.world).contains(biome)) {
+					this.current.problems.add("not generated: no world of 1.12.2 places this biome (the 1.21.1 biome sources, TerraBlender "
+							+ "regions and the mods' dimensions aren't in 1.12.2's world generation)");
+				}
+			});
+		}
+
+		/** A dimension a 1.21.1 mod defines: whether 1.12.2 has it, its world loads and makes a chunk. */
+		private void planDimension(String id) {
+			this.steps.add(() -> {
+				this.begin(id, "dimension");
+				net.minecraft.world.DimensionType type = WorldChecks.dimensionType(id);
+				if (type == null) {
+					this.current.problems.add("not registered: 1.12.2 has no such dimension (its portal and its world can't work)");
+					return;
+				}
+				this.current.notes.add("dimension " + type.getId());
+				this.attempt("load", () -> net.minecraftforge.common.DimensionManager.initDimension(type.getId()));
+				WorldServer dimension = net.minecraftforge.common.DimensionManager.getWorld(type.getId());
+				if (dimension == null) {
+					this.current.problems.add("load: no world");
+				} else {
+					this.attempt("generate", () -> dimension.getChunkProvider().provideChunk(0, 0));
+				}
 			});
 		}
 

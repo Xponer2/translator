@@ -218,6 +218,25 @@ final class SelfTestClient {
 		return done;
 	}
 
+	/** On the client thread: whether an entity class has a renderer of its own (else it is drawn as a white box or not at all). */
+	static AtomicBoolean checkEntityRenderer(SelfTest.Run run, String id, Class<? extends net.minecraft.entity.Entity> type) {
+		AtomicBoolean done = new AtomicBoolean();
+		Minecraft mc = Minecraft.getMinecraft();
+		mc.addScheduledTask(() -> {
+			try {
+				var render = mc.getRenderManager().getEntityClassRenderObject(type);
+				if (render == null || render.getClass() == net.minecraft.client.renderer.entity.RenderEntity.class) {
+					run.addClientProblem("entity", id, "renderer: none (drawn as a white box or not at all)");
+				}
+			} catch (Throwable t) {
+				run.addClientProblem("entity", id, "renderer: " + SelfTest.describe(t));
+			} finally {
+				done.set(true);
+			}
+		});
+		return done;
+	}
+
 	/** A sprite with fully transparent pixels in its first frame (a tenth of them or more: the cut-out shape of a plant). */
 	private static boolean transparent(TextureAtlasSprite sprite) {
 		if (sprite.getFrameCount() == 0) {
