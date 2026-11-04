@@ -28,6 +28,24 @@ public final class EntityGapBridges {
 	private EntityGapBridges() {
 	}
 
+	/** 1.21 {@code living.getArmorCoverPercentage()}: the share of armor slots with something in them. */
+	public static float getArmorCoverPercentage(net.minecraft.entity.EntityLivingBase entity) {
+		int worn = 0;
+		int slots = 0;
+		for (net.minecraft.item.ItemStack stack : entity.getArmorInventoryList()) {
+			slots++;
+			if (!stack.isEmpty()) {
+				worn++;
+			}
+		}
+		return slots == 0 ? 0.0F : (float) worn / (float) slots;
+	}
+
+	/** 1.21 {@code slot.isArmor()}: a humanoid armor slot. */
+	public static boolean isArmor(net.minecraft.inventory.EntityEquipmentSlot slot) {
+		return slot.getSlotType() == net.minecraft.inventory.EntityEquipmentSlot.Type.ARMOR;
+	}
+
 	/**
 	 * 1.21 {@code living.getAttributes()}: the entity's attribute map (1.12.2 getAttributeMap declares the abstract
 	 * map, an AttributeMap on both sides; 7 mods read their gear's and spells' attributes from it).

@@ -1966,11 +1966,12 @@ final class MethodGuard {
 		// the class is written); checked with room, or a fine method counts as broken and is stubbed
 		int maxStack = method.maxStack;
 		method.maxStack = maxStack + 16;
+		var verifier = new Verifier();
 		try {
-			new Analyzer<>(new Verifier()).analyze(owner, method);
+			new Analyzer<>(verifier).analyze(owner, method);
 			return null;
 		} catch (AnalyzerException | RuntimeException e) {
-			return "bytecode doesn't verify: " + e.getMessage();
+			return "bytecode doesn't verify: " + e.getMessage() + (verifier.mismatch != null ? " (" + verifier.mismatch + ")" : "");
 		} finally {
 			method.maxStack = maxStack;
 		}
@@ -2257,6 +2258,12 @@ final class MethodGuard {
 	}
 
 	/** SimpleVerifier on the converted class hierarchy, without loading any class. */
+	/** Object, Cloneable or Serializable: the supertypes of every array. */
+	private static boolean isArraySupertype(Type type) {
+		String name = type.getInternalName();
+		return "java/lang/Object".equals(name) || "java/lang/Cloneable".equals(name) || "java/io/Serializable".equals(name);
+	}
+
 	private final class Verifier extends SimpleVerifier {
 		Verifier() {
 			super(Opcodes.ASM9, null, null, null, false);
@@ -2289,12 +2296,20 @@ final class MethodGuard {
 				return true;
 			}
 			if (type.getSort() == Type.ARRAY || other.getSort() == Type.ARRAY) {
-				if (type.getSort() == Type.ARRAY && other.getSort() == Type.ARRAY && type.getDimensions() == other.getDimensions()) {
-					Type a = type.getElementType();
-					Type b = other.getElementType();
+				if (type.getSort() != Type.ARRAY) {
+					// an array is an Object, a Cloneable and a Serializable
+					return other.getSort() == Type.ARRAY && isArraySupertype(type);
+				}
+				if (other.getSort() != Type.ARRAY) {
+					return false;
+				}
+				Type a = type.getElementType();
+				Type b = other.getElementType();
+				if (type.getDimensions() == other.getDimensions()) {
 					return a.getSort() == Type.OBJECT && b.getSort() == Type.OBJECT && this.isAssignableFrom(a, b) || a.equals(b);
 				}
-				return false;
+				// int[][] is an Object[] (its elements, int[], are Objects); never the other way
+				return other.getDimensions() > type.getDimensions() && a.getSort() == Type.OBJECT && isArraySupertype(a);
 			}
 			if (this.isInterface(type)) {
 				// the JVM verifier lets any object stand for an interface type
@@ -2308,9 +2323,12 @@ final class MethodGuard {
 			return false;
 		}
 
+		/** The last value that wasn't of the expected class type: told with the error (with where its chain stopped). */
+		String mismatch;
+
 		/**
-		 * A value of a class type that isn't the expected class: the error names both, and where the value's class
-		 * chain stopped when a class of it can't be read (the release game read some 1.12.2 classes wrong once).
+		 * Whether the value is of the expected type, by the class hierarchy the guard reads (never by loading classes).
+		 * Only an answer: the basic verifier also asks it to choose (BALOAD: a boolean[] or else a byte[]).
 		 */
 		@Override
 		protected boolean isSubTypeOf(xyz.wagyourtail.jvmdg.shade.asm.tree.analysis.BasicValue value,
@@ -2318,9 +2336,14 @@ final class MethodGuard {
 			Type expectedType = expected.getType();
 			Type type = value.getType();
 			if (expectedType != null && type != null && (expectedType.getSort() == Type.OBJECT || expectedType.getSort() == Type.ARRAY)
-					&& (type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY) && !"null".equals(type.getInternalName())
-					&& !this.isAssignableFrom(expectedType, type)) {
-				throw new IllegalStateException(type + " isn't a " + expectedType + this.unreadable(type));
+					&& (type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY)) {
+				if ("null".equals(type.getInternalName()) || this.isAssignableFrom(expectedType, type)) {
+					return true;
+				}
+				if (expectedType.getSort() == Type.OBJECT || expectedType.getElementType().getSort() == Type.OBJECT) {
+					this.mismatch = type + " isn't a " + expectedType + this.unreadable(type);
+				}
+				return false;
 			}
 			return super.isSubTypeOf(value, expected);
 		}

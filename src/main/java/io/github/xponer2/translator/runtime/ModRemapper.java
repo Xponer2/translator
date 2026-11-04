@@ -87,12 +87,24 @@ final class ModRemapper extends Remapper {
 		return name.startsWith("java/") || name.startsWith("javax/") || name.startsWith("sun/") || name.startsWith("jdk/");
 	}
 
+	/** A class of a mod's API, not of the game, NeoForge or Mojang's libraries. */
+	private static boolean isModApi(String internalName) {
+		return !internalName.startsWith("net/minecraft/") && !internalName.startsWith("net/neoforged/") && !internalName.startsWith("com/mojang/")
+				&& !internalName.startsWith("java");
+	}
+
 	@Override
 	public String map(String internalName) {
 		if (this.mod.containsKey(internalName) || isPlatform(internalName)) {
 			return internalName;
 		}
 		String mapped = this.table.classes.get(internalName);
+		if (mapped != null && !mapped.equals(internalName) && isModApi(internalName) && this.target.exists(internalName)) {
+			// a mod's API the table gives its 1.12.2 version or a Translator shape on it (JEI's VanillaTypes -> JEI 4's)
+			// where the mod's 1.21.1 jar runs here, converted: its own 1.21 class (9 mods' JEI plugins found no
+			// VanillaTypes.ITEM_STACK in a JEI 4 class nobody had, and talked to JEI 1.21 through JEI 4 shapes)
+			return internalName;
+		}
 		if (mapped != null && (!mapped.startsWith(TRANSLATOR) || this.target.exists(mapped))) {
 			return mapped;
 		}

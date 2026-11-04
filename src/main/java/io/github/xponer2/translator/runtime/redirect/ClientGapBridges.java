@@ -64,6 +64,19 @@ public final class ClientGapBridges {
 		return mode != null ? mode : CarriedBridges.constant("com.mojang.blaze3d.vertex.VertexFormat$Mode", "QUADS");
 	}
 
+	/** NeoForge {@code flag.hasShiftDown()}: shift held now (tooltips that show more with shift). */
+	public static boolean hasShiftDown(net.minecraft.client.util.ITooltipFlag flag) {
+		return net.minecraft.client.gui.GuiScreen.isShiftKeyDown();
+	}
+
+	public static boolean hasControlDown(net.minecraft.client.util.ITooltipFlag flag) {
+		return net.minecraft.client.gui.GuiScreen.isCtrlKeyDown();
+	}
+
+	public static boolean hasAltDown(net.minecraft.client.util.ITooltipFlag flag) {
+		return net.minecraft.client.gui.GuiScreen.isAltKeyDown();
+	}
+
 	/** 1.21 {@code minecraft.keyboardHandler}: the clipboard of 1.12.2. */
 	public static io.github.xponer2.translator.client.KeyboardHandler keyboardHandler(Minecraft minecraft) {
 		return io.github.xponer2.translator.client.KeyboardHandler.INSTANCE;

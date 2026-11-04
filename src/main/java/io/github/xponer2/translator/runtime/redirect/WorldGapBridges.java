@@ -187,6 +187,33 @@ public final class WorldGapBridges {
 		};
 	}
 
+	// --- mob spawns of biomes and structures -------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code new MobSpawnSettings.SpawnerData(type, weight, min, max)}: the 1.12.2 spawn entry of the type's
+	 * entity class (217 sites: Biomes O' Plenty's and Twilight Forest's biome and structure spawns).
+	 */
+	@SuppressWarnings("unchecked")
+	public static net.minecraft.world.biome.Biome.SpawnListEntry newBiome_SpawnListEntry(io.github.xponer2.translator.registry.EntityType<?> type, int weight,
+			int minCount, int maxCount) {
+		return new net.minecraft.world.biome.Biome.SpawnListEntry((Class<? extends net.minecraft.entity.EntityLiving>) type.getEntityClass(), weight, minCount,
+				maxCount);
+	}
+
+	/** 1.21 {@code spawnerData.type}: the type of the entry's entity class (null for one without a registration). */
+	@javax.annotation.Nullable
+	public static io.github.xponer2.translator.registry.EntityType<?> type(net.minecraft.world.biome.Biome.SpawnListEntry entry) {
+		var registration = net.minecraftforge.fml.common.registry.EntityRegistry.getEntry(entry.entityClass);
+		return registration == null ? null : io.github.xponer2.translator.registry.EntityType.of(registration);
+	}
+
+	// --- items ----------------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code stack.canFitInsideContainerItems()}: not a shulker box (bags and belts keep them out). */
+	public static boolean canFitInsideContainerItems(ItemStack stack) {
+		return !(net.minecraft.block.Block.getBlockFromItem(stack.getItem()) instanceof net.minecraft.block.BlockShulkerBox);
+	}
+
 	// --- bone meal on a vanilla block ------------------------------------------------------------------------------------
 
 	/** 1.21 {@code bonemealable.performBonemeal(level, random, pos, state)}: 1.12.2 grow (8 mods grow vanilla plants so). */
