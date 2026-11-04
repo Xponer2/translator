@@ -33,6 +33,11 @@ public class ClipContext {
 		this.fluid = fluid;
 	}
 
+	/** 1.21 {@code new ClipContext(from, to, block, fluid, collisionContext)} (8 mods ray-trace with one). */
+	public ClipContext(Vec3d from, Vec3d to, Block block, Fluid fluid, io.github.xponer2.translator.shape.CollisionContext context) {
+		this(from, to, block, fluid, context == null ? null : context.getEntity());
+	}
+
 	public Vec3d getFrom() {
 		return this.from;
 	}

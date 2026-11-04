@@ -187,6 +187,108 @@ public final class WorldGapBridges {
 		};
 	}
 
+	// --- sounds -------------------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code level.playSound(player, x, y, z, soundHolder, source, volume, pitch)} (60 call sites). */
+	public static void playSound(World world, @javax.annotation.Nullable EntityPlayer player, double x, double y, double z,
+			io.github.xponer2.translator.registry.Holder<?> sound, net.minecraft.util.SoundCategory category, float volume, float pitch) {
+		if (sound != null && sound.value() instanceof net.minecraft.util.SoundEvent event) {
+			world.playSound(player, x, y, z, event, category, volume, pitch);
+		}
+	}
+
+	/** 1.21 {@code level.playSound(player, x, y, z, sound, source)}: volume and pitch 1. */
+	public static void playSound(World world, @javax.annotation.Nullable EntityPlayer player, double x, double y, double z,
+			net.minecraft.util.SoundEvent sound, net.minecraft.util.SoundCategory category) {
+		world.playSound(player, x, y, z, sound, category, 1.0F, 1.0F);
+	}
+
+	// --- Vec3 record accessors as method references (Vec3::x) -----------------------------------------------------------
+
+	public static double x(net.minecraft.util.math.Vec3d vector) {
+		return vector.x;
+	}
+
+	public static double y(net.minecraft.util.math.Vec3d vector) {
+		return vector.y;
+	}
+
+	public static double z(net.minecraft.util.math.Vec3d vector) {
+		return vector.z;
+	}
+
+	// --- SimpleContainer --------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code new SimpleContainer(size)}: 1.12.2's InventoryBasic without a title (9 mods' internal inventories). */
+	public static net.minecraft.inventory.InventoryBasic newInventoryBasic(int size) {
+		return new net.minecraft.inventory.InventoryBasic("", false, size);
+	}
+
+	public static net.minecraft.inventory.InventoryBasic newInventoryBasic(ItemStack[] stacks) {
+		var inventory = new net.minecraft.inventory.InventoryBasic("", false, stacks.length);
+		for (int i = 0; i < stacks.length; i++) {
+			inventory.setInventorySlotContents(i, stacks[i]);
+		}
+		return inventory;
+	}
+
+	// --- damage sources by their 1.21 type --------------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code new DamageSource(typeHolder[, direct[, causing[, position]]])}: the 1.12.2 source named by the type's
+	 * id path ("generic", or a mod's own type), with its entities (10 mods make their damage this way).
+	 */
+	public static net.minecraft.util.DamageSource newDamageSource(io.github.xponer2.translator.registry.Holder<?> type) {
+		return new net.minecraft.util.DamageSource(damageName(type));
+	}
+
+	public static net.minecraft.util.DamageSource newDamageSource(io.github.xponer2.translator.registry.Holder<?> type,
+			@javax.annotation.Nullable net.minecraft.entity.Entity direct) {
+		return direct == null ? newDamageSource(type) : new net.minecraft.util.EntityDamageSource(damageName(type), direct);
+	}
+
+	public static net.minecraft.util.DamageSource newDamageSource(io.github.xponer2.translator.registry.Holder<?> type,
+			@javax.annotation.Nullable net.minecraft.entity.Entity direct, @javax.annotation.Nullable net.minecraft.entity.Entity causing) {
+		if (direct == null && causing == null) {
+			return newDamageSource(type);
+		}
+		return direct != null && causing != null && direct != causing
+				? new net.minecraft.util.EntityDamageSourceIndirect(damageName(type), direct, causing)
+				: new net.minecraft.util.EntityDamageSource(damageName(type), direct != null ? direct : causing);
+	}
+
+	public static net.minecraft.util.DamageSource newDamageSource(io.github.xponer2.translator.registry.Holder<?> type,
+			@javax.annotation.Nullable net.minecraft.entity.Entity direct, @javax.annotation.Nullable net.minecraft.entity.Entity causing,
+			@javax.annotation.Nullable net.minecraft.util.math.Vec3d position) {
+		return newDamageSource(type, direct, causing);
+	}
+
+	private static String damageName(io.github.xponer2.translator.registry.Holder<?> type) {
+		try {
+			var key = type.unwrapKey();
+			if (key.isPresent()) {
+				return key.get().location().getPath();
+			}
+		} catch (RuntimeException e) {
+			// a direct holder: its value's own name
+		}
+		return "generic";
+	}
+
+	// --- block state properties -------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code property.getValue(name)}: the value of that name (1.12.2 parseValue gives a Guava Optional). */
+	public static <T extends Comparable<T>> java.util.Optional<T> getValue(net.minecraft.block.properties.IProperty<T> property, String name) {
+		return java.util.Optional.ofNullable(property.parseValue(name).orNull());
+	}
+
+	// --- events -------------------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code event.getDrops()}: the dropped items (a Collection in 1.21, the 1.12.2 list). */
+	public static java.util.Collection<net.minecraft.entity.item.EntityItem> getDrops(net.minecraftforge.event.entity.living.LivingDropsEvent event) {
+		return event.getDrops();
+	}
+
 	// --- crash reports -----------------------------------------------------------------------------------------------------
 
 	/** 1.21 {@code category.setDetail(name, value)}: 1.12.2 addCrashSection (a supplier of the value: addDetail). */

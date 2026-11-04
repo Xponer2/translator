@@ -394,3 +394,4 @@ M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	getPlayer()	getEnt
 M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	getFovModifier()	getFov
 M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	getNewFovModifier()	getNewfov
 M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	setNewFovModifier(float)	setNewfov
+M	net/minecraft/world/entity/ai/attributes/AttributeInstance	removeModifier(net.minecraft.resources.ResourceLocation)	removeModifierById

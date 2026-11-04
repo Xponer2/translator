@@ -137,12 +137,26 @@ public final class AttributeInstance {
 		this.addPermanentModifier(modifier);
 	}
 
+	/** Removes the modifier of that id (the ports call this one). */
 	public void removeModifier(ResourceLocation id) {
+		this.removeModifierById(id);
+	}
+
+	/**
+	 * 1.21 {@code removeModifier(id)} as original 1.21.1 mods call it (it returns whether the attribute had it, 8 mods
+	 * test that): M line of the runtime table.
+	 */
+	public boolean removeModifierById(ResourceLocation id) {
 		if (this.forge != null) {
+			boolean had = this.forge.getModifier(AttributeModifier.uuidOf(id)) != null;
 			this.forge.removeModifier(AttributeModifier.uuidOf(id));
-		} else if (this.virtual().remove(id) != null) {
-			this.applyVirtual();
+			return had;
 		}
+		if (this.virtual().remove(id) != null) {
+			this.applyVirtual();
+			return true;
+		}
+		return false;
 	}
 
 	public void removeModifier(AttributeModifier modifier) {

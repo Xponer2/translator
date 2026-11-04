@@ -43,9 +43,14 @@ public class EntityRenderersEvent extends Event {
 			return null;
 		}
 
+		/**
+		 * 1.21 {@code event.getSkin(model)}: the player renderer of that skin model ("default" or "slim" in 1.12.2),
+		 * which mods add their layers to (8 mods' capes, wings, armor parts).
+		 */
 		@javax.annotation.Nullable
-		public Object getSkin(Object model) {
-			return null;
+		public net.minecraft.client.renderer.entity.Render<?> getSkin(Object model) {
+			String name = model instanceof Enum<?> constant && "SLIM".equals(constant.name()) || "slim".equals(String.valueOf(model)) ? "slim" : "default";
+			return net.minecraft.client.Minecraft.getMinecraft().getRenderManager().getSkinMap().get(name);
 		}
 
 		public io.github.xponer2.translator.client.model.EntityModelSet getEntityModels() {

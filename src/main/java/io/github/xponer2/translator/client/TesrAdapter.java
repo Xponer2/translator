@@ -58,6 +58,11 @@ public final class TesrAdapter<T extends TileEntity> extends TileEntitySpecialRe
         }
     }
 
+    /** The 1.21 renderer this adapter draws with. */
+    public BlockEntityRenderer<T> renderer() {
+        return this.renderer;
+    }
+
     @Override
     public boolean isGlobalRenderer(T tile) {
         return this.renderer.isGlobalRenderer(tile);

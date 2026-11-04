@@ -132,6 +132,20 @@ public final class ClientGapBridges {
 		return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
 	}
 
+	// --- block entity renderers ------------------------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code dispatcher.getRenderer(blockEntity)}: the 1.21 renderer a mod registered for it (the TESR adapter
+	 * holds it), null for a 1.12.2 one (13 mods draw other block entities' renderers in theirs).
+	 */
+	@Nullable
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static io.github.xponer2.translator.client.BlockEntityRenderer getRenderer(
+			net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher dispatcher, net.minecraft.tileentity.TileEntity tile) {
+		var renderer = dispatcher.getRenderer(tile);
+		return renderer instanceof io.github.xponer2.translator.client.TesrAdapter adapter ? adapter.renderer() : null;
+	}
+
 	// --- humanoid models: 1.21 HumanoidModel / PlayerModel from a baked layer ------------------------------------------------
 
 	/** 1.21 {@code new HumanoidModel(root)}: a biped with the layer's parts (armor and mob models of 11 mods). */

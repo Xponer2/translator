@@ -178,6 +178,30 @@ final class TargetClasses {
 		return false;
 	}
 
+	/** A field of that name (any type) of the class or one of its supertypes. */
+	boolean hasFieldNamed(String owner, String name) {
+		var todo = new ArrayDeque<String>();
+		var seen = new HashSet<String>();
+		todo.add(owner);
+		while (!todo.isEmpty()) {
+			String current = todo.poll();
+			if (!seen.add(current)) {
+				continue;
+			}
+			ClassInfo info = this.get(current);
+			if (info == null) {
+				continue;
+			}
+			for (String field : info.fields) {
+				if (field.startsWith(name + " ")) {
+					return true;
+				}
+			}
+			todo.addAll(info.supertypes());
+		}
+		return false;
+	}
+
 	/** A method or field (name + descriptor) of the class or one of its supertypes. */
 	boolean hasMember(String owner, String name, String desc, boolean method) {
 		var todo = new ArrayDeque<String>();
