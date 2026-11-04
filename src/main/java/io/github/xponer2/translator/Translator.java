@@ -71,6 +71,8 @@ public final class Translator {
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.item.DataEnchantments());
 		// the biomes of the 1.21.1 mods (data/<mod>/worldgen/biome), into the 1.12.2 overworld
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.DataBiomes());
+		// ids earlier Translator versions registered under another name (silver_ -> light_gray_), kept in old worlds
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.registry.RenamedIds());
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.client.ClientSetup.preInit();
 		}
