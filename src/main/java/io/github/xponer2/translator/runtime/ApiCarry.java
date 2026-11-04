@@ -673,7 +673,7 @@ final class ApiCarry {
 				copy.setTime(0);
 				out.putNextEntry(copy);
 				try (InputStream in = zip.getInputStream(entry)) {
-					out.write(open(ModJar.readAll(in)));
+					out.write(CarriedPatches.apply(path, open(ModJar.readAll(in))));
 				}
 				out.closeEntry();
 				carried++;

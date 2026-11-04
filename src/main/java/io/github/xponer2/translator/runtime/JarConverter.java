@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "92";
+	static final String VERSION = "93";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
@@ -287,6 +287,8 @@ final class JarConverter {
 							path = moved + ".class";
 						}
 					}
+					// calls through 1.21 interfaces the 1.12.2 classes don't implement (DataComponentHolder on ItemStack)
+					bytes = InterfaceDispatch.rewrite(reader.getClassName(), bytes);
 				}
 				out.putNextEntry(new ZipEntry(path));
 				out.write(bytes);

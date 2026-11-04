@@ -174,6 +174,16 @@ public final class CarriedBridges {
 		return nearest;
 	}
 
+	/**
+	 * A {@code map.put} of a carried class whose map takes each key once (BlockFamilies): the first value stays, and
+	 * "nothing was there" is answered, so its check for a second one passes (1.21 blocks that are one 1.12.2 block).
+	 */
+	@Nullable
+	public static Object putFirst(java.util.Map<Object, Object> map, Object key, Object value) {
+		map.putIfAbsent(key, value);
+		return null;
+	}
+
 	// --- helpers --------------------------------------------------------------------------------------------------------
 
 	/** A public method the object's own class (not Object) declares or inherits, else null. */
