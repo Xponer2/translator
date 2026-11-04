@@ -45,3 +45,5 @@ S	net/minecraft/client/resources/sounds/AbstractSoundInstance	io/github/xponer2/
 S	net/minecraft/client/resources/sounds/AbstractTickableSoundInstance	io/github/xponer2/translator/client/AbstractTickableSoundInstance
 S	net/minecraft/world/entity/Entity	io/github/xponer2/translator/runtime/mc/Entity
 S	net/minecraft/client/renderer/entity/EntityRenderer	io/github/xponer2/translator/client/entity/EntityRenderer
+S	net/minecraft/world/level/material/Fluid	io/github/xponer2/translator/fluids/FluidBase
+S	net/minecraft/world/level/material/FlowingFluid	io/github/xponer2/translator/fluids/FlowingFluid

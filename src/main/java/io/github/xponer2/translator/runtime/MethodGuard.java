@@ -1451,6 +1451,13 @@ final class MethodGuard {
 		if (from.equals(to)) {
 			return true;
 		}
+		// an array of objects is an Object, and an Object[] of a wider element type (FluidType[] as Object[])
+		if (from.getSort() == Type.ARRAY && to.getSort() == Type.OBJECT) {
+			return "java/lang/Object".equals(to.getInternalName());
+		}
+		if (from.getSort() == Type.ARRAY && to.getSort() == Type.ARRAY) {
+			return from.getDimensions() == to.getDimensions() && this.assignable(from.getElementType(), to.getElementType());
+		}
 		if (from.getSort() != Type.OBJECT || to.getSort() != Type.OBJECT) {
 			return false;
 		}

@@ -31,6 +31,33 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class RegisterClientExtensionsEvent extends Event {
 	private static final Map<Item, IClientItemExtensions> ITEMS = new IdentityHashMap<>();
 
+	/**
+	 * NeoForge {@code registerFluidType(extensions, types...)}: the still and flowing textures and the tint of the
+	 * fluids of those types go to their Forge fluids (the 1.21 classes are the carried ones, read by name).
+	 */
+	public void registerFluidType(Object extensions, Object[] types) {
+		var wanted = java.util.Arrays.asList(types);
+		net.minecraft.util.ResourceLocation still = (net.minecraft.util.ResourceLocation) call(extensions, "getStillTexture");
+		net.minecraft.util.ResourceLocation flowing = (net.minecraft.util.ResourceLocation) call(extensions, "getFlowingTexture");
+		Object tint = call(extensions, "getTintColor");
+		for (var fluid : io.github.xponer2.translator.fluids.FluidBase.all()) {
+			if (wanted.contains(call(fluid, "getFluidType"))) {
+				fluid.setTextures(still, flowing, tint instanceof Integer color ? color : -1);
+			}
+		}
+	}
+
+	@javax.annotation.Nullable
+	private static Object call(Object target, String method) {
+		try {
+			var m = target.getClass().getMethod(method);
+			m.setAccessible(true);
+			return m.invoke(target);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return null;
+		}
+	}
+
 	public void registerItem(IClientItemExtensions extensions, Item... items) {
 		for (var item : items) {
 			ITEMS.put(item, extensions);
