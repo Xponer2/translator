@@ -616,6 +616,9 @@ public final class SelfTest {
 					}
 				});
 				this.player.setHeldItem(EnumHand.MAIN_HAND, stack.copy());
+				// the client gets the item before what its use sends: a menu of the held item (AE2's network tool) looks
+				// for it in the client's hand
+				this.player.inventoryContainer.detectAndSendChanges();
 				Container before = this.player.openContainer;
 				this.attempt("use", () -> this.player.getHeldItemMainhand().useItemRightClick(this.world, this.player, EnumHand.MAIN_HAND));
 				if (this.player.openContainer != before && this.player.openContainer != this.player.inventoryContainer) {
@@ -635,6 +638,7 @@ public final class SelfTest {
 				this.current = record[0];
 				this.closeMenu();
 				this.player.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(item));
+				this.player.inventoryContainer.detectAndSendChanges();
 				this.attempt("use on a block", () -> this.player.getHeldItemMainhand().onItemUse(this.player, this.world, this.cell.down(),
 						EnumHand.MAIN_HAND, EnumFacing.UP, 0.5F, 1.0F, 0.5F));
 				this.holdUse();

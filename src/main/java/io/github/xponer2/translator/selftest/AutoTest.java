@@ -38,12 +38,16 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public final class AutoTest {
 	private static final Logger LOGGER = LogManager.getLogger("Translator AutoTest");
 	private static final long TIMEOUT_MS = 120 * 60 * 1000L;
+	/** How long the client may go without a tick while the test runs before the watchdog quits the game. */
+	private static final long STUCK_MS = 3 * 60 * 1000L;
 
 	private final String folder;
-	private int state;
+	private volatile int state;
 	private int ticks;
 	private long started;
 	private ScreenTour tour;
+	private volatile long lastTick;
+	private volatile Thread client;
 
 	private AutoTest(String folder) {
 		this.folder = folder;
@@ -64,7 +68,39 @@ public final class AutoTest {
 			String[] at = window.split(",");
 			org.lwjgl.opengl.Display.setLocation(Integer.parseInt(at[0]), Integer.parseInt(at[1]));
 		}
-		MinecraftForge.EVENT_BUS.register(new AutoTest(folder));
+		AutoTest test = new AutoTest(folder);
+		MinecraftForge.EVENT_BUS.register(test);
+		Thread watchdog = new Thread(test::watch, "Translator AutoTest watchdog");
+		watchdog.setDaemon(true);
+		watchdog.start();
+	}
+
+	/**
+	 * Quits a game whose client stopped ticking during the test. When the server stops after a player was disconnected,
+	 * 1.12.2's client waits for the stopped server to save the player, which never happens: without this the copy
+	 * would wait there until the test's time is up.
+	 */
+	private void watch() {
+		while (true) {
+			try {
+				Thread.sleep(10_000L);
+			} catch (InterruptedException e) {
+				return;
+			}
+			long last = this.lastTick;
+			if ((this.state == 2 || this.state == 4) && last != 0 && System.currentTimeMillis() - last > STUCK_MS) {
+				var stuck = new StringBuilder();
+				Thread thread = this.client;
+				if (thread != null) {
+					for (StackTraceElement element : thread.getStackTrace()) {
+						stuck.append("\n\tat ").append(element);
+					}
+				}
+				LOGGER.error("Automatic self-test: the client stopped responding for {} s, quitting{}", (System.currentTimeMillis() - last) / 1000, stuck);
+				LogManager.shutdown();
+				Runtime.getRuntime().halt(2);
+			}
+		}
 	}
 
 	@SubscribeEvent
@@ -74,6 +110,8 @@ public final class AutoTest {
 		}
 		Minecraft mc = Minecraft.getMinecraft();
 		this.ticks++;
+		this.lastTick = System.currentTimeMillis();
+		this.client = Thread.currentThread();
 		if (this.started != 0 && System.currentTimeMillis() - this.started > TIMEOUT_MS) {
 			LOGGER.error("Automatic self-test timed out, quitting");
 			mc.shutdown();
