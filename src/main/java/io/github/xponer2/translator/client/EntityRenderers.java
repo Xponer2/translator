@@ -74,6 +74,9 @@ public final class EntityRenderers {
 	/** A 1.21 EntityRendererProvider.Context: each parameter the 1.12.2 object of its type (null where 1.12.2 has none). */
 	@Nullable
 	private static Object context(Class<?> type) throws ReflectiveOperationException {
+		if (type == io.github.xponer2.translator.client.entity.RendererContext.class) {
+			return new io.github.xponer2.translator.client.entity.RendererContext();
+		}
 		if (type == Object.class || type.isInterface()) {
 			return null;
 		}

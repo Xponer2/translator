@@ -324,4 +324,30 @@ M	net/minecraft/world/item/alchemy/PotionContents	getColor(java.lang.Iterable)	g
 M	net/minecraft/world/item/alchemy/PotionContents	getColor(net.minecraft.core.Holder)	getColor
 # 1.21 StringSplitter (font.getSplitter()) on 1.12.2's font renderer
 C	net/minecraft/client/StringSplitter	io/github/xponer2/translator/client/StringSplitter
-M	net/minecraft/client/renderer/entity/LivingEntityRenderer	getModel()	getMainModel
+# 1.21 entity renderers and models: the Translator's classes (1.21 names kept), drawn on 1.12.2's Render
+C	net/minecraft/client/renderer/entity/EntityRendererProvider$Context	io/github/xponer2/translator/client/entity/RendererContext
+C	net/minecraft/client/renderer/entity/LivingEntityRenderer	io/github/xponer2/translator/client/entity/LivingEntityRenderer
+C	net/minecraft/client/renderer/entity/MobRenderer	io/github/xponer2/translator/client/entity/MobRenderer
+C	net/minecraft/client/renderer/entity/layers/RenderLayer	io/github/xponer2/translator/client/entity/RenderLayer
+C	net/minecraft/client/renderer/entity/RenderLayerParent	io/github/xponer2/translator/client/entity/RenderLayerParent
+C	net/minecraft/client/model/Model	io/github/xponer2/translator/client/model/Model
+C	net/minecraft/client/model/EntityModel	io/github/xponer2/translator/client/model/EntityModel
+M	net/minecraft/client/renderer/entity/EntityRenderer	getFont()	getFont
+M	net/minecraft/client/renderer/entity/EntityRenderer	getTextureLocation(net.minecraft.world.entity.Entity)	getTextureLocation
+M	net/minecraft/client/renderer/entity/EntityRenderer	render(net.minecraft.world.entity.Entity,float,float,com.mojang.blaze3d.vertex.PoseStack,net.minecraft.client.renderer.MultiBufferSource,int)	render
+M	net/minecraft/client/renderer/entity/EntityRenderer	shouldShowName(net.minecraft.world.entity.Entity)	shouldShowName
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	getModel()	getModel
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	getAttackAnim(net.minecraft.world.entity.LivingEntity,float)	getAttackAnim
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	getBob(net.minecraft.world.entity.LivingEntity,float)	getBob
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	getFlipDegrees(net.minecraft.world.entity.LivingEntity)	getFlipDegrees
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	isBodyVisible(net.minecraft.world.entity.LivingEntity)	isBodyVisible
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	render(net.minecraft.world.entity.LivingEntity,float,float,com.mojang.blaze3d.vertex.PoseStack,net.minecraft.client.renderer.MultiBufferSource,int)	render
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	scale(net.minecraft.world.entity.LivingEntity,com.mojang.blaze3d.vertex.PoseStack,float)	scale
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	setupRotations(net.minecraft.world.entity.LivingEntity,com.mojang.blaze3d.vertex.PoseStack,float,float,float,float)	setupRotations
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	shouldShowName(net.minecraft.world.entity.LivingEntity)	shouldShowName
+F	net/minecraft/client/renderer/entity/LivingEntityRenderer	layers	layers
+F	net/minecraft/client/renderer/entity/LivingEntityRenderer	model	model
+M	net/minecraft/client/renderer/entity/MobRenderer	shouldShowName(net.minecraft.world.entity.Mob)	shouldShowName
+M	net/minecraft/client/renderer/entity/RenderLayerParent	getTextureLocation(net.minecraft.world.entity.Entity)	getTextureLocation
+M	net/minecraft/client/model/EntityModel	setupAnim(net.minecraft.world.entity.Entity,float,float,float,float,float)	setupAnim
+M	net/minecraft/client/model/Model	renderToBuffer(com.mojang.blaze3d.vertex.PoseStack,com.mojang.blaze3d.vertex.VertexConsumer,int,int,int)	renderToBuffer

@@ -95,6 +95,103 @@ public class RenderType {
         net.minecraft.client.renderer.GlStateManager.disableBlend();
     });
 
+    // --- entity layers: a texture of their own (the immediate consumer binds it), culling and blending as in 1.21 ---
+
+    @javax.annotation.Nullable
+    private net.minecraft.util.ResourceLocation texture;
+    private static final java.util.Map<String, RenderType> ENTITY = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** The texture an entity layer draws with; null for the blocks atlas. */
+    @javax.annotation.Nullable
+    public net.minecraft.util.ResourceLocation texture() {
+        return this.texture;
+    }
+
+    private static RenderType entity(String kind, net.minecraft.util.ResourceLocation texture, boolean cull, boolean blend) {
+        return ENTITY.computeIfAbsent(kind + ' ' + texture, key -> {
+            var type = new RenderType(kind, () -> {
+                if (cull) {
+                    net.minecraft.client.renderer.GlStateManager.enableCull();
+                } else {
+                    net.minecraft.client.renderer.GlStateManager.disableCull();
+                }
+                net.minecraft.client.renderer.GlStateManager.enableAlpha();
+                net.minecraft.client.renderer.GlStateManager.alphaFunc(516, 0.1F);
+                if (blend) {
+                    net.minecraft.client.renderer.GlStateManager.enableBlend();
+                    net.minecraft.client.renderer.GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                } else {
+                    net.minecraft.client.renderer.GlStateManager.disableBlend();
+                }
+            }, () -> {
+                net.minecraft.client.renderer.GlStateManager.enableCull();
+                net.minecraft.client.renderer.GlStateManager.disableBlend();
+            });
+            type.texture = texture;
+            return type;
+        });
+    }
+
+    public static RenderType entitySolid(net.minecraft.util.ResourceLocation texture) {
+        return entity("entity_solid", texture, true, false);
+    }
+
+    public static RenderType entityCutout(net.minecraft.util.ResourceLocation texture) {
+        return entity("entity_cutout", texture, true, false);
+    }
+
+    public static RenderType entityCutoutNoCull(net.minecraft.util.ResourceLocation texture) {
+        return entity("entity_cutout_no_cull", texture, false, false);
+    }
+
+    public static RenderType entityCutoutNoCull(net.minecraft.util.ResourceLocation texture, boolean outline) {
+        return entityCutoutNoCull(texture);
+    }
+
+    public static RenderType entityCutoutNoCullZOffset(net.minecraft.util.ResourceLocation texture) {
+        return entityCutoutNoCull(texture);
+    }
+
+    public static RenderType entitySmoothCutout(net.minecraft.util.ResourceLocation texture) {
+        return entity("entity_smooth_cutout", texture, true, false);
+    }
+
+    public static RenderType entityTranslucent(net.minecraft.util.ResourceLocation texture) {
+        return entity("entity_translucent", texture, false, true);
+    }
+
+    public static RenderType entityTranslucent(net.minecraft.util.ResourceLocation texture, boolean outline) {
+        return entityTranslucent(texture);
+    }
+
+    public static RenderType entityTranslucentCull(net.minecraft.util.ResourceLocation texture) {
+        return entity("entity_translucent_cull", texture, true, true);
+    }
+
+    public static RenderType itemEntityTranslucentCull(net.minecraft.util.ResourceLocation texture) {
+        return entityTranslucentCull(texture);
+    }
+
+    public static RenderType entityNoOutline(net.minecraft.util.ResourceLocation texture) {
+        return entity("entity_no_outline", texture, false, true);
+    }
+
+    public static RenderType entityDecal(net.minecraft.util.ResourceLocation texture) {
+        return entity("entity_decal", texture, true, true);
+    }
+
+    public static RenderType armorCutoutNoCull(net.minecraft.util.ResourceLocation texture) {
+        return entity("armor_cutout_no_cull", texture, false, false);
+    }
+
+    public static RenderType eyes(net.minecraft.util.ResourceLocation texture) {
+        return entity("eyes", texture, false, true);
+    }
+
+    public static RenderType energySwirl(net.minecraft.util.ResourceLocation texture, float u, float v) {
+        return entity("energy_swirl", texture, false, true);
+    }
+
     public static RenderType solid() {
         return SOLID;
     }

@@ -235,7 +235,8 @@ public final class VertexConsumer {
 		this.started = true;
 		if (this.target == null) {
 			this.type.setupRenderState();
-			Minecraft.getMinecraft().getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+			var texture = this.type.texture();
+			Minecraft.getMinecraft().getTextureManager().bindTexture(texture != null ? texture : TextureMap.LOCATION_BLOCKS_TEXTURE);
 		}
 		this.begin.load(currentMatrix());
 		Matrix4f.invert(this.begin, this.beginInverse);
