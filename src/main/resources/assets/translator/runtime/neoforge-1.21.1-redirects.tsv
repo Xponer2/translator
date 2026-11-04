@@ -212,3 +212,17 @@ R	net/minecraft/entity/ai/attributes/AttributeMap	io/github/xponer2/translator/r
 R	net/minecraft/client/renderer/tileentity/TileEntityRendererDispatcher	io/github/xponer2/translator/runtime/redirect/ClientRedirects
 R	net/minecraft/client/network/NetHandlerPlayClient	io/github/xponer2/translator/runtime/redirect/ClientRedirects
 R	net/minecraft/world/storage/loot/LootContext	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/client/network/NetworkPlayerInfo	io/github/xponer2/translator/runtime/redirect/ClientRedirects
+R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/world/World	io/github/xponer2/translator/runtime/redirect/MiscBridges
+# helpers whose bridges for these classes weren't reachable (the converter matches the registered class)
+R	net/minecraftforge/fluids/Fluid	io/github/xponer2/translator/runtime/redirect/VanillaRedirects
+R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/WorldBridges
+R	io/github/xponer2/translator/registry/Holder	io/github/xponer2/translator/runtime/redirect/ClientRedirects
+R	io/github/xponer2/translator/block/BlockSource	io/github/xponer2/translator/runtime/redirect/DispenserBridges
+R	io/github/xponer2/translator/component/DataComponentMap	io/github/xponer2/translator/component/StackComponents
+R	io/github/xponer2/translator/component/DataComponentMap$Builder	io/github/xponer2/translator/component/StackComponents
+R	net/minecraft/world/World	io/github/xponer2/translator/runtime/redirect/ScreenBridges
+R	net/minecraft/client/renderer/BlockModelRenderer	io/github/xponer2/translator/client/ModelRendering
+R	net/minecraft/client/renderer/BlockRendererDispatcher	io/github/xponer2/translator/client/ModelRendering
+R	net/minecraft/client/renderer/RenderItem	io/github/xponer2/translator/client/ModelRendering

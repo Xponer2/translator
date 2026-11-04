@@ -49,6 +49,31 @@ import net.minecraft.world.chunk.Chunk;
  * entities, chunks, living entities) that they lack (runtime, neoforge-1.21.1-redirects.tsv).
  */
 public final class MiscBridges {
+	/**
+	 * NeoForge {@code state.getToolModifiedState(context, ability, simulate)}: the block's own answer (a mod's log
+	 * stripped by an axe), else the tool actions 1.12.2 has (shovel path, hoe till).
+	 */
+	@javax.annotation.Nullable
+	public static IBlockState getToolModifiedState(IBlockState state, io.github.xponer2.translator.util.UseOnContext context, Object ability,
+			boolean simulate) {
+		for (var method : state.getBlock().getClass().getMethods()) {
+			if ("getToolModifiedState".equals(method.getName()) && method.getParameterCount() == 4 && !java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
+				try {
+					return (IBlockState) method.invoke(state.getBlock(), state, context, ability, simulate);
+				} catch (ReflectiveOperationException | IllegalArgumentException | ClassCastException e) {
+					break;
+				}
+			}
+		}
+		String name = ability.toString();
+		try {
+			name = String.valueOf(ability.getClass().getMethod("name").invoke(ability));
+		} catch (ReflectiveOperationException e) {
+			// its toString then
+		}
+		return io.github.xponer2.translator.util.Platform.toolModifiedState(state, name.toUpperCase(java.util.Locale.ROOT));
+	}
+
 	private MiscBridges() {
 	}
 

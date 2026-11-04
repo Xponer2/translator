@@ -24,6 +24,17 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /** Static stand-ins for 1.21 client methods 1.12.2 client classes lack (runtime; client classes only). */
 @SideOnly(Side.CLIENT)
 public final class ClientRedirects {
+	/** 1.21 {@code playerInfo.getSkin()}: the skin, cape and model of a player in the tab list (Chat Heads). */
+	public static io.github.xponer2.translator.client.PlayerSkin getSkin(net.minecraft.client.network.NetworkPlayerInfo info) {
+		return new io.github.xponer2.translator.client.PlayerSkin(info.getLocationSkin(), null, info.getLocationCape(), info.getLocationElytra(),
+				io.github.xponer2.translator.client.PlayerSkin.Model.byName(info.getSkinType()), false);
+	}
+
+	/** 1.21 {@code humanoidModel.swimAmount}: 1.12.2's players don't swim. */
+	public static float swimAmount(net.minecraft.client.model.ModelBiped model) {
+		return 0.0F;
+	}
+
 	/** 1.21 {@code blockEntityRenderDispatcher.camera}: the game's camera. */
 	public static io.github.xponer2.translator.client.Camera camera(net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher dispatcher) {
 		return io.github.xponer2.translator.client.Camera.main();

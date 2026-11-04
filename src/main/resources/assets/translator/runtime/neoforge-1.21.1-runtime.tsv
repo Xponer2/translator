@@ -351,3 +351,4 @@ M	net/minecraft/client/renderer/entity/MobRenderer	shouldShowName(net.minecraft.
 M	net/minecraft/client/renderer/entity/RenderLayerParent	getTextureLocation(net.minecraft.world.entity.Entity)	getTextureLocation
 M	net/minecraft/client/model/EntityModel	setupAnim(net.minecraft.world.entity.Entity,float,float,float,float,float)	setupAnim
 M	net/minecraft/client/model/Model	renderToBuffer(com.mojang.blaze3d.vertex.PoseStack,com.mojang.blaze3d.vertex.VertexConsumer,int,int,int)	renderToBuffer
+M	net/minecraft/world/entity/player/Player	canUseGameMasterBlocks()	canUseCommandBlock

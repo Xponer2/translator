@@ -51,6 +51,17 @@ public final class InputConstants {
 			return this.type;
 		}
 
+		/** 1.21 {@code key.getDisplayName()}: the key's name as 1.12.2's controls show it (Controlling, JEI, Jade). */
+		public net.minecraft.util.text.ITextComponent getDisplayName() {
+			return new net.minecraft.util.text.TextComponentString(this.value == -1 ? "NONE"
+					: net.minecraft.client.settings.GameSettings.getKeyDisplayString(this.lwjgl()));
+		}
+
+		/** The key's name (1.21: "key.keyboard.a"). */
+		public String getName() {
+			return this.type == Type.MOUSE ? "key.mouse." + (this.value + 1) : "key.keyboard." + this.getDisplayName().getUnformattedText().toLowerCase(java.util.Locale.ROOT);
+		}
+
 		/** The 1.12.2 key code: LWJGL 2 keys, mouse buttons as button - 100. */
 		int lwjgl() {
 			return this.type == Type.MOUSE ? this.value - 100 : this.type == Type.SCANCODE ? this.value : KeyMapping.toLwjgl(this.value);
