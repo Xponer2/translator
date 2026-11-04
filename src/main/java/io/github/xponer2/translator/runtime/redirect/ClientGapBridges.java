@@ -132,6 +132,56 @@ public final class ClientGapBridges {
 		return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
 	}
 
+	// --- confirm screens: 1.21 ConfirmScreen / ConfirmLinkScreen with a BooleanConsumer -----------------------------------
+
+	/** The answer to a 1.21 confirm screen's callback (fastutil 8's BooleanConsumer, by its accept(boolean)). */
+	private static net.minecraft.client.gui.GuiYesNoCallback answer(Object callback) {
+		return (result, id) -> {
+			try {
+				callback.getClass().getMethod("accept", boolean.class).invoke(callback, result);
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed("a confirm screen's answer", e);
+			}
+		};
+	}
+
+	/** 1.21 {@code new ConfirmScreen(callback, title, message)} (8 mods' config and reset dialogs). */
+	public static net.minecraft.client.gui.GuiYesNo newGuiYesNo(Object callback, net.minecraft.util.text.ITextComponent title,
+			net.minecraft.util.text.ITextComponent message) {
+		return new net.minecraft.client.gui.GuiYesNo(answer(callback), title.getFormattedText(), message.getFormattedText(), 0);
+	}
+
+	public static net.minecraft.client.gui.GuiYesNo newGuiYesNo(Object callback, net.minecraft.util.text.ITextComponent title,
+			net.minecraft.util.text.ITextComponent message, net.minecraft.util.text.ITextComponent yes, net.minecraft.util.text.ITextComponent no) {
+		return new net.minecraft.client.gui.GuiYesNo(answer(callback), title.getFormattedText(), message.getFormattedText(), yes.getFormattedText(),
+				no.getFormattedText(), 0);
+	}
+
+	/** 1.21 {@code new ConfirmLinkScreen(callback, url, trusted)}. */
+	public static net.minecraft.client.gui.GuiConfirmOpenLink newGuiConfirmOpenLink(Object callback, String url, boolean trusted) {
+		return new net.minecraft.client.gui.GuiConfirmOpenLink(answer(callback), url, 0, trusted);
+	}
+
+	public static net.minecraft.client.gui.GuiConfirmOpenLink newGuiConfirmOpenLink(Object callback, net.minecraft.util.text.ITextComponent title,
+			String url, boolean trusted) {
+		return new net.minecraft.client.gui.GuiConfirmOpenLink(answer(callback), url, 0, trusted);
+	}
+
+	/** 1.21 {@code ConfirmLinkScreen.confirmLinkNow(lastScreen, url)}: asks, opens the link on yes, back to the screen. */
+	public static void confirmLinkNow(GuiScreen lastScreen, String url) {
+		Minecraft minecraft = Minecraft.getMinecraft();
+		minecraft.displayGuiScreen(new net.minecraft.client.gui.GuiConfirmOpenLink((result, id) -> {
+			if (result) {
+				try {
+					java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+				} catch (Exception e) {
+					io.github.xponer2.translator.runtime.RuntimeStubs.failed("opening " + url, e);
+				}
+			}
+			minecraft.displayGuiScreen(lastScreen);
+		}, url, 0, true));
+	}
+
 	// --- block entity renderers ------------------------------------------------------------------------------------------
 
 	/**

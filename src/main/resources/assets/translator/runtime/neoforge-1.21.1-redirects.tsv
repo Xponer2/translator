@@ -312,3 +312,5 @@ R	net/minecraft/util/LazyLoadBase	io/github/xponer2/translator/runtime/redirect/
 R	net/minecraft/block/properties/IProperty	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
 R	net/minecraftforge/event/entity/living/LivingDropsEvent	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
 R	net/minecraft/client/renderer/tileentity/TileEntityRendererDispatcher	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/gui/GuiYesNo	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/gui/GuiConfirmOpenLink	io/github/xponer2/translator/runtime/redirect/ClientGapBridges

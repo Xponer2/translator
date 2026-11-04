@@ -209,24 +209,46 @@ public interface Registry<T> extends Iterable<T>, HolderLookup {
         for (Holder<T> holder : this.getTagOrEmpty(tag)) {
             members.add(holder);
         }
-        if (members.isEmpty()) {
-            return Optional.empty();
+        return members.isEmpty() ? Optional.empty() : Optional.ofNullable(NamedSets.bound(tag, members));
+    }
+
+    /** 1.21 {@code registry.getOrCreateTag(tag)}: the tag's named set, bound to its members (none for an unknown tag). */
+    @Nullable
+    @SuppressWarnings("unchecked")
+    default <S> S getOrCreateTag(io.github.xponer2.translator.util.TagKey<T> tag) {
+        // a type variable result: the converter casts it to the carried HolderSet.Named the mod expects
+        var members = new java.util.ArrayList<Holder<T>>();
+        for (Holder<T> holder : this.getTagOrEmpty(tag)) {
+            members.add(holder);
         }
-        try {
-            // a Named of its own, bound to the members: HolderSet.emptyNamed is the anonymous set whose contents always
-            // throw ("can't be dereferenced during construction"), binding it changed nothing and Cucumber's tag
-            // mapper (Mystical Agriculture's recipes) stopped the game while it loaded
-            Class<?> named = Class.forName("net.minecraft.core.HolderSet$Named", true, net.minecraft.launchwrapper.Launch.classLoader);
-            Class<?> owner = Class.forName("net.minecraft.core.HolderOwner", true, net.minecraft.launchwrapper.Launch.classLoader);
-            var constructor = named.getDeclaredConstructor(owner, io.github.xponer2.translator.util.TagKey.class);
-            constructor.setAccessible(true);
-            Object set = constructor.newInstance(null, tag);
-            var bind = named.getDeclaredMethod("bind", java.util.List.class);
-            bind.setAccessible(true);
-            bind.invoke(set, members);
-            return Optional.of(set);
-        } catch (ReflectiveOperationException | LinkageError | RuntimeException e) {
-            return Optional.empty();
+        return (S) NamedSets.bound(tag, members);
+    }
+
+    /** The carried 1.21 HolderSet.Named of a tag. */
+    final class NamedSets {
+        private NamedSets() {
+        }
+
+        /**
+         * A Named of its own, bound to the members: HolderSet.emptyNamed is the anonymous set whose contents always
+         * throw ("can't be dereferenced during construction"), binding it changed nothing and Cucumber's tag mapper
+         * (Mystical Agriculture's recipes) stopped the game while it loaded.
+         */
+        @Nullable
+        static Object bound(io.github.xponer2.translator.util.TagKey<?> tag, java.util.List<?> members) {
+            try {
+                Class<?> named = Class.forName("net.minecraft.core.HolderSet$Named", true, net.minecraft.launchwrapper.Launch.classLoader);
+                Class<?> owner = Class.forName("net.minecraft.core.HolderOwner", true, net.minecraft.launchwrapper.Launch.classLoader);
+                var constructor = named.getDeclaredConstructor(owner, io.github.xponer2.translator.util.TagKey.class);
+                constructor.setAccessible(true);
+                Object set = constructor.newInstance(null, tag);
+                var bind = named.getDeclaredMethod("bind", java.util.List.class);
+                bind.setAccessible(true);
+                bind.invoke(set, members);
+                return set;
+            } catch (ReflectiveOperationException | LinkageError | RuntimeException e) {
+                return null;
+            }
         }
     }
 

@@ -1592,6 +1592,36 @@ final class MethodGuard {
 			}
 		}
 		if (helper == null) {
+			// a factory taking wider parameters (Object for a class the Translator can't name: fastutil 8's
+			// BooleanConsumer of 1.21 ConfirmScreen, a carried 1.21 type): its own descriptor
+			Type[] args = Type.getArgumentTypes(init.desc);
+			for (String candidate : this.redirects.getOrDefault(init.owner, java.util.Collections.emptyList())) {
+				ClassInfo info = this.info(candidate);
+				for (String member : info == null ? java.util.Collections.<String>emptySet() : info.methods) {
+					if (!member.startsWith("new" + simple + " ")) {
+						continue;
+					}
+					String candidateDesc = member.substring(member.indexOf(' ') + 1);
+					Type[] params = Type.getArgumentTypes(candidateDesc);
+					if (params.length != args.length || !Type.getReturnType(candidateDesc).getDescriptor().equals("L" + init.owner + ";")) {
+						continue;
+					}
+					boolean fits = true;
+					for (int i = 0; i < params.length && fits; i++) {
+						fits = this.assignable(args[i], params[i]);
+					}
+					if (fits) {
+						helper = candidate;
+						desc = candidateDesc;
+						break;
+					}
+				}
+				if (helper != null) {
+					break;
+				}
+			}
+		}
+		if (helper == null) {
 			return false;
 		}
 		TypeInsnNode type = findNew(init);
