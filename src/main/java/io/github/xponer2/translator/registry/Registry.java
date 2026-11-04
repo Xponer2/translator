@@ -200,6 +200,36 @@ public interface Registry<T> extends Iterable<T>, HolderLookup {
         return holders;
     }
 
+    /**
+     * 1.21 {@code registry.getTag(tag)}: the tag as a named holder set (the carried 1.21 HolderSet.Named, bound to the
+     * tag's members), empty when the tag has none. Sophisticated Storage and Supplementaries look their tags up so.
+     */
+    default Optional<Object> getTag(io.github.xponer2.translator.util.TagKey<T> tag) {
+        var members = new java.util.ArrayList<Holder<T>>();
+        for (Holder<T> holder : this.getTagOrEmpty(tag)) {
+            members.add(holder);
+        }
+        if (members.isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            // a Named of its own, bound to the members: HolderSet.emptyNamed is the anonymous set whose contents always
+            // throw ("can't be dereferenced during construction"), binding it changed nothing and Cucumber's tag
+            // mapper (Mystical Agriculture's recipes) stopped the game while it loaded
+            Class<?> named = Class.forName("net.minecraft.core.HolderSet$Named", true, net.minecraft.launchwrapper.Launch.classLoader);
+            Class<?> owner = Class.forName("net.minecraft.core.HolderOwner", true, net.minecraft.launchwrapper.Launch.classLoader);
+            var constructor = named.getDeclaredConstructor(owner, io.github.xponer2.translator.util.TagKey.class);
+            constructor.setAccessible(true);
+            Object set = constructor.newInstance(null, tag);
+            var bind = named.getDeclaredMethod("bind", java.util.List.class);
+            bind.setAccessible(true);
+            bind.invoke(set, members);
+            return Optional.of(set);
+        } catch (ReflectiveOperationException | LinkageError | RuntimeException e) {
+            return Optional.empty();
+        }
+    }
+
     default Stream<io.github.xponer2.translator.util.TagKey<T>> getTagNames() {
         return Stream.empty();
     }

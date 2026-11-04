@@ -127,6 +127,40 @@ public final class ClientGapBridges {
 		return true;
 	}
 
+	/** 1.21 {@code minecraft.getEntityModels()}: the model layers the mods registered (19 mods bake their models from it). */
+	public static io.github.xponer2.translator.client.model.EntityModelSet getEntityModels(Minecraft minecraft) {
+		return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
+	}
+
+	// --- baked models: NeoForge's render types ---------------------------------------------------------------------------
+
+	/**
+	 * NeoForge {@code model.getRenderTypes(state, random, data)}: the chunk layer of the block (1.12.2 has one per
+	 * block) as the carried ChunkRenderTypeSet. 17 mods draw block models in their renderers with it.
+	 */
+	@Nullable
+	public static Object getRenderTypes(net.minecraft.client.renderer.block.model.IBakedModel model, net.minecraft.block.state.IBlockState state,
+			java.util.Random random, @Nullable Object data) {
+		var type = switch (state.getBlock().getRenderLayer()) {
+			case CUTOUT, CUTOUT_MIPPED -> io.github.xponer2.translator.client.RenderType.cutout();
+			case TRANSLUCENT -> io.github.xponer2.translator.client.RenderType.translucent();
+			default -> io.github.xponer2.translator.client.RenderType.solid();
+		};
+		try {
+			return CarriedBridges.carried("net.neoforged.neoforge.client.ChunkRenderTypeSet")
+					.getMethod("of", io.github.xponer2.translator.client.RenderType[].class)
+					.invoke(null, (Object) new io.github.xponer2.translator.client.RenderType[] {type});
+		} catch (ReflectiveOperationException | LinkageError e) {
+			return null;
+		}
+	}
+
+	/** NeoForge {@code model.getRenderTypes(stack, fabulous)}: an item's layers (1.12.2 items draw cutout over translucent). */
+	public static java.util.List<io.github.xponer2.translator.client.RenderType> getRenderTypes(net.minecraft.client.renderer.block.model.IBakedModel model,
+			net.minecraft.item.ItemStack stack, boolean fabulous) {
+		return java.util.Collections.singletonList(io.github.xponer2.translator.client.RenderType.cutout());
+	}
+
 	// --- RenderTarget ---------------------------------------------------------------------------------------------------
 
 	public static int getColorTextureId(Framebuffer framebuffer) {

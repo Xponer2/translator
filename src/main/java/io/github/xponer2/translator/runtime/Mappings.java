@@ -161,7 +161,11 @@ final class Mappings {
 					if (obfuscated != null && !obfuscated.equals(internal)) {
 						byte[] original = raw.get(obfuscated.replace('/', '.'));
 						if (original != null) {
-							bytes = Deobfuscation.TRANSFORMER.transform(obfuscated.replace('/', '.'), binaryName, original);
+							// Forge's binary patches first (the vanilla class lacks everything Forge adds: its constructors,
+							// methods, interfaces, the IForgeRegistryEntry superclass), then FML's deobfuscation
+							byte[] patched = net.minecraftforge.fml.common.patcher.ClassPatchManager.INSTANCE.applyPatch(obfuscated.replace('/', '.'),
+									binaryName, original);
+							bytes = Deobfuscation.TRANSFORMER.transform(obfuscated.replace('/', '.'), binaryName, patched);
 						}
 					}
 				} catch (LinkageError | RuntimeException e) {

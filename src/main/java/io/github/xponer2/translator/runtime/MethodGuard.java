@@ -1783,6 +1783,14 @@ final class MethodGuard {
 							&& !this.hasMember(handle.getOwner(), handle.getName(), handle.getDesc(), true)) {
 						what = handle.getOwner() + "." + handle.getName();
 					}
+					// a reference whose types include a class that isn't there (a compat method of an optional mod:
+					// Twilight Forest's CosmeticArmorCompat::keepCosmeticArmor behind isLoaded): the function is null,
+					// the rest of the method (a mod's constructor) runs
+					String absent = arg instanceof Handle handle ? this.absentClass(handle.getDesc())
+							: arg instanceof Type type && type.getSort() == Type.METHOD ? this.absentClass(type.getDescriptor()) : null;
+					if (what == null && absent != null) {
+						what = absent;
+					}
 				}
 				if (what != null) {
 					Type[] args = Type.getArgumentTypes(indy.desc);
@@ -1850,6 +1858,20 @@ final class MethodGuard {
 		list.add(new InsnNode(Opcodes.DUP));
 		list.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, type, "<init>", "()V", false));
 		return list;
+	}
+
+	/** A class of a method descriptor that doesn't exist (arrays by their element), or null. */
+	@javax.annotation.Nullable
+	private String absentClass(String descriptor) {
+		var types = new java.util.ArrayList<Type>(java.util.Arrays.asList(Type.getArgumentTypes(descriptor)));
+		types.add(Type.getReturnType(descriptor));
+		for (Type type : types) {
+			Type element = type.getSort() == Type.ARRAY ? type.getElementType() : type;
+			if (element.getSort() == Type.OBJECT && !this.exists(element.getInternalName())) {
+				return element.getInternalName();
+			}
+		}
+		return null;
 	}
 
 	/** The first class or member the method uses that doesn't exist, or null. */

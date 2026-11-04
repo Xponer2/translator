@@ -300,3 +300,6 @@ R	net/minecraft/util/math/Vec3d	io/github/xponer2/translator/runtime/redirect/Wo
 R	com/google/gson/JsonArray	io/github/xponer2/translator/runtime/redirect/GsonBridges
 R	com/google/gson/JsonObject	io/github/xponer2/translator/runtime/redirect/GsonBridges
 R	com/google/gson/Gson	io/github/xponer2/translator/runtime/redirect/GsonBridges
+R	net/minecraft/entity/ai/EntityAITasks	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/client/renderer/block/model/IBakedModel	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/crash/CrashReportCategory	io/github/xponer2/translator/runtime/redirect/WorldGapBridges

@@ -288,4 +288,136 @@ public final class EntityGapBridges {
 	public static boolean isInFluidType(Entity entity, Object test, boolean forAllTypes) {
 		return isInFluidType(entity);
 	}
+
+	// --- goals: the carried 1.21 Goal of a mod's mob, run by the 1.12.2 task list -----------------------------------
+
+	private static final java.util.Map<Object, net.minecraft.entity.ai.EntityAIBase> GOALS = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+	/**
+	 * 1.21 {@code goalSelector.addGoal(priority, goal)}: the Goal is the carried 1.21 class (a mod's mob extends it, or
+	 * uses vanilla 1.21 goals), so the 1.12.2 list gets an adapter running it. Without it no mob of a 1.21.1 mod had
+	 * any AI (the call was skipped).
+	 */
+	public static void addGoal(net.minecraft.entity.ai.EntityAITasks tasks, int priority, Object goal) {
+		if (goal == null) {
+			return;
+		}
+		tasks.addTask(priority, GOALS.computeIfAbsent(goal, CarriedGoal::new));
+	}
+
+	public static void removeGoal(net.minecraft.entity.ai.EntityAITasks tasks, Object goal) {
+		var adapter = GOALS.get(goal);
+		if (adapter != null) {
+			tasks.removeTask(adapter);
+		}
+	}
+
+	/** 1.21 {@code removeAllGoals(filter)}: the goals the filter takes (all, for a filter that isn't a Predicate). */
+	@SuppressWarnings("unchecked")
+	public static void removeAllGoals(net.minecraft.entity.ai.EntityAITasks tasks, Object filter) {
+		for (var entry : new java.util.ArrayList<>(tasks.taskEntries)) {
+			if (entry.action instanceof CarriedGoal carried
+					&& (!(filter instanceof java.util.function.Predicate<?> test) || ((java.util.function.Predicate<Object>) test).test(carried.goal))) {
+				tasks.removeTask(entry.action);
+			}
+		}
+	}
+
+	/** A carried 1.21 Goal as a 1.12.2 task: canUse, canContinueToUse, start, stop, tick, its flags as mutex bits. */
+	private static final class CarriedGoal extends net.minecraft.entity.ai.EntityAIBase {
+		private static final java.lang.invoke.MethodHandle CAN_USE = handle("canUse", boolean.class);
+		private static final java.lang.invoke.MethodHandle CAN_CONTINUE = handle("canContinueToUse", boolean.class);
+		private static final java.lang.invoke.MethodHandle INTERRUPTABLE = handle("isInterruptable", boolean.class);
+		private static final java.lang.invoke.MethodHandle START = handle("start", void.class);
+		private static final java.lang.invoke.MethodHandle STOP = handle("stop", void.class);
+		private static final java.lang.invoke.MethodHandle TICK = handle("tick", void.class);
+		private static final java.lang.invoke.MethodHandle FLAGS = handle("getFlags", java.util.EnumSet.class);
+
+		final Object goal;
+
+		CarriedGoal(Object goal) {
+			this.goal = goal;
+			int bits = 0;
+			try {
+				Object flags = FLAGS != null ? FLAGS.invoke(goal) : null;
+				if (flags instanceof java.util.Set<?> set) {
+					for (Object flag : set) {
+						String name = ((Enum<?>) flag).name();
+						bits |= "MOVE".equals(name) ? 1 : "LOOK".equals(name) ? 2 : "JUMP".equals(name) ? 4 : 0;
+					}
+				}
+			} catch (Throwable e) {
+				// no flags: runs beside every other task
+			}
+			this.setMutexBits(bits);
+		}
+
+		@javax.annotation.Nullable
+		private static java.lang.invoke.MethodHandle handle(String name, Class<?> result) {
+			try {
+				Class<?> type = Class.forName("net.minecraft.world.entity.ai.goal.Goal", false, net.minecraft.launchwrapper.Launch.classLoader);
+				return java.lang.invoke.MethodHandles.publicLookup().findVirtual(type, name, java.lang.invoke.MethodType.methodType(result))
+						.asType(java.lang.invoke.MethodType.methodType(result, Object.class));
+			} catch (ReflectiveOperationException | LinkageError | RuntimeException e) {
+				return null;
+			}
+		}
+
+		private boolean test(@javax.annotation.Nullable java.lang.invoke.MethodHandle handle, boolean fallback) {
+			if (handle == null) {
+				return fallback;
+			}
+			try {
+				return (boolean) handle.invokeExact(this.goal);
+			} catch (RuntimeException | Error e) {
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.goal.getClass().getName() + " (goal)", e);
+				return false;
+			} catch (Throwable e) {
+				return false;
+			}
+		}
+
+		private void run(@javax.annotation.Nullable java.lang.invoke.MethodHandle handle) {
+			if (handle == null) {
+				return;
+			}
+			try {
+				handle.invokeExact(this.goal);
+			} catch (RuntimeException | Error e) {
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.goal.getClass().getName() + " (goal)", e);
+			} catch (Throwable e) {
+				// checked: none declared
+			}
+		}
+
+		@Override
+		public boolean shouldExecute() {
+			return this.test(CAN_USE, false);
+		}
+
+		@Override
+		public boolean shouldContinueExecuting() {
+			return this.test(CAN_CONTINUE, false);
+		}
+
+		@Override
+		public boolean isInterruptible() {
+			return this.test(INTERRUPTABLE, true);
+		}
+
+		@Override
+		public void startExecuting() {
+			this.run(START);
+		}
+
+		@Override
+		public void resetTask() {
+			this.run(STOP);
+		}
+
+		@Override
+		public void updateTask() {
+			this.run(TICK);
+		}
+	}
 }

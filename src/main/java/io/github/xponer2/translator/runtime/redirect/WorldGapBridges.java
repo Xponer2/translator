@@ -132,6 +132,47 @@ public final class WorldGapBridges {
 		return new org.joml.Vector3f((float) vector.x, (float) vector.y, (float) vector.z);
 	}
 
+	// --- NeoForge capability invalidation ---------------------------------------------------------------------------------
+
+	/**
+	 * NeoForge {@code level.invalidateCapabilities(pos)}: 1.12.2 capabilities are asked for each time (there is no cache
+	 * to clear), so nothing to do; the call was skipped with the rest of its method before (74 call sites).
+	 */
+	public static void invalidateCapabilities(World world, BlockPos pos) {
+	}
+
+	public static void invalidateCapabilities(World world, net.minecraft.util.math.ChunkPos pos) {
+	}
+
+	/** NeoForge {@code serverLevel.registerCapabilityListener(pos, listener)}: no cache, no invalidation to listen to. */
+	public static void registerCapabilityListener(net.minecraft.world.WorldServer world, BlockPos pos, Object listener) {
+	}
+
+	// --- level data (WorldInfo) --------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code levelData.getSpawnPos()}: the 1.12.2 spawn coordinates. */
+	public static BlockPos getSpawnPos(net.minecraft.world.storage.WorldInfo info) {
+		return new BlockPos(info.getSpawnX(), info.getSpawnY(), info.getSpawnZ());
+	}
+
+	/** 1.21 {@code levelData.getSpawnAngle()}: 1.12.2 has no spawn angle. */
+	public static float getSpawnAngle(net.minecraft.world.storage.WorldInfo info) {
+		return 0.0F;
+	}
+
+	// --- crash reports -----------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code category.setDetail(name, value)}: 1.12.2 addCrashSection (a supplier of the value: addDetail). */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static net.minecraft.crash.CrashReportCategory setDetail(net.minecraft.crash.CrashReportCategory category, String name, @javax.annotation.Nullable Object value) {
+		if (value instanceof java.util.concurrent.Callable detail) {
+			category.addDetail(name, () -> String.valueOf(detail.call()));
+		} else {
+			category.addCrashSection(name, value);
+		}
+		return category;
+	}
+
 	// --- ResourceLocation -----------------------------------------------------------------------------------------------
 
 	/**

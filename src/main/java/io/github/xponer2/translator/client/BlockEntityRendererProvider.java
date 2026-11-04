@@ -33,5 +33,30 @@ public interface BlockEntityRendererProvider<T extends TileEntity> {
         public net.minecraft.client.renderer.entity.RenderManager getEntityRenderer() {
             return Minecraft.getMinecraft().getRenderManager();
         }
+
+        /** 1.21 {@code context.bakeLayer(layer)}: the model parts of a layer the mod registered (its block entity models). */
+        public io.github.xponer2.translator.client.model.ModelPart bakeLayer(Object location) {
+            return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE.bakeLayer(location);
+        }
+
+        public io.github.xponer2.translator.client.model.EntityModelSet getModelSet() {
+            return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
+        }
+
+        public net.minecraft.client.renderer.BlockRendererDispatcher getBlockRenderDispatcher() {
+            return Minecraft.getMinecraft().getBlockRendererDispatcher();
+        }
+
+        public net.minecraft.client.renderer.RenderItem getItemRenderer() {
+            return Minecraft.getMinecraft().getRenderItem();
+        }
+
+        public net.minecraft.client.gui.FontRenderer getFont() {
+            return Minecraft.getMinecraft().fontRenderer;
+        }
+
+        public net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher getBlockEntityRenderDispatcher() {
+            return net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher.instance;
+        }
     }
 }
