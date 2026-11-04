@@ -261,8 +261,8 @@ final class ModJar {
 			}
 
 			@Override
-			public void visitEnum(String name, String descriptor, String value) {
-				values.put(name, value);
+			public void visitEnum(String name, String enumDescriptor, String value) {
+				values.put(name, new EnumValue(enumDescriptor, value));
 			}
 
 			@Override
@@ -276,12 +276,23 @@ final class ModJar {
 					}
 
 					@Override
-					public void visitEnum(String ignored, String descriptor, String value) {
-						list.add(value);
+					public void visitEnum(String ignored, String enumDescriptor, String value) {
+						list.add(new EnumValue(enumDescriptor, value));
 					}
 				};
 			}
 		};
+	}
+
+	/** An enum constant in an annotation of the scan data: NeoForge gives it as a ModAnnotation.EnumHolder. */
+	static final class EnumValue {
+		final String descriptor;
+		final String value;
+
+		EnumValue(String descriptor, String value) {
+			this.descriptor = descriptor;
+			this.value = value;
+		}
 	}
 
 	boolean isLibrary() {

@@ -295,3 +295,5 @@ R	net/minecraft/network/NetHandlerPlayServer	io/github/xponer2/translator/runtim
 R	com/google/common/collect/ImmutableList	io/github/xponer2/translator/runtime/redirect/GuavaBridges
 R	com/google/common/collect/ImmutableSet	io/github/xponer2/translator/runtime/redirect/GuavaBridges$Sets
 R	com/google/common/collect/ImmutableMap	io/github/xponer2/translator/runtime/redirect/GuavaBridges$Maps
+R	net/minecraft/util/text/Style$Serializer	io/github/xponer2/translator/text/StyleCodec
+R	net/minecraft/util/math/Vec3d	io/github/xponer2/translator/runtime/redirect/WorldGapBridges

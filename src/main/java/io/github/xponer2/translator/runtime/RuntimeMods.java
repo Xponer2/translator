@@ -121,6 +121,16 @@ public final class RuntimeMods {
 	}
 
 	private static Object asmValue(Object value) {
+		if (value instanceof ModJar.EnumValue constant) {
+			// NeoForge's scan data gives enum constants as ModAnnotation.EnumHolder (the carried class): SuperMartijn642's
+			// registry acceptors read theirs so, and no menu type, block or item of its mods was found without it
+			try {
+				return Class.forName("net.neoforged.fml.loading.modscan.ModAnnotation$EnumHolder", true, Launch.classLoader)
+						.getConstructor(String.class, String.class).newInstance(constant.descriptor, constant.value);
+			} catch (ReflectiveOperationException | LinkageError e) {
+				return constant.value;
+			}
+		}
 		if (value instanceof xyz.wagyourtail.jvmdg.shade.asm.Type type) {
 			return org.objectweb.asm.Type.getType(type.getDescriptor());
 		}
