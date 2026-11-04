@@ -501,8 +501,37 @@ public final class VanillaRedirects {
 	@Nullable
 	public static NBTBase put(NBTTagCompound tag, String key, NBTBase value) {
 		NBTBase old = tag.getTag(key);
+		if (value == null) {
+			// a part the Translator can't save yet gave null: 1.12.2 throws (in a block entity's save, every tick)
+			io.github.xponer2.translator.runtime.RuntimeStubs.missing("CompoundTag.put(" + key + ", null): a 1.21.1 mod saved nothing there");
+			return old;
+		}
 		tag.setTag(key, value);
 		return old;
+	}
+
+	/** 1.21 {@code NbtUtils.writeBlockPos}: the position as an int array [x, y, z] (Powah's energizing rods). */
+	public static NBTBase writeBlockPos(net.minecraft.util.math.BlockPos pos) {
+		return new net.minecraft.nbt.NBTTagIntArray(new int[] {pos.getX(), pos.getY(), pos.getZ()});
+	}
+
+	/** 1.21 {@code NbtUtils.readBlockPos(tag, key)}: the int array at the key (or a compound with X, Y, Z), if any. */
+	public static java.util.Optional<net.minecraft.util.math.BlockPos> readBlockPos(NBTTagCompound tag, String key) {
+		if (tag.hasKey(key, 11)) {
+			int[] xyz = tag.getIntArray(key);
+			if (xyz.length == 3) {
+				return java.util.Optional.of(new net.minecraft.util.math.BlockPos(xyz[0], xyz[1], xyz[2]));
+			}
+		}
+		if (tag.hasKey(key, 10)) {
+			return java.util.Optional.of(net.minecraft.nbt.NBTUtil.getPosFromTag(tag.getCompoundTag(key)));
+		}
+		return java.util.Optional.empty();
+	}
+
+	/** The same, under the name the table gives readBlockPos. */
+	public static java.util.Optional<net.minecraft.util.math.BlockPos> getPosFromTag(NBTTagCompound tag, String key) {
+		return readBlockPos(tag, key);
 	}
 
 	public static int size(NBTTagList list) {

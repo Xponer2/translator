@@ -380,6 +380,23 @@ public final class MiscBridges {
 		return value;
 	}
 
+	/**
+	 * 1.21 {@code new SimpleContainer(size)} (a 1.12.2 InventoryBasic, which also takes a name): AE2 makes every slot on
+	 * one of size 0; without it the slot's inventory was null and every click on an AE2 slot threw.
+	 */
+	public static net.minecraft.inventory.InventoryBasic newInventoryBasic(int size) {
+		return new net.minecraft.inventory.InventoryBasic("", false, size);
+	}
+
+	/** 1.21 {@code new SimpleContainer(ItemStack...)}: a container holding these stacks. */
+	public static net.minecraft.inventory.InventoryBasic newInventoryBasic(net.minecraft.item.ItemStack[] stacks) {
+		var inventory = new net.minecraft.inventory.InventoryBasic("", false, stacks.length);
+		for (int i = 0; i < stacks.length; i++) {
+			inventory.setInventorySlotContents(i, stacks[i]);
+		}
+		return inventory;
+	}
+
 	public static boolean isEmpty(com.google.gson.JsonArray array) {
 		return array.size() == 0;
 	}

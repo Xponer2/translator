@@ -146,7 +146,7 @@ public final class RenderLayers {
 		}
 		ResourceLocation id = new ResourceLocation(model);
 		JsonObject json = json(new ResourceLocation(id.getNamespace(), "models/" + id.getPath() + ".json"));
-		if (json == null && id.getPath().indexOf('/') < 0) {
+		if (json == null && !id.getPath().startsWith("block/")) {
 			// the blockstates 1.12.2 reads name the model without its folder (RuntimeResourcePack: "ae2:block/quartz_cluster"
 			// is "ae2:quartz_cluster"), 1.12.2 looks in block/: missed, every cutout crystal and glass was drawn solid
 			json = json(new ResourceLocation(id.getNamespace(), "models/block/" + id.getPath() + ".json"));
