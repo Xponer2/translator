@@ -384,7 +384,11 @@ public final class WorldBridges {
 
 	/** A folder of the save (1.21 LevelResource: its name, "." for the save's root). */
 	public static Path getWorldPath(MinecraftServer server, Object resource) {
-		java.io.File root = server.getWorld(0).getSaveHandler().getWorldDirectory();
+		WorldServer overworld = net.minecraftforge.common.DimensionManager.getWorld(0);
+		// before the worlds load (ServerAboutToStart: Framework links its server configs there, and getWorld(0) threw
+		// "Overworld is not Loaded", so Refurbished Furniture's block entities never got their config) the save's folder
+		java.io.File root = overworld != null ? overworld.getSaveHandler().getWorldDirectory()
+				: server.getActiveAnvilConverter().getFile(server.getFolderName(), "level.dat").getParentFile();
 		String name = resourceName(resource);
 		return name == null || name.isEmpty() || ".".equals(name) ? root.toPath() : root.toPath().resolve(name);
 	}

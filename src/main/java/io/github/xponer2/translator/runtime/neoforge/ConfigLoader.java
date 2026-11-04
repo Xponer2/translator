@@ -41,6 +41,12 @@ public final class ConfigLoader {
 		read(modConfig);
 	}
 
+	/** Now, whatever its type (a mod that asks for its config at once: Moonlight's forceLoad). */
+	static synchronized void loadNow(ModConfig modConfig) {
+		SERVER_CONFIGS.remove(modConfig);
+		read(modConfig);
+	}
+
 	/** The server configs registered while the mods were constructed: once the registries are filled (init). */
 	public static synchronized void loadServerConfigs() {
 		registered = true;

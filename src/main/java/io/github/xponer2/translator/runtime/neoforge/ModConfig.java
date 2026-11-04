@@ -40,6 +40,11 @@ public final class ModConfig {
 		return this.fileName;
 	}
 
+	/** 1.21 {@code getFullPath()}: where the file is (config/ with its name). */
+	public java.nio.file.Path getFullPath() {
+		return FMLPaths.CONFIGDIR.get().resolve(this.fileName);
+	}
+
 	public void save() {
 	}
 

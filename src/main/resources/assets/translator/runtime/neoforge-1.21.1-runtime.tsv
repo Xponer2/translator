@@ -374,3 +374,4 @@ M	net/minecraft/network/chat/contents/PlainTextContents	text()	getText
 M	net/minecraft/network/chat/contents/PlainTextContents$LiteralContents	text()	getText
 C	net/minecraft/world/entity/EntityType$Builder	io/github/xponer2/translator/registry/EntityType$Builder
 C	net/minecraft/world/entity/EntityType$EntityFactory	io/github/xponer2/translator/registry/EntityType$EntityFactory
+C	net/neoforged/fml/config/ConfigTracker	io/github/xponer2/translator/runtime/neoforge/ConfigTracker

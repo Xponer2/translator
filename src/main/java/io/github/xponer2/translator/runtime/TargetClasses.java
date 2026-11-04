@@ -21,7 +21,7 @@ import net.minecraft.launchwrapper.Launch;
 
 /**
  * The classes a converted mod runs against: Minecraft 1.12.2, Forge and the Translator, read from the class path
- * without loading them. Development environment names (MCP); the release environment needs the SRG names (TODO).
+ * without loading them, with the development environment's names (MCP): in the release game {@link Mappings} reads them so.
  */
 final class TargetClasses {
 	// read by several conversions at once
@@ -36,7 +36,14 @@ final class TargetClasses {
 	private final java.util.Set<String> fromPending = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
 	TargetClasses() {
-		this(Launch.classLoader::getClassBytes);
+		this(gameClasses());
+	}
+
+	/** The game's class path; in the release game read with MCP member names (see {@link Mappings}). */
+	private static ClassBytes gameClasses() {
+		ClassBytes raw = Launch.classLoader::getClassBytes;
+		Mappings mappings = Mappings.instance();
+		return mappings != null ? mappings.deobfuscating(raw) : raw;
 	}
 
 	/** Another class path than the game's (a conversion outside the game, for tests). */
