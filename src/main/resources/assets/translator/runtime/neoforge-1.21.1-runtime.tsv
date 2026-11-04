@@ -267,3 +267,4 @@ C	org/lwjgl/system/MemoryStack	io/github/xponer2/translator/lwjgl/MemoryStack
 C	org/lwjgl/PointerBuffer	io/github/xponer2/translator/lwjgl/PointerBuffer
 C	org/lwjgl/stb/STBImageResize	io/github/xponer2/translator/lwjgl/STBImageResize
 C	cpw/mods/jarhandling/SecureJar	io/github/xponer2/translator/runtime/neoforge/SecureJar
+C	net/minecraft/world/inventory/ChestMenu	io/github/xponer2/translator/menu/ChestMenu

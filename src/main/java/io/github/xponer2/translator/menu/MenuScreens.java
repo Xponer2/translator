@@ -47,6 +47,10 @@ public final class MenuScreens {
 	}
 
 	public static void registerAll() {
+		for (MenuType<ChestMenu> type : java.util.Arrays.asList(MenuType.GENERIC_9x1, MenuType.GENERIC_9x2, MenuType.GENERIC_9x3,
+				MenuType.GENERIC_9x4, MenuType.GENERIC_9x5, MenuType.GENERIC_9x6)) {
+			register(type, ChestScreen::new);
+		}
 		MinecraftForge.EVENT_BUS.post(new RegisterMenuScreensEvent());
 	}
 

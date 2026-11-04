@@ -24,7 +24,24 @@ import net.minecraft.util.ResourceLocation;
  * extra data the server wrote when the factory is an {@link IContainerFactory}. Registered in Registries.MENU.
  */
 public class MenuType<T extends Container> {
+	// the vanilla chest menus mods open for their own containers (ChestMenu.threeRows), under their 1.21 ids
+	public static final MenuType<ChestMenu> GENERIC_9x1 = vanilla("generic_9x1", ChestMenu::oneRow);
+	public static final MenuType<ChestMenu> GENERIC_9x2 = vanilla("generic_9x2", ChestMenu::twoRows);
+	public static final MenuType<ChestMenu> GENERIC_9x3 = vanilla("generic_9x3", ChestMenu::threeRows);
+	public static final MenuType<ChestMenu> GENERIC_9x4 = vanilla("generic_9x4", ChestMenu::fourRows);
+	public static final MenuType<ChestMenu> GENERIC_9x5 = vanilla("generic_9x5", ChestMenu::fiveRows);
+	public static final MenuType<ChestMenu> GENERIC_9x6 = vanilla("generic_9x6", ChestMenu::sixRows);
+
 	private final MenuSupplier<T> constructor;
+
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	private static <T extends Container> MenuType<T> vanilla(String name, MenuSupplier<T> constructor) {
+		var type = new MenuType<>(constructor, null);
+		if (BuiltInRegistries.MENU instanceof io.github.xponer2.translator.registry.MappedRegistry registry) {
+			registry.register(new ResourceLocation("minecraft", name), type);
+		}
+		return type;
+	}
 
 	public MenuType(MenuSupplier<T> constructor, Object requiredFeatures) {
 		this.constructor = constructor;
