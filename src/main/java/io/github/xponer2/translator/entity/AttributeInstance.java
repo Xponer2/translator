@@ -54,6 +54,20 @@ public final class AttributeInstance {
 		return instance == null ? null : new AttributeInstance(entity, attribute, instance);
 	}
 
+	/**
+	 * 1.21 {@code attributeMap.getInstance(attribute)}: the map has no entity, so only an attribute 1.12.2 has (its
+	 * own instance in the map); null otherwise, or when the map lacks it.
+	 */
+	@Nullable
+	public static AttributeInstance of(net.minecraft.entity.ai.attributes.AbstractAttributeMap map, Holder<Attribute> holder) {
+		var attribute = holder.value();
+		if (attribute.forge() == null) {
+			return null;
+		}
+		var instance = map.getAttributeInstance(attribute.forge());
+		return instance == null ? null : new AttributeInstance(null, attribute, instance);
+	}
+
 	private Map<ResourceLocation, AttributeModifier> virtual() {
 		return VIRTUAL.computeIfAbsent(this.entity, e -> new HashMap<>()).computeIfAbsent(this.attribute.name(), n -> new HashMap<>());
 	}
@@ -109,6 +123,12 @@ public final class AttributeInstance {
 
 	public void addPermanentModifier(AttributeModifier modifier) {
 		// 1.12.2 saves the modifiers of the attribute map; the augments re-add theirs every tick anyway
+		this.addTransientModifier(modifier);
+	}
+
+	/** 1.21 {@code addOrUpdateTransientModifier}: the modifier of that id replaced. */
+	public void addOrUpdateTransientModifier(AttributeModifier modifier) {
+		this.removeModifier(modifier.id());
 		this.addTransientModifier(modifier);
 	}
 

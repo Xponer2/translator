@@ -30,6 +30,16 @@ import net.minecraft.util.text.ITextComponent;
  * the mouse from the 1.21 input methods.
  */
 public abstract class AbstractContainerScreen<T extends Container> extends GuiContainer implements ContainerEventHandler, Renderable {
+	/** 1.21 {@code removed()}: the screen closed (1.12.2's onGuiClosed calls it). */
+	public void removed() {
+	}
+
+	@Override
+	public void onGuiClosed() {
+		super.onGuiClosed();
+		this.removed();
+	}
+
 	protected final T menu;
 	protected final ITextComponent title;
 	protected final InventoryPlayer playerInventory;

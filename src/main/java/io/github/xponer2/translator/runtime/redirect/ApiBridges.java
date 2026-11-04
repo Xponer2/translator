@@ -156,6 +156,47 @@ public final class ApiBridges {
 		return explode(world, source, x, y, z, radius, fire, interaction);
 	}
 
+	// --- the chunk map (1.21 ChunkMap, 1.12.2's PlayerChunkMap) ----------------------------------------------------
+
+	/** 1.21 {@code serverChunkCache.chunkMap}: the world's player chunk map. */
+	public static net.minecraft.server.management.PlayerChunkMap chunkMap(net.minecraft.world.gen.ChunkProviderServer chunks) {
+		return chunks.world.getPlayerChunkMap();
+	}
+
+	/** 1.21 {@code chunkMap.getPlayers(chunk, onlyOnEdge)}: the players the chunk is sent to (whole view, not only its edge). */
+	public static java.util.List<net.minecraft.entity.player.EntityPlayerMP> getPlayers(net.minecraft.server.management.PlayerChunkMap map,
+			net.minecraft.util.math.ChunkPos chunk, boolean onlyOnEdge) {
+		var players = new java.util.ArrayList<net.minecraft.entity.player.EntityPlayerMP>();
+		for (net.minecraft.entity.player.EntityPlayer player : map.getWorldServer().playerEntities) {
+			if (player instanceof net.minecraft.entity.player.EntityPlayerMP serverPlayer && map.isPlayerWatchingChunk(serverPlayer, chunk.x, chunk.z)) {
+				players.add(serverPlayer);
+			}
+		}
+		return players;
+	}
+
+	/** 1.21 {@code chunkMap.broadcast(entity, packet)}: to the players tracking the entity. */
+	public static void broadcast(net.minecraft.server.management.PlayerChunkMap map, Entity entity, net.minecraft.network.Packet<?> packet) {
+		map.getWorldServer().getEntityTracker().sendToTracking(entity, packet);
+	}
+
+	public static boolean isChunkTracked(net.minecraft.server.management.PlayerChunkMap map, net.minecraft.entity.player.EntityPlayerMP player, int x, int z) {
+		return map.isPlayerWatchingChunk(player, x, z);
+	}
+
+	/** 1.21 {@code level.getProfiler()}: the world's profiler. */
+	public static net.minecraft.profiler.Profiler getProfiler(World world) {
+		return world.profiler;
+	}
+
+	/** 1.21 {@code state.getMenuProvider(level, pos)}: the block entity there when it opens a menu. */
+	@javax.annotation.Nullable
+	public static io.github.xponer2.translator.menu.MenuProvider getMenuProvider(net.minecraft.block.state.IBlockState state, World world,
+			net.minecraft.util.math.BlockPos pos) {
+		var tile = world.getTileEntity(pos);
+		return tile instanceof io.github.xponer2.translator.menu.MenuProvider provider ? provider : null;
+	}
+
 	/** 1.21 {@code level.tickRateManager()}: 1.12.2 always ticks at 20 a second. */
 	public static io.github.xponer2.translator.world.TickRateManager tickRateManager(World world) {
 		return io.github.xponer2.translator.world.TickRateManager.INSTANCE;

@@ -82,6 +82,14 @@ public class PoseStack {
         GlStateManager.scale(x, y, z);
     }
 
+    /** 1.21 {@code mulPose(quaternion)} (billboards: {@code cameraOrientation()}): its axis and angle on the GL matrix. */
+    public void mulPose(org.joml.Quaternionf rotation) {
+        var axis = new org.joml.AxisAngle4f().set(rotation);
+        if (axis.angle != 0.0F && (axis.x != 0.0F || axis.y != 0.0F || axis.z != 0.0F)) {
+            GlStateManager.rotate((float) Math.toDegrees(axis.angle), axis.x, axis.y, axis.z);
+        }
+    }
+
     public void mulPose(Axis.Rotation rotation) {
         GlStateManager.rotate(rotation.degrees(), rotation.x(), rotation.y(), rotation.z());
     }

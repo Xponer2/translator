@@ -24,6 +24,36 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /** Static stand-ins for 1.21 client methods 1.12.2 client classes lack (runtime; client classes only). */
 @SideOnly(Side.CLIENT)
 public final class ClientRedirects {
+	/** 1.21 {@code blockEntityRenderDispatcher.camera}: the game's camera. */
+	public static io.github.xponer2.translator.client.Camera camera(net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher dispatcher) {
+		return io.github.xponer2.translator.client.Camera.main();
+	}
+
+	/** NeoForge {@code connection.hasChannel(payload)} on the client: the Translator's channels are on both sides. */
+	public static boolean hasChannel(net.minecraft.client.network.NetHandlerPlayClient connection, Object type) {
+		return true;
+	}
+
+	/** 1.21 {@code entityRenderDispatcher.camera}: the game's camera. */
+	public static io.github.xponer2.translator.client.Camera camera(net.minecraft.client.renderer.entity.RenderManager manager) {
+		return io.github.xponer2.translator.client.Camera.main();
+	}
+
+	/** 1.21 {@code entityRenderDispatcher.cameraOrientation()}: the camera's rotation (billboards turn by it). */
+	public static org.joml.Quaternionf cameraOrientation(net.minecraft.client.renderer.entity.RenderManager manager) {
+		return io.github.xponer2.translator.client.Camera.main().rotation();
+	}
+
+	private static final java.util.Map<net.minecraft.client.gui.FontRenderer, io.github.xponer2.translator.client.StringSplitter> SPLITTERS =
+			new java.util.WeakHashMap<>();
+
+	/** 1.21 {@code font.getSplitter()}: widths and line breaks on the 1.12.2 font. */
+	public static io.github.xponer2.translator.client.StringSplitter getSplitter(net.minecraft.client.gui.FontRenderer font) {
+		synchronized (SPLITTERS) {
+			return SPLITTERS.computeIfAbsent(font, io.github.xponer2.translator.client.StringSplitter::new);
+		}
+	}
+
 	/** 1.21 {@code model.copyPropertiesTo(other)}: 1.12.2's {@code other.setModelAttributes(model)}, the other way round. */
 	public static void copyPropertiesTo(net.minecraft.client.model.ModelBiped model, net.minecraft.client.model.ModelBiped other) {
 		other.setModelAttributes(model);

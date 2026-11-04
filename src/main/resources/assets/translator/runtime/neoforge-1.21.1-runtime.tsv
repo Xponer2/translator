@@ -315,3 +315,13 @@ F	net/minecraft/client/model/geom/ModelPart$Vertex	pos	pos
 F	net/minecraft/client/model/geom/ModelPart$Vertex	u	u
 F	net/minecraft/client/model/geom/ModelPart$Vertex	v	v
 M	net/minecraft/client/model/geom/ModelPart$Vertex	remap(float,float)	remap
+# 1.21 ChunkMap: the players a chunk is sent to (1.12.2 PlayerChunkMap)
+C	net/minecraft/server/level/ChunkMap	net/minecraft/server/management/PlayerChunkMap
+# 1.21 PotionContents (a value, not 1.12.2's static PotionUtils): the potion tags of a stack
+C	net/minecraft/world/item/alchemy/PotionContents	io/github/xponer2/translator/component/PotionContents
+M	net/minecraft/world/item/alchemy/PotionContents	getColor()	getColor
+M	net/minecraft/world/item/alchemy/PotionContents	getColor(java.lang.Iterable)	getColor
+M	net/minecraft/world/item/alchemy/PotionContents	getColor(net.minecraft.core.Holder)	getColor
+# 1.21 StringSplitter (font.getSplitter()) on 1.12.2's font renderer
+C	net/minecraft/client/StringSplitter	io/github/xponer2/translator/client/StringSplitter
+M	net/minecraft/client/renderer/entity/LivingEntityRenderer	getModel()	getMainModel

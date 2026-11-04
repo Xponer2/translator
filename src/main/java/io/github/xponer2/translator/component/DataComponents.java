@@ -93,7 +93,20 @@ public final class DataComponents {
     public static final DataComponentType<Integer> MAX_DAMAGE = plain("max_damage");
     public static final DataComponentType<Integer> REPAIR_COST = plain("repair_cost");
     public static final DataComponentType<Object> CONTAINER = plain("container");
-    public static final DataComponentType<Object> POTION_CONTENTS = plain("potion_contents");
+    /** The potion of a stack (1.12.2's "Potion", "CustomPotionColor" and "CustomPotionEffects" tags). */
+    public static final DataComponentType<PotionContents> POTION_CONTENTS = register("potion_contents",
+            DataComponentType.<PotionContents>builder().storage(new StackStorage<>() {
+                @Nullable
+                @Override
+                public PotionContents get(ItemStack stack) {
+                    return PotionContents.read(stack);
+                }
+
+                @Override
+                public void set(ItemStack stack, @Nullable PotionContents value) {
+                    PotionContents.write(stack, value);
+                }
+            }).build());
     public static final DataComponentType<Object> ENCHANTMENTS = plain("enchantments");
     public static final DataComponentType<Object> STORED_ENCHANTMENTS = plain("stored_enchantments");
     public static final DataComponentType<Object> FOOD = plain("food");

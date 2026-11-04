@@ -40,6 +40,12 @@ public class ItemTooltipEvent extends PlayerEvent {
 		this.flags = flags;
 	}
 
+	/** NeoForge {@code getContext()}: the tooltip's context, the player's world. */
+	public io.github.xponer2.translator.item.TooltipContext getContext() {
+		EntityPlayer player = this.getEntity();
+		return io.github.xponer2.translator.item.TooltipContext.of(player != null ? player.world : net.minecraft.client.Minecraft.getMinecraft().world);
+	}
+
 	public ItemStack getItemStack() {
 		return this.itemStack;
 	}

@@ -94,6 +94,11 @@ public abstract class AbstractWidget extends GuiButton implements GuiEventListen
 		super.drawButton(mc, mouseX, mouseY, partialTicks);
 	}
 
+	/** 1.21 {@code playDownSound(soundManager)}: the click of a button. */
+	public void playDownSound(net.minecraft.client.audio.SoundHandler sounds) {
+		this.playPressSound(sounds);
+	}
+
 	@Override
 	public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
 		this.enabled = this.active;

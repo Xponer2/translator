@@ -1551,6 +1551,23 @@ public final class MiscBridges {
 		return ((io.github.xponer2.translator.registry.Registry) lookup).getOrThrow(key);
 	}
 
+	/** 1.21 {@code attributes.getInstance(attribute)} of an entity's attribute map. */
+	@javax.annotation.Nullable
+	public static io.github.xponer2.translator.entity.AttributeInstance getInstance(net.minecraft.entity.ai.attributes.AttributeMap map,
+			io.github.xponer2.translator.registry.Holder<io.github.xponer2.translator.entity.Attribute> attribute) {
+		return io.github.xponer2.translator.entity.AttributeInstance.of(map, attribute);
+	}
+
+	public static boolean hasAttribute(net.minecraft.entity.ai.attributes.AttributeMap map,
+			io.github.xponer2.translator.registry.Holder<io.github.xponer2.translator.entity.Attribute> attribute) {
+		return getInstance(map, attribute) != null;
+	}
+
+	/** 1.21 {@code lootContext.getRandom()}: the world's random (1.12.2's loot context keeps none). */
+	public static java.util.Random getRandom(net.minecraft.world.storage.loot.LootContext context) {
+		return context.getWorld() != null ? context.getWorld().rand : new java.util.Random();
+	}
+
 	// --- EnumDyeColor ------------------------------------------------------------------------------------------------
 
 	public static int getTextureDiffuseColor(EnumDyeColor color) {

@@ -206,3 +206,9 @@ R	io/github/xponer2/translator/block/BaseContainerBlockEntity	io/github/xponer2/
 R	net/minecraft/world/gen/ChunkProviderServer	io/github/xponer2/translator/runtime/redirect/ApiBridges
 R	io/github/xponer2/translator/registry/HolderLookup	io/github/xponer2/translator/runtime/redirect/MiscBridges
 R	net/minecraft/client/model/ModelBiped	io/github/xponer2/translator/runtime/redirect/ClientRedirects
+R	net/minecraft/server/management/PlayerChunkMap	io/github/xponer2/translator/runtime/redirect/ApiBridges
+R	net/minecraft/client/renderer/entity/RenderManager	io/github/xponer2/translator/runtime/redirect/ClientRedirects
+R	net/minecraft/entity/ai/attributes/AttributeMap	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/client/renderer/tileentity/TileEntityRendererDispatcher	io/github/xponer2/translator/runtime/redirect/ClientRedirects
+R	net/minecraft/client/network/NetHandlerPlayClient	io/github/xponer2/translator/runtime/redirect/ClientRedirects
+R	net/minecraft/world/storage/loot/LootContext	io/github/xponer2/translator/runtime/redirect/MiscBridges
