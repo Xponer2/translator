@@ -72,6 +72,15 @@ public class RegisterClientExtensionsEvent extends Event {
 	public void registerItem(IClientItemExtensions extensions, Item... items) {
 		for (var item : items) {
 			ITEMS.put(item, extensions);
+			// the item's own renderer of its built-in model (a "builtin/entity" model): 1.12.2 asks the item for it
+			try {
+				var renderer = extensions.getCustomRenderer();
+				if (renderer != null && renderer != net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer.instance) {
+					item.setTileEntityItemStackRenderer(renderer);
+				}
+			} catch (RuntimeException | LinkageError e) {
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed("the item renderer of " + item.getRegistryName(), e);
+			}
 		}
 	}
 

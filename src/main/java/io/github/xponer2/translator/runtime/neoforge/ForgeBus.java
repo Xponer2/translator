@@ -167,6 +167,10 @@ public final class ForgeBus implements IEventBus {
 
 	@Override
 	public <T extends Event> void addListener(EventPriority priority, boolean receiveCanceled, Class<T> type, Consumer<T> consumer) {
+		if (type == null || consumer == null) {
+			// an optional mod's event (its class isn't there) or a listener the converter left out: nothing to listen to
+			return;
+		}
 		try {
 			// what EventBus#register does: FML gives every event class a no-arg constructor for this
 			Event instance = type.getConstructor().newInstance();

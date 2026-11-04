@@ -178,8 +178,11 @@ final class TargetClasses {
 		return false;
 	}
 
-	/** A field of that name (any type) of the class or one of its supertypes. */
-	boolean hasFieldNamed(String owner, String name) {
+	/**
+	 * A field of that name of the class or one of its supertypes whose type is a supertype of {@code desc}'s (the
+	 * Translator's ModelPart is a ModelRenderer): read as that type, cast back.
+	 */
+	boolean hasFieldNamed(String owner, String name, String desc) {
 		var todo = new ArrayDeque<String>();
 		var seen = new HashSet<String>();
 		todo.add(owner);
@@ -194,10 +197,33 @@ final class TargetClasses {
 			}
 			for (String field : info.fields) {
 				if (field.startsWith(name + " ")) {
-					return true;
+					String type = field.substring(name.length() + 1);
+					return type.startsWith("L") && desc.startsWith("L")
+							&& this.isSubclass(desc.substring(1, desc.length() - 1), type.substring(1, type.length() - 1));
 				}
 			}
 			todo.addAll(info.supertypes());
+		}
+		return false;
+	}
+
+	/** Whether the class is {@code wanted} or has it among its supertypes (classes this lookup can read). */
+	boolean isSubclass(String name, String wanted) {
+		var todo = new ArrayDeque<String>();
+		var seen = new HashSet<String>();
+		todo.add(name);
+		while (!todo.isEmpty()) {
+			String current = todo.poll();
+			if (current.equals(wanted)) {
+				return true;
+			}
+			if (!seen.add(current)) {
+				continue;
+			}
+			ClassInfo info = this.get(current);
+			if (info != null) {
+				todo.addAll(info.supertypes());
+			}
 		}
 		return false;
 	}

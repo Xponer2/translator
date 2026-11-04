@@ -552,7 +552,13 @@ final class MethodGuard {
 				this.soften(node.name, softened, true);
 				// the stack map frames may still name a missing class (a local of that type): the JVM can't check
 				// those against the code (VerifyError), the ASM verifier doesn't look at frames; then the stub is safer
-				if (this.missing(softened) == null && !this.framesNameMissing(softened) && this.verify(node.name, softened) == null) {
+				String still = this.missing(softened);
+				String rejected = still != null ? "still " + still
+						: this.framesNameMissing(softened) ? "a stack map frame names a missing class" : this.verify(node.name, softened);
+				if (rejected != null) {
+					this.stubbed.add(node.name + "." + method.name + ": not softened (" + rejected + ")");
+				}
+				if (rejected == null) {
 					if (!"<init>".equals(method.name) && !isMixin(node)) {
 						// no worse than the stub when the rest of it throws
 						MethodNode guarded = copy(softened);
@@ -1804,6 +1810,12 @@ final class MethodGuard {
 				this.stubbed.add(owner + "." + method.name + ": " + type.desc + " missing, left empty");
 				changed = true;
 				continue;
+			} else if (insn instanceof LdcInsnNode ldc && ldc.cst instanceof Type constant && constant.getSort() == Type.OBJECT
+					&& !this.exists(constant.getInternalName())) {
+				// the class of a missing class (ListenerTypes adds the event class of bus.addListener(Compat::onEvent),
+				// an optional mod's event: Twilight Forest's CosArmorDeathDrops): null, the bus ignores that listener
+				what = "class " + constant.getInternalName();
+				replacement.add(new InsnNode(Opcodes.ACONST_NULL));
 			} else if (insn instanceof TypeInsnNode type && !this.exists(type.desc)) {
 				what = type.desc;
 				switch (type.getOpcode()) {

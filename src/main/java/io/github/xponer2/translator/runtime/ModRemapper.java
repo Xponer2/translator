@@ -258,10 +258,11 @@ final class ModRemapper extends Remapper {
 				if (mappedOwner.startsWith(TRANSLATOR) || this.target.hasMember(mappedOwner, candidate, mappedDesc, method)) {
 					return candidate;
 				}
-				// a field of another type there (HumanoidModel.head is a ModelPart, ModelBiped.bipedHead a ModelRenderer):
-				// the table's name; MethodGuard reads it as the 1.12.2 type and casts it back (12 mods' models read
-				// their humanoid parts so, and found nothing under the 1.21 name)
-				if (!method && this.target.hasFieldNamed(mappedOwner, candidate)) {
+				// a field of a supertype of the 1.21 type there (HumanoidModel.head is a ModelPart, ModelBiped.bipedHead
+				// a ModelRenderer): the table's name; MethodGuard reads it as the 1.12.2 type and casts it back (12 mods'
+				// models read their humanoid parts so, and found nothing under the 1.21 name). Not for an unrelated
+				// type: MobEffects.MOVEMENT_SPEED (a Holder) stays, its helper field has that name, SPEED is a Potion
+				if (!method && this.target.hasFieldNamed(mappedOwner, candidate, mappedDesc)) {
 					return candidate;
 				}
 			}
