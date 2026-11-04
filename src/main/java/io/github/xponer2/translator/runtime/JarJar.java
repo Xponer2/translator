@@ -91,6 +91,39 @@ final class JarJar {
 		return false;
 	}
 
+	/**
+	 * The mods whose required dependencies are all there. NeoForge doesn't start a game with a mod that lacks one; here
+	 * such a mod is left out (with the mods that need it), with its mixins: Iron's Spellbooks without GeckoLib and
+	 * Curios started none of its classes, while its mixins into the player broke every other mod's food.
+	 */
+	static List<ModJar> withDependencies(List<ModJar> mods) {
+		var kept = new ArrayList<>(mods);
+		boolean changed = true;
+		while (changed) {
+			changed = false;
+			var present = new HashSet<String>();
+			for (ModJar jar : kept) {
+				present.addAll(jar.modIds());
+			}
+			for (var it = kept.iterator(); it.hasNext(); ) {
+				ModJar jar = it.next();
+				var missing = new ArrayList<String>();
+				for (String id : jar.requiredDependencies) {
+					if (!present.contains(id)) {
+						missing.add(id);
+					}
+				}
+				if (!missing.isEmpty()) {
+					Conversion.LOGGER.error("Not loaded: the 1.21.1 mod {} ({}) needs {}, not installed", jar.displayName(), jar.file.getName(),
+							String.join(", ", missing));
+					it.remove();
+					changed = true;
+				}
+			}
+		}
+		return kept;
+	}
+
 	/** The mods with each one after the mods it depends on ([[dependencies]] of its mods.toml), else in the given order. */
 	static List<ModJar> dependencyOrder(List<ModJar> mods) {
 		var byId = new HashMap<String, ModJar>();

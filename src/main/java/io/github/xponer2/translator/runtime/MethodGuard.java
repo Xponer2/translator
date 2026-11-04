@@ -1376,8 +1376,11 @@ final class MethodGuard {
 				Type result = Type.getReturnType(desc);
 				boolean cast = false;
 				if (!this.assignable(result, returned)) {
-					// T getMenu() erased to Container where the mod expects its bound: cast back
-					if (!info.typeVariables.contains(member) || !this.assignable(returned, result)) {
+					// T getMenu() erased to Container where the mod expects its bound, or a Translator method that gives
+					// the 1.12.2 class where the mod expects the Translator's facade of it (MenuProvider.createMenu gives
+					// a Container, Powah expects an AbstractContainerMenu): cast back
+					boolean facade = returned.getSort() == Type.OBJECT && returned.getInternalName().startsWith("io/github/xponer2/translator/");
+					if (!(info.typeVariables.contains(member) || facade) || !this.assignable(returned, result)) {
 						continue;
 					}
 					cast = true;

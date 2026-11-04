@@ -59,6 +59,11 @@ public final class ItemBridges {
 		return item.getTranslationKey();
 	}
 
+	/** 1.21 {@code getDescriptionId(stack)}: the key of that stack (Powah names its blocks with it). */
+	public static String getDescriptionId(Item item, ItemStack stack) {
+		return item.getTranslationKey(stack);
+	}
+
 	public static ITextComponent getName(Item item, ItemStack stack) {
 		return new TextComponentString(item.getItemStackDisplayName(stack));
 	}

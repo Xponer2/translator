@@ -65,4 +65,59 @@ public class BlockPlaceContext extends UseOnContext {
 	public EnumFacing getNearestLookingDirection() {
 		return this.getPlayer() == null ? EnumFacing.NORTH : EnumFacing.getDirectionFromEntityLiving(this.placePos, this.getPlayer());
 	}
+
+	/**
+	 * 1.21 {@code getNearestLookingDirections}: the six directions in the order the player looks along them, the one
+	 * into the clicked face first (buttons, levers and other blocks that attach to a face).
+	 */
+	public EnumFacing[] getNearestLookingDirections() {
+		EnumFacing[] directions = this.getPlayer() == null
+				? new EnumFacing[] {EnumFacing.DOWN, EnumFacing.NORTH, EnumFacing.EAST, EnumFacing.SOUTH, EnumFacing.WEST, EnumFacing.UP}
+				: orderedByNearest(this.getPlayer());
+		EnumFacing into = this.getClickedFace().getOpposite();
+		int i = 0;
+		while (i < directions.length && directions[i] != into) {
+			i++;
+		}
+		if (i > 0 && i < directions.length) {
+			System.arraycopy(directions, 0, directions, 1, i);
+			directions[0] = into;
+		}
+		return directions;
+	}
+
+	/** 1.21 {@code Direction.orderedByNearest}: the directions by how close they are to where the entity looks. */
+	private static EnumFacing[] orderedByNearest(net.minecraft.entity.Entity entity) {
+		float pitch = entity.rotationPitch * ((float) Math.PI / 180F);
+		float yaw = -entity.rotationYaw * ((float) Math.PI / 180F);
+		float sinPitch = net.minecraft.util.math.MathHelper.sin(pitch);
+		float cosPitch = net.minecraft.util.math.MathHelper.cos(pitch);
+		float sinYaw = net.minecraft.util.math.MathHelper.sin(yaw);
+		float cosYaw = net.minecraft.util.math.MathHelper.cos(yaw);
+		boolean east = sinYaw > 0.0F;
+		boolean up = sinPitch < 0.0F;
+		boolean south = cosYaw > 0.0F;
+		float x = east ? sinYaw : -sinYaw;
+		float y = up ? -sinPitch : sinPitch;
+		float z = south ? cosYaw : -cosYaw;
+		float xLook = x * cosPitch;
+		float zLook = z * cosPitch;
+		EnumFacing ew = east ? EnumFacing.EAST : EnumFacing.WEST;
+		EnumFacing ud = up ? EnumFacing.UP : EnumFacing.DOWN;
+		EnumFacing ns = south ? EnumFacing.SOUTH : EnumFacing.NORTH;
+		if (x > z) {
+			if (y > xLook) {
+				return directions(ud, ew, ns);
+			}
+			return zLook > y ? directions(ew, ns, ud) : directions(ew, ud, ns);
+		}
+		if (y > zLook) {
+			return directions(ud, ns, ew);
+		}
+		return xLook > y ? directions(ns, ew, ud) : directions(ns, ud, ew);
+	}
+
+	private static EnumFacing[] directions(EnumFacing a, EnumFacing b, EnumFacing c) {
+		return new EnumFacing[] {a, b, c, c.getOpposite(), b.getOpposite(), a.getOpposite()};
+	}
 }

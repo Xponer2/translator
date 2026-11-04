@@ -44,12 +44,13 @@ public final class VanillaRedirects {
 
 	// --- Component (static) -------------------------------------------------------------------------------------------
 
-	public static MutableComponent translatable(String key) {
-		return new TranslatableComponent(key);
+	/** A key a call the Translator skipped left null is an empty one: 1.12.2's text would throw when drawn. */
+	public static MutableComponent translatable(@Nullable String key) {
+		return new TranslatableComponent(key == null ? "" : key);
 	}
 
-	public static MutableComponent translatable(String key, Object[] args) {
-		return new TranslatableComponent(key, args);
+	public static MutableComponent translatable(@Nullable String key, Object[] args) {
+		return new TranslatableComponent(key == null ? "" : key, args);
 	}
 
 	public static MutableComponent translatableWithFallback(String key, @Nullable String fallback) {
@@ -533,6 +534,12 @@ public final class VanillaRedirects {
 	public static java.util.Optional<net.minecraft.util.math.BlockPos> getPosFromTag(NBTTagCompound tag, String key) {
 		return readBlockPos(tag, key);
 	}
+
+	/**
+	 * 1.21 {@code CustomData.EMPTY}: CustomData is an NBT compound on 1.12.2 (the carried class's EMPTY stayed null:
+	 * spawn eggs couldn't read their entity). Not to be changed: 1.21 code copies a CustomData's tag before it does.
+	 */
+	public static final NBTTagCompound EMPTY = new NBTTagCompound();
 
 	public static int size(NBTTagList list) {
 		return list.tagCount();

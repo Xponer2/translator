@@ -15,6 +15,7 @@ import java.util.Random;
 import io.github.xponer2.translator.block.BlockProperties;
 
 import net.minecraft.block.BlockDoor;
+import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -26,6 +27,19 @@ public class DoorBlock extends BlockDoor {
 	public DoorBlock(Object blockSetType, BlockProperties properties) {
 		super(properties.material());
 		properties.applyTo(this, this::setSoundType);
+	}
+
+	/** 1.21 {@code DoorBlock.createBlockStateDefinition}: the door's properties; a mod's door adds its own to them. */
+	protected void createBlockStateDefinition(BlockStateContainer.Builder builder) {
+		builder.add(HALF, FACING, OPEN, HINGE, POWERED);
+	}
+
+	/** The state of a 1.21 door: what its createBlockStateDefinition adds (Create's sliding doors: visible). */
+	@Override
+	protected BlockStateContainer createBlockState() {
+		var builder = new io.github.xponer2.translator.block.LazyStateContainer.Builder(this);
+		this.createBlockStateDefinition(builder);
+		return builder.build();
 	}
 
 	@Override

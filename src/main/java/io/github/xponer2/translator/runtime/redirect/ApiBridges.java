@@ -117,8 +117,26 @@ public final class ApiBridges {
 		return io.github.xponer2.translator.recipe.RecipeManager.get();
 	}
 
+	/** 1.21 {@code level.tickRateManager()}: 1.12.2 always ticks at 20 a second. */
+	public static io.github.xponer2.translator.world.TickRateManager tickRateManager(World world) {
+		return io.github.xponer2.translator.world.TickRateManager.INSTANCE;
+	}
+
+	/** The same for the server ({@code server.tickRateManager()}). */
+	public static io.github.xponer2.translator.world.TickRateManager tickRateManager(MinecraftServer server) {
+		return io.github.xponer2.translator.world.TickRateManager.INSTANCE;
+	}
+
 	public static net.minecraft.world.gen.ChunkProviderServer getChunkSource(World world) {
 		return world instanceof WorldServer server ? server.getChunkProvider() : null;
+	}
+
+	/**
+	 * 1.21 {@code ServerChunkCache.blockChanged(pos)}: the players watching the block get it again (Create's block
+	 * entities send their data so).
+	 */
+	public static void blockChanged(net.minecraft.world.gen.ChunkProviderServer chunks, net.minecraft.util.math.BlockPos pos) {
+		chunks.world.getPlayerChunkMap().markBlockForUpdate(pos);
 	}
 
 	public static WorldServer getLevel(MinecraftServer server, ResourceKey<?> key) {

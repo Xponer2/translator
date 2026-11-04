@@ -281,3 +281,6 @@ C	net/neoforged/neoforge/event/server/ServerStartingEvent	io/github/xponer2/tran
 C	net/neoforged/neoforge/event/server/ServerStartedEvent	io/github/xponer2/translator/runtime/neoforge/ServerEvents$ServerStartedEvent
 C	net/neoforged/neoforge/event/server/ServerStoppingEvent	io/github/xponer2/translator/runtime/neoforge/ServerEvents$ServerStoppingEvent
 C	net/neoforged/neoforge/event/server/ServerStoppedEvent	io/github/xponer2/translator/runtime/neoforge/ServerEvents$ServerStoppedEvent
+# the /tick state: 1.12.2 always ticks at 20 a second (Create asks it for the speed of its machines)
+C	net/minecraft/world/TickRateManager	io/github/xponer2/translator/world/TickRateManager
+C	net/minecraft/server/ServerTickRateManager	io/github/xponer2/translator/world/TickRateManager

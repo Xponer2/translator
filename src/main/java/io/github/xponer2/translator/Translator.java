@@ -111,6 +111,8 @@ public final class Translator {
 	@Mod.EventHandler
 	public void serverAboutToStart(net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent event) {
 		ServerEvents.post(new ServerEvents.ServerAboutToStartEvent(event.getServer()));
+		// the block entities that needed the server's configs to be made
+		io.github.xponer2.translator.registry.BlockEntityType.registerPending();
 	}
 
 	@Mod.EventHandler

@@ -38,6 +38,8 @@ final class ModJar {
 	final List<Map<String, String>> mods = new ArrayList<>();
 	/** mod ids of the [[dependencies.*]] tables (what has to be converted and loaded first). */
 	final List<String> dependencies = new ArrayList<>();
+	/** the ones of them the mod can't run without on this side (type "required", or the older mandatory=true). */
+	final List<String> requiredDependencies = new ArrayList<>();
 	/** A jar without mods.toml: a library (the 1.21.1 API, a JarJar library); its name for the log. */
 	private String libraryName;
 	final Map<String, ClassInfo> classes = new HashMap<>();
@@ -151,6 +153,14 @@ final class ModJar {
 			String id = dependency.get("modId");
 			if (id != null && !"neoforge".equals(id) && !"minecraft".equals(id)) {
 				this.dependencies.add(id);
+				// NeoForge: type, "required" when left out; Forge's older mods.toml: mandatory
+				String type = dependency.containsKey("type") ? dependency.get("type")
+						: "false".equals(dependency.get("mandatory")) ? "optional" : "required";
+				String side = dependency.getOrDefault("side", "BOTH").toUpperCase(java.util.Locale.ROOT);
+				boolean thisSide = "BOTH".equals(side) || side.equals(net.minecraftforge.fml.relauncher.FMLLaunchHandler.side().name());
+				if ("required".equalsIgnoreCase(type) && thisSide) {
+					this.requiredDependencies.add(id);
+				}
 			}
 		}
 	}

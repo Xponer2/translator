@@ -222,6 +222,7 @@ public final class Conversion {
 				LOGGER.error("Can't read {}", file.getName(), t);
 			}
 		}
+		mods = new ArrayList<>(JarJar.withDependencies(mods));
 		File api = ApiCarry.find();
 		var mojang = api == null ? new ArrayList<File>() : ApiCarry.libraries();
 		Steps bar = progress == null ? NO_STEPS : progress.apply(mojang.size() + (api == null ? 0 : 1) + libraries.size() + mods.size());

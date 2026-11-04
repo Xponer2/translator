@@ -41,6 +41,20 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * does. In descriptors 1.21 {@code Item} stays the 1.12.2 {@code Item}: this class is only what mod items extend.
  */
 public class Item extends net.minecraft.item.Item implements TooltipContext.HoverText, io.github.xponer2.translator.util.ItemLike {
+	/**
+	 * 1.21 {@code Item.getPlayerPOVHitResult}: the block the player looks at within reach, fluids as asked (spawn
+	 * eggs, buckets).
+	 */
+	public static net.minecraft.util.math.RayTraceResult getPlayerPOVHitResult(World world, EntityPlayer player,
+			io.github.xponer2.translator.util.ClipContext.Fluid fluid) {
+		net.minecraft.util.math.Vec3d eyes = player.getPositionEyes(1.0F);
+		net.minecraft.util.math.Vec3d look = player.getLook(1.0F);
+		double reach = player.getEntityAttribute(EntityPlayer.REACH_DISTANCE).getAttributeValue();
+		net.minecraft.util.math.Vec3d end = eyes.add(look.x * reach, look.y * reach, look.z * reach);
+		return io.github.xponer2.translator.util.ClipContext.clip(world, new io.github.xponer2.translator.util.ClipContext(eyes, end,
+				io.github.xponer2.translator.util.ClipContext.Block.OUTLINE, fluid, player));
+	}
+
 	public Item(ItemProperties properties) {
 		// null when a builder call couldn't run (requiredFeatures of 1.21 feature flags): the plain item's defaults
 		if (properties != null) {

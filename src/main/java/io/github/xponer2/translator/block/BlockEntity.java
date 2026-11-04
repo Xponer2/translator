@@ -73,6 +73,18 @@ public class BlockEntity extends TileEntity implements ITickable {
 
 	protected void saveAdditional(NBTTagCompound tag, HolderLookup.Provider registries) { }
 
+	/** 1.21 {@code saveCustomOnly}: what the block entity saves, without its id and position. */
+	public NBTTagCompound saveCustomOnly(HolderLookup.Provider registries) {
+		NBTTagCompound tag = new NBTTagCompound();
+		this.saveAdditional(tag, registries);
+		return tag;
+	}
+
+	/** 1.21 {@code loadCustomOnly}: loads what saveCustomOnly gave (Storage Drawers keeps it in a drawer item). */
+	public void loadCustomOnly(NBTTagCompound tag, HolderLookup.Provider registries) {
+		this.loadAdditional(tag, registries);
+	}
+
 	@Override
 	public void readFromNBT(NBTTagCompound tag) {
 		// 1.21 tags without the position (update tags from saveWithoutMetadata, update packets) keep it: 1.12.2 would
@@ -167,6 +179,19 @@ public class BlockEntity extends TileEntity implements ITickable {
 	}
 
 	public void removeComponentsFromTag(NBTTagCompound tag) {
+	}
+
+	/**
+	 * 1.21 {@code BlockEntity.parseCustomNameSafe}: a custom name saved as text JSON, null when it can't be read
+	 * (Storage Drawers' drawers with a name, when loaded).
+	 */
+	@Nullable
+	public static net.minecraft.util.text.ITextComponent parseCustomNameSafe(String json, HolderLookup.Provider registries) {
+		try {
+			return net.minecraft.util.text.ITextComponent.Serializer.jsonToComponent(json);
+		} catch (RuntimeException e) {
+			return null;
+		}
 	}
 
 	/** The 1.21 name of onChunkUnload. */

@@ -855,6 +855,29 @@ public final class MiscBridges {
 		return null;
 	}
 
+	/** 1.21 {@code BlockEntity.saveCustomOnly} on any tile entity: its save without the id and position. */
+	public static NBTTagCompound saveCustomOnly(TileEntity tile, io.github.xponer2.translator.registry.HolderLookup.Provider registries) {
+		if (tile instanceof io.github.xponer2.translator.block.BlockEntity entity) {
+			return entity.saveCustomOnly(registries);
+		}
+		NBTTagCompound tag = tile.writeToNBT(new NBTTagCompound());
+		for (String key : new String[] {"id", "x", "y", "z"}) {
+			tag.removeTag(key);
+		}
+		return tag;
+	}
+
+	/** 1.21 {@code BlockEntity.loadCustomOnly} on any tile entity: a 1.12.2 one keeps its position. */
+	public static void loadCustomOnly(TileEntity tile, NBTTagCompound tag, io.github.xponer2.translator.registry.HolderLookup.Provider registries) {
+		if (tile instanceof io.github.xponer2.translator.block.BlockEntity entity) {
+			entity.loadCustomOnly(tag, registries);
+			return;
+		}
+		net.minecraft.util.math.BlockPos pos = tile.getPos();
+		tile.readFromNBT(tag);
+		tile.setPos(pos);
+	}
+
 	public static NBTTagCompound getPersistentData(TileEntity tile) {
 		return tile.getTileData();
 	}
@@ -1502,6 +1525,51 @@ public final class MiscBridges {
 
 	public static int getId(EnumDyeColor color) {
 		return color.getMetadata();
+	}
+
+	/** 1.21 {@code DyeColor.byId}: the carried DyeColor read a lookup table 1.12.2's enum doesn't have. */
+	public static EnumDyeColor byId(int id) {
+		return EnumDyeColor.byMetadata(id);
+	}
+
+	@javax.annotation.Nullable
+	public static EnumDyeColor byName(String name, @javax.annotation.Nullable EnumDyeColor fallback) {
+		for (EnumDyeColor color : EnumDyeColor.values()) {
+			if (color.getName().equals(name)) {
+				return color;
+			}
+		}
+		return fallback;
+	}
+
+	@javax.annotation.Nullable
+	public static EnumDyeColor byFireworkColor(int rgb) {
+		for (EnumDyeColor color : EnumDyeColor.values()) {
+			if (color.getColorValue() == rgb) {
+				return color;
+			}
+		}
+		return null;
+	}
+
+	/** NeoForge {@code DyeColor.getColor(stack)}: the color of a dye (1.12.2's dyes, or a "dye<Color>" ore name). */
+	@javax.annotation.Nullable
+	public static EnumDyeColor getColor(net.minecraft.item.ItemStack stack) {
+		if (stack.isEmpty()) {
+			return null;
+		}
+		if (stack.getItem() == net.minecraft.init.Items.DYE) {
+			return EnumDyeColor.byDyeDamage(stack.getMetadata());
+		}
+		for (int id : net.minecraftforge.oredict.OreDictionary.getOreIDs(stack)) {
+			String name = net.minecraftforge.oredict.OreDictionary.getOreName(id);
+			for (EnumDyeColor color : EnumDyeColor.values()) {
+				if (name.equalsIgnoreCase("dye" + color.getTranslationKey())) {
+					return color;
+				}
+			}
+		}
+		return null;
 	}
 
 	public static MapColor getMapColor(EnumDyeColor color) {

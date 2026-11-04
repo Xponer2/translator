@@ -29,9 +29,13 @@ import java.util.Set;
  * from NBT through that class and its no-arg constructor).
  */
 public final class BlockEntityType<T extends TileEntity> implements RegistrationCallback {
+    /** The types whose sample couldn't be made when they were registered: their class is registered later. */
+    private static final java.util.List<BlockEntityType<?>> PENDING = new java.util.ArrayList<>();
+
     private final BlockEntitySupplier<? extends T> factory;
     private final Set<Block> validBlocks;
     private Class<? extends TileEntity> tileClass;
+    private ResourceLocation id;
 
     private BlockEntityType(BlockEntitySupplier<? extends T> factory, Set<Block> validBlocks) {
         this.factory = factory;
@@ -43,6 +47,9 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
         var tile = this.factory.create(pos, state);
         if (tile != null) {
             tile.setPos(pos.toImmutable());
+            if (this.tileClass == null && this.id != null) {
+                this.registerClass(tile.getClass());
+            }
         }
         return tile;
     }
@@ -66,9 +73,52 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
         if (this.validBlocks.isEmpty()) {
             throw new IllegalStateException("Block entity type " + id + " has no blocks");
         }
-        var sample = this.factory.create(BlockPos.ORIGIN, this.validBlocks.iterator().next().getDefaultState());
-        this.tileClass = sample.getClass();
-        GameRegistry.registerTileEntity(this.tileClass, id);
+        this.id = id;
+        try {
+            this.registerClass(this.sample().getClass());
+        } catch (RuntimeException | LinkageError e) {
+            // a block entity that reads a server config when it is made (Refurbished Furniture's sinks and mailboxes:
+            // Framework links those when the server starts): the type is there, its class is registered when the
+            // server is about to start or when one is first made. NeoForge makes none at registration.
+            synchronized (PENDING) {
+                PENDING.add(this);
+            }
+            org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").info("Block entity {}: no sample yet ({}), its class is registered later", id, e.toString());
+        }
+    }
+
+    private T sample() {
+        return this.factory.create(BlockPos.ORIGIN, this.validBlocks.iterator().next().getDefaultState());
+    }
+
+    @SuppressWarnings("deprecation")
+    private void registerClass(Class<? extends TileEntity> type) {
+        this.tileClass = type;
+        if (TileEntity.getKey(type) == null) {
+            GameRegistry.registerTileEntity(type, this.id);
+        }
+    }
+
+    /**
+     * The classes of the types whose sample failed, made again once the mods set up their server (before the worlds
+     * load, whose saved block entities need them).
+     */
+    public static void registerPending() {
+        java.util.List<BlockEntityType<?>> pending;
+        synchronized (PENDING) {
+            pending = new java.util.ArrayList<>(PENDING);
+            PENDING.clear();
+        }
+        for (BlockEntityType<?> type : pending) {
+            if (type.tileClass != null) {
+                continue;
+            }
+            try {
+                type.registerClass(type.sample().getClass());
+            } catch (RuntimeException | LinkageError e) {
+                io.github.xponer2.translator.runtime.RuntimeStubs.failed("the block entity " + type.id + " (made for its class)", e);
+            }
+        }
     }
 
     @FunctionalInterface
