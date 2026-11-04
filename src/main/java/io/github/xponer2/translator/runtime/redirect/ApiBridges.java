@@ -80,8 +80,10 @@ public final class ApiBridges {
 			case "the_end":
 				return 1;
 			default:
+				String full = key.location().toString();
 				for (DimensionType type : DimensionType.values()) {
-					if (type.getName().equals(path) || ("dim" + type.getId()).equals(path)) {
+					// a mod's dimension is named by its full id (twilightforest:twilight_forest), see DataDimensions
+					if (type.getName().equals(full) || type.getName().equals(path) || ("dim" + type.getId()).equals(path)) {
 						return type.getId();
 					}
 				}

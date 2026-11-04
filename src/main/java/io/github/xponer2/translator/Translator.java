@@ -102,6 +102,8 @@ public final class Translator {
 
 	@Mod.EventHandler
 	public void init(FMLInitializationEvent event) {
+		// the dimensions of the 1.21.1 mods (data/<mod>/dimension), after their biomes are registered
+		io.github.xponer2.translator.world.DataDimensions.registerAll();
 		setupMods();
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.runtime.neoforge.FMLClientSetupEvent.runDeferred();

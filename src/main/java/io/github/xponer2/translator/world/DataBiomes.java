@@ -440,6 +440,12 @@ public final class DataBiomes {
 		return null;
 	}
 
+	/** The state of a 1.21 block name (a mod's, or a vanilla one 1.12.2 has): stone when there is none. */
+	static IBlockState stateOf(String name) {
+		IBlockState state = modState(name);
+		return state != null ? state : Blocks.STONE.getDefaultState();
+	}
+
 	/** A mod's block (or a vanilla one 1.12.2 has under that name): its default state. */
 	@Nullable
 	private static IBlockState modState(String name) {

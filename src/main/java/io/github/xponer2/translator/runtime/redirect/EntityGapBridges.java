@@ -56,7 +56,81 @@ public final class EntityGapBridges {
 	}
 
 	/** 1.21 portals start a dimension change by this; 1.12.2 portals are blocks that do it themselves. */
+	/** Ticks each entity has stood in a 1.21 portal, and the world tick it was last seen there. */
+	private static final java.util.Map<Entity, long[]> IN_PORTAL = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+	/**
+	 * 1.21 {@code entity.setAsInsidePortal(portal, pos)} (a mod's portal block calls it each tick the entity is in it):
+	 * once the entity has stood there the portal's transition time, the portal's destination (its
+	 * {@code getPortalDestination}, a DimensionTransition) moves it, to another dimension through Forge's teleporter.
+	 * Twilight Forest's portal does nothing without it.
+	 */
 	public static void setAsInsidePortal(Entity entity, Object portal, BlockPos pos) {
+		if (entity.world.isRemote || !(entity.world instanceof net.minecraft.world.WorldServer level) || entity.isRiding() || entity.isBeingRidden()) {
+			return;
+		}
+		if (entity.timeUntilPortal > 0) {
+			entity.timeUntilPortal = entity.getPortalCooldown();
+			return;
+		}
+		long now = level.getTotalWorldTime();
+		long[] state = IN_PORTAL.computeIfAbsent(entity, key -> new long[] {0, Long.MIN_VALUE});
+		if (state[1] == now) {
+			return;
+		}
+		state[0] = state[1] == now - 1 ? state[0] + 1 : 1;
+		state[1] = now;
+		int needed = entity instanceof EntityPlayer player && !player.capabilities.isCreativeMode ? 80 : 1;
+		Object time = call(portal, "getPortalTransitionTime", level, entity);
+		if (time instanceof Integer ticks) {
+			needed = Math.max(1, ticks);
+		}
+		if (state[0] < needed) {
+			return;
+		}
+		IN_PORTAL.remove(entity);
+		entity.timeUntilPortal = entity.getPortalCooldown();
+		Object transition = call(portal, "getPortalDestination", level, entity, pos);
+		if (transition == null) {
+			return;
+		}
+		Object target = call(transition, "newLevel");
+		Object position = call(transition, "pos");
+		if (!(target instanceof net.minecraft.world.WorldServer destination) || !(position instanceof Vec3d at)) {
+			return;
+		}
+		float yaw = call(transition, "yRot") instanceof Float f ? f : entity.rotationYaw;
+		float pitch = call(transition, "xRot") instanceof Float f ? f : entity.rotationPitch;
+		int dimension = destination.provider.getDimension();
+		Entity moved = entity;
+		if (entity.dimension != dimension) {
+			moved = entity.changeDimension(dimension, (world, e, entityYaw) -> e.setLocationAndAngles(at.x, at.y, at.z, yaw, pitch));
+		}
+		if (moved instanceof net.minecraft.entity.player.EntityPlayerMP player) {
+			player.connection.setPlayerLocation(at.x, at.y, at.z, yaw, pitch);
+		} else if (moved != null) {
+			moved.setLocationAndAngles(at.x, at.y, at.z, yaw, pitch);
+		}
+		Object after = call(transition, "postDimensionTransition");
+		if (after != null && moved != null) {
+			call(after, "onTransition", moved);
+		}
+	}
+
+	/** A method of a carried 1.21 object (Portal, DimensionTransition) by name and argument count. */
+	@javax.annotation.Nullable
+	private static Object call(Object target, String name, Object... args) {
+		for (var method : target.getClass().getMethods()) {
+			if (method.getName().equals(name) && method.getParameterCount() == args.length) {
+				try {
+					method.setAccessible(true);
+					return method.invoke(target, args);
+				} catch (ReflectiveOperationException | IllegalArgumentException e) {
+					return null;
+				}
+			}
+		}
+		return null;
 	}
 
 	public static IBlockState getBlockStateOn(Entity entity) {
