@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "91";
+	static final String VERSION = "92";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
@@ -259,6 +259,8 @@ final class JarConverter {
 
 	private static void remap(ModJar jar, File output, ModRemapper remapper, RemapTable table, TargetClasses target) throws IOException {
 		try (var zip = new ZipFile(jar.file); var out = new ZipOutputStream(new FileOutputStream(output))) {
+			// accessor mixins into Translator classes: by reflection (they can't be applied there)
+			var accessors = AccessorMixins.find(jar, zip, remapper, MIXABLE::contains);
 			for (ZipEntry entry : Collections.list(zip.entries())) {
 				String path = entry.getName();
 				if (entry.isDirectory() || path.matches("META-INF/[^/]+\\.(SF|RSA|DSA|EC)")) {
@@ -277,6 +279,14 @@ final class JarConverter {
 					reader.accept(new ListenerTypes(new FacadeRemapper(writer, remapper, table.supers, target)), 0);
 					bytes = writer.toByteArray();
 					path = remapper.map(reader.getClassName()) + ".class";
+					if (!accessors.isEmpty()) {
+						String className = reader.getClassName();
+						bytes = accessors.rewrite(className, bytes);
+						String moved = accessors.name(className);
+						if (!moved.equals(className)) {
+							path = moved + ".class";
+						}
+					}
 				}
 				out.putNextEntry(new ZipEntry(path));
 				out.write(bytes);
