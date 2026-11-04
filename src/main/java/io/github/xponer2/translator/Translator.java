@@ -69,6 +69,8 @@ public final class Translator {
 		Menus.init();
 		MinecraftForge.EVENT_BUS.register(new CapabilityAttacher());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.item.DataEnchantments());
+		// the biomes of the 1.21.1 mods (data/<mod>/worldgen/biome), into the 1.12.2 overworld
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.DataBiomes());
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.client.ClientSetup.preInit();
 		}
