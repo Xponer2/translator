@@ -30,13 +30,36 @@ final class ScreenFailures {
 		closeBroken(screen, "render", error);
 	}
 
+	/**
+	 * The 1.21 screen's removed(), called when it closes: an error there (a screen whose init failed, Create's package
+	 * port) is logged, the screen closes.
+	 */
+	static void removed(GuiScreen screen) {
+		try {
+			if (screen instanceof Screen plain) {
+				plain.removed();
+			} else if (screen instanceof AbstractContainerScreen<?> container) {
+				container.removed();
+			}
+		} catch (RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(screen.getClass().getName() + ".removed", e);
+		}
+	}
+
 	/** {@code what}: render, tick or input. */
 	static void closeBroken(GuiScreen screen, String what, Throwable error) {
 		String name = screen.getClass().getName();
 		io.github.xponer2.translator.runtime.RuntimeStubs.failed(name + "." + what, error);
 		Minecraft mc = Minecraft.getMinecraft();
 		if (mc.currentScreen == screen) {
-			mc.displayGuiScreen(null);
+			try {
+				mc.displayGuiScreen(null);
+			} catch (RuntimeException | LinkageError closing) {
+				// the screen's own onGuiClosed failed too: it goes anyway
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed(name + ".onGuiClosed", closing);
+				mc.currentScreen = null;
+				mc.setIngameFocus();
+			}
 			if (mc.player != null) {
 				mc.player.sendMessage(new TextComponentString(TextFormatting.RED + "Translator: " + screen.getClass().getSimpleName()
 						+ " can't be shown on 1.12.2 yet (" + error.getClass().getSimpleName() + ", see the log)"));

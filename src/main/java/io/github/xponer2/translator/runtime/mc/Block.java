@@ -83,6 +83,10 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 	public void onRemove(IBlockState state, World level, BlockPos pos, IBlockState newState, boolean movedByPiston) {
 	}
 
+	/** 1.21 {@code onPlace(state, level, pos, oldState, movedByPiston)}: the block was set (1.12.2's onBlockAdded calls it). */
+	public void onPlace(IBlockState state, World level, BlockPos pos, IBlockState oldState, boolean movedByPiston) {
+	}
+
 	@Override
 	public net.minecraft.item.Item asItem() {
 		return net.minecraft.item.Item.getItemFromBlock(this);
@@ -280,6 +284,19 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 		var state = this.guarded("getStateForPlacement",
 				() -> this.getStateForPlacement(BlockPlaceContext.of(world, pos, facing, hitX, hitY, hitZ, placer, hand)), null);
 		return state == null ? this.getDefaultState() : state;
+	}
+
+	/**
+	 * The 1.21 block's onPlace (Twilight Forest's reactor debris picks its textures there; without it the block entity
+	 * saved null textures and the game crashed). 1.12.2 doesn't give the old state: air.
+	 */
+	@Override
+	public void onBlockAdded(World world, BlockPos pos, IBlockState state) {
+		super.onBlockAdded(world, pos, state);
+		this.guarded("onPlace", () -> {
+			this.onPlace(state, world, pos, Blocks.AIR.getDefaultState(), false);
+			return null;
+		}, null);
 	}
 
 	@Override

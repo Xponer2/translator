@@ -192,6 +192,14 @@ public final class VertexConsumer {
 
 	/** Draws the vertices added so far. */
 	public void flush() {
+		if (this.started && this.target == null && !drawing(Tessellator.getInstance().getBuffer())) {
+			// the shared Tessellator was drawn or reset behind this batch (a 1.12.2 render in the mod's renderer):
+			// its vertices are gone, nothing to draw ("Not building!" crashed MA's tinkering table)
+			this.pending = false;
+			this.started = false;
+			this.type.clearRenderState();
+			return;
+		}
 		this.emit();
 		if (!this.started) {
 			return;
@@ -231,7 +239,49 @@ public final class VertexConsumer {
 		this.started = false;
 	}
 
+	/** Whether the buffer is between begin and finishDrawing (1.12.2 has no getter: its private field). */
+	static boolean drawing(BufferBuilder buffer) {
+		if (DRAWING == null) {
+			return true;
+		}
+		try {
+			return DRAWING.getBoolean(buffer);
+		} catch (IllegalAccessException e) {
+			return true;
+		}
+	}
+
+	@Nullable
+	private static final java.lang.reflect.Field DRAWING = drawingField();
+
+	@Nullable
+	private static java.lang.reflect.Field drawingField() {
+		for (String name : new String[] {"field_179010_r", "isDrawing"}) {
+			try {
+				var field = BufferBuilder.class.getDeclaredField(name);
+				field.setAccessible(true);
+				return field;
+			} catch (NoSuchFieldException | RuntimeException e) {
+				// the other name (the game's or the development one)
+			}
+		}
+		return null;
+	}
+
+	/** Back to no batch, the vertices dropped (an error in the middle of one). */
+	void abandon() {
+		this.pending = false;
+		if (this.started && this.target == null) {
+			this.type.clearRenderState();
+		}
+		this.started = false;
+	}
+
 	private void start() {
+		if (this.target == null && drawing(Tessellator.getInstance().getBuffer())) {
+			// another render type's batch is on the shared Tessellator: drawn first (1.21 batches each type apart)
+			MultiBufferSource.INSTANCE.flushOthers(this);
+		}
 		this.started = true;
 		if (this.target == null) {
 			this.type.setupRenderState();

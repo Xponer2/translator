@@ -121,6 +121,17 @@ public final class WorldGapBridges {
 		return manager.getTemplate(server, id);
 	}
 
+	// --- ResourceLocation -----------------------------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code id.compareNamespaced(other)}: by namespace, then path (Mekanism sorts its QIO list with a reference to
+	 * it; without one the comparator was null and Mekanism's config, so the whole mod, failed).
+	 */
+	public static int compareNamespaced(net.minecraft.util.ResourceLocation id, net.minecraft.util.ResourceLocation other) {
+		int namespace = id.getNamespace().compareTo(other.getNamespace());
+		return namespace != 0 ? namespace : id.getPath().compareTo(other.getPath());
+	}
+
 	// --- text -----------------------------------------------------------------------------------------------------------
 
 	/** 1.21 {@code style.applyTo(other)}: this style over the other (what this one leaves unset comes from the other). */

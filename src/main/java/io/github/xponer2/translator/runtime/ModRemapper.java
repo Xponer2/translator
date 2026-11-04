@@ -240,6 +240,14 @@ final class ModRemapper extends Remapper {
 			Map<String, String> members = (method ? this.table.methods : this.table.fields).get(current);
 			String key = method ? RemapTable.methodKey(name, desc) : name;
 			String mappedOwner = this.map(current);
+			if (mappedOwner.startsWith(TRANSLATOR) && members != null && members.containsKey(key)
+					&& !this.target.hasMember(mappedOwner, name, mappedDesc, method)
+					&& this.target.hasMember(mappedOwner, members.get(key), mappedDesc, method)) {
+				// a runtime-table name for a Translator method whose 1.21 name has another descriptor there
+				// (StringRepresentable.fromEnum returns Codec for the ports, fromEnumCodec the EnumCodec 1.21.1 mods get):
+				// the name check below matches by parameter count and would keep the 1.21 name (Cristellib's ConfigType)
+				return members.get(key);
+			}
 			if (mappedOwner.startsWith(TRANSLATOR) && (this.target.hasMember(mappedOwner, name, mappedDesc, method)
 					|| this.target.hasTranslatorMember(mappedOwner, name, mappedDesc, method))) {
 				// Translator classes keep the 1.21 names (Containers.dropItemStack, not a 1.12.2 name from the table)

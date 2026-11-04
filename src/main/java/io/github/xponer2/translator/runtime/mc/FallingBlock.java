@@ -52,6 +52,7 @@ public abstract class FallingBlock extends Block {
 
 	@Override
 	public void onBlockAdded(World world, BlockPos pos, IBlockState state) {
+		super.onBlockAdded(world, pos, state);
 		world.scheduleUpdate(pos, this, 2);
 	}
 

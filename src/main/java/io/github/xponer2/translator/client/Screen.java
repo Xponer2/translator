@@ -175,7 +175,7 @@ public abstract class Screen extends GuiScreen implements ContainerEventHandler,
 
 	@Override
 	public void onGuiClosed() {
-		this.removed();
+		ScreenFailures.removed(this);
 	}
 
 	public void onClose() {

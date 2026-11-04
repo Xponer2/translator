@@ -362,3 +362,5 @@ F	net/minecraft/client/model/PlayerModel	young	isChild
 F	net/minecraft/client/model/HumanoidModel	attackTime	swingProgress
 F	net/minecraft/client/model/HumanoidModel	riding	isRiding
 F	net/minecraft/client/model/HumanoidModel	young	isChild
+C	net/neoforged/fml/javafmlmod/FMLModContainer	io/github/xponer2/translator/runtime/neoforge/ModContainer
+M	net/neoforged/neoforge/client/event/ModelEvent$ModifyBakingResult	getModels()	getModelMap

@@ -37,7 +37,7 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 	@Override
 	public void onGuiClosed() {
 		super.onGuiClosed();
-		this.removed();
+		ScreenFailures.removed(this);
 	}
 
 	protected final T menu;
@@ -172,6 +172,13 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 		this.panels.remove(listener);
 		this.buttonList.remove(listener);
 		this.children.remove(listener);
+	}
+
+	/** 1.21 {@code clearWidgets()}: Create's package port screen rebuilds its widgets with it. */
+	protected void clearWidgets() {
+		this.panels.clear();
+		this.buttonList.clear();
+		this.children.clear();
 	}
 
 	@Override

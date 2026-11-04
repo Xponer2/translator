@@ -75,6 +75,11 @@ public class ModelEvent extends Event {
 		public Models getModels() {
 			return this.models;
 		}
+
+		/** 1.21 {@code getModels()} as original 1.21.1 mods call it (a Map): M line of the runtime table. */
+		public java.util.Map<ModelResourceLocation, IBakedModel> getModelMap() {
+			return this.models;
+		}
 	}
 
 	/** The baked models by location (1.21 Map<ModelResourceLocation, BakedModel>), backed by the 1.12.2 registry. */

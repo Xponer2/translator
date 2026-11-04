@@ -58,6 +58,17 @@ public class RegisterClientExtensionsEvent extends Event {
 		}
 	}
 
+	/**
+	 * NeoForge {@code registerBlock(extensions, blocks...)}: hit and break particles, the 1.12.2 blocks make their own
+	 * (Sophisticated Storage's barrels registered theirs here, and the rest of its client setup was skipped).
+	 */
+	public void registerBlock(Object extensions, net.minecraft.block.Block... blocks) {
+	}
+
+	/** NeoForge {@code registerMobEffect(extensions, effects...)}: the 1.12.2 effects draw their own icons. */
+	public void registerMobEffect(Object extensions, Object... effects) {
+	}
+
 	public void registerItem(IClientItemExtensions extensions, Item... items) {
 		for (var item : items) {
 			ITEMS.put(item, extensions);

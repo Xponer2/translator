@@ -37,8 +37,36 @@ public final class MultiBufferSource {
 
     public void endBatch() {
         for (var consumer : this.consumers.values()) {
-            consumer.flush();
+            try {
+                consumer.flush();
+            } catch (RuntimeException e) {
+                // a batch that can't be drawn doesn't take the frame down: dropped, the Tessellator left clean
+                io.github.xponer2.translator.runtime.RuntimeStubs.failed("MultiBufferSource.endBatch " + consumer.type(), e);
+                this.abandon();
+                return;
+            }
         }
+    }
+
+    /** Draws the other started batches: they share the 1.12.2 Tessellator with the one starting. */
+    void flushOthers(VertexConsumer starting) {
+        for (var consumer : this.consumers.values()) {
+            if (consumer != starting) {
+                consumer.flush();
+            }
+        }
+    }
+
+    /** Every batch dropped and the shared Tessellator finished and emptied. */
+    private void abandon() {
+        for (var consumer : this.consumers.values()) {
+            consumer.abandon();
+        }
+        var buffer = net.minecraft.client.renderer.Tessellator.getInstance().getBuffer();
+        if (VertexConsumer.drawing(buffer)) {
+            buffer.finishDrawing();
+        }
+        buffer.reset();
     }
 
     // the name table maps getBuffer to this 1.12.2 name

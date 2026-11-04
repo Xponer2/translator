@@ -32,6 +32,8 @@ public final class Attributes {
 	public static final Holder<Attribute> SWIM_SPEED = forge(EntityPlayer.SWIM_SPEED);
 	public static final Holder<Attribute> ENTITY_REACH = forge(EntityPlayer.REACH_DISTANCE);
 	public static final Holder<Attribute> BLOCK_INTERACTION_RANGE = ENTITY_REACH;
+	/** 1.21 entity reach: 1.12.2 has one reach attribute (Forge's), for blocks and entities alike. */
+	public static final Holder<Attribute> ENTITY_INTERACTION_RANGE = ENTITY_REACH;
 	/** Entity#stepHeight in 1.12.2. */
 	public static final Holder<Attribute> STEP_HEIGHT = Holder.direct(new Attribute(null, "generic.step_height", 0.6D));
 	// 1.21 attributes 1.12.2 doesn't have: their default value

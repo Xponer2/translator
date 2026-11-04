@@ -39,6 +39,18 @@ public final class ParticleTypes {
 	/** The item particle needs the item: {@link ItemParticleOption}. */
 	public static final EnumParticleTypes ITEM = EnumParticleTypes.ITEM_CRACK;
 
+	/**
+	 * 1.21 {@code ParticleTypes.CODEC}: a particle by its 1.12.2 name (flame, smoke, ...); a mod's own particle type has
+	 * no 1.12.2 name and reads back as an error. Twilight Forest's sinister spawner saves its particles with it (the
+	 * field was null and saving the spawner crashed the game).
+	 */
+	public static final com.mojang.serialization.Codec<ParticleOptions> CODEC = com.mojang.serialization.Codec.STRING.comapFlatMap(name -> {
+		EnumParticleTypes type = EnumParticleTypes.getByName(name.startsWith("minecraft:") ? name.substring("minecraft:".length()) : name);
+		return type != null ? com.mojang.serialization.DataResult.success(new LegacyParticleOptions(type))
+				: com.mojang.serialization.DataResult.error("Unknown particle on 1.12.2: " + name);
+	}, options -> options instanceof LegacyParticleOptions legacy ? "minecraft:" + legacy.getType().getParticleName()
+			: "translator:" + options.getClass().getSimpleName().toLowerCase(java.util.Locale.ROOT));
+
 	private ParticleTypes() {
 	}
 }

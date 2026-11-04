@@ -29,15 +29,17 @@ import java.util.function.Supplier;
  * A creative tab (1.21 {@code CreativeModeTab}, registered in {@code Registries.CREATIVE_MODE_TAB}). When registered
  * it creates the 1.12.2 tab, labeled with the id's namespace (its name is the lang key {@code itemGroup.<label>}), lists
  * the items of its generator and puts those items into the tab (JEI and the search tab find items by their tab).
+ * Mods extend it (NeoForge's protected constructor from a builder: SuperMartijn642's CreativeItemGroup, owo's
+ * OwoItemGroup).
  */
-public final class CreativeModeTab implements RegistrationCallback {
+public class CreativeModeTab implements RegistrationCallback {
     private final ITextComponent title;
     private final Supplier<ItemStack> icon;
     private final DisplayItemsGenerator generator;
     @Nullable
     private CreativeTabs vanilla;
 
-    private CreativeModeTab(Builder builder) {
+    protected CreativeModeTab(Builder builder) {
         this.title = builder.title;
         this.icon = builder.icon;
         this.generator = builder.generator;
@@ -149,6 +151,36 @@ public final class CreativeModeTab implements RegistrationCallback {
         default void accept(io.github.xponer2.translator.util.ItemLike item) {
             this.accept(new ItemStack(io.github.xponer2.translator.util.ItemLike.item(item)));
         }
+
+        /** 1.21 {@code accept(stack, visibility)}: 1.12.2 has no separate search tab list, the item goes in the tab. */
+        default void accept(ItemStack stack, TabVisibility visibility) {
+            if (visibility != TabVisibility.SEARCH_TAB_ONLY) {
+                this.accept(stack);
+            }
+        }
+
+        default void accept(io.github.xponer2.translator.util.ItemLike item, TabVisibility visibility) {
+            this.accept(new ItemStack(io.github.xponer2.translator.util.ItemLike.item(item)), visibility);
+        }
+
+        default void acceptAll(java.util.Collection<ItemStack> stacks) {
+            for (ItemStack stack : stacks) {
+                this.accept(stack);
+            }
+        }
+
+        default void acceptAll(java.util.Collection<ItemStack> stacks, TabVisibility visibility) {
+            for (ItemStack stack : stacks) {
+                this.accept(stack, visibility);
+            }
+        }
+    }
+
+    /** 1.21 {@code CreativeModeTab.TabVisibility}: where an item of the tab shows (the tab, the search tab or both). */
+    public enum TabVisibility {
+        PARENT_AND_SEARCH_TABS,
+        PARENT_TAB_ONLY,
+        SEARCH_TAB_ONLY
     }
 
     /**
@@ -207,6 +239,15 @@ public final class CreativeModeTab implements RegistrationCallback {
 
         @SafeVarargs
         public final Builder withTabsAfter(io.github.xponer2.translator.registry.ResourceKey<CreativeModeTab>... tabs) {
+            return this;
+        }
+
+        /** NeoForge {@code withTabsBefore(ids...)}: by the tabs' ids. */
+        public Builder withTabsBefore(ResourceLocation... tabs) {
+            return this;
+        }
+
+        public Builder withTabsAfter(ResourceLocation... tabs) {
             return this;
         }
 

@@ -284,3 +284,4 @@ R	net/minecraft/client/renderer/RenderGlobal	io/github/xponer2/translator/runtim
 R	net/minecraft/client/resources/LanguageManager	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/world/World	io/github/xponer2/translator/runtime/redirect/CarriedBridges
 R	io/github/xponer2/translator/runtime/mc/LiquidBlock	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/util/ResourceLocation	io/github/xponer2/translator/runtime/redirect/WorldGapBridges

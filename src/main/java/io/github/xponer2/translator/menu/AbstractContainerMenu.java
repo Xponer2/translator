@@ -147,6 +147,48 @@ public abstract class AbstractContainerMenu extends Container {
 				&& player.getDistanceSq(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) <= 64.0D, true);
 	}
 
+	/**
+	 * 1.21 {@code addDataSlot(slot)}: one synced int. DataSlot is the carried 1.21 class (its get() and set(int) are read
+	 * by name); Iron Furnaces syncs its furnace's progress with them.
+	 */
+	protected <T> T addDataSlot(T slot) {
+		java.lang.reflect.Method get;
+		java.lang.reflect.Method set;
+		try {
+			get = slot.getClass().getMethod("get");
+			set = slot.getClass().getMethod("set", int.class);
+			get.setAccessible(true);
+			set.setAccessible(true);
+		} catch (NoSuchMethodException | RuntimeException e) {
+			return slot;
+		}
+		this.addDataSlots(new ContainerData() {
+			@Override
+			public int get(int index) {
+				try {
+					return (Integer) get.invoke(slot);
+				} catch (ReflectiveOperationException e) {
+					return 0;
+				}
+			}
+
+			@Override
+			public void set(int index, int value) {
+				try {
+					set.invoke(slot, value);
+				} catch (ReflectiveOperationException e) {
+					// the slot's own error: the value stays
+				}
+			}
+
+			@Override
+			public int getCount() {
+				return 1;
+			}
+		});
+		return slot;
+	}
+
 	protected void addDataSlots(ContainerData data) {
 		this.dataSlots.add(data);
 		this.lastData.add(new int[data.getCount()]);
