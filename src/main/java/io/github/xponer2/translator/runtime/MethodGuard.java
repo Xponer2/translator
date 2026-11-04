@@ -1088,6 +1088,16 @@ final class MethodGuard {
 					}
 					continue;
 				}
+				if (field.getOpcode() == Opcodes.PUTFIELD) {
+					// a write to such a field (gui.leftHeight += 10): a static setter of the same name taking the value
+					String[] setter = this.findRedirect(field.owner, field.name, "(" + field.desc + ")V", false);
+					if (setter != null && (setter.length < 3 || setter[2] == null)) {
+						method.instructions.set(field, new MethodInsnNode(Opcodes.INVOKESTATIC, setter[0], field.name, setter[1], false));
+						this.redirected.incrementAndGet();
+						changed = true;
+					}
+					continue;
+				}
 				continue;
 			}
 			if (insn instanceof MethodInsnNode init && "<init>".equals(init.name) && init.getOpcode() == Opcodes.INVOKESPECIAL

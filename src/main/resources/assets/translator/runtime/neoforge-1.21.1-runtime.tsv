@@ -352,3 +352,7 @@ M	net/minecraft/client/renderer/entity/RenderLayerParent	getTextureLocation(net.
 M	net/minecraft/client/model/EntityModel	setupAnim(net.minecraft.world.entity.Entity,float,float,float,float,float)	setupAnim
 M	net/minecraft/client/model/Model	renderToBuffer(com.mojang.blaze3d.vertex.PoseStack,com.mojang.blaze3d.vertex.VertexConsumer,int,int,int)	renderToBuffer
 M	net/minecraft/world/entity/player/Player	canUseGameMasterBlocks()	canUseCommandBlock
+# 1.21 game rule values over 1.12.2's string rules
+C	net/minecraft/world/level/GameRules$Value	io/github/xponer2/translator/world/GameRuleValue
+C	net/minecraft/world/level/GameRules$BooleanValue	io/github/xponer2/translator/world/GameRuleValue$BooleanValue
+C	net/minecraft/world/level/GameRules$IntegerValue	io/github/xponer2/translator/world/GameRuleValue$IntegerValue

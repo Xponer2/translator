@@ -233,3 +233,4 @@ R	net/minecraft/pathfinding/PathNavigate	io/github/xponer2/translator/runtime/re
 R	net/minecraft/pathfinding/Path	io/github/xponer2/translator/runtime/redirect/MiscBridges
 R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/MiscBridges
 R	net/minecraft/world/border/WorldBorder	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/client/gui/GuiIngame	io/github/xponer2/translator/runtime/redirect/ClientRedirects

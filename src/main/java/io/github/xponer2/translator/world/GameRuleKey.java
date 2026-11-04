@@ -80,6 +80,11 @@ public final class GameRuleKey {
 	}
 
 	/** A rule 1.12.2 doesn't have is the 1.21 default: true for the switches (fall damage, ...). */
+	/** 1.21 {@code gameRules.getRule(key)}: the rule's value object. */
+	public static GameRuleValue getRule(GameRules rules, GameRuleKey key) {
+		return GameRuleValue.of(rules, key);
+	}
+
 	public static boolean getBoolean(GameRules rules, GameRuleKey key) {
 		return rules.hasRule(key.id) ? rules.getBoolean(key.id) : true;
 	}

@@ -24,6 +24,24 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /** Static stand-ins for 1.21 client methods 1.12.2 client classes lack (runtime; client classes only). */
 @SideOnly(Side.CLIENT)
 public final class ClientRedirects {
+	// the HUD's heights (NeoForge Gui.leftHeight / rightHeight): Forge 1.12.2's GuiIngameForge.left_height / right_height,
+	// which mods raise for the bars they draw over the hotbar (AppleSkin, Farmer's Delight, Mekanism)
+	public static int leftHeight(net.minecraft.client.gui.GuiIngame gui) {
+		return net.minecraftforge.client.GuiIngameForge.left_height;
+	}
+
+	public static void leftHeight(net.minecraft.client.gui.GuiIngame gui, int height) {
+		net.minecraftforge.client.GuiIngameForge.left_height = height;
+	}
+
+	public static int rightHeight(net.minecraft.client.gui.GuiIngame gui) {
+		return net.minecraftforge.client.GuiIngameForge.right_height;
+	}
+
+	public static void rightHeight(net.minecraft.client.gui.GuiIngame gui, int height) {
+		net.minecraftforge.client.GuiIngameForge.right_height = height;
+	}
+
 	/** 1.21 {@code playerInfo.getSkin()}: the skin, cape and model of a player in the tab list (Chat Heads). */
 	public static io.github.xponer2.translator.client.PlayerSkin getSkin(net.minecraft.client.network.NetworkPlayerInfo info) {
 		return new io.github.xponer2.translator.client.PlayerSkin(info.getLocationSkin(), null, info.getLocationCape(), info.getLocationElytra(),

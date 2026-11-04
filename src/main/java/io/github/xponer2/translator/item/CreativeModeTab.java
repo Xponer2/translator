@@ -71,6 +71,35 @@ public final class CreativeModeTab implements RegistrationCallback {
         return stacks;
     }
 
+    /** 1.21: the tab's list is made when asked here (getDisplayItems), nothing to build ahead. */
+    public void buildContents(ItemDisplayParameters parameters) {
+    }
+
+    public boolean contains(ItemStack stack) {
+        for (ItemStack shown : this.getDisplayItems()) {
+            if (ItemStack.areItemsEqual(shown, stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public java.util.Collection<ItemStack> getSearchTabDisplayItems() {
+        return this.getDisplayItems();
+    }
+
+    public Type getType() {
+        return Type.CATEGORY;
+    }
+
+    /** 1.21 {@code CreativeModeTab.Type}: a mod's tab is a category. */
+    public enum Type {
+        CATEGORY,
+        INVENTORY,
+        HOTBAR,
+        SEARCH
+    }
+
     @Override
     public void onRegistered(ResourceLocation id) {
         var tab = this;
