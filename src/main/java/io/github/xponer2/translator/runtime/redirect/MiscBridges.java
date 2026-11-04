@@ -49,6 +49,156 @@ import net.minecraft.world.chunk.Chunk;
  * entities, chunks, living entities) that they lack (runtime, neoforge-1.21.1-redirects.tsv).
  */
 public final class MiscBridges {
+	// --- small 1.21 calls of the tested mods, each a 1.12.2 equivalent ----------------------------------------------
+
+	public static int getMiddleBlockX(net.minecraft.util.math.ChunkPos chunk) {
+		return (chunk.x << 4) + 8;
+	}
+
+	public static int getMiddleBlockZ(net.minecraft.util.math.ChunkPos chunk) {
+		return (chunk.z << 4) + 8;
+	}
+
+	public static BlockPos getWorldPosition(net.minecraft.util.math.ChunkPos chunk) {
+		return new BlockPos(chunk.x << 4, 0, chunk.z << 4);
+	}
+
+	public static net.minecraft.util.math.Vec2f add(net.minecraft.util.math.Vec2f vec, float amount) {
+		return new net.minecraft.util.math.Vec2f(vec.x + amount, vec.y + amount);
+	}
+
+	public static net.minecraft.util.math.Vec2f add(net.minecraft.util.math.Vec2f vec, net.minecraft.util.math.Vec2f other) {
+		return new net.minecraft.util.math.Vec2f(vec.x + other.x, vec.y + other.y);
+	}
+
+	public static net.minecraft.util.math.Vec2f normalized(net.minecraft.util.math.Vec2f vec) {
+		float length = (float) Math.sqrt(vec.x * vec.x + vec.y * vec.y);
+		return length < 1.0E-4F ? new net.minecraft.util.math.Vec2f(0.0F, 0.0F) : new net.minecraft.util.math.Vec2f(vec.x / length, vec.y / length);
+	}
+
+	public static boolean isHighlightable(net.minecraft.inventory.Slot slot) {
+		return true;
+	}
+
+	public static boolean isFake(net.minecraft.inventory.Slot slot) {
+		return false;
+	}
+
+	/** 1.21 {@code tooltipFlag.isCreative()}: 1.12.2's tooltip flags don't say; the creative inventory isn't told apart. */
+	public static boolean isCreative(net.minecraft.client.util.ITooltipFlag flag) {
+		return false;
+	}
+
+	/** 1.21 feature flags: everything 1.12.2 has is enabled. */
+	public static boolean isEnabled(net.minecraft.item.Item item, io.github.xponer2.translator.util.FeatureFlagSet flags) {
+		return true;
+	}
+
+	public static boolean isItemEnabled(ItemStack stack, io.github.xponer2.translator.util.FeatureFlagSet flags) {
+		return true;
+	}
+
+	public static void setCanFloat(net.minecraft.pathfinding.PathNavigate navigation, boolean canFloat) {
+		if (navigation instanceof net.minecraft.pathfinding.PathNavigateGround ground) {
+			ground.setCanSwim(canFloat);
+		}
+	}
+
+	public static net.minecraft.pathfinding.PathPoint getNextNode(net.minecraft.pathfinding.Path path) {
+		return path.getPathPointFromIndex(path.getCurrentPathIndex());
+	}
+
+	public static void setWeatherParameters(net.minecraft.world.WorldServer world, int clearTime, int weatherTime, boolean raining, boolean thundering) {
+		var info = world.getWorldInfo();
+		info.setCleanWeatherTime(clearTime);
+		info.setRainTime(weatherTime);
+		info.setThunderTime(weatherTime);
+		info.setRaining(raining);
+		info.setThundering(thundering);
+	}
+
+	public static void setRespawnPosition(net.minecraft.entity.player.EntityPlayerMP player, Object dimension, @javax.annotation.Nullable BlockPos pos, float angle, boolean forced,
+			boolean sendMessage) {
+		player.setSpawnPoint(pos, forced);
+	}
+
+	public static BlockPos clampToBounds(net.minecraft.world.border.WorldBorder border, double x, double y, double z) {
+		return new BlockPos(Math.max(border.minX(), Math.min(border.maxX() - 1, x)), y, Math.max(border.minZ(), Math.min(border.maxZ() - 1, z)));
+	}
+
+	public static net.minecraft.util.math.RayTraceResult withPosition(net.minecraft.util.math.RayTraceResult hit, BlockPos pos) {
+		return new net.minecraft.util.math.RayTraceResult(hit.hitVec, hit.sideHit, pos);
+	}
+
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.Entity getFirstPassenger(net.minecraft.entity.Entity entity) {
+		return entity.getPassengers().isEmpty() ? null : entity.getPassengers().get(0);
+	}
+
+	/** 1.21 {@code igniteForTicks(ticks)}: 1.12.2 sets fire in seconds. */
+	public static void igniteForTicks(net.minecraft.entity.Entity entity, int ticks) {
+		entity.setFire(Math.max(1, ticks / 20));
+	}
+
+	public static void setCustomName(net.minecraft.entity.Entity entity, @javax.annotation.Nullable net.minecraft.util.text.ITextComponent name) {
+		entity.setCustomNameTag(name == null ? "" : name.getFormattedText());
+	}
+
+	/** 1.21 freezing (powder snow): 1.12.2 has none. */
+	public static int getTicksFrozen(net.minecraft.entity.EntityLivingBase entity) {
+		return 0;
+	}
+
+	public static void setTicksFrozen(net.minecraft.entity.EntityLivingBase entity, int ticks) {
+	}
+
+	public static int getTicksRequiredToFreeze(net.minecraft.entity.EntityLivingBase entity) {
+		return 140;
+	}
+
+	public static float getEnchantPowerBonus(IBlockState state, net.minecraft.world.IBlockAccess level, BlockPos pos) {
+		return level instanceof net.minecraft.world.World world ? state.getBlock().getEnchantPowerBonus(world, pos) : 0.0F;
+	}
+
+	public static boolean ignitedByLava(IBlockState state) {
+		return state.getMaterial().getCanBurn();
+	}
+
+	public static boolean isFlammable(IBlockState state, net.minecraft.world.IBlockAccess level, BlockPos pos, net.minecraft.util.EnumFacing side) {
+		return state.getBlock().isFlammable(level, pos, side);
+	}
+
+	public static void onNeighborChange(IBlockState state, net.minecraft.world.IBlockAccess level, BlockPos pos, BlockPos neighbor) {
+		state.getBlock().onNeighborChange(level, pos, neighbor);
+	}
+
+	public static boolean canBeHydrated(IBlockState state, net.minecraft.world.IBlockAccess level, BlockPos pos, Object fluid, BlockPos fluidPos) {
+		return false;
+	}
+
+	public static boolean emissiveRendering(IBlockState state, net.minecraft.world.IBlockAccess level, BlockPos pos) {
+		return false;
+	}
+
+	/** 1.21 {@code state.onDestroyedByPlayer(...)}: Forge 1.12.2's removedByPlayer. */
+	public static boolean onDestroyedByPlayer(IBlockState state, net.minecraft.world.World world, BlockPos pos, net.minecraft.entity.player.EntityPlayer player,
+			boolean willHarvest, Object fluid) {
+		return state.getBlock().removedByPlayer(state, world, pos, player, willHarvest);
+	}
+
+	public static float getTimeOfDay(net.minecraft.world.World world, float partialTick) {
+		return world.getCelestialAngle(partialTick);
+	}
+
+	public static boolean isDebug(net.minecraft.world.World world) {
+		return false;
+	}
+
+	public static io.github.xponer2.translator.registry.Holder<?> holderOrThrow(net.minecraft.world.World world,
+			io.github.xponer2.translator.registry.ResourceKey<?> key) {
+		return io.github.xponer2.translator.registry.RegistryAccess.INSTANCE.holderOrThrow((io.github.xponer2.translator.registry.ResourceKey) key);
+	}
+
 	/**
 	 * NeoForge {@code state.getToolModifiedState(context, ability, simulate)}: the block's own answer (a mod's log
 	 * stripped by an axe), else the tool actions 1.12.2 has (shovel path, hoe till).

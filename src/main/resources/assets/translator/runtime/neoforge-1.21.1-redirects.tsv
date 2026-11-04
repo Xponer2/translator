@@ -226,3 +226,10 @@ R	net/minecraft/world/World	io/github/xponer2/translator/runtime/redirect/Screen
 R	net/minecraft/client/renderer/BlockModelRenderer	io/github/xponer2/translator/client/ModelRendering
 R	net/minecraft/client/renderer/BlockRendererDispatcher	io/github/xponer2/translator/client/ModelRendering
 R	net/minecraft/client/renderer/RenderItem	io/github/xponer2/translator/client/ModelRendering
+R	net/minecraft/util/math/Vec2f	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/client/util/ITooltipFlag	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/item/Item	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/pathfinding/PathNavigate	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/pathfinding/Path	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/world/border/WorldBorder	io/github/xponer2/translator/runtime/redirect/MiscBridges
