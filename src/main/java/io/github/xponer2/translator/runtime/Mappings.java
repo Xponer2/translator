@@ -68,6 +68,17 @@ final class Mappings {
 	private Mappings() {
 	}
 
+	/** The MCP name of an SRG field name (itself in development or when unknown): reflection in the release game. */
+	static String mcpField(String srg) {
+		Mappings mappings = instance();
+		return mappings == null ? srg : mappings.fields.getOrDefault(srg, srg);
+	}
+
+	static String mcpMethod(String srg) {
+		Mappings mappings = instance();
+		return mappings == null ? srg : mappings.methods.getOrDefault(srg, srg);
+	}
+
 	/** The mappings of the release game; null in the development environment (the names are MCP already). */
 	@Nullable
 	static Mappings instance() {

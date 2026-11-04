@@ -75,12 +75,22 @@ final class AccessorMixins {
 	private final Map<String, Map<String, Member>> members = new HashMap<>();
 	/** The mod's name -> the moved name. */
 	private final Map<String, String> moved = new HashMap<>();
+	/**
+	 * Accessors into 1.12.2 classes kept as mixins: their methods ("name/argument count") -> the 1.12.2 name of the
+	 * member (the 1.21 name in the annotation finds nothing there: Mixin's InvalidAccessorException).
+	 */
+	private final Map<String, Map<String, String>> renamed = new HashMap<>();
 
 	private AccessorMixins() {
 	}
 
 	boolean isEmpty() {
-		return this.moved.isEmpty();
+		return this.moved.isEmpty() && this.renamed.isEmpty();
+	}
+
+	/** Whether the mixin (the mod's class name) works through reflection now: it is left out of the mixin config. */
+	boolean isMoved(String className) {
+		return this.moved.containsKey(className);
 	}
 
 	/** The name the class is written under (moved for an accessor, else its own). */
@@ -88,8 +98,12 @@ final class AccessorMixins {
 		return this.moved.getOrDefault(className, className);
 	}
 
-	/** The jar's accessor mixins whose targets are all Translator classes (MethodGuard's mixable ones excepted). */
-	static AccessorMixins find(ModJar jar, ZipFile zip, ModRemapper remapper, Predicate<String> mixable) throws IOException {
+	/**
+	 * The jar's accessor mixins. Into Translator classes (MethodGuard's mixable ones excepted): reflection. Into 1.12.2
+	 * classes: the annotations get the 1.12.2 names when 1.12.2 has every member, else reflection too (a member 1.12.2
+	 * lacks lives beside the object).
+	 */
+	static AccessorMixins find(ModJar jar, ZipFile zip, ModRemapper remapper, Predicate<String> mixable, TargetClasses classes) throws IOException {
 		var found = new AccessorMixins();
 		for (var entry : jar.classes.entrySet()) {
 			ClassInfo info = entry.getValue();
@@ -97,11 +111,13 @@ final class AccessorMixins {
 				continue;
 			}
 			boolean translatorOnly = true;
+			boolean mixableTarget = false;
 			for (String target : info.mixinTargets) {
 				String mapped = remapper.map(target);
 				translatorOnly &= mapped.startsWith(TRANSLATOR) && !mixable.test(mapped);
+				mixableTarget |= mixable.test(mapped);
 			}
-			ZipEntry classEntry = translatorOnly ? zip.getEntry(entry.getKey() + ".class") : null;
+			ZipEntry classEntry = mixableTarget ? null : zip.getEntry(entry.getKey() + ".class");
 			if (classEntry == null) {
 				continue;
 			}
@@ -116,7 +132,12 @@ final class AccessorMixins {
 			}
 			String target = info.mixinTargets.get(0);
 			var methods = new HashMap<String, Member>();
+			var names121 = new HashMap<String, String>();
 			boolean accessorOnly = true;
+			// a 1.12.2 target: the 1.12.2 name of each member, null when 1.12.2 has none
+			ClassInfo gameClass = translatorOnly || info.mixinTargets.size() != 1 ? null : classes.get(remapper.map(target));
+			var gameNames = new HashMap<String, String>();
+			boolean allInGame = gameClass != null;
 			for (MethodNode method : node.methods) {
 				AnnotationNode annotation = annotation(method);
 				if (annotation == null) {
@@ -140,7 +161,37 @@ final class AccessorMixins {
 				} catch (RuntimeException e) {
 					// the 1.21 name only
 				}
-				methods.put(method.name + "/" + type.getArgumentTypes().length, new Member(invoker, String.join(",", names)));
+				String key = method.name + "/" + type.getArgumentTypes().length;
+				methods.put(key, new Member(invoker, String.join(",", names)));
+				names121.put(key, name);
+				if (gameClass != null) {
+					String gameName = gameMember(gameClass, invoker, name, names, method, remapper);
+					if (gameName == null) {
+						allInGame = false;
+					} else {
+						gameNames.put(key, gameName);
+					}
+				}
+			}
+			if (gameClass != null && !(accessorOnly && !allInGame)) {
+				// kept as a mixin (an accessor interface whose members 1.12.2 has, or a mixin with injectors too): the
+				// accessor names in its annotations become the 1.12.2 ones (those already right stay)
+				var changes = new HashMap<String, String>();
+				gameNames.forEach((key, gameName) -> {
+					if (!gameName.equals(names121.get(key))) {
+						changes.put(key, gameName);
+					}
+				});
+				if (!changes.isEmpty()) {
+					found.renamed.put(entry.getKey(), changes);
+					Conversion.LOGGER.info("{}: mixin {} of {}: {} accessor names of 1.12.2", jar.displayName(),
+							entry.getKey().substring(entry.getKey().lastIndexOf('/') + 1), remapper.map(target), changes.size());
+				}
+				continue;
+			}
+			if (!translatorOnly && gameClass == null) {
+				// a target that isn't a 1.12.2 class the converter knows (a carried 1.21 class, a mod's): left as it is
+				continue;
 			}
 			if (accessorOnly && !methods.isEmpty()) {
 				String movedName = PREFIX + entry.getKey();
@@ -155,10 +206,54 @@ final class AccessorMixins {
 	}
 
 	/**
+	 * The name the 1.12.2 class declares the member under (the 1.21 name or the table's), null when it has none: a
+	 * field of the accessor's type, a method of the invoker's descriptor, a constructor of its parameters.
+	 */
+	@Nullable
+	private static String gameMember(ClassInfo gameClass, boolean invoker, String name, java.util.Set<String> names, MethodNode method,
+			ModRemapper remapper) {
+		Type type = Type.getMethodType(method.desc);
+		if (invoker) {
+			String desc = remapper.mapMethodDesc("<init>".equals(name)
+					? Type.getMethodDescriptor(Type.VOID_TYPE, type.getArgumentTypes()) : method.desc);
+			for (String candidate : names) {
+				if (gameClass.methods.contains(candidate + " " + desc)) {
+					return candidate;
+				}
+			}
+			return null;
+		}
+		Type field = type.getArgumentTypes().length == 0 ? type.getReturnType() : type.getArgumentTypes()[0];
+		String desc = remapper.mapDesc(field.getDescriptor());
+		for (String candidate : names) {
+			if (gameClass.fields.contains(candidate + " " + desc)) {
+				return candidate;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * A class of the jar (remapped already): the accessor itself made a class of static bridges, references to an
-	 * accessor moved, calls through it made static calls taking the object.
+	 * accessor moved, calls through it made static calls taking the object; an accessor kept as a mixin gets the
+	 * 1.12.2 names in its annotations.
 	 */
 	byte[] rewrite(String className, byte[] bytes) {
+		Map<String, String> changes = this.renamed.get(className);
+		if (changes != null) {
+			var node = new ClassNode();
+			new ClassReader(bytes).accept(node, 0);
+			for (MethodNode method : node.methods) {
+				AnnotationNode annotation = annotation(method);
+				String gameName = annotation == null ? null : changes.get(method.name + "/" + Type.getArgumentTypes(method.desc).length);
+				if (gameName != null) {
+					setValue(annotation, gameName);
+				}
+			}
+			var writer = new ClassWriter(0);
+			node.accept(writer);
+			bytes = writer.toByteArray();
+		}
 		if (!this.moved.containsKey(className) && !this.mentions(bytes)) {
 			return bytes;
 		}
@@ -177,6 +272,9 @@ final class AccessorMixins {
 	}
 
 	private boolean mentions(byte[] bytes) {
+		if (this.moved.isEmpty()) {
+			return false;
+		}
 		String text = new String(bytes, StandardCharsets.ISO_8859_1);
 		for (String name : this.moved.keySet()) {
 			if (text.contains(name)) {
@@ -371,6 +469,20 @@ final class AccessorMixins {
 			}
 		}
 		return null;
+	}
+
+	private static void setValue(AnnotationNode annotation, String value) {
+		if (annotation.values == null) {
+			annotation.values = new java.util.ArrayList<>();
+		}
+		for (int i = 0; i + 1 < annotation.values.size(); i += 2) {
+			if ("value".equals(annotation.values.get(i))) {
+				annotation.values.set(i + 1, value);
+				return;
+			}
+		}
+		annotation.values.add("value");
+		annotation.values.add(value);
 	}
 
 	@Nullable

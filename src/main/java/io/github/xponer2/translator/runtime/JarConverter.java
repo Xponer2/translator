@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "103";
+	static final String VERSION = "104";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
@@ -265,7 +265,7 @@ final class JarConverter {
 	private static void remap(ModJar jar, File output, ModRemapper remapper, RemapTable table, TargetClasses target) throws IOException {
 		try (var zip = new ZipFile(jar.file); var out = new ZipOutputStream(new FileOutputStream(output))) {
 			// accessor mixins into Translator classes: by reflection (they can't be applied there)
-			var accessors = AccessorMixins.find(jar, zip, remapper, MIXABLE::contains);
+			var accessors = AccessorMixins.find(jar, zip, remapper, MIXABLE::contains, target);
 			for (ZipEntry entry : Collections.list(zip.entries())) {
 				String path = entry.getName();
 				if (entry.isDirectory() || path.matches("META-INF/[^/]+\\.(SF|RSA|DSA|EC)")) {
@@ -276,7 +276,7 @@ final class JarConverter {
 					bytes = ModJar.readAll(in);
 				}
 				if (jar.mixinConfigs.contains(path)) {
-					bytes = mixinConfig(bytes, jar, remapper);
+					bytes = mixinConfig(bytes, jar, remapper, accessors);
 				}
 				if (path.endsWith(".class") && !path.startsWith("META-INF/")) {
 					var reader = new ClassReader(bytes);
@@ -315,7 +315,7 @@ final class JarConverter {
 	 * A mixin config for Mixin on 1.12.2 (MixinBooter): Java 8 like the converted classes, no refmap (the annotations
 	 * carry the 1.12.2 names now), and nothing required: a mixin that finds no target is left out, not the game.
 	 */
-	private static byte[] mixinConfig(byte[] bytes, ModJar jar, ModRemapper remapper) {
+	private static byte[] mixinConfig(byte[] bytes, ModJar jar, ModRemapper remapper, AccessorMixins accessors) {
 		try {
 			var config = new com.google.gson.JsonParser().parse(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
 			// mixins into classes that are Translator classes now (BuiltInRegistries, BlockEntityType) are left out: the
@@ -335,6 +335,8 @@ final class JarConverter {
 					}
 					if (translatorOnly) {
 						Conversion.LOGGER.info("{}: mixin {} left out (its target is a Translator class)", jar.displayName(), entry.getAsString());
+					} else if (accessors.isMoved(pkg + entry.getAsString().replace('.', '/'))) {
+						Conversion.LOGGER.info("{}: mixin {} left out (an accessor that works through reflection)", jar.displayName(), entry.getAsString());
 					} else {
 						kept.add(entry);
 					}

@@ -375,3 +375,14 @@ M	net/minecraft/network/chat/contents/PlainTextContents$LiteralContents	text()	g
 C	net/minecraft/world/entity/EntityType$Builder	io/github/xponer2/translator/registry/EntityType$Builder
 C	net/minecraft/world/entity/EntityType$EntityFactory	io/github/xponer2/translator/registry/EntityType$EntityFactory
 C	net/neoforged/fml/config/ConfigTracker	io/github/xponer2/translator/runtime/neoforge/ConfigTracker
+# 1.21 level data (time, weather, spawn, rules) is the 1.12.2 WorldInfo: JourneyMap's map task read level.getLevelData().getDayTime()
+C	net/minecraft/world/level/storage/LevelData	net/minecraft/world/storage/WorldInfo
+C	net/minecraft/world/level/storage/WritableLevelData	net/minecraft/world/storage/WorldInfo
+C	net/minecraft/world/level/storage/ServerLevelData	net/minecraft/world/storage/WorldInfo
+M	net/minecraft/world/level/Level	getLevelData()	getWorldInfo
+M	net/minecraft/server/level/ServerLevel	getLevelData()	getWorldInfo
+M	net/minecraft/world/level/storage/LevelData	isHardcore()	isHardcoreModeEnabled
+M	net/minecraft/world/level/storage/LevelData	getGameRules()	getGameRulesInstance
+M	net/minecraft/world/level/storage/WritableLevelData	setSpawn(net.minecraft.core.BlockPos,float)	setSpawn
+M	net/minecraft/world/level/storage/ServerLevelData	setDayTime(long)	setWorldTime
+M	net/minecraft/world/level/storage/ServerLevelData	setGameTime(long)	setWorldTotalTime

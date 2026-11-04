@@ -184,6 +184,21 @@ public final class CarriedBridges {
 		return null;
 	}
 
+	/** 1.21 {@code level.getFreeMapId()}: the next 1.12.2 map number as the carried MapId record. */
+	@Nullable
+	public static Object getFreeMapId(net.minecraft.world.World world) {
+		try {
+			return carried("net.minecraft.world.level.saveddata.maps.MapId").getConstructor(int.class).newInstance(world.getUniqueDataId("map"));
+		} catch (ReflectiveOperationException | LinkageError e) {
+			return null;
+		}
+	}
+
+	/** 1.21 {@code mapData.toggleBanner(level, pos)}: 1.12.2 maps have no banner markers. */
+	public static boolean toggleBanner(net.minecraft.world.storage.MapData data, Object level, net.minecraft.util.math.BlockPos pos) {
+		return false;
+	}
+
 	// --- helpers --------------------------------------------------------------------------------------------------------
 
 	/** A public method the object's own class (not Object) declares or inherits, else null. */

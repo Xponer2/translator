@@ -177,6 +177,13 @@ public final class AccessorBridge {
 						// another name, or the superclass
 					}
 				}
+				// the release game names Minecraft's fields by SRG: their MCP names compared
+				for (Field declared : current.getDeclaredFields()) {
+					if (declared.getName().startsWith("field_") && java.util.Arrays.asList(names.split(",")).contains(Mappings.mcpField(declared.getName()))) {
+						declared.setAccessible(true);
+						return Optional.of(declared);
+					}
+				}
 			}
 			LOGGER.info("Translator: {} has no field {}: the mod's accessor keeps the value beside the object", type.getName(), names);
 			return Optional.empty();
@@ -188,7 +195,8 @@ public final class AccessorBridge {
 		for (Class<?> current = type; current != null; current = current.getSuperclass()) {
 			for (String name : names.split(",")) {
 				for (Method method : current.getDeclaredMethods()) {
-					if (method.getName().equals(name) && method.getParameterCount() == count) {
+					if ((method.getName().equals(name) || method.getName().startsWith("func_") && name.equals(Mappings.mcpMethod(method.getName())))
+							&& method.getParameterCount() == count) {
 						method.setAccessible(true);
 						return method;
 					}
