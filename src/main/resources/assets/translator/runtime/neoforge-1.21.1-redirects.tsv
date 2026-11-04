@@ -305,3 +305,5 @@ R	net/minecraft/client/renderer/block/model/IBakedModel	io/github/xponer2/transl
 R	net/minecraft/crash/CrashReportCategory	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
 R	net/minecraft/world/storage/WorldInfo	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
 R	net/minecraft/world/storage/MapData	io/github/xponer2/translator/runtime/redirect/CarriedBridges
+R	net/minecraft/client/renderer/entity/RenderSnowball	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/Minecraft	io/github/xponer2/translator/runtime/redirect/ClientGapBridges

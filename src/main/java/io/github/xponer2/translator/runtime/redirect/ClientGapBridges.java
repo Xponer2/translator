@@ -132,6 +132,53 @@ public final class ClientGapBridges {
 		return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
 	}
 
+	// --- thrown items: 1.21 ThrownItemRenderer ----------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code new ThrownItemRenderer(context)} (as {@code ThrownItemRenderer::new} for a mod's thrown projectile:
+	 * Farmer's Delight's rotten tomato, ...): 1.12.2's RenderSnowball has no such constructor, the renderer was null and
+	 * the entity drew nothing. It draws the entity's own item (1.21 {@code getItem()}).
+	 */
+	public static net.minecraft.client.renderer.entity.RenderSnowball<net.minecraft.entity.Entity> newRenderSnowball(
+			io.github.xponer2.translator.client.entity.RendererContext context) {
+		return new ThrownItems();
+	}
+
+	public static net.minecraft.client.renderer.entity.RenderSnowball<net.minecraft.entity.Entity> newRenderSnowball(
+			io.github.xponer2.translator.client.entity.RendererContext context, float scale, boolean fullBright) {
+		return new ThrownItems();
+	}
+
+	private static final class ThrownItems extends net.minecraft.client.renderer.entity.RenderSnowball<net.minecraft.entity.Entity> {
+		private static final java.util.Map<Class<?>, java.util.Optional<java.lang.reflect.Method>> GET_ITEM = new java.util.concurrent.ConcurrentHashMap<>();
+
+		ThrownItems() {
+			super(Minecraft.getMinecraft().getRenderManager(), net.minecraft.init.Items.SNOWBALL, Minecraft.getMinecraft().getRenderItem());
+		}
+
+		@Override
+		public net.minecraft.item.ItemStack getStackToRender(net.minecraft.entity.Entity entity) {
+			var getItem = GET_ITEM.computeIfAbsent(entity.getClass(), type -> {
+				try {
+					var method = type.getMethod("getItem");
+					return net.minecraft.item.ItemStack.class.isAssignableFrom(method.getReturnType()) ? java.util.Optional.of(method) : java.util.Optional.empty();
+				} catch (NoSuchMethodException | RuntimeException e) {
+					return java.util.Optional.empty();
+				}
+			});
+			if (getItem.isPresent()) {
+				try {
+					if (getItem.get().invoke(entity) instanceof net.minecraft.item.ItemStack stack && !stack.isEmpty()) {
+						return stack;
+					}
+				} catch (ReflectiveOperationException | RuntimeException e) {
+					// the default below
+				}
+			}
+			return super.getStackToRender(entity);
+		}
+	}
+
 	// --- baked models: NeoForge's render types ---------------------------------------------------------------------------
 
 	/**
