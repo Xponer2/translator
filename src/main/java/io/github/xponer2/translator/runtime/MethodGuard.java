@@ -604,7 +604,8 @@ final class MethodGuard {
 	 * an empty name or null.
 	 */
 	private boolean implementAbstract(ClassNode node) {
-		if ((node.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) != 0) {
+		// module-info (JOML has one) has no superclass: nothing to implement, and a null in the deque below throws
+		if ((node.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT | Opcodes.ACC_MODULE)) != 0 || node.superName == null) {
 			return false;
 		}
 		var concrete = new java.util.HashSet<String>();
