@@ -24,6 +24,11 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /** Static stand-ins for 1.21 client methods 1.12.2 client classes lack (runtime; client classes only). */
 @SideOnly(Side.CLIENT)
 public final class ClientRedirects {
+	/** 1.21 {@code model.copyPropertiesTo(other)}: 1.12.2's {@code other.setModelAttributes(model)}, the other way round. */
+	public static void copyPropertiesTo(net.minecraft.client.model.ModelBiped model, net.minecraft.client.model.ModelBiped other) {
+		other.setModelAttributes(model);
+	}
+
 	private ClientRedirects() {
 	}
 

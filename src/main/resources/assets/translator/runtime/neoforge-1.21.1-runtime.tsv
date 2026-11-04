@@ -288,3 +288,6 @@ C	net/minecraft/server/ServerTickRateManager	io/github/xponer2/translator/world/
 C	net/minecraft/util/datafix/DataFixers	io/github/xponer2/translator/util/DataFixers
 # entity capabilities on 1.12.2 Forge capabilities (Curios, Accessories)
 C	net/neoforged/neoforge/capabilities/EntityCapability	io/github/xponer2/translator/capabilities/EntityCapability
+# 1.21 RegistryOps (a format with the registries), the left arm of humanoid models
+C	net/minecraft/resources/RegistryOps	io/github/xponer2/translator/registry/RegistryOps
+F	net/minecraft/client/model/HumanoidModel	leftArm	bipedLeftArm

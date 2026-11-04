@@ -131,6 +131,31 @@ public final class ApiBridges {
 		return capability == null ? null : capability.getCapability(entity, context);
 	}
 
+	/** 1.21 {@code level.holderLookup(registry key)}: the game's registry of that key. */
+	public static io.github.xponer2.translator.registry.HolderLookup holderLookup(World world, ResourceKey<?> key) {
+		return io.github.xponer2.translator.registry.RegistryAccess.INSTANCE.lookupOrThrow((ResourceKey) key);
+	}
+
+	/**
+	 * 1.21 {@code level.explode(source, x, y, z, radius, fire, interaction)}: 1.12.2's explosion; any interaction but
+	 * NONE breaks blocks (the 1.21 enum is the carried class's, read by its name).
+	 */
+	public static net.minecraft.world.Explosion explode(World world, @javax.annotation.Nullable Entity source, double x, double y, double z, float radius,
+			boolean fire, Object interaction) {
+		boolean breaks = !(interaction instanceof Enum<?> kind) || !"NONE".equals(kind.name());
+		return world.newExplosion(source, x, y, z, radius, fire, breaks);
+	}
+
+	public static net.minecraft.world.Explosion explode(World world, @javax.annotation.Nullable Entity source, double x, double y, double z, float radius,
+			Object interaction) {
+		return explode(world, source, x, y, z, radius, false, interaction);
+	}
+
+	public static net.minecraft.world.Explosion explode(World world, @javax.annotation.Nullable Entity source, Object damageSource, Object damage,
+			double x, double y, double z, float radius, boolean fire, Object interaction) {
+		return explode(world, source, x, y, z, radius, fire, interaction);
+	}
+
 	/** 1.21 {@code level.tickRateManager()}: 1.12.2 always ticks at 20 a second. */
 	public static io.github.xponer2.translator.world.TickRateManager tickRateManager(World world) {
 		return io.github.xponer2.translator.world.TickRateManager.INSTANCE;

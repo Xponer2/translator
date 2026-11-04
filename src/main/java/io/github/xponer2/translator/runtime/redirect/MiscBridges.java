@@ -1509,6 +1509,48 @@ public final class MiscBridges {
 		return event.getAction() == action ? event.getValue() : null;
 	}
 
+	// --- small 1.21 calls the tested mods make most (the progress page's list of what isn't connected) -------------
+
+	public static org.joml.Vector3f toVector3f(net.minecraft.util.math.Vec3d vec) {
+		return new org.joml.Vector3f((float) vec.x, (float) vec.y, (float) vec.z);
+	}
+
+	/** NeoForge {@code connection.hasChannel(payload type)}: the Translator's channels are on both sides of a game. */
+	public static boolean hasChannel(net.minecraft.network.NetHandlerPlayServer connection, Object type) {
+		return true;
+	}
+
+	/** 1.21 {@code holder.getRegisteredName()}: its id, "[unregistered]" for a direct holder. */
+	public static String getRegisteredName(io.github.xponer2.translator.registry.Holder<?> holder) {
+		return holder.unwrapKey().map(key -> key.location().toString()).orElse("[unregistered]");
+	}
+
+	/** 1.21 {@code stack.transmuteCopy(item, count)}: the same data on another item. */
+	public static net.minecraft.item.ItemStack transmuteCopy(net.minecraft.item.ItemStack stack, io.github.xponer2.translator.util.ItemLike item, int count) {
+		var copy = new net.minecraft.item.ItemStack(io.github.xponer2.translator.util.ItemLike.item(item), count);
+		if (stack.hasTagCompound()) {
+			copy.setTagCompound(stack.getTagCompound().copy());
+		}
+		return copy;
+	}
+
+	public static net.minecraft.item.ItemStack transmuteCopy(net.minecraft.item.ItemStack stack, io.github.xponer2.translator.util.ItemLike item) {
+		return transmuteCopy(stack, item, stack.getCount());
+	}
+
+	/** 1.21 {@code state.getOcclusionShape(level, pos)}: a full cube for blocks that hide their neighbours' faces. */
+	@SuppressWarnings("deprecation")
+	public static io.github.xponer2.translator.shape.VoxelShape getOcclusionShape(IBlockState state, net.minecraft.world.IBlockAccess level, BlockPos pos) {
+		return state.isOpaqueCube() ? io.github.xponer2.translator.shape.Shapes.block() : io.github.xponer2.translator.shape.Shapes.empty();
+	}
+
+	/** 1.21 {@code lookup.getOrThrow(key)} of a registry lookup (the Translator's registries are the lookups). */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static io.github.xponer2.translator.registry.Registry.Reference getOrThrow(io.github.xponer2.translator.registry.HolderLookup lookup,
+			io.github.xponer2.translator.registry.ResourceKey key) {
+		return ((io.github.xponer2.translator.registry.Registry) lookup).getOrThrow(key);
+	}
+
 	// --- EnumDyeColor ------------------------------------------------------------------------------------------------
 
 	public static int getTextureDiffuseColor(EnumDyeColor color) {

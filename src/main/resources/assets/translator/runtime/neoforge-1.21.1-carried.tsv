@@ -338,3 +338,8 @@ C	net/minecraft/world/level/storage/loot/functions/SetAttributesFunction	net/min
 C	net/minecraft/world/level/storage/loot/functions/SetCustomDataFunction	net/minecraft/world/level/storage/loot/functions/SetCustomDataFunction
 C	net/minecraft/world/level/storage/loot/functions/SetItemDamageFunction	net/minecraft/world/level/storage/loot/functions/SetItemDamageFunction
 C	net/minecraft/world/level/storage/loot/functions/SmeltItemFunction	net/minecraft/world/level/storage/loot/functions/SmeltItemFunction
+# mapped to Translator classes that were never written: the 1.21 classes as they are
+C	net/minecraft/tags/BiomeTags	net/minecraft/tags/BiomeTags
+C	net/neoforged/neoforge/common/Tags	net/neoforged/neoforge/common/Tags
+C	net/minecraft/core/GlobalPos	net/minecraft/core/GlobalPos
+C	net/minecraft/world/item/component/ItemContainerContents	net/minecraft/world/item/component/ItemContainerContents

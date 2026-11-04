@@ -204,3 +204,5 @@ R	it/unimi/dsi/fastutil/objects/Reference2ObjectMap	io/github/xponer2/translator
 R	net/minecraft/inventory/InventoryBasic	io/github/xponer2/translator/runtime/redirect/MiscBridges
 R	io/github/xponer2/translator/block/BaseContainerBlockEntity	io/github/xponer2/translator/block/BaseContainerBlockEntity
 R	net/minecraft/world/gen/ChunkProviderServer	io/github/xponer2/translator/runtime/redirect/ApiBridges
+R	io/github/xponer2/translator/registry/HolderLookup	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/client/model/ModelBiped	io/github/xponer2/translator/runtime/redirect/ClientRedirects

@@ -18,6 +18,11 @@ import io.github.xponer2.translator.util.BuiltInRegistries;
  */
 public interface HolderLookup {
     interface Provider {
+        /** 1.21 {@code createSerializationContext(ops)}: the format with the registries (NBT and JSON codecs of items). */
+        default <V> RegistryOps<V> createSerializationContext(com.mojang.serialization.DynamicOps<V> ops) {
+            return RegistryOps.create(ops, this);
+        }
+
         default <T> Registry<T> lookupOrThrow(ResourceKey<? extends Registry<? extends T>> key) {
             @SuppressWarnings("unchecked")
             var registry = (Registry<T>) BuiltInRegistries.byKey((ResourceKey<Registry<T>>) (ResourceKey<?>) key);
