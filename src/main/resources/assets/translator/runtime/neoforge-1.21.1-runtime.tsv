@@ -268,3 +268,4 @@ C	org/lwjgl/PointerBuffer	io/github/xponer2/translator/lwjgl/PointerBuffer
 C	org/lwjgl/stb/STBImageResize	io/github/xponer2/translator/lwjgl/STBImageResize
 C	cpw/mods/jarhandling/SecureJar	io/github/xponer2/translator/runtime/neoforge/SecureJar
 C	net/minecraft/world/inventory/ChestMenu	io/github/xponer2/translator/menu/ChestMenu
+C	net/minecraft/world/level/lighting/LevelLightEngine	io/github/xponer2/translator/world/LevelLightEngine

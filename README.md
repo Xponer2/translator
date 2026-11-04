@@ -12,6 +12,10 @@ on 1.12.2: put them in `mods/1.21.1/` (or `mods/`) next to the Translator and st
 **Experimental.** Many blocks, items, menus and recipes of the tested mods work. Rendering, world generation and
 some screens are still incomplete. A mod can load and still miss parts of its behaviour.
 
+**Development environment only, for now.** The converter maps the mods to Minecraft's development names (MCP).
+The normal game uses obfuscated (SRG) names, so running original 1.21.1 jars there doesn't work yet. Ports built on
+the Translator work in both.
+
 ## How it works
 
 At startup each 1.21.1 jar is converted for 1.12.2, then loaded like any mod:

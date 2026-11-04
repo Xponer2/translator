@@ -126,6 +126,14 @@ public abstract class BaseContainerBlockEntity extends BlockEntity implements II
 		return this.name;
 	}
 
+	/**
+	 * 1.21 {@code getName()} (the text) of a container block entity: its custom name or its default name. A static
+	 * stand-in (R line): the instance getName is 1.12.2's string.
+	 */
+	public static ITextComponent getName(BaseContainerBlockEntity entity) {
+		return entity.getDisplayName();
+	}
+
 	/** 1.12.2 IWorldNameable (its getName is the string; 1.21's text is getDisplayName here). */
 	@Override
 	public String getName() {

@@ -332,6 +332,25 @@ public final class ApiBridges {
 		world.playSound(player, at.posX, at.posY, at.posZ, sound, category, volume, pitch);
 	}
 
+	/**
+	 * 1.21 {@code level.playSound(Entity, BlockPos, sound, source, volume, pitch)}: any entity; 1.12.2 takes the player the
+	 * sound isn't sent to (Macaw's cabinets opened and closed in silence).
+	 */
+	public static void playSound(World world, @javax.annotation.Nullable Entity entity, BlockPos pos, net.minecraft.util.SoundEvent sound,
+			net.minecraft.util.SoundCategory category, float volume, float pitch) {
+		world.playSound(entity instanceof EntityPlayer player ? player : null, pos, sound, category, volume, pitch);
+	}
+
+	public static void playSound(World world, @javax.annotation.Nullable Entity entity, double x, double y, double z, net.minecraft.util.SoundEvent sound,
+			net.minecraft.util.SoundCategory category, float volume, float pitch) {
+		world.playSound(entity instanceof EntityPlayer player ? player : null, x, y, z, sound, category, volume, pitch);
+	}
+
+	/** 1.21 {@code level.getLightEngine()}. */
+	public static io.github.xponer2.translator.world.LevelLightEngine getLightEngine(World world) {
+		return new io.github.xponer2.translator.world.LevelLightEngine(world);
+	}
+
 	public static void playSound(World world, EntityPlayer player, BlockPos pos, net.minecraft.util.SoundEvent sound, net.minecraft.util.SoundCategory category) {
 		world.playSound(player, pos, sound, category, 1F, 1F);
 	}
