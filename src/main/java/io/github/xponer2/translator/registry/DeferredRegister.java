@@ -172,6 +172,16 @@ public class DeferredRegister<T> {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onRegister(RegistryEvent.Register event) {
         var registry = this.registry();
+        if (registry instanceof EntityTypeRegistry) {
+            // a mod's entity types: each a Forge entity registration (EntityType.register), bound to the mod's type. 1.21
+            // registers them before the items (a spawn egg's constructor takes its type), 1.12.2 after: in the block event
+            Class<?> type = event.getRegistry().getRegistrySuperType();
+            if (!this.registeredEarly && (type == Block.class || type == net.minecraftforge.fml.common.registry.EntityEntry.class)) {
+                this.registeredEarly = true;
+                this.registerEntityTypes(net.minecraftforge.fml.common.registry.ForgeRegistries.ENTITIES);
+            }
+            return;
+        }
         if (!(registry instanceof ForgeRegistryWrapper wrapper) || this.registeredEarly) {
             return;
         }
@@ -246,6 +256,33 @@ public class DeferredRegister<T> {
                     throw e;
                 }
                 io.github.xponer2.translator.runtime.RuntimeMods.skipped(location, e);
+            }
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void registerEntityTypes(IForgeRegistry registry) {
+        this.seenRegisterEvent = true;
+        RegisterEvent.Forwarder.step(this.namespace);
+        boolean lenient = io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(this.namespace);
+        for (var entry : this.entries.entrySet()) {
+            var holder = (DeferredHolder) entry.getKey();
+            try {
+                Object value = entry.getValue().get();
+                if (!(value instanceof EntityType<?> type)) {
+                    io.github.xponer2.translator.runtime.RuntimeMods.skipped(holder.getId(), new IllegalStateException("the entry is null"));
+                    continue;
+                }
+                var forgeEntry = EntityType.register(holder.getId(), type);
+                if (forgeEntry != null) {
+                    registry.register(forgeEntry);
+                }
+                holder.bind(type);
+            } catch (RuntimeException | LinkageError e) {
+                if (!lenient) {
+                    throw e;
+                }
+                io.github.xponer2.translator.runtime.RuntimeMods.skipped(holder.getId(), e);
             }
         }
     }

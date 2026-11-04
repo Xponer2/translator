@@ -85,6 +85,27 @@ public class RegisterEvent extends Event implements IContextSetter {
 					nullEntry(id);
 				}
 			});
+		} else if (registry instanceof EntityTypeRegistry
+				&& this.forge.getRegistry().getRegistrySuperType() == net.minecraftforge.fml.common.registry.EntityEntry.class) {
+			// a mod's entity types (Framework's registry entries: Refurbished Furniture's seats): Forge entity registrations
+			IForgeRegistry forgeRegistry = this.forge.getRegistry();
+			consumer.accept((id, value) -> {
+				if (!(value instanceof EntityType<?> type)) {
+					nullEntry(id);
+					return;
+				}
+				try {
+					var entry = EntityType.register(id, type);
+					if (entry != null) {
+						forgeRegistry.register(entry);
+					}
+				} catch (RuntimeException | LinkageError e) {
+					if (!io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(id.getNamespace())) {
+						throw e;
+					}
+					io.github.xponer2.translator.runtime.RuntimeMods.skipped(id, e);
+				}
+			});
 		} else if (registry instanceof MappedRegistry mapped && this.forge.getRegistry().getRegistrySuperType() == net.minecraft.item.Item.class) {
 			// a registry 1.12.2 has no event for (menus, recipe serializers, creative tabs, components): filled once,
 			// in the item event like the DeferredRegisters of those registries
@@ -251,9 +272,9 @@ public class RegisterEvent extends Event implements IContextSetter {
 			}
 			if (event.getRegistry().getRegistrySuperType() == Block.class) {
 				// 1.21 fills sounds and mob effects before the blocks (a block's constructor takes its sounds: Framework,
-				// Refurbished); 1.12.2 posts them after the items
+				// Refurbished) and entity types before the items (a spawn egg takes its type); 1.12.2 posts them after the items
 				for (IForgeRegistry<?> registry : new IForgeRegistry<?>[] { net.minecraftforge.fml.common.registry.ForgeRegistries.SOUND_EVENTS,
-						net.minecraftforge.fml.common.registry.ForgeRegistries.POTIONS }) {
+						net.minecraftforge.fml.common.registry.ForgeRegistries.POTIONS, net.minecraftforge.fml.common.registry.ForgeRegistries.ENTITIES }) {
 					this.early.add(registry);
 					try {
 						MinecraftForge.EVENT_BUS.post(new RegisterEvent(registry));

@@ -372,3 +372,5 @@ C	net/minecraft/network/chat/contents/PlainTextContents	net/minecraft/util/text/
 C	net/minecraft/network/chat/contents/PlainTextContents$LiteralContents	net/minecraft/util/text/TextComponentString
 M	net/minecraft/network/chat/contents/PlainTextContents	text()	getText
 M	net/minecraft/network/chat/contents/PlainTextContents$LiteralContents	text()	getText
+C	net/minecraft/world/entity/EntityType$Builder	io/github/xponer2/translator/registry/EntityType$Builder
+C	net/minecraft/world/entity/EntityType$EntityFactory	io/github/xponer2/translator/registry/EntityType$EntityFactory

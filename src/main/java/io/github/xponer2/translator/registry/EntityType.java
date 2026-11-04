@@ -19,32 +19,322 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.EntityEntry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A type of entity (1.21 {@code net.minecraft.world.entity.EntityType}): a 1.12.2 {@link EntityEntry} under its 1.21
  * id. The registry is {@link EntityTypeRegistry} ({@code BuiltInRegistries.ENTITY_TYPE}).
+ * <p>
+ * A 1.21.1 mod's own type is made with {@link Builder} ({@code EntityType.Builder.of(Moa::new, CREATURE).sized(..)
+ * .build(..)}) and becomes a Forge entity registration when the mod registers it ({@link #register}): its factory makes
+ * the entities, on the server and on the client (FML spawns them through the registration's factory).
  */
 public final class EntityType<T extends Entity> {
+    private static final Logger LOGGER = LogManager.getLogger("Translator Runtime");
     private static final Map<EntityEntry, EntityType<?>> TYPES = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, EntityType<?>> MISSING = new ConcurrentHashMap<>();
+    /** The network ids of the mods' entity registrations (under the Translator's mod): the same order on both sides. */
+    private static final AtomicInteger NETWORK_IDS = new AtomicInteger();
 
-    /** The registration, null for a 1.21 vanilla type 1.12.2 has nothing like (no entity is of it). */
+    /** The registration, null for a 1.21 vanilla type 1.12.2 has nothing like (no entity is of it), or a mod's type not registered yet. */
     @Nullable
-    private final EntityEntry entry;
+    private volatile EntityEntry entry;
     @Nullable
     private final ResourceLocation missing;
+
+    // a 1.21.1 mod's own type (null factory: a 1.12.2 one)
+    @Nullable
+    private final EntityFactory<T> factory;
+    @Nullable
+    private final net.minecraft.entity.EnumCreatureType category;
+    private final float width;
+    private final float height;
+    private final boolean fireImmune;
+    private final boolean summonable;
+    private final int trackingRange;
+    private final int updateInterval;
+    private final boolean velocityUpdates;
+    @Nullable
+    private volatile ResourceLocation id;
 
     private EntityType(EntityEntry entry) {
         this.entry = entry;
         this.missing = null;
+        this.factory = null;
+        this.category = null;
+        this.width = 0.6F;
+        this.height = 1.8F;
+        this.fireImmune = false;
+        this.summonable = true;
+        this.trackingRange = 5;
+        this.updateInterval = 3;
+        this.velocityUpdates = true;
     }
 
     private EntityType(ResourceLocation missing) {
         this.entry = null;
         this.missing = missing;
+        this.factory = null;
+        this.category = null;
+        this.width = 0.6F;
+        this.height = 1.8F;
+        this.fireImmune = false;
+        this.summonable = false;
+        this.trackingRange = 5;
+        this.updateInterval = 3;
+        this.velocityUpdates = true;
+    }
+
+    private EntityType(Builder<T> builder) {
+        this.entry = null;
+        this.missing = null;
+        this.factory = builder.factory;
+        this.category = builder.category;
+        this.width = builder.width;
+        this.height = builder.height;
+        this.fireImmune = builder.fireImmune;
+        this.summonable = builder.summonable;
+        this.trackingRange = builder.trackingRange;
+        this.updateInterval = builder.updateInterval;
+        this.velocityUpdates = builder.velocityUpdates;
+    }
+
+    /** 1.21 {@code EntityType.EntityFactory}: what makes an entity of a mod's type ({@code Moa::new}). */
+    @FunctionalInterface
+    public interface EntityFactory<T extends Entity> {
+        T create(EntityType<T> type, World level);
+    }
+
+    /** 1.21 {@code EntityType.Builder}: a mod's entity type, its size, tracking and what it is immune to. */
+    public static final class Builder<T extends Entity> {
+        @Nullable
+        private final EntityFactory<T> factory;
+        @Nullable
+        private final net.minecraft.entity.EnumCreatureType category;
+        private float width = 0.6F;
+        private float height = 1.8F;
+        private boolean fireImmune;
+        private boolean summonable = true;
+        private int trackingRange = 5;
+        private int updateInterval = 3;
+        private boolean velocityUpdates = true;
+
+        private Builder(@Nullable EntityFactory<T> factory, @Nullable net.minecraft.entity.EnumCreatureType category) {
+            this.factory = factory;
+            this.category = category;
+        }
+
+        public static <T extends Entity> Builder<T> of(EntityFactory<T> factory, @Nullable net.minecraft.entity.EnumCreatureType category) {
+            return new Builder<>(factory, category);
+        }
+
+        /** A type no entity is made of by itself (a mod makes them with its own code). */
+        public static <T extends Entity> Builder<T> createNothing(@Nullable net.minecraft.entity.EnumCreatureType category) {
+            return new Builder<>(null, category);
+        }
+
+        public Builder<T> sized(float width, float height) {
+            this.width = width;
+            this.height = height;
+            return this;
+        }
+
+        public Builder<T> fireImmune() {
+            this.fireImmune = true;
+            return this;
+        }
+
+        public Builder<T> noSummon() {
+            this.summonable = false;
+            return this;
+        }
+
+        public Builder<T> clientTrackingRange(int chunks) {
+            this.trackingRange = chunks;
+            return this;
+        }
+
+        public Builder<T> updateInterval(int ticks) {
+            this.updateInterval = ticks;
+            return this;
+        }
+
+        /** NeoForge {@code setTrackingRange}/{@code setUpdateInterval}/{@code setShouldReceiveVelocityUpdates}. */
+        public Builder<T> setTrackingRange(int chunks) {
+            return this.clientTrackingRange(chunks);
+        }
+
+        public Builder<T> setUpdateInterval(int ticks) {
+            return this.updateInterval(ticks);
+        }
+
+        public Builder<T> setShouldReceiveVelocityUpdates(boolean velocityUpdates) {
+            this.velocityUpdates = velocityUpdates;
+            return this;
+        }
+
+        // what 1.12.2 has no place for: kept as the 1.21 builder's answer, nothing more
+        public Builder<T> noSave() {
+            return this;
+        }
+
+        public Builder<T> canSpawnFarFromPlayer() {
+            return this;
+        }
+
+        public Builder<T> immuneTo(Object... blocks) {
+            return this;
+        }
+
+        public Builder<T> eyeHeight(float height) {
+            return this;
+        }
+
+        public Builder<T> spawnDimensionsScale(float scale) {
+            return this;
+        }
+
+        public Builder<T> ridingOffset(float offset) {
+            return this;
+        }
+
+        public Builder<T> nameTagOffset(float offset) {
+            return this;
+        }
+
+        public Builder<T> passengerAttachments(float... offsets) {
+            return this;
+        }
+
+        public Builder<T> passengerAttachments(Object... offsets) {
+            return this;
+        }
+
+        public Builder<T> vehicleAttachment(Object offset) {
+            return this;
+        }
+
+        public Builder<T> attach(Object attachment, float x, float y, float z) {
+            return this;
+        }
+
+        public Builder<T> attach(Object attachment, Object offset) {
+            return this;
+        }
+
+        public Builder<T> requiredFeatures(Object... features) {
+            return this;
+        }
+
+        public Builder<T> setCustomClientFactory(Object factory) {
+            return this;
+        }
+
+        public EntityType<T> build(String id) {
+            return new EntityType<>(this);
+        }
+    }
+
+    /**
+     * A mod's type as a Forge entity registration under its id ({@link DeferredRegister} and {@link RegisterEvent} on
+     * the entity registry event): null, logged, when it can't be one (no factory, or its entity class can't be told).
+     */
+    @Nullable
+    static EntityEntry register(ResourceLocation id, EntityType<?> type) {
+        if (type.entry != null) {
+            return type.entry;
+        }
+        if (type.factory == null) {
+            // a type made with createNothing: the mod spawns its entities itself, there is nothing to register
+            type.id = id;
+            MISSING.putIfAbsent(id, type);
+            return null;
+        }
+        Class<? extends Entity> entityClass = entityClass(type);
+        if (entityClass == null) {
+            LOGGER.warn("Entity type {}: its entity class can't be told (its factory makes none without a world), not registered", id);
+            return null;
+        }
+        var loader = net.minecraftforge.fml.common.Loader.instance();
+        var previous = loader.activeModContainer();
+        // the registration's mod is the active one: the Translator's (the 1.21.1 mods have no FML container)
+        loader.setActiveModContainer(loader.getIndexedModList().get(io.github.xponer2.translator.Translator.MOD_ID));
+        EntityEntry entry;
+        try {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            EntityType<Entity> self = (EntityType) type;
+            entry = net.minecraftforge.fml.common.registry.EntityEntryBuilder.create()
+                    .entity(entityClass)
+                    .factory(world -> self.factory.create(self, world))
+                    .id(id, NETWORK_IDS.getAndIncrement())
+                    .name(id.getNamespace() + "." + id.getPath())
+                    .tracker(Math.max(1, type.trackingRange) * 16, Math.max(1, type.updateInterval), type.velocityUpdates)
+                    .build();
+        } finally {
+            loader.setActiveModContainer(previous);
+        }
+        type.entry = entry;
+        type.id = id;
+        TYPES.put(entry, type);
+        return entry;
+    }
+
+    /**
+     * The class of a mod type's entities: the entity class the factory names ({@code Moa::new} is a class whose constant
+     * pool holds Moa), else that of an entity made without a world.
+     */
+    @Nullable
+    @SuppressWarnings("unchecked")
+    private static Class<? extends Entity> entityClass(EntityType<?> type) {
+        Class<? extends Entity> named = namedBy(type.factory);
+        if (named != null) {
+            return named;
+        }
+        try {
+            @SuppressWarnings({"rawtypes"})
+            Entity sample = ((EntityFactory) type.factory).create(type, null);
+            return sample == null ? null : sample.getClass();
+        } catch (RuntimeException | LinkageError e) {
+            return null;
+        }
+    }
+
+    /** The one entity class in the constant pool of the factory's class (a method reference to a constructor), else null. */
+    @Nullable
+    @SuppressWarnings("unchecked")
+    private static Class<? extends Entity> namedBy(Object factory) {
+        try {
+            Object access = Class.forName("sun.misc.SharedSecrets").getMethod("getJavaLangAccess").invoke(null);
+            Object pool = Class.forName("sun.misc.JavaLangAccess").getMethod("getConstantPool", Class.class).invoke(access, factory.getClass());
+            Class<?> poolClass = Class.forName("sun.reflect.ConstantPool");
+            int size = (Integer) poolClass.getMethod("getSize").invoke(pool);
+            java.lang.reflect.Method classAt = poolClass.getMethod("getClassAtIfLoaded", int.class);
+            Class<? extends Entity> found = null;
+            for (int i = 1; i < size; i++) {
+                Object value;
+                try {
+                    value = classAt.invoke(pool, i);
+                } catch (java.lang.reflect.InvocationTargetException notAClass) {
+                    continue;
+                }
+                if (value instanceof Class<?> candidate && Entity.class.isAssignableFrom(candidate)
+                        && !java.lang.reflect.Modifier.isAbstract(candidate.getModifiers())) {
+                    if (found != null && found != candidate) {
+                        return null;
+                    }
+                    found = (Class<? extends Entity>) candidate;
+                }
+            }
+            return found;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            return null;
+        }
     }
 
     /**
@@ -80,6 +370,9 @@ public final class EntityType<T extends Entity> {
 
     @Nullable
     public static ResourceLocation getKey(EntityType<?> type) {
+        if (type.factory != null || type.id != null) {
+            return type.id;
+        }
         return type.entry == null ? type.missing : EntityTypeRegistry.toModern(type.entry.getRegistryName());
     }
 
@@ -105,11 +398,31 @@ public final class EntityType<T extends Entity> {
     @Nullable
     @SuppressWarnings("unchecked")
     public T create(World level) {
+        if (this.factory != null) {
+            return this.factory.create(this, level);
+        }
         return this.entry == null ? null : (T) this.entry.newInstance(level);
     }
 
     public String getDescriptionId() {
-        return this.entry == null ? "entity." + this.missing.getNamespace() + "." + this.missing.getPath() : "entity." + this.entry.getName() + ".name";
+        var id = this.factory != null || this.id != null ? this.id : null;
+        if (id != null) {
+            // the 1.21 key, which the mod's language files name
+            return "entity." + id.getNamespace() + "." + id.getPath();
+        }
+        if (this.entry == null) {
+            return this.missing == null ? "entity.unknown" : "entity." + this.missing.getNamespace() + "." + this.missing.getPath();
+        }
+        return "entity." + this.entry.getName() + ".name";
+    }
+
+    /** 1.21 {@code getWidth()}/{@code getHeight()}: the size its builder gave (a 1.12.2 entity sets its own). */
+    public float getWidth() {
+        return this.width;
+    }
+
+    public float getHeight() {
+        return this.height;
     }
 
     public ITextComponent getDescription() {
@@ -126,8 +439,11 @@ public final class EntityType<T extends Entity> {
         return id != null && io.github.xponer2.translator.tags.TagManager.ids("entity_type", tag.location()).contains(id);
     }
 
-    /** What kind of creature it is (spawning caps): the 1.12.2 class's kind. */
+    /** What kind of creature it is (spawning caps): the mod type's category, else the 1.12.2 class's kind. */
     public net.minecraft.entity.EnumCreatureType getCategory() {
+        if (this.category != null) {
+            return this.category;
+        }
         var type = this.getEntityClass();
         for (var category : net.minecraft.entity.EnumCreatureType.values()) {
             if (category.getCreatureClass().isAssignableFrom(type)) {
@@ -142,11 +458,11 @@ public final class EntityType<T extends Entity> {
     }
 
     public boolean canSummon() {
-        return this.entry != null;
+        return this.entry != null && this.summonable;
     }
 
     public boolean fireImmune() {
-        return false;
+        return this.fireImmune;
     }
 
     /** A new entity of this type at a position, spawned in the world (1.21 spawn eggs, summoning). */
