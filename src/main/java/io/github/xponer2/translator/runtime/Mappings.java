@@ -173,14 +173,23 @@ final class Mappings {
 						byte[] original = raw.get(obfuscated.replace('/', '.'));
 						if (original != null) {
 							// Forge's binary patches first (the vanilla class lacks everything Forge adds: its constructors,
-							// methods, interfaces, the IForgeRegistryEntry superclass), then FML's deobfuscation
-							byte[] patched = net.minecraftforge.fml.common.patcher.ClassPatchManager.INSTANCE.applyPatch(obfuscated.replace('/', '.'),
-									binaryName, original);
-							bytes = Deobfuscation.TRANSFORMER.transform(obfuscated.replace('/', '.'), binaryName, patched);
+							// methods, interfaces, the IForgeRegistryEntry superclass), then FML's deobfuscation; one
+							// thread at a time: the patcher reuses its buffers and FML's remapper fills its maps lazily,
+							// and the converter reads classes from all cores (a class read wrong or not at all failed every
+							// method naming it)
+							synchronized (Deobfuscation.LOCK) {
+								byte[] patched = net.minecraftforge.fml.common.patcher.ClassPatchManager.INSTANCE.applyPatch(obfuscated.replace('/', '.'),
+										binaryName, original);
+								bytes = Deobfuscation.TRANSFORMER.transform(obfuscated.replace('/', '.'), binaryName, patched);
+							}
 						}
 					}
-				} catch (LinkageError | RuntimeException e) {
+				} catch (LinkageError e) {
 					// no FML deobfuscation here (outside the game): the class isn't there
+				} catch (RuntimeException e) {
+					// the class is there and its patching or deobfuscation threw: a failed read (tried again), not a
+					// missing class
+					throw new IOException("reading " + binaryName, e);
 				}
 			}
 			return bytes == null ? null : this.toMcp(bytes);
@@ -189,6 +198,8 @@ final class Mappings {
 
 	/** FML's deobfuscation, made the first time an obfuscated class is read. */
 	private static final class Deobfuscation {
+		static final Object LOCK = new Object();
+
 		static final net.minecraftforge.fml.common.asm.transformers.DeobfuscationTransformer TRANSFORMER =
 				new net.minecraftforge.fml.common.asm.transformers.DeobfuscationTransformer();
 	}

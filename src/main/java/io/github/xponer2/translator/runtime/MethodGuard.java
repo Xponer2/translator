@@ -2308,6 +2308,35 @@ final class MethodGuard {
 			return false;
 		}
 
+		/**
+		 * A value of a class type that isn't the expected class: the error names both, and where the value's class
+		 * chain stopped when a class of it can't be read (the release game read some 1.12.2 classes wrong once).
+		 */
+		@Override
+		protected boolean isSubTypeOf(xyz.wagyourtail.jvmdg.shade.asm.tree.analysis.BasicValue value,
+				xyz.wagyourtail.jvmdg.shade.asm.tree.analysis.BasicValue expected) {
+			Type expectedType = expected.getType();
+			Type type = value.getType();
+			if (expectedType != null && type != null && (expectedType.getSort() == Type.OBJECT || expectedType.getSort() == Type.ARRAY)
+					&& (type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY) && !"null".equals(type.getInternalName())
+					&& !this.isAssignableFrom(expectedType, type)) {
+				throw new IllegalStateException(type + " isn't a " + expectedType + this.unreadable(type));
+			}
+			return super.isSubTypeOf(value, expected);
+		}
+
+		private String unreadable(Type type) {
+			Type element = type.getSort() == Type.ARRAY ? type.getElementType() : type;
+			for (Type current = element; current != null && current.getSort() == Type.OBJECT; ) {
+				String name = current.getInternalName();
+				if (!isPlatform(name) && MethodGuard.this.info(name) == null) {
+					return " (" + name + " can't be read)";
+				}
+				current = this.getSuperClass(current);
+			}
+			return "";
+		}
+
 		@Override
 		protected Class<?> getClass(Type type) {
 			throw new IllegalStateException("not loading " + type);

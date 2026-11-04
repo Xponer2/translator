@@ -56,18 +56,36 @@ final class TargetClasses {
 	}
 
 	ClassInfo get(String internalName) {
-		return this.cache.computeIfAbsent(internalName, name -> {
-			try {
-				byte[] bytes = this.source.get(name.replace('/', '.'));
-				if (bytes == null) {
-					bytes = this.pendingBytes(name);
-				}
-				return bytes == null ? Optional.empty() : Optional.of(ClassInfo.read(bytes));
-			} catch (IOException | RuntimeException e) {
-				return Optional.empty();
+		Optional<ClassInfo> cached = this.cache.get(internalName);
+		if (cached != null) {
+			return cached.orElse(null);
+		}
+		try {
+			byte[] bytes = this.source.get(internalName.replace('/', '.'));
+			if (bytes == null) {
+				bytes = this.pendingBytes(internalName);
 			}
-		}).orElse(null);
+			Optional<ClassInfo> info = bytes == null ? Optional.empty() : Optional.of(ClassInfo.read(bytes));
+			Optional<ClassInfo> before = this.cache.putIfAbsent(internalName, info);
+			return (before != null ? before : info).orElse(null);
+		} catch (IOException | RuntimeException | LinkageError e) {
+			// a read that failed is not a missing class: not cached, tried again next time (the release game's classes
+			// went through FML's patcher and deobfuscation, which threw when converter threads met there; a class
+			// cached as missing then failed every method that named it: "not loading ..." in 946 stubbed methods)
+			if (FAILED_READS.incrementAndGet() <= 20) {
+				Conversion.LOGGER.warn("Translator: couldn't read the class {}: {}", internalName, e.toString());
+			}
+			if (this.failures.merge(internalName, 1, Integer::sum) >= 3) {
+				// it fails every time: missing after all
+				this.cache.putIfAbsent(internalName, Optional.empty());
+			}
+			return null;
+		}
 	}
+
+	private final Map<String, Integer> failures = new java.util.concurrent.ConcurrentHashMap<>();
+
+	private static final java.util.concurrent.atomic.AtomicInteger FAILED_READS = new java.util.concurrent.atomic.AtomicInteger();
 
 	private final Map<String, byte[]> declarations = new java.util.concurrent.ConcurrentHashMap<>();
 
