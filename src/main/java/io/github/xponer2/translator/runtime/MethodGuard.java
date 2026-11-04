@@ -64,6 +64,8 @@ final class MethodGuard {
 	final java.util.concurrent.atomic.AtomicInteger softened = new java.util.concurrent.atomic.AtomicInteger();
 	/** "owner.name:desc" -> the int constant reads of that field give (K lines, see RemapTable#constants). */
 	Map<String, Object> constants = java.util.Collections.emptyMap();
+	/** X lines of the table ("owner.name desc" -> helper): calls redirected although the member exists. */
+	Map<String, String> forced = java.util.Collections.emptyMap();
 
 	/** The 1.21 names of a 1.12.2 / Translator class (the classes the tables map to it): where its shadows are. */
 	private final java.util.function.Function<String, List<String>> originals;
@@ -919,6 +921,16 @@ final class MethodGuard {
 	private boolean redirect(MethodNode method) {
 		boolean changed = false;
 		for (AbstractInsnNode insn : method.instructions.toArray()) {
+			// an X line: the member exists but means something else in 1.21 (its helper gives the 1.21 meaning)
+			String forcedHelper = insn instanceof MethodInsnNode candidate && !this.forced.isEmpty() && candidate.getOpcode() != Opcodes.INVOKESPECIAL
+					? this.forced.get(candidate.owner + "." + candidate.name + candidate.desc) : null;
+			if (forcedHelper != null && insn instanceof MethodInsnNode forcedCall) {
+				String desc = forcedCall.getOpcode() == Opcodes.INVOKESTATIC ? forcedCall.desc : "(L" + forcedCall.owner + ";" + forcedCall.desc.substring(1);
+				method.instructions.set(forcedCall, new MethodInsnNode(Opcodes.INVOKESTATIC, forcedHelper, forcedCall.name, desc, false));
+				this.redirected.incrementAndGet();
+				changed = true;
+				continue;
+			}
 			// a library switch the Translator sets (K lines): the read gives the constant (the receiver is dropped)
 			if (insn instanceof FieldInsnNode read && (read.getOpcode() == Opcodes.GETFIELD || read.getOpcode() == Opcodes.GETSTATIC)
 					&& !this.constants.isEmpty() && this.constants.get(read.owner + "." + read.name + ":" + read.desc) instanceof Integer value) {

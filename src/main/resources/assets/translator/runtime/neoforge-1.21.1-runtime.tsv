@@ -386,3 +386,6 @@ M	net/minecraft/world/level/storage/LevelData	getGameRules()	getGameRulesInstanc
 M	net/minecraft/world/level/storage/WritableLevelData	setSpawn(net.minecraft.core.BlockPos,float)	setSpawn
 M	net/minecraft/world/level/storage/ServerLevelData	setDayTime(long)	setWorldTime
 M	net/minecraft/world/level/storage/ServerLevelData	setGameTime(long)	setWorldTotalTime
+# X: calls redirected although 1.12.2 has the member (its meaning differs): the 1.21 dye names (silver is light_gray)
+X	net/minecraft/item/EnumDyeColor	getName	()Ljava/lang/String;	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+X	net/minecraft/item/EnumDyeColor	getTranslationKey	()Ljava/lang/String;	io/github/xponer2/translator/runtime/redirect/WorldGapBridges

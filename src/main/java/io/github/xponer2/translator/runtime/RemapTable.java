@@ -39,6 +39,12 @@ final class RemapTable {
 	 * the registration of the others).
 	 */
 	final Map<String, Object> constants = new HashMap<>();
+	/**
+	 * X lines: a call of a member the 1.12.2 class has, but with another meaning than the 1.21 one the mods call
+	 * ("owner.name desc" -> helper class): always made a static call of the helper's method of that name, taking the
+	 * receiver first. EnumDyeColor.getName() is "silver" on 1.12.2, the 1.21 name is "light_gray".
+	 */
+	final Map<String, String> forced = new HashMap<>();
 	private Map<String, java.util.List<String>> reverse;
 
 	static RemapTable load() throws IOException {
@@ -73,6 +79,7 @@ final class RemapTable {
 					case "R" -> this.redirects.computeIfAbsent(cols[1], k -> new java.util.ArrayList<>()).add(cols[2]);
 					// K owner name desc value: int-like fields (Z, B, C, S, I) as a number
 					case "K" -> this.constants.put(cols[1] + "." + cols[2] + ":" + cols[3], Integer.valueOf(cols[4]));
+					case "X" -> this.forced.put(cols[1] + "." + cols[2] + cols[3], cols[4]);
 					default -> {
 					}
 				}

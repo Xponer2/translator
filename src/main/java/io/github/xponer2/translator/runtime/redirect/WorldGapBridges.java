@@ -160,6 +160,21 @@ public final class WorldGapBridges {
 		return 0.0F;
 	}
 
+	// --- dye colours: the 1.21 names --------------------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code dyeColor.getSerializedName()} / {@code getName()}: the 1.21 name, "light_gray" where 1.12.2 says
+	 * "silver" (X lines). Mods make their block and item ids from it (Create's light_gray_postbox, seat, toolbox...):
+	 * with "silver" their models, recipes and names didn't match.
+	 */
+	public static String getName(net.minecraft.item.EnumDyeColor color) {
+		return color == net.minecraft.item.EnumDyeColor.SILVER ? "light_gray" : color.getName();
+	}
+
+	public static String getTranslationKey(net.minecraft.item.EnumDyeColor color) {
+		return color == net.minecraft.item.EnumDyeColor.SILVER ? "light_gray" : color.getName();
+	}
+
 	// --- crash reports -----------------------------------------------------------------------------------------------------
 
 	/** 1.21 {@code category.setDetail(name, value)}: 1.12.2 addCrashSection (a supplier of the value: addDetail). */
