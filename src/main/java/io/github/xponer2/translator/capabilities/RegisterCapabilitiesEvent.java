@@ -35,6 +35,15 @@ public class RegisterCapabilitiesEvent extends Event {
 	public void setProxyable(BlockCapability<?, ?> capability) {
 	}
 
+	public void setNonProxyable(BlockCapability<?, ?> capability) {
+	}
+
+	/** NeoForge registerEntity: the provider goes on the entities of the type (Curios' inventory on players). */
+	public <T, C, E extends net.minecraft.entity.Entity> void registerEntity(EntityCapability<T, C> capability,
+			io.github.xponer2.translator.registry.EntityType<E> type, ICapabilityProvider<? super E, C, T> provider) {
+		CapabilityAttacher.addEntity(capability, type, provider);
+	}
+
 	public boolean isBlockRegistered(BlockCapability<?, ?> capability, net.minecraft.block.Block block) {
 		return false;
 	}

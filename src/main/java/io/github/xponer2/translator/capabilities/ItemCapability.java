@@ -27,6 +27,17 @@ public final class ItemCapability<T, C> {
 		this.capability = capability;
 	}
 
+	/** 1.21 {@code ItemCapability.create}: a capability of the mod's own (Curios' curio items). */
+	@SuppressWarnings("unchecked")
+	public static <T, C> ItemCapability<T, C> create(net.minecraft.util.ResourceLocation name, Class<T> type, Class<C> context) {
+		return (ItemCapability<T, C>) CustomCapabilities.CREATED.computeIfAbsent("item " + name,
+				key -> new ItemCapability<T, C>(() -> CustomCapabilities.forge(name)));
+	}
+
+	public static <T> ItemCapability<T, Void> createVoid(net.minecraft.util.ResourceLocation name, Class<T> type) {
+		return create(name, type, Void.class);
+	}
+
 	@Nullable
 	public Capability<T> forge() {
 		return this.capability.get();

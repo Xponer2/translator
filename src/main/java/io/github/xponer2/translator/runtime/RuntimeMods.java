@@ -202,6 +202,13 @@ public final class RuntimeMods {
 			}
 		}
 		try (var bar = io.github.xponer2.translator.util.LoadingBar.push("Translator: starting the 1.21.1 mods", result.mods.size())) {
+			if (FMLEnvironment.dist == Side.CLIENT && Minecraft1211.clientJar() != null) {
+				try {
+					io.github.xponer2.translator.runtime.client.RuntimeResourcePack.addVanilla(Minecraft1211.clientJar());
+				} catch (Throwable t) {
+					LOGGER.warn("Can't read the vanilla 1.21.1 models: {}", t.toString());
+				}
+			}
 			for (ModJar jar : result.mods) {
 				bar.step(jar.displayName());
 				File file = result.converted.get(jar);

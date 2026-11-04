@@ -31,6 +31,21 @@ public final class BlockCapability<T, C> {
 		this.capability = capability;
 	}
 
+	/** 1.21 {@code BlockCapability.create}: a capability of the mod's own. */
+	@SuppressWarnings("unchecked")
+	public static <T, C> BlockCapability<T, C> create(net.minecraft.util.ResourceLocation name, Class<T> type, Class<C> context) {
+		return (BlockCapability<T, C>) CustomCapabilities.CREATED.computeIfAbsent("block " + name,
+				key -> new BlockCapability<T, C>(() -> CustomCapabilities.forge(name)));
+	}
+
+	public static <T> BlockCapability<T, Void> createVoid(net.minecraft.util.ResourceLocation name, Class<T> type) {
+		return create(name, type, Void.class);
+	}
+
+	public static <T> BlockCapability<T, net.minecraft.util.EnumFacing> createSided(net.minecraft.util.ResourceLocation name, Class<T> type) {
+		return create(name, type, net.minecraft.util.EnumFacing.class);
+	}
+
 	/** The Forge capability; null until Forge injected it (pre-init). */
 	@Nullable
 	public Capability<T> forge() {

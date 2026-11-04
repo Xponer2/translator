@@ -52,10 +52,21 @@ public final class RuntimeResourcePack implements IResourcePack {
 	private final ZipFile zip;
 	private final String name;
 	private final Set<String> domains = new HashSet<>();
+	/** The player's Minecraft 1.21.1 jar: only the vanilla models 1.12.2 lacks are taken from it. */
+	private final boolean vanilla;
 
 	private RuntimeResourcePack(File jar, String name) throws IOException {
+		this(jar, name, false);
+	}
+
+	private RuntimeResourcePack(File jar, String name, boolean vanilla) throws IOException {
 		this.zip = new ZipFile(jar);
 		this.name = name;
+		this.vanilla = vanilla;
+		if (vanilla) {
+			this.domains.add("minecraft");
+			return;
+		}
 		for (ZipEntry entry : Collections.list(this.zip.entries())) {
 			String path = entry.getName();
 			if (path.startsWith("assets/")) {
@@ -88,10 +99,32 @@ public final class RuntimeResourcePack implements IResourcePack {
 	}
 
 	/** Adds the jar's assets to the game's default resource packs (before the first resource load). */
-	@SuppressWarnings("unchecked")
 	public static void add(File jar, String name) throws IOException, ReflectiveOperationException {
 		var pack = new RuntimeResourcePack(jar, name);
 		PACKS.add(pack);
+		install(pack);
+	}
+
+	/**
+	 * The vanilla 1.21 models the mods' models are made from (template_wall_post, slab, slab_top: walls and slabs of
+	 * AE2, the Aether, Create were missing), from the player's own Minecraft 1.21.1 jar. A model 1.12.2 has stays 1.12.2's.
+	 */
+	public static void addVanilla(File jar) throws IOException, ReflectiveOperationException {
+		install(new RuntimeResourcePack(jar, "Minecraft 1.21.1 models", true));
+	}
+
+	/** Whether the resource is one the 1.21.1 jar gives: a model of Minecraft that 1.12.2's own assets don't have. */
+	private boolean vanillaGives(ResourceLocation location) {
+		if (!"minecraft".equals(location.getNamespace()) || !location.getPath().startsWith("models/") || !location.getPath().endsWith(".json")
+				|| this.zip.getEntry(path(location)) == null) {
+			return false;
+		}
+		var game = net.minecraft.client.Minecraft.getMinecraft().getResourcePackRepository().rprDefaultResourcePack;
+		return !game.resourceExists(location);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void install(RuntimeResourcePack pack) throws ReflectiveOperationException {
 		// for every later reload, and into the resource manager now (the first load ran before pre-init)
 		Field field = FMLClientHandler.class.getDeclaredField("resourcePackList");
 		field.setAccessible(true);
@@ -110,6 +143,9 @@ public final class RuntimeResourcePack implements IResourcePack {
 
 	@Override
 	public InputStream getInputStream(ResourceLocation location) throws IOException {
+		if (this.vanilla && !this.vanillaGives(location)) {
+			throw new FileNotFoundException(location.toString());
+		}
 		String path = path(location);
 		ZipEntry entry = this.zip.getEntry(path);
 		if (entry == null && path.endsWith(".lang")) {
@@ -165,7 +201,72 @@ public final class RuntimeResourcePack implements IResourcePack {
 			}
 		}
 		blockstateModels(json);
+		wallSides(json);
 		return json;
+	}
+
+	private static final Set<String> SIDES = new HashSet<>(java.util.Arrays.asList("north", "east", "south", "west"));
+	private static final Set<String> WALL_SIDES = new HashSet<>(java.util.Arrays.asList("none", "low", "tall"));
+
+	/**
+	 * A 1.21 wall's multipart sides are none, low or tall; the Translator's walls have 1.12.2's sides, connected or
+	 * not: low becomes true, none false, and the tall parts go (a 1.12.2 wall side has one height). Only for a file
+	 * whose sides are all wall sides (redstone wire's are side, up, none).
+	 */
+	private static void wallSides(JsonElement json) {
+		if (!json.isJsonObject() || !json.getAsJsonObject().has("multipart") || !json.getAsJsonObject().get("multipart").isJsonArray()) {
+			return;
+		}
+		var parts = json.getAsJsonObject().getAsJsonArray("multipart");
+		boolean wall = false;
+		for (JsonElement part : parts) {
+			JsonObject when = part.isJsonObject() && part.getAsJsonObject().has("when") && part.getAsJsonObject().get("when").isJsonObject()
+					? part.getAsJsonObject().getAsJsonObject("when") : null;
+			if (when == null) {
+				continue;
+			}
+			for (Map.Entry<String, JsonElement> condition : when.entrySet()) {
+				if (!SIDES.contains(condition.getKey()) || !condition.getValue().isJsonPrimitive()) {
+					continue;
+				}
+				for (String value : condition.getValue().getAsString().split("\\|")) {
+					if (!WALL_SIDES.contains(value)) {
+						return;
+					}
+					wall |= !"none".equals(value);
+				}
+			}
+		}
+		if (!wall) {
+			return;
+		}
+		var kept = new com.google.gson.JsonArray();
+		for (JsonElement part : parts) {
+			JsonObject when = part.isJsonObject() && part.getAsJsonObject().has("when") && part.getAsJsonObject().get("when").isJsonObject()
+					? part.getAsJsonObject().getAsJsonObject("when") : null;
+			boolean keep = true;
+			if (when != null) {
+				for (Map.Entry<String, JsonElement> condition : when.entrySet()) {
+					if (!SIDES.contains(condition.getKey()) || !condition.getValue().isJsonPrimitive()) {
+						continue;
+					}
+					var values = new java.util.LinkedHashSet<String>();
+					for (String value : condition.getValue().getAsString().split("\\|")) {
+						values.add("none".equals(value) ? "false" : "low".equals(value) ? "true" : "tall");
+					}
+					values.remove("tall");
+					if (values.isEmpty()) {
+						keep = false;
+					} else {
+						condition.setValue(new JsonPrimitive(String.join("|", values)));
+					}
+				}
+			}
+			if (keep) {
+				kept.add(part);
+			}
+		}
+		json.getAsJsonObject().add("multipart", kept);
 	}
 
 	/** 1.21 blockstates name the model with its folder ("ns:block/x"); 1.12.2 adds "block/" itself. */
@@ -221,6 +322,9 @@ public final class RuntimeResourcePack implements IResourcePack {
 
 	@Override
 	public boolean resourceExists(ResourceLocation location) {
+		if (this.vanilla) {
+			return this.vanillaGives(location);
+		}
 		String path = path(location);
 		return this.zip.getEntry(path) != null
 				|| path.endsWith(".lang") && this.zip.getEntry(path.substring(0, path.length() - 5) + ".json") != null;

@@ -258,6 +258,17 @@ final class ApiCarry {
 	 * the interface's other methods on the receiver, as the default methods do.
 	 */
 	static byte[] shadow(byte[] bytes, java.util.function.Predicate<String> unavailable, boolean defaults) {
+		return shadow(bytes, unavailable, defaults, call -> false);
+	}
+
+	/**
+	 * {@code restricted} ("owner.name desc"): static methods of the library that other packages can't call (its
+	 * package-private CollectPreconditions, ObjectArrays.checkElementsNotNull). The shadow is in another package, so
+	 * its calls to them go to their shadows, where they are public (newer Guava's ImmutableList.builderWithExpectedSize
+	 * threw IllegalAccessError: Refurbished Furniture's grill).
+	 */
+	static byte[] shadow(byte[] bytes, java.util.function.Predicate<String> unavailable, boolean defaults,
+			java.util.function.Predicate<String> restricted) {
 		var node = new xyz.wagyourtail.jvmdg.shade.asm.tree.ClassNode();
 		new xyz.wagyourtail.jvmdg.shade.asm.ClassReader(bytes).accept(node, 0);
 		String original = node.name;
@@ -323,6 +334,11 @@ final class ApiCarry {
 				} else if (insn instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.MethodInsnNode call && original.equals(call.owner)
 						&& call.getOpcode() == xyz.wagyourtail.jvmdg.shade.asm.Opcodes.INVOKESTATIC && privateStatics.contains(call.name + call.desc)) {
 					call.owner = shadow;
+					call.itf = false;
+				} else if (insn instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.MethodInsnNode call && !original.equals(call.owner)
+						&& call.getOpcode() == xyz.wagyourtail.jvmdg.shade.asm.Opcodes.INVOKESTATIC
+						&& restricted.test(call.owner + "." + call.name + " " + call.desc)) {
+					call.owner = SHADOW + call.owner;
 					call.itf = false;
 				} else if (insn instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.InvokeDynamicInsnNode indy) {
 					for (int i = 0; i < indy.bsmArgs.length; i++) {
@@ -445,6 +461,31 @@ final class ApiCarry {
 		}
 		int added = 0;
 		try (var zip = new ZipFile(library); var jar = new ZipOutputStream(new FileOutputStream(out))) {
+			// the static methods of the classes the game has that a shadow (another package) can't call: their shadows'
+			var restricted = new java.util.HashSet<String>();
+			for (ZipEntry entry : Collections.list(zip.entries())) {
+				String path = entry.getName();
+				if (!path.endsWith(".class") || path.startsWith("META-INF/") || !target.exists(path.substring(0, path.length() - 6))) {
+					continue;
+				}
+				try (InputStream in = zip.getInputStream(entry)) {
+					var reader = new xyz.wagyourtail.jvmdg.shade.asm.ClassReader(ModJar.readAll(in));
+					boolean publicClass = (reader.getAccess() & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PUBLIC) != 0;
+					String owner = reader.getClassName();
+					reader.accept(new xyz.wagyourtail.jvmdg.shade.asm.ClassVisitor(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ASM9) {
+						@Override
+						public xyz.wagyourtail.jvmdg.shade.asm.MethodVisitor visitMethod(int access, String name, String desc, String signature,
+								String[] exceptions) {
+							boolean isStatic = (access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_STATIC) != 0;
+							boolean hidden = (access & (xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PUBLIC | xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PRIVATE)) == 0;
+							if (isStatic && !name.startsWith("<") && (!publicClass || hidden)) {
+								restricted.add(owner + "." + name + " " + desc);
+							}
+							return null;
+						}
+					}, xyz.wagyourtail.jvmdg.shade.asm.ClassReader.SKIP_CODE);
+				}
+			}
 			for (ZipEntry entry : Collections.list(zip.entries())) {
 				String path = entry.getName();
 				if (!path.endsWith(".class") || path.startsWith("META-INF/") || path.endsWith("module-info.class") || path.endsWith("package-info.class")) {
@@ -466,7 +507,7 @@ final class ApiCarry {
 				// a nested class of the original the game lacks is added here under its name (opened), so the shadow's
 				// methods may use it (fastutil 8 Object2LongMaps.fastIterable makes an Object2LongMaps$1); one the game has
 				// is the game's own class
-				jar.write(present ? shadow(bytes, target::exists, true) : open(bytes));
+				jar.write(present ? shadow(bytes, target::exists, true, restricted::contains) : open(bytes));
 				jar.closeEntry();
 				added++;
 			}

@@ -99,6 +99,16 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 	// --- the 1.21 codecs of blocks (datapack block definitions): the properties aren't serialized ----------------------
 
 	@SuppressWarnings("unchecked")
+	/**
+	 * 1.21 {@code Block.isExceptionForConnection}: blocks fences, walls, bars and panes don't connect to although they
+	 * are full (leaves, barrier, pumpkins, melon, shulker boxes).
+	 */
+	public static boolean isExceptionForConnection(IBlockState state) {
+		net.minecraft.block.Block block = state.getBlock();
+		return block instanceof net.minecraft.block.BlockLeaves || block instanceof net.minecraft.block.BlockShulkerBox
+				|| block == Blocks.BARRIER || block == Blocks.PUMPKIN || block == Blocks.LIT_PUMPKIN || block == Blocks.MELON_BLOCK;
+	}
+
 	public static <B extends net.minecraft.block.Block> com.mojang.serialization.codecs.RecordCodecBuilder<B, BlockProperties> propertiesCodec() {
 		return com.mojang.serialization.Codec.unit(BlockProperties::of).fieldOf("properties")
 				.forGetter(block -> block instanceof io.github.xponer2.translator.block.PropertiesBlock properties ? properties.getProperties() : BlockProperties.of());

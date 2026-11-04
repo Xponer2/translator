@@ -284,3 +284,7 @@ C	net/neoforged/neoforge/event/server/ServerStoppedEvent	io/github/xponer2/trans
 # the /tick state: 1.12.2 always ticks at 20 a second (Create asks it for the speed of its machines)
 C	net/minecraft/world/TickRateManager	io/github/xponer2/translator/world/TickRateManager
 C	net/minecraft/server/ServerTickRateManager	io/github/xponer2/translator/world/TickRateManager
+# 1.21's data fixers: the data of a mod on 1.12.2 is its own version already (a fixer that changes nothing)
+C	net/minecraft/util/datafix/DataFixers	io/github/xponer2/translator/util/DataFixers
+# entity capabilities on 1.12.2 Forge capabilities (Curios, Accessories)
+C	net/neoforged/neoforge/capabilities/EntityCapability	io/github/xponer2/translator/capabilities/EntityCapability

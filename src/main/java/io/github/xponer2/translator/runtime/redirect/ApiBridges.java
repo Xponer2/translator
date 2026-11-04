@@ -117,6 +117,20 @@ public final class ApiBridges {
 		return io.github.xponer2.translator.recipe.RecipeManager.get();
 	}
 
+	/** NeoForge {@code entity.getCapability(capability)}: the providers registered for the entity's type. */
+	@javax.annotation.Nullable
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static Object getCapability(net.minecraft.entity.Entity entity, io.github.xponer2.translator.capabilities.EntityCapability capability) {
+		return capability == null ? null : capability.getCapability(entity);
+	}
+
+	@javax.annotation.Nullable
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static Object getCapability(net.minecraft.entity.Entity entity, io.github.xponer2.translator.capabilities.EntityCapability capability,
+			Object context) {
+		return capability == null ? null : capability.getCapability(entity, context);
+	}
+
 	/** 1.21 {@code level.tickRateManager()}: 1.12.2 always ticks at 20 a second. */
 	public static io.github.xponer2.translator.world.TickRateManager tickRateManager(World world) {
 		return io.github.xponer2.translator.world.TickRateManager.INSTANCE;
