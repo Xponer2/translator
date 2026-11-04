@@ -35,14 +35,21 @@ import java.util.function.Supplier;
 public class CreativeModeTab implements RegistrationCallback {
     private final ITextComponent title;
     private final Supplier<ItemStack> icon;
-    private final DisplayItemsGenerator generator;
+    /**
+     * The 1.21 field name: a mod's subclass sets it after the constructor (SuperMartijn642's CreativeItemGroup gives
+     * its own item list so; its constructor was skipped without the field, and with it every tab of those mods).
+     */
+    protected DisplayItemsGenerator displayItemsGenerator;
+    /** 1.21 {@code background} (a tab's background texture, SuperMartijn642 sets it): 1.12.2 draws its own. */
+    @Nullable
+    protected ResourceLocation background;
     @Nullable
     private CreativeTabs vanilla;
 
     protected CreativeModeTab(Builder builder) {
         this.title = builder.title;
         this.icon = builder.icon;
-        this.generator = builder.generator;
+        this.displayItemsGenerator = builder.generator;
     }
 
     public static Builder builder() {
@@ -61,7 +68,7 @@ public class CreativeModeTab implements RegistrationCallback {
     public List<ItemStack> getDisplayItems() {
         var stacks = new ArrayList<ItemStack>();
         try {
-            this.generator.accept(ItemDisplayParameters.INSTANCE, stack -> {
+            this.displayItemsGenerator.accept(ItemDisplayParameters.INSTANCE, stack -> {
                 if (stack != null && !stack.isEmpty()) {
                     stacks.add(stack);
                 }
