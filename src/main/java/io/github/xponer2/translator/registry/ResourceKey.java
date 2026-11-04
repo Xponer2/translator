@@ -49,6 +49,11 @@ public final class ResourceKey<T> {
         return this.location;
     }
 
+    /** 1.21 {@code registryKey()}: the key of the registry this key belongs to. */
+    public ResourceKey<? extends Registry<?>> registryKey() {
+        return createRegistryKey(this.registryName);
+    }
+
     public ResourceLocation registry() {
         return this.registryName;
     }

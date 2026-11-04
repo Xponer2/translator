@@ -91,4 +91,9 @@ public class PayloadRegistrar {
                                                                                 IPayloadHandler<T> handler) {
         return this.playBidirectional(type, codec, handler);
     }
+
+    /** 1.21 {@code executesOn(thread)}: the handlers run on the main thread or the network thread; here as registered. */
+    public PayloadRegistrar executesOn(Object thread) {
+        return this;
+    }
 }

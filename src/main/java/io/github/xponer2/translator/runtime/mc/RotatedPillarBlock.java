@@ -11,13 +11,41 @@
 package io.github.xponer2.translator.runtime.mc;
 
 import io.github.xponer2.translator.block.BlockProperties;
+import io.github.xponer2.translator.block.BlockStates;
 
 import net.minecraft.block.BlockRotatedPillar;
+import net.minecraft.block.state.BlockStateContainer;
+import net.minecraft.block.state.IBlockState;
 
-/** Facade of the 1.21 {@code RotatedPillarBlock} (logs, pillars): the 1.12.2 one, with properties. */
+/**
+ * Facade of the 1.21 {@code RotatedPillarBlock} (logs, pillars): the 1.12.2 one, with properties; a subclass adds its
+ * own block state properties in createBlockStateDefinition after the axis (super's), as in 1.21.
+ */
 public class RotatedPillarBlock extends BlockRotatedPillar {
 	public RotatedPillarBlock(BlockProperties properties) {
 		super(properties.material(), properties.mapColor());
 		properties.applyTo(this, this::setSoundType);
+	}
+
+	protected void createBlockStateDefinition(BlockStateContainer.Builder builder) {
+		builder.add(AXIS);
+	}
+
+	@Override
+	protected BlockStateContainer createBlockState() {
+		var builder = new io.github.xponer2.translator.block.LazyStateContainer.Builder(this);
+		this.createBlockStateDefinition(builder);
+		return builder.build();
+	}
+
+	@Override
+	public int getMetaFromState(IBlockState state) {
+		return BlockStates.toMeta(state);
+	}
+
+	@Override
+	@SuppressWarnings("deprecation")
+	public IBlockState getStateFromMeta(int meta) {
+		return BlockStates.fromMeta(this, meta);
 	}
 }

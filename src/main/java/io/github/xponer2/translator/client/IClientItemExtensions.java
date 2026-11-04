@@ -22,6 +22,29 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public interface IClientItemExtensions {
+	/** Where a font is asked for (1.21 {@code IClientItemExtensions.FontContext}). */
+	enum FontContext {
+		ITEM_COUNT,
+		TOOLTIP
+	}
+
+	/** 1.21 {@code getFont(stack, context)}: null, the game's font. */
+	@javax.annotation.Nullable
+	default net.minecraft.client.gui.FontRenderer getFont(ItemStack stack, FontContext context) {
+		return null;
+	}
+
+	/** 1.21 {@code getHumanoidArmorModel(entity, stack, slot, original)}: the original model by default. */
+	default net.minecraft.client.model.ModelBiped getHumanoidArmorModel(net.minecraft.entity.EntityLivingBase entity, ItemStack stack,
+			net.minecraft.inventory.EntityEquipmentSlot slot, net.minecraft.client.model.ModelBiped original) {
+		return original;
+	}
+
+	/** 1.21 {@code getCustomRenderer()}: the renderer of the item's built-in model (the shared 1.12.2 one by default). */
+	default net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer getCustomRenderer() {
+		return net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer.instance;
+	}
+
 	/** True when the extension replaced the vanilla transform (1.12.2 still applies it; kept for the 1.21 shape). */
 	default boolean applyHandTransform(EntityPlayerSP player, EnumHandSide arm, ItemStack stack, float partialTick, float equipProcess, float swingProcess) {
 		return false;

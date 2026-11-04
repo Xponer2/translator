@@ -91,6 +91,69 @@ public class VoxelShape {
 		return this;
 	}
 
+	/** 1.21 {@code clip(from, to, pos)}: where the line hits the shape placed at the block, null when it misses. */
+	@javax.annotation.Nullable
+	public net.minecraft.util.math.RayTraceResult clip(net.minecraft.util.math.Vec3d from, net.minecraft.util.math.Vec3d to,
+			net.minecraft.util.math.BlockPos pos) {
+		net.minecraft.util.math.RayTraceResult nearest = null;
+		double best = Double.MAX_VALUE;
+		for (var box : this.boxes) {
+			var hit = box.offset(pos).calculateIntercept(from, to);
+			if (hit != null) {
+				double distance = hit.hitVec.squareDistanceTo(from);
+				if (distance < best) {
+					best = distance;
+					nearest = new net.minecraft.util.math.RayTraceResult(hit.hitVec, hit.sideHit, pos);
+				}
+			}
+		}
+		return nearest;
+	}
+
+	/**
+	 * 1.21 {@code getFaceShape(face)}: the part of the shape on that face of the block, flattened onto it (the boxes
+	 * touching the face).
+	 */
+	public VoxelShape getFaceShape(net.minecraft.util.EnumFacing face) {
+		var faces = new ArrayList<AxisAlignedBB>();
+		final double edge = 1.0E-7;
+		for (var box : this.boxes) {
+			switch (face) {
+				case DOWN -> {
+					if (box.minY <= edge) {
+						faces.add(new AxisAlignedBB(box.minX, 0, box.minZ, box.maxX, 0, box.maxZ));
+					}
+				}
+				case UP -> {
+					if (box.maxY >= 1 - edge) {
+						faces.add(new AxisAlignedBB(box.minX, 1, box.minZ, box.maxX, 1, box.maxZ));
+					}
+				}
+				case NORTH -> {
+					if (box.minZ <= edge) {
+						faces.add(new AxisAlignedBB(box.minX, box.minY, 0, box.maxX, box.maxY, 0));
+					}
+				}
+				case SOUTH -> {
+					if (box.maxZ >= 1 - edge) {
+						faces.add(new AxisAlignedBB(box.minX, box.minY, 1, box.maxX, box.maxY, 1));
+					}
+				}
+				case WEST -> {
+					if (box.minX <= edge) {
+						faces.add(new AxisAlignedBB(0, box.minY, box.minZ, 0, box.maxY, box.maxZ));
+					}
+				}
+				default -> {
+					if (box.maxX >= 1 - edge) {
+						faces.add(new AxisAlignedBB(1, box.minY, box.minZ, 1, box.maxY, box.maxZ));
+					}
+				}
+			}
+		}
+		return faces.isEmpty() ? EMPTY : new VoxelShape(faces);
+	}
+
 	public double min(net.minecraft.util.EnumFacing.Axis axis) {
 		return this.isEmpty() ? Double.POSITIVE_INFINITY : axis == net.minecraft.util.EnumFacing.Axis.X ? this.bounds().minX : axis == net.minecraft.util.EnumFacing.Axis.Y ? this.bounds().minY : this.bounds().minZ;
 	}

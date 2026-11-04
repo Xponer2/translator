@@ -28,6 +28,11 @@ public class BlockParticleOption extends LegacyParticleOptions {
 		this.state = state;
 	}
 
+	/** 1.21 {@code setPos(pos)}: the position of the block the particle shows (1.12.2 particles take only the state). */
+	public BlockParticleOption setPos(net.minecraft.util.math.BlockPos pos) {
+		return this;
+	}
+
 	public IBlockState getState() {
 		return this.state;
 	}

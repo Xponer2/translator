@@ -26,6 +26,12 @@ public final class LootContextParams {
 	public static final Param<IBlockState> BLOCK_STATE = new Param<>("block_state");
 	public static final Param<TileEntity> BLOCK_ENTITY = new Param<>("block_entity");
 	public static final Param<Float> EXPLOSION_RADIUS = new Param<>("explosion_radius");
+	public static final Param<net.minecraft.entity.player.EntityPlayer> LAST_DAMAGE_PLAYER = new Param<>("last_damage_player");
+	public static final Param<net.minecraft.util.DamageSource> DAMAGE_SOURCE = new Param<>("damage_source");
+	public static final Param<Entity> ATTACKING_ENTITY = new Param<>("attacking_entity");
+	public static final Param<Entity> DIRECT_ATTACKING_ENTITY = new Param<>("direct_attacking_entity");
+	public static final Param<Integer> ENCHANTMENT_LEVEL = new Param<>("enchantment_level");
+	public static final Param<Boolean> ENCHANTMENT_ACTIVE = new Param<>("enchantment_active");
 
 	private LootContextParams() {
 	}

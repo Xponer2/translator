@@ -87,6 +87,13 @@ public final class EntityType<T extends Entity> {
         return this.entry;
     }
 
+    /** 1.21 {@code getDefaultLootTable()}: {@code <namespace>:entities/<path>}, the loot table 1.21 gives the mob. */
+    public ResourceKey<net.minecraft.world.storage.loot.LootTable> getDefaultLootTable() {
+        var id = getKey(this);
+        return ResourceKey.create(io.github.xponer2.translator.runtime.redirect.LootBridges.LOOT_TABLE, id == null
+                ? new ResourceLocation("minecraft", "empty") : new ResourceLocation(id.getNamespace(), "entities/" + id.getPath()));
+    }
+
     @SuppressWarnings("unchecked")
     public Class<? extends T> getEntityClass() {
         return this.entry == null ? (Class<? extends T>) Entity.class : (Class<? extends T>) this.entry.getEntityClass();

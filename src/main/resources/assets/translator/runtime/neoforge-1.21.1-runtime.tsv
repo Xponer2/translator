@@ -356,3 +356,9 @@ M	net/minecraft/world/entity/player/Player	canUseGameMasterBlocks()	canUseComman
 C	net/minecraft/world/level/GameRules$Value	io/github/xponer2/translator/world/GameRuleValue
 C	net/minecraft/world/level/GameRules$BooleanValue	io/github/xponer2/translator/world/GameRuleValue$BooleanValue
 C	net/minecraft/world/level/GameRules$IntegerValue	io/github/xponer2/translator/world/GameRuleValue$IntegerValue
+F	net/minecraft/client/model/PlayerModel	attackTime	swingProgress
+F	net/minecraft/client/model/PlayerModel	riding	isRiding
+F	net/minecraft/client/model/PlayerModel	young	isChild
+F	net/minecraft/client/model/HumanoidModel	attackTime	swingProgress
+F	net/minecraft/client/model/HumanoidModel	riding	isRiding
+F	net/minecraft/client/model/HumanoidModel	young	isChild
