@@ -187,6 +187,26 @@ public final class WorldGapBridges {
 		};
 	}
 
+	// --- bone meal on a vanilla block ------------------------------------------------------------------------------------
+
+	/** 1.21 {@code bonemealable.performBonemeal(level, random, pos, state)}: 1.12.2 grow (8 mods grow vanilla plants so). */
+	public static void performBonemeal(net.minecraft.block.IGrowable block, net.minecraft.world.WorldServer world, java.util.Random random, BlockPos pos,
+			net.minecraft.block.state.IBlockState state) {
+		block.grow(world, random, pos, state);
+	}
+
+	/** 1.21 {@code bonemealable.isValidBonemealTarget(level, pos, state)}: 1.12.2 canGrow on that side. */
+	public static boolean isValidBonemealTarget(net.minecraft.block.IGrowable block, World world, BlockPos pos, net.minecraft.block.state.IBlockState state) {
+		return block.canGrow(world, pos, state, world.isRemote);
+	}
+
+	// --- loot tables of the data packs ---------------------------------------------------------------------------------
+
+	/** 1.21 {@code server.reloadableRegistries()}: the loot tables by key (the world's LootTableManager). */
+	public static io.github.xponer2.translator.world.ReloadableRegistries reloadableRegistries(net.minecraft.server.MinecraftServer server) {
+		return new io.github.xponer2.translator.world.ReloadableRegistries(server);
+	}
+
 	// --- sounds -------------------------------------------------------------------------------------------------------------
 
 	/** 1.21 {@code level.playSound(player, x, y, z, soundHolder, source, volume, pitch)} (60 call sites). */

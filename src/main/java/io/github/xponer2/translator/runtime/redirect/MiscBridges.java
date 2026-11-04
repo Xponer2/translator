@@ -1627,6 +1627,79 @@ public final class MiscBridges {
 		return plain.length() <= maxLength ? plain : plain.substring(0, maxLength);
 	}
 
+	/**
+	 * 1.21 {@code text.visit(consumer)}: the consumer gets each piece of the text (the component's own, then its
+	 * siblings', as 1.12.2 getUnformattedText reads them) until it gives a result (10 mods: JEI, Jade, Patchouli, AE2,
+	 * Xaero's read names and tooltips so). The consumer is the carried FormattedText.ContentConsumer.
+	 */
+	public static Optional<Object> visit(ITextComponent text, Object consumer) {
+		for (ITextComponent part : text) {
+			Optional<Object> result = accept(consumer, part.getUnformattedComponentText());
+			if (result.isPresent()) {
+				return result;
+			}
+		}
+		return Optional.empty();
+	}
+
+	/** 1.21 {@code text.visit(styledConsumer, style)}: each piece with its style, on top of the given one. */
+	public static Optional<Object> visit(ITextComponent text, Object consumer, @Nullable Style base) {
+		for (ITextComponent part : text) {
+			Style style = part.getStyle().createDeepCopy();
+			if (base != null) {
+				if (style.getColor() == null) {
+					style.setColor(base.getColor());
+				}
+				style.setBold(style.getBold() || base.getBold());
+				style.setItalic(style.getItalic() || base.getItalic());
+				style.setUnderlined(style.getUnderlined() || base.getUnderlined());
+				style.setStrikethrough(style.getStrikethrough() || base.getStrikethrough());
+				style.setObfuscated(style.getObfuscated() || base.getObfuscated());
+			}
+			Optional<Object> result = accept(consumer, style, part.getUnformattedComponentText());
+			if (result.isPresent()) {
+				return result;
+			}
+		}
+		return Optional.empty();
+	}
+
+	/** The one method of a carried 1.21 consumer (accept(String) or accept(Style, String)), by its class. */
+	private static final ClassValue<java.lang.reflect.Method[]> ACCEPT = new ClassValue<>() {
+		@Override
+		protected java.lang.reflect.Method[] computeValue(Class<?> type) {
+			var found = new java.lang.reflect.Method[3];
+			for (var method : type.getMethods()) {
+				if ("accept".equals(method.getName()) && method.getParameterCount() <= 2 && !method.isBridge() && found[method.getParameterCount()] == null) {
+					method.setAccessible(true);
+					found[method.getParameterCount()] = method;
+				}
+			}
+			return found;
+		}
+	};
+
+	@SuppressWarnings("unchecked")
+	private static Optional<Object> accept(Object consumer, Object... args) {
+		java.lang.reflect.Method method = consumer == null ? null : ACCEPT.get(consumer.getClass())[args.length];
+		if (method == null) {
+			return Optional.empty();
+		}
+		try {
+			Object result = method.invoke(consumer, args);
+			return result instanceof Optional<?> optional ? (Optional<Object>) optional : Optional.empty();
+		} catch (ReflectiveOperationException e) {
+			Throwable cause = e.getCause() != null ? e.getCause() : e;
+			if (cause instanceof RuntimeException runtime) {
+				throw runtime;
+			}
+			if (cause instanceof Error error) {
+				throw error;
+			}
+			throw new IllegalStateException(cause);
+		}
+	}
+
 	public static Style applyFormat(Style style, TextFormatting format) {
 		return format(style.createShallowCopy(), format);
 	}

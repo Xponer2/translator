@@ -314,3 +314,9 @@ R	net/minecraftforge/event/entity/living/LivingDropsEvent	io/github/xponer2/tran
 R	net/minecraft/client/renderer/tileentity/TileEntityRendererDispatcher	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/client/gui/GuiYesNo	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/client/gui/GuiConfirmOpenLink	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/init/PotionTypes	io/github/xponer2/translator/runtime/redirect/PotionHolders
+R	net/minecraft/server/MinecraftServer	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/block/IGrowable	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/client/util/ITooltipFlag	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/renderer/tileentity/TileEntityItemStackRenderer	io/github/xponer2/translator/runtime/redirect/ClientGapBridges

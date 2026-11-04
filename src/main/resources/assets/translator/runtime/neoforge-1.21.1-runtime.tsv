@@ -395,3 +395,7 @@ M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	getFovModifier()	g
 M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	getNewFovModifier()	getNewfov
 M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	setNewFovModifier(float)	setNewfov
 M	net/minecraft/world/entity/ai/attributes/AttributeInstance	removeModifier(net.minecraft.resources.ResourceLocation)	removeModifierById
+C	net/minecraft/server/ReloadableServerRegistries$Holder	io/github/xponer2/translator/world/ReloadableRegistries
+C	net/minecraft/world/item/TooltipFlag$Default	net/minecraft/client/util/ITooltipFlag$TooltipFlags
+C	net/minecraft/client/KeyboardHandler	io/github/xponer2/translator/client/KeyboardHandler
+F	net/minecraft/world/entity/EquipmentSlot$Type	HUMANOID_ARMOR	ARMOR

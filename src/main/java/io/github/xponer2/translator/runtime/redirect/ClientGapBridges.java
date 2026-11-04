@@ -38,7 +38,25 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public final class ClientGapBridges {
+	/** 1.21 {@code TooltipFlag.NORMAL} / {@code ADVANCED} (9 mods build tooltips with them): the 1.12.2 flags. */
+	public static final net.minecraft.client.util.ITooltipFlag.TooltipFlags NORMAL = net.minecraft.client.util.ITooltipFlag.TooltipFlags.NORMAL;
+	public static final net.minecraft.client.util.ITooltipFlag.TooltipFlags ADVANCED = net.minecraft.client.util.ITooltipFlag.TooltipFlags.ADVANCED;
+
 	private ClientGapBridges() {
+	}
+
+	/**
+	 * 1.21 {@code new BlockEntityWithoutLevelRenderer(dispatcher, models)} (14 mods; a subclass's super() reaches the
+	 * facade by its S row): the facade, which draws nothing of its own.
+	 */
+	public static net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer newTileEntityItemStackRenderer(
+			net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher dispatcher, io.github.xponer2.translator.client.model.EntityModelSet models) {
+		return new io.github.xponer2.translator.client.BlockEntityWithoutLevelRenderer(dispatcher, models);
+	}
+
+	/** 1.21 {@code minecraft.keyboardHandler}: the clipboard of 1.12.2. */
+	public static io.github.xponer2.translator.client.KeyboardHandler keyboardHandler(Minecraft minecraft) {
+		return io.github.xponer2.translator.client.KeyboardHandler.INSTANCE;
 	}
 
 	/** 1.21 {@code modelManager.getAtlas(id)}: 1.12.2 stitches blocks and items into one atlas. */
