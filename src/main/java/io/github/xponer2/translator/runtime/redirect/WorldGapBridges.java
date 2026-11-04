@@ -175,6 +175,18 @@ public final class WorldGapBridges {
 		return color == net.minecraft.item.EnumDyeColor.SILVER ? "light_gray" : color.getName();
 	}
 
+	// --- LazyLoadedValue ----------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code new LazyLoadedValue(supplier)}: 1.12.2's LazyLoadBase loading from it (60 call sites: Jade, Twilight Forest...). */
+	public static <T> net.minecraft.util.LazyLoadBase<T> newLazyLoadBase(java.util.function.Supplier<T> supplier) {
+		return new net.minecraft.util.LazyLoadBase<T>() {
+			@Override
+			protected T load() {
+				return supplier.get();
+			}
+		};
+	}
+
 	// --- crash reports -----------------------------------------------------------------------------------------------------
 
 	/** 1.21 {@code category.setDetail(name, value)}: 1.12.2 addCrashSection (a supplier of the value: addDetail). */

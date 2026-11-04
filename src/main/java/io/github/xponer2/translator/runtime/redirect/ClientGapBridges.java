@@ -132,6 +132,34 @@ public final class ClientGapBridges {
 		return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
 	}
 
+	// --- humanoid models: 1.21 HumanoidModel / PlayerModel from a baked layer ------------------------------------------------
+
+	/** 1.21 {@code new HumanoidModel(root)}: a biped with the layer's parts (armor and mob models of 11 mods). */
+	public static net.minecraft.client.model.ModelBiped newModelBiped(io.github.xponer2.translator.client.model.ModelPart root) {
+		return new io.github.xponer2.translator.client.model.HumanoidModel<>(root);
+	}
+
+	public static net.minecraft.client.model.ModelBiped newModelBiped(io.github.xponer2.translator.client.model.ModelPart root,
+			java.util.function.Function<?, ?> renderType) {
+		return new io.github.xponer2.translator.client.model.HumanoidModel<>(root, renderType);
+	}
+
+	public static net.minecraft.client.model.ModelBiped newModelBiped(net.minecraft.client.model.ModelRenderer root) {
+		return newModelBiped(io.github.xponer2.translator.client.model.ModelPart.of(root));
+	}
+
+	public static net.minecraft.client.model.ModelBiped newModelBiped(net.minecraft.client.model.ModelRenderer root,
+			java.util.function.Function<?, ?> renderType) {
+		return newModelBiped(io.github.xponer2.translator.client.model.ModelPart.of(root), renderType);
+	}
+
+	/** 1.21 {@code new PlayerModel(root, slim)}: a player model with the layer's parts and its jacket, sleeves and pants. */
+	public static net.minecraft.client.model.ModelPlayer newModelPlayer(io.github.xponer2.translator.client.model.ModelPart root, boolean slim) {
+		var model = new net.minecraft.client.model.ModelPlayer(0.0F, slim);
+		io.github.xponer2.translator.client.model.HumanoidModel.assign(model, root);
+		return model;
+	}
+
 	// --- thrown items: 1.21 ThrownItemRenderer ----------------------------------------------------------------------------
 
 	/**

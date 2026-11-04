@@ -389,3 +389,8 @@ M	net/minecraft/world/level/storage/ServerLevelData	setGameTime(long)	setWorldTo
 # X: calls redirected although 1.12.2 has the member (its meaning differs): the 1.21 dye names (silver is light_gray)
 X	net/minecraft/item/EnumDyeColor	getName	()Ljava/lang/String;	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
 X	net/minecraft/item/EnumDyeColor	getTranslationKey	()Ljava/lang/String;	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+# NeoForge ComputeFovModifierEvent is Forge 1.12.2 FOVUpdateEvent (bows' zoom: Twilight Forest, every mod bow)
+M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	getPlayer()	getEntity
+M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	getFovModifier()	getFov
+M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	getNewFovModifier()	getNewfov
+M	net/neoforged/neoforge/client/event/ComputeFovModifierEvent	setNewFovModifier(float)	setNewfov

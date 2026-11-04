@@ -307,3 +307,5 @@ R	net/minecraft/world/storage/WorldInfo	io/github/xponer2/translator/runtime/red
 R	net/minecraft/world/storage/MapData	io/github/xponer2/translator/runtime/redirect/CarriedBridges
 R	net/minecraft/client/renderer/entity/RenderSnowball	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/client/Minecraft	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/model/ModelPlayer	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/util/LazyLoadBase	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
