@@ -42,6 +42,14 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
         this.validBlocks = validBlocks;
     }
 
+    /**
+     * 1.21 {@code new BlockEntityType(factory, validBlocks, dataType)} (the data fixer type, unused): Refined Storage
+     * makes its types this way, not through the builder; without it none of its block entities were made.
+     */
+    public BlockEntityType(BlockEntitySupplier<? extends T> factory, Set<Block> validBlocks, @Nullable com.mojang.datafixers.types.Type<?> dataType) {
+        this(factory, validBlocks);
+    }
+
     @Nullable
     public T create(BlockPos pos, IBlockState state) {
         var tile = this.factory.create(pos, state);

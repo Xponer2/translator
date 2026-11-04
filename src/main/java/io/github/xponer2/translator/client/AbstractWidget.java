@@ -167,7 +167,10 @@ public abstract class AbstractWidget extends GuiButton implements GuiEventListen
 
 	@Override
 	public boolean isMouseOver(double mouseX, double mouseY) {
-		return this.clicked(mouseX, mouseY);
+		// the bounds themselves, as 1.21: a mod's clicked may ask isMouseOver (Create's AbstractSimiWidget), and through
+		// clicked the two called each other until the stack overflowed (Create's toolbox screen)
+		return this.active && this.visible && mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width
+				&& mouseY < this.y + this.height;
 	}
 
 	@Override
