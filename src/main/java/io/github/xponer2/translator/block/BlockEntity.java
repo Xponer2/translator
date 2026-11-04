@@ -148,7 +148,13 @@ public class BlockEntity extends TileEntity implements ITickable {
 			}
 		}
 		if (this.ticker != null) {
-			this.ticker.tick(this.world, this.pos, this.getBlockState(), this);
+			try {
+				this.ticker.tick(this.world, this.pos, this.getBlockState(), this);
+			} catch (RuntimeException | LinkageError e) {
+				// a part of the 1.21 game the Translator lacks (Create's advancements, when a player placed the block):
+				// logged once, where it would stop the server; the block entity ticks on
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".tick", e);
+			}
 		}
 	}
 

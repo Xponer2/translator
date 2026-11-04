@@ -63,6 +63,19 @@ public final class ItemBridges {
 		return new TextComponentString(item.getItemStackDisplayName(stack));
 	}
 
+	/**
+	 * 1.21 {@code isComplex()}: whether the item sends its own data packet (a map). It isn't 1.12.2's {@code isMap()},
+	 * which means an ItemMapBase that the player's tick casts to (Twilight Forest's maps crashed it): a 1.21 class that
+	 * declares it is asked, a 1.12.2 one answers with isMap.
+	 */
+	public static boolean isComplex(Item item) {
+		try {
+			return (Boolean) item.getClass().getMethod("isComplex").invoke(item);
+		} catch (ReflectiveOperationException | ClassCastException e) {
+			return item.isMap();
+		}
+	}
+
 	public static Item asItem(Item item) {
 		return item;
 	}

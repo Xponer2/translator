@@ -519,7 +519,11 @@ final class MethodGuard {
 			changed |= this.uniqueMissingShadows(node);
 		}
 		changed |= this.addBridges(node);
+		changed |= this.addEntityInitBridge(node);
 		changed |= this.addDefaultConstructor(node);
+		if (!isMixin(node)) {
+			changed |= this.implementAbstract(node);
+		}
 		for (int index = 0; index < node.methods.size(); index++) {
 			MethodNode method = node.methods.get(index);
 			if (method.instructions.size() == 0) {
@@ -584,6 +588,133 @@ final class MethodGuard {
 	 * it was an override in 1.21), or when the parameters are narrower and the supertype's method is abstract (no
 	 * bridge for an overload like equals(Foo) next to equals(Object)).
 	 */
+	private static final String DATA_BUILDER = "io/github/xponer2/translator/entity/SynchedDataBuilder";
+	private static final String DEFINE_DATA = "entityInit (L" + DATA_BUILDER + ";)V";
+
+	/**
+	 * A mod's mob (a LivingEntity or Mob, 1.12.2 classes) defines its data in {@code defineSynchedData(builder)}, which
+	 * the table names entityInit but 1.12.2 never calls with a builder: its data parameters stayed unregistered (every
+	 * read of them threw). The first class of the chain that defines them gets the 1.12.2 entityInit(), which calls
+	 * the one with the builder after its superclass's.
+	 */
+	/**
+	 * A 1.12.2 method that is abstract where the 1.21 one had a default (Container.startOpen is IInventory's abstract
+	 * openInventory): a mod class that didn't override it throws AbstractMethodError when the game calls it (Tom's
+	 * Simple Storage's level emitter menu, opened). It gets one that does nothing: logged once, returns 0, false,
+	 * an empty name or null.
+	 */
+	private boolean implementAbstract(ClassNode node) {
+		if ((node.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) != 0) {
+			return false;
+		}
+		var concrete = new java.util.HashSet<String>();
+		var names = new java.util.HashSet<String>();
+		for (MethodNode method : node.methods) {
+			concrete.add(method.name + " " + method.desc);
+			names.add(method.name);
+		}
+		var wanted = new java.util.LinkedHashMap<String, String>();
+		var todo = new java.util.ArrayDeque<String>();
+		var seen = new java.util.HashSet<String>();
+		todo.add(node.superName);
+		todo.addAll(node.interfaces);
+		while (!todo.isEmpty()) {
+			String current = todo.poll();
+			ClassInfo info = current == null || !seen.add(current) || isPlatform(current) ? null : this.info(current);
+			if (info == null) {
+				continue;
+			}
+			boolean modClass = this.mod.containsKey(current);
+			for (String member : info.methods) {
+				if (!info.abstractMethods.contains(member)) {
+					concrete.add(member);
+				} else if (!modClass) {
+					wanted.putIfAbsent(member, current);
+				}
+				if (modClass) {
+					// the converter may give a mod class bridges its listing doesn't have yet: same name, other types
+					names.add(member.substring(0, member.indexOf(' ')));
+				}
+			}
+			todo.addAll(info.supertypes());
+		}
+		boolean changed = false;
+		for (var entry : wanted.entrySet()) {
+			String member = entry.getKey();
+			String name = member.substring(0, member.indexOf(' '));
+			String desc = member.substring(member.indexOf(' ') + 1);
+			if (concrete.contains(member) || names.contains(name) || name.startsWith("<")) {
+				continue;
+			}
+			var stub = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, name, desc, null, null);
+			stub.instructions.add(new LdcInsnNode(node.name.replace('/', '.') + "." + name + " (abstract on 1.12.2 in "
+					+ entry.getValue().replace('/', '.') + ", a default in 1.21)"));
+			stub.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/runtime/RuntimeStubs", "missing",
+					"(Ljava/lang/String;)V", false));
+			Type returned = Type.getReturnType(desc);
+			switch (returned.getSort()) {
+				case Type.VOID -> stub.instructions.add(new InsnNode(Opcodes.RETURN));
+				case Type.LONG -> stub.instructions.add(new InsnNode(Opcodes.LCONST_0));
+				case Type.FLOAT -> stub.instructions.add(new InsnNode(Opcodes.FCONST_0));
+				case Type.DOUBLE -> stub.instructions.add(new InsnNode(Opcodes.DCONST_0));
+				case Type.OBJECT, Type.ARRAY -> {
+					if ("java/lang/String".equals(returned.getInternalName())) {
+						stub.instructions.add(new LdcInsnNode(""));
+					} else if ("net/minecraft/util/text/ITextComponent".equals(returned.getInternalName())) {
+						stub.instructions.add(new TypeInsnNode(Opcodes.NEW, "net/minecraft/util/text/TextComponentString"));
+						stub.instructions.add(new InsnNode(Opcodes.DUP));
+						stub.instructions.add(new LdcInsnNode(""));
+						stub.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "net/minecraft/util/text/TextComponentString", "<init>",
+								"(Ljava/lang/String;)V", false));
+					} else {
+						stub.instructions.add(new InsnNode(Opcodes.ACONST_NULL));
+					}
+				}
+				default -> stub.instructions.add(new InsnNode(Opcodes.ICONST_0));
+			}
+			if (returned.getSort() != Type.VOID) {
+				stub.instructions.add(new InsnNode(returned.getOpcode(Opcodes.IRETURN)));
+			}
+			stub.maxStack = 3;
+			stub.maxLocals = 1 + java.util.Arrays.stream(Type.getArgumentTypes(desc)).mapToInt(Type::getSize).sum();
+			node.methods.add(stub);
+			this.bridged.incrementAndGet();
+			changed = true;
+		}
+		return changed;
+	}
+
+	private boolean addEntityInitBridge(ClassNode node) {
+		boolean defines = false;
+		for (MethodNode method : node.methods) {
+			if ("entityInit ()V".equals(method.name + " " + method.desc)) {
+				return false;
+			}
+			defines |= DEFINE_DATA.equals(method.name + " " + method.desc);
+		}
+		if (!defines) {
+			return false;
+		}
+		// a mod superclass that defines data has the bridge already: one call of the builder method per entity
+		for (ClassInfo info = this.info(node.superName); info != null; info = info.superName == null ? null : this.info(info.superName)) {
+			if (info.methods.contains(DEFINE_DATA)) {
+				return false;
+			}
+		}
+		var bridge = new MethodNode(Opcodes.ACC_PROTECTED, "entityInit", "()V", null, null);
+		bridge.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		bridge.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, node.superName, "entityInit", "()V", false));
+		bridge.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		bridge.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		bridge.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, DATA_BUILDER, "of", "(Lnet/minecraft/entity/Entity;)L" + DATA_BUILDER + ";", false));
+		bridge.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, node.name, "entityInit", "(L" + DATA_BUILDER + ";)V", false));
+		bridge.instructions.add(new InsnNode(Opcodes.RETURN));
+		bridge.maxStack = 2;
+		bridge.maxLocals = 1;
+		node.methods.add(bridge);
+		return true;
+	}
+
 	private boolean addBridges(ClassNode node) {
 		if ((node.access & Opcodes.ACC_INTERFACE) != 0) {
 			return false;
@@ -963,6 +1094,25 @@ final class MethodGuard {
 								this.redirected.incrementAndGet();
 								changed = true;
 								break;
+							}
+						}
+						continue;
+					}
+					if (i == 1 && indy.bsmArgs[i] instanceof Handle jdk && isPlatform(jdk.getOwner())
+							&& (jdk.getTag() == Opcodes.H_INVOKEVIRTUAL || jdk.getTag() == Opcodes.H_INVOKEINTERFACE)
+							&& "java/lang/invoke/LambdaMetafactory".equals(indy.bsm.getOwner()) && indy.bsmArgs[2] instanceof Type instantiated) {
+						// a method reference to a JDK method of a 1.21 class that was a JDK type (list::add of a ListTag is
+						// AbstractList.add): 1.12.2's class (NBTTagList) isn't one, so the reference is to its helper's stand-in
+						Type[] captured = Type.getArgumentTypes(indy.desc);
+						Type[] params = instantiated.getArgumentTypes();
+						Type receiver = captured.length > 0 ? captured[0] : params.length > 0 ? params[0] : null;
+						if (receiver != null && receiver.getSort() == Type.OBJECT && !isPlatform(receiver.getInternalName())
+								&& !this.extendsPlatform(receiver.getInternalName(), jdk.getOwner())) {
+							String[] found = this.findRedirect(receiver.getInternalName(), jdk.getName(), jdk.getDesc(), false);
+							if (found != null && (found.length < 3 || found[2] == null)) {
+								indy.bsmArgs[i] = new Handle(Opcodes.H_INVOKESTATIC, found[0], jdk.getName(), found[1], false);
+								this.redirected.incrementAndGet();
+								changed = true;
 							}
 						}
 						continue;
@@ -1347,6 +1497,34 @@ final class MethodGuard {
 			if (info != null) {
 				todo.addAll(info.supertypes());
 			}
+		}
+		return false;
+	}
+
+	/** Whether the class is the JDK class or interface {@code platform} (through its own supertypes and the JDK's). */
+	private boolean extendsPlatform(String name, String platform) {
+		Class<?> wanted = platformClass(platform);
+		var todo = new java.util.ArrayDeque<String>();
+		var seen = new java.util.HashSet<String>();
+		todo.add(name);
+		while (!todo.isEmpty()) {
+			String current = todo.poll();
+			if (!seen.add(current)) {
+				continue;
+			}
+			if (isPlatform(current)) {
+				Class<?> found = platformClass(current);
+				if (current.equals(platform) || wanted != null && found != null && wanted.isAssignableFrom(found)) {
+					return true;
+				}
+				continue;
+			}
+			ClassInfo info = this.info(current);
+			if (info == null) {
+				// a class the converter doesn't know: taken as one, the reference stays as it is
+				return true;
+			}
+			todo.addAll(info.supertypes());
 		}
 		return false;
 	}

@@ -246,6 +246,23 @@ public final class RuntimeMods {
 		}
 	}
 
+	/**
+	 * What the 1.21.1 client does when it starts: the 1.21.1 {@code RenderSystem} the mods draw with (JourneyMap's
+	 * minimap) learns that this thread renders. Without it every call checks the thread and throws.
+	 */
+	private static void initRenderThread() {
+		try {
+			Class<?> renderSystem = Class.forName(ApiCarry.SHADOW.replace('/', '.') + "com.mojang.blaze3d.systems.RenderSystem", true, Launch.classLoader);
+			if (!(Boolean) renderSystem.getMethod("isOnRenderThread").invoke(null)) {
+				renderSystem.getMethod("initRenderThread").invoke(null);
+			}
+		} catch (ClassNotFoundException e) {
+			// no mod draws with it
+		} catch (Throwable t) {
+			LOGGER.warn("Can't set the render thread of the 1.21.1 RenderSystem: {}", t.toString());
+		}
+	}
+
 	/** The containers of a jar's mods: made for every mod before the first is started (ModList knows them all). */
 	private static void containers(ModJar jar) {
 		for (Map<String, String> mod : jar.mods) {
@@ -356,6 +373,7 @@ public final class RuntimeMods {
 			MinecraftForge.EVENT_BUS.post(new FMLCommonSetupEvent());
 			bar.step(FMLEnvironment.dist == Side.CLIENT ? "client setup" : "server setup");
 			if (FMLEnvironment.dist == Side.CLIENT) {
+				initRenderThread();
 				io.github.xponer2.translator.runtime.neoforge.ClientEvents.setup();
 				MinecraftForge.EVENT_BUS.post(new FMLClientSetupEvent());
 			} else {

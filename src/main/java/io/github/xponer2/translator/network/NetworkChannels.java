@@ -96,14 +96,21 @@ public final class NetworkChannels {
             LOGGER.warn("Received unknown payload {}", id);
             return null;
         }
-        return new Received(id, registration, registration.codec.decode(buffer));
+        try {
+            return new Received(id, registration, registration.codec.decode(buffer));
+        } catch (RuntimeException | LinkageError e) {
+            // a payload a mod can't read on 1.12.2 yet (a call the Translator lacks): dropped, where on the network
+            // thread it would close the connection and stop a single player game
+            LOGGER.error("Failed to read payload {}", id, e);
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")
     static <T extends CustomPacketPayload> void handle(IPayloadHandler<T> handler, CustomPacketPayload payload, IPayloadContext context) {
         try {
             handler.handle((T) payload, context);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LinkageError e) {
             LOGGER.error("Failed to handle payload {}", payload.type().id(), e);
         }
     }

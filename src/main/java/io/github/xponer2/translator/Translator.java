@@ -15,6 +15,7 @@ import io.github.xponer2.translator.menu.Menus;
 import io.github.xponer2.translator.network.RegisterPayloadHandlersEvent;
 import io.github.xponer2.translator.recipe.RecipeLoader;
 import io.github.xponer2.translator.registry.RegisterEvent;
+import io.github.xponer2.translator.runtime.neoforge.ServerEvents;
 import io.github.xponer2.translator.util.ModList;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -101,13 +102,36 @@ public final class Translator {
 	public void init(FMLInitializationEvent event) {
 		setupMods();
 		if (event.getSide().isClient()) {
+			io.github.xponer2.translator.runtime.neoforge.FMLClientSetupEvent.runDeferred();
 			io.github.xponer2.translator.client.ClientSetup.init();
 		}
+	}
+
+	// the NeoForge server lifecycle events of the 1.21.1 mods (their world and server configs)
+	@Mod.EventHandler
+	public void serverAboutToStart(net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent event) {
+		ServerEvents.post(new ServerEvents.ServerAboutToStartEvent(event.getServer()));
 	}
 
 	@Mod.EventHandler
 	public void serverStarting(net.minecraftforge.fml.common.event.FMLServerStartingEvent event) {
 		event.registerServerCommand(new io.github.xponer2.translator.selftest.SelfTest.Command());
+		ServerEvents.post(new ServerEvents.ServerStartingEvent(event.getServer()));
+	}
+
+	@Mod.EventHandler
+	public void serverStarted(net.minecraftforge.fml.common.event.FMLServerStartedEvent event) {
+		ServerEvents.post(new ServerEvents.ServerStartedEvent(net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance()));
+	}
+
+	@Mod.EventHandler
+	public void serverStopping(net.minecraftforge.fml.common.event.FMLServerStoppingEvent event) {
+		ServerEvents.post(new ServerEvents.ServerStoppingEvent(net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance()));
+	}
+
+	@Mod.EventHandler
+	public void serverStopped(net.minecraftforge.fml.common.event.FMLServerStoppedEvent event) {
+		ServerEvents.post(new ServerEvents.ServerStoppedEvent(net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance()));
 	}
 
 	@Mod.EventHandler

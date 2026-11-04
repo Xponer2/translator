@@ -554,6 +554,24 @@ public final class VanillaRedirects {
 		return add(list, (NBTBase) value);
 	}
 
+	/** A 1.21 {@code ListTag} is a {@code List}: 1.12.2's is only {@code Iterable}. */
+	public static java.util.stream.Stream<NBTBase> stream(NBTTagList list) {
+		return java.util.stream.StreamSupport.stream(list.spliterator(), false);
+	}
+
+	public static boolean isEmpty(NBTTagList list) {
+		return list.isEmpty();
+	}
+
+	public static NBTBase remove(NBTTagList list, int index) {
+		return list.removeTag(index);
+	}
+
+	/** The erased {@code List.get} (a method reference {@code list::get} is to {@code AbstractList}'s). */
+	public static Object get(NBTTagList list, int index) {
+		return list.get(index);
+	}
+
 	/** 1.21 {@code NbtUtils.readBlockState(HolderGetter<Block>, tag)}: the block registry lookup isn't needed. */
 	public static IBlockState readBlockState(io.github.xponer2.translator.registry.Registry<?> blocks, NBTTagCompound tag) {
 		return net.minecraft.nbt.NBTUtil.readBlockState(tag);

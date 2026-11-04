@@ -43,3 +43,4 @@ S	net/minecraft/world/level/block/ChestBlock	io/github/xponer2/translator/runtim
 S	net/minecraft/client/gui/screens/recipebook/RecipeBookComponent	io/github/xponer2/translator/client/RecipeBookComponent
 S	net/minecraft/client/resources/sounds/AbstractSoundInstance	io/github/xponer2/translator/client/AbstractSoundInstance
 S	net/minecraft/client/resources/sounds/AbstractTickableSoundInstance	io/github/xponer2/translator/client/AbstractTickableSoundInstance
+S	net/minecraft/world/entity/Entity	io/github/xponer2/translator/runtime/mc/Entity
