@@ -297,3 +297,6 @@ R	com/google/common/collect/ImmutableSet	io/github/xponer2/translator/runtime/re
 R	com/google/common/collect/ImmutableMap	io/github/xponer2/translator/runtime/redirect/GuavaBridges$Maps
 R	net/minecraft/util/text/Style$Serializer	io/github/xponer2/translator/text/StyleCodec
 R	net/minecraft/util/math/Vec3d	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	com/google/gson/JsonArray	io/github/xponer2/translator/runtime/redirect/GsonBridges
+R	com/google/gson/JsonObject	io/github/xponer2/translator/runtime/redirect/GsonBridges
+R	com/google/gson/Gson	io/github/xponer2/translator/runtime/redirect/GsonBridges
