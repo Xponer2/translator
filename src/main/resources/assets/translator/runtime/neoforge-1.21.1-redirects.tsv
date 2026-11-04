@@ -320,3 +320,5 @@ R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/
 R	net/minecraft/block/IGrowable	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
 R	net/minecraft/client/util/ITooltipFlag	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/client/renderer/tileentity/TileEntityItemStackRenderer	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	io/github/xponer2/translator/client/RenderType	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/advancements/CriteriaTriggers	io/github/xponer2/translator/runtime/redirect/TriggerHolders

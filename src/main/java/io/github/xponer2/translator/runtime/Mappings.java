@@ -165,6 +165,21 @@ final class Mappings {
 		return binaryName -> {
 			byte[] bytes = raw.get(binaryName);
 			String internal = binaryName.replace('.', '/');
+			if (bytes != null && internal.startsWith("net/minecraftforge/")) {
+				// Forge's own classes (the universal jar) name Minecraft's classes and members by their obfuscated names
+				// (BlockFluidBase extends aow), which FML renames as it loads them: the same here, or their supertypes
+				// and members don't meet the MCP names (Biomes O' Plenty's fluid blocks weren't Blocks, so its whole
+				// block registration was stubbed)
+				try {
+					synchronized (Deobfuscation.LOCK) {
+						bytes = Deobfuscation.TRANSFORMER.transform(binaryName, binaryName, bytes);
+					}
+				} catch (LinkageError e) {
+					// no FML deobfuscation here (outside the game): as they are
+				} catch (RuntimeException e) {
+					throw new IOException("reading " + binaryName, e);
+				}
+			}
 			if (bytes == null && internal.startsWith("net/minecraft/")) {
 				// only Minecraft's own classes are obfuscated in the game jar
 				try {

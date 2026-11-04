@@ -28,6 +28,15 @@ public final class EntityGapBridges {
 	private EntityGapBridges() {
 	}
 
+	/**
+	 * 1.21 {@code living.getAttributes()}: the entity's attribute map (1.12.2 getAttributeMap declares the abstract
+	 * map, an AttributeMap on both sides; 7 mods read their gear's and spells' attributes from it).
+	 */
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.ai.attributes.AttributeMap getAttributes(net.minecraft.entity.EntityLivingBase entity) {
+		return entity.getAttributeMap() instanceof net.minecraft.entity.ai.attributes.AttributeMap map ? map : null;
+	}
+
 	// --- Entity ---------------------------------------------------------------------------------------------------------
 
 	public static boolean canBeHitByProjectile(Entity entity) {

@@ -54,6 +54,16 @@ public final class ClientGapBridges {
 		return new io.github.xponer2.translator.client.BlockEntityWithoutLevelRenderer(dispatcher, models);
 	}
 
+	/**
+	 * 1.21 {@code renderType.mode()} (the carried VertexFormat.Mode; 8 mods pick their buffers by it): the mode it was
+	 * made with, quads for the Translator's own types.
+	 */
+	@Nullable
+	public static Object mode(io.github.xponer2.translator.client.RenderType type) {
+		Object mode = type.mode();
+		return mode != null ? mode : CarriedBridges.constant("com.mojang.blaze3d.vertex.VertexFormat$Mode", "QUADS");
+	}
+
 	/** 1.21 {@code minecraft.keyboardHandler}: the clipboard of 1.12.2. */
 	public static io.github.xponer2.translator.client.KeyboardHandler keyboardHandler(Minecraft minecraft) {
 		return io.github.xponer2.translator.client.KeyboardHandler.INSTANCE;

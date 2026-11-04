@@ -399,3 +399,9 @@ C	net/minecraft/server/ReloadableServerRegistries$Holder	io/github/xponer2/trans
 C	net/minecraft/world/item/TooltipFlag$Default	net/minecraft/client/util/ITooltipFlag$TooltipFlags
 C	net/minecraft/client/KeyboardHandler	io/github/xponer2/translator/client/KeyboardHandler
 F	net/minecraft/world/entity/EquipmentSlot$Type	HUMANOID_ARMOR	ARMOR
+C	net/minecraft/advancements/critereon/ItemUsedOnLocationTrigger	net/minecraft/advancements/critereon/PlacedBlockTrigger
+C	net/minecraft/world/level/levelgen/LegacyRandomSource	io/github/xponer2/translator/util/random/LegacyRandomSource
+C	net/minecraft/world/level/levelgen/SingleThreadedRandomSource	io/github/xponer2/translator/util/random/SingleThreadedRandomSource
+C	net/minecraft/world/level/levelgen/ThreadSafeLegacyRandomSource	io/github/xponer2/translator/util/random/ThreadSafeLegacyRandomSource
+C	net/minecraft/world/level/levelgen/XoroshiroRandomSource	io/github/xponer2/translator/util/random/XoroshiroRandomSource
+C	net/minecraft/world/level/levelgen/WorldgenRandom	io/github/xponer2/translator/util/random/WorldgenRandom
