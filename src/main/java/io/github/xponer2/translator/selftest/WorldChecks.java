@@ -54,7 +54,7 @@ final class WorldChecks {
 			}
 			CraftingHelper.findFiles(mod, "data", null, (root, file) -> {
 				var m = DIMENSION_FILE.matcher(root.relativize(file).toString().replace('\\', '/'));
-				if (m.matches() && (filter == null || filter.equals(m.group(1)))) {
+				if (m.matches() && SelfTest.wanted(filter, m.group(1))) {
 					found.add(m.group(1) + ":" + m.group(2));
 				}
 				return true;

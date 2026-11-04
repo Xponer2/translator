@@ -68,6 +68,19 @@ public final class SelfTest {
 	private SelfTest() {
 	}
 
+	/** The namespace is one the test takes: no filter, or one of its comma-separated mod ids. */
+	static boolean wanted(@javax.annotation.Nullable String filter, String namespace) {
+		if (filter == null || filter.isEmpty()) {
+			return true;
+		}
+		for (String mod : filter.split(",")) {
+			if (mod.trim().equals(namespace)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static final class Command extends CommandBase {
 		@Override
 		public String getName() {
@@ -90,7 +103,8 @@ public final class SelfTest {
 			if (running != null) {
 				throw new CommandException("A self-test is running already");
 			}
-			running = new Run(player, args.length > 0 ? args[0] : null);
+			// -Dtranslator.autotest.mods=ns1,ns2: only those mods (a short test of what a fix touched)
+			running = new Run(player, args.length > 0 ? args[0] : System.getProperty("translator.autotest.mods"));
 			MinecraftForge.EVENT_BUS.register(running);
 			player.sendMessage(new TextComponentString("Translator self-test: " + running.blocks.size() + " blocks, "
 					+ running.items.size() + " items (stand still, the test builds next to you)"));
@@ -148,7 +162,7 @@ public final class SelfTest {
 		/** The automatic test's records on disk (resumed after a crash), null for a test by hand. */
 		File progress;
 
-		Run(EntityPlayerMP player, String filter) {
+		Run(EntityPlayerMP player, @javax.annotation.Nullable String filter) {
 			this.player = player;
 			this.world = (WorldServer) player.world;
 			this.dimension = player.dimension;
@@ -171,14 +185,14 @@ public final class SelfTest {
 			int index = 0;
 			for (Block block : ForgeRegistries.BLOCKS) {
 				var id = block.getRegistryName();
-				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && (filter == null || filter.equals(id.getNamespace()))
+				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && wanted(filter, id.getNamespace())
 						&& index++ % shards == shard) {
 					this.blocks.add(block);
 				}
 			}
 			for (Item item : ForgeRegistries.ITEMS) {
 				var id = item.getRegistryName();
-				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && (filter == null || filter.equals(id.getNamespace()))
+				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && wanted(filter, id.getNamespace())
 						&& index++ % shards == shard) {
 					this.items.add(item);
 				}
@@ -186,14 +200,14 @@ public final class SelfTest {
 			// beside the blocks and items: the mods' entities, biomes and dimensions
 			for (var entry : ForgeRegistries.ENTITIES) {
 				var id = entry.getRegistryName();
-				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && (filter == null || filter.equals(id.getNamespace()))
+				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && wanted(filter, id.getNamespace())
 						&& index++ % shards == shard) {
 					this.entities.add(entry);
 				}
 			}
 			for (var biome : ForgeRegistries.BIOMES) {
 				var id = biome.getRegistryName();
-				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && (filter == null || filter.equals(id.getNamespace()))
+				if (id != null && RuntimeMods.isRuntimeNamespace(id.getNamespace()) && wanted(filter, id.getNamespace())
 						&& index++ % shards == shard) {
 					this.biomes.add(biome);
 				}

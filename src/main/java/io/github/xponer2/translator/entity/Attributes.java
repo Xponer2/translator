@@ -60,6 +60,28 @@ public final class Attributes {
 	private Attributes() {
 	}
 
+	private static final java.util.Map<String, Holder<Attribute>> BY_NAME = new java.util.concurrent.ConcurrentHashMap<>();
+
+	/**
+	 * The holder of a 1.12.2 attribute by its name (generic.attackDamage): the constant above when there is one (mods
+	 * compare holders), else one made for it once.
+	 */
+	@SuppressWarnings("unchecked")
+	public static Holder<Attribute> byForgeName(String name) {
+		if (BY_NAME.isEmpty()) {
+			for (var field : Attributes.class.getFields()) {
+				try {
+					if (field.get(null) instanceof Holder<?> holder && holder.value() instanceof Attribute attribute && attribute.forge() != null) {
+						BY_NAME.putIfAbsent(attribute.forge().getName(), (Holder<Attribute>) holder);
+					}
+				} catch (IllegalAccessException e) {
+					// public fields only
+				}
+			}
+		}
+		return BY_NAME.computeIfAbsent(name, key -> Holder.direct(new Attribute(null, key, 0.0D)));
+	}
+
 	private static Holder<Attribute> forge(net.minecraft.entity.ai.attributes.IAttribute attribute) {
 		return Holder.direct(new Attribute(attribute, attribute.getName(), attribute.getDefaultValue()));
 	}

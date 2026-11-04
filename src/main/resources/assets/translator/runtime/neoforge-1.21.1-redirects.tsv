@@ -285,3 +285,10 @@ R	net/minecraft/client/resources/LanguageManager	io/github/xponer2/translator/ru
 R	net/minecraft/world/World	io/github/xponer2/translator/runtime/redirect/CarriedBridges
 R	io/github/xponer2/translator/runtime/mc/LiquidBlock	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
 R	net/minecraft/util/ResourceLocation	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/client/model/ModelBiped	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/item/ItemStack	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/client/gui/toasts/IToast	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/audio/Sound	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/nbt/NBTBase	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/inventory/InventoryBasic	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/network/NetHandlerPlayServer	io/github/xponer2/translator/runtime/redirect/WorldGapBridges

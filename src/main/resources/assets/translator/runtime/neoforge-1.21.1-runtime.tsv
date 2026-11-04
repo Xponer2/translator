@@ -364,3 +364,6 @@ F	net/minecraft/client/model/HumanoidModel	riding	isRiding
 F	net/minecraft/client/model/HumanoidModel	young	isChild
 C	net/neoforged/fml/javafmlmod/FMLModContainer	io/github/xponer2/translator/runtime/neoforge/ModContainer
 M	net/neoforged/neoforge/client/event/ModelEvent$ModifyBakingResult	getModels()	getModelMap
+# 1.21 addAdditionalSaveData is 1.12.2 writeEntityToNBT (the read side has its row in the name table): mobs of
+# mods that extend LivingEntity / AbstractArrow saved none of their own data
+M	net/minecraft/world/entity/Entity	addAdditionalSaveData(net.minecraft.nbt.CompoundTag)	writeEntityToNBT

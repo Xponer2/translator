@@ -181,4 +181,37 @@ public final class EntityGapBridges {
 
 	public static void setDamage(net.minecraft.entity.effect.EntityLightningBolt bolt, float damage) {
 	}
+
+	/**
+	 * 1.21 {@code entity.recreateFromPacket(packet)}: the entity set up from its spawn packet; on 1.12.2 the client
+	 * does it itself when it makes the entity (mods call it as super from their own).
+	 */
+	public static void recreateFromPacket(Entity entity, Object packet) {
+	}
+
+	/** 1.21 {@code entity.getClassification(forSpawnCount)}: the 1.12.2 creature type the entity is (null: none). */
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.EnumCreatureType getClassification(Entity entity, boolean forSpawnCount) {
+		for (net.minecraft.entity.EnumCreatureType type : net.minecraft.entity.EnumCreatureType.values()) {
+			if (entity.isCreatureType(type, forSpawnCount)) {
+				return type;
+			}
+		}
+		return null;
+	}
+
+	/** 1.21 {@code entity.getPickResult()}: the stack middle click gives (Forge 1.12.2 getPickedResult). */
+	public static ItemStack getPickResult(Entity entity) {
+		ItemStack stack = entity.getPickedResult(new net.minecraft.util.math.RayTraceResult(entity));
+		return stack == null ? ItemStack.EMPTY : stack;
+	}
+
+	/** 1.21 {@code entity.isInFluidType()}: in water or lava (the 1.12.2 fluids an entity can be in). */
+	public static boolean isInFluidType(Entity entity) {
+		return entity.isInWater() || entity.isInLava();
+	}
+
+	public static boolean isInFluidType(Entity entity, Object test, boolean forAllTypes) {
+		return isInFluidType(entity);
+	}
 }

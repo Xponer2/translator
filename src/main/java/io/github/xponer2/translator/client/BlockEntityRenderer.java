@@ -31,4 +31,14 @@ public interface BlockEntityRenderer<T extends TileEntity> {
     default AxisAlignedBB getRenderBoundingBox(T blockEntity) {
         return blockEntity.getRenderBoundingBox();
     }
+
+    /** 1.21 {@code shouldRender(blockEntity, cameraPos)}: 1.12.2 culls by the render distance itself. */
+    default boolean shouldRender(T blockEntity, net.minecraft.util.math.Vec3d cameraPos) {
+        return true;
+    }
+
+    /** 1.21 {@code getViewDistance()}: blocks (1.12.2 tile entities draw to 64). */
+    default int getViewDistance() {
+        return 64;
+    }
 }

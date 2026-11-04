@@ -132,6 +132,54 @@ public final class WorldGapBridges {
 		return namespace != 0 ? namespace : id.getPath().compareTo(other.getPath());
 	}
 
+	/**
+	 * 1.21 {@code settings.addProcessor(processor)}: 1.12.2 templates take their processor at placement (an
+	 * ITemplateProcessor), a 1.21 one isn't applied: the template is placed as it is.
+	 */
+	public static net.minecraft.world.gen.structure.template.PlacementSettings addProcessor(
+			net.minecraft.world.gen.structure.template.PlacementSettings settings, Object processor) {
+		return settings;
+	}
+
+	// --- NBT, containers, connections ---------------------------------------------------------------------------------
+
+	/** 1.21 {@code tag.sizeInBytes()}: the size the tag takes written (mods keep packets under a limit with it). */
+	public static int sizeInBytes(net.minecraft.nbt.NBTBase tag) {
+		if (tag instanceof net.minecraft.nbt.NBTTagCompound compound) {
+			var bytes = new java.io.ByteArrayOutputStream();
+			try (var out = new java.io.DataOutputStream(bytes)) {
+				net.minecraft.nbt.CompressedStreamTools.write(compound, out);
+				return bytes.size();
+			} catch (java.io.IOException e) {
+				// a byte array stream doesn't fail
+			}
+		}
+		return tag.toString().length();
+	}
+
+	/** 1.21 {@code simpleContainer.getItems()}: the container's own list (changes go to it). */
+	@SuppressWarnings("unchecked")
+	public static net.minecraft.util.NonNullList<ItemStack> getItems(net.minecraft.inventory.InventoryBasic container) {
+		for (String name : new String[] {"field_70482_c", "inventoryContents"}) {
+			try {
+				var field = net.minecraft.inventory.InventoryBasic.class.getDeclaredField(name);
+				field.setAccessible(true);
+				return (net.minecraft.util.NonNullList<ItemStack>) field.get(container);
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				// the other name
+			}
+		}
+		var copy = net.minecraft.util.NonNullList.withSize(container.getSizeInventory(), ItemStack.EMPTY);
+		for (int i = 0; i < copy.size(); i++) {
+			copy.set(i, container.getStackInSlot(i));
+		}
+		return copy;
+	}
+
+	public static net.minecraft.network.NetworkManager getConnection(net.minecraft.network.NetHandlerPlayServer handler) {
+		return handler.getNetworkManager();
+	}
+
 	// --- text -----------------------------------------------------------------------------------------------------------
 
 	/** 1.21 {@code style.applyTo(other)}: this style over the other (what this one leaves unset comes from the other). */
@@ -217,6 +265,44 @@ public final class WorldGapBridges {
 
 	public static net.minecraft.nbt.NBTTagCompound save(net.minecraft.entity.ai.attributes.AttributeModifier modifier) {
 		return net.minecraft.entity.SharedMonsterAttributes.writeAttributeModifierToNBT(modifier);
+	}
+
+	/**
+	 * 1.21 {@code stack.forEachModifier(slotGroup, action)}: the stack's attribute modifiers in the slots of the group,
+	 * as 1.21 holders and modifiers (1.12.2 gives them by attribute name per slot).
+	 */
+	public static void forEachModifier(ItemStack stack, io.github.xponer2.translator.entity.EquipmentSlotGroup group,
+			java.util.function.BiConsumer<io.github.xponer2.translator.registry.Holder<io.github.xponer2.translator.entity.Attribute>,
+					io.github.xponer2.translator.entity.AttributeModifier> action) {
+		var seen = new java.util.HashSet<java.util.UUID>();
+		for (net.minecraft.inventory.EntityEquipmentSlot slot : net.minecraft.inventory.EntityEquipmentSlot.values()) {
+			if (group.test(slot)) {
+				modifiers(stack, slot, seen, action);
+			}
+		}
+	}
+
+	public static void forEachModifier(ItemStack stack, net.minecraft.inventory.EntityEquipmentSlot slot,
+			java.util.function.BiConsumer<io.github.xponer2.translator.registry.Holder<io.github.xponer2.translator.entity.Attribute>,
+					io.github.xponer2.translator.entity.AttributeModifier> action) {
+		modifiers(stack, slot, new java.util.HashSet<>(), action);
+	}
+
+	private static void modifiers(ItemStack stack, net.minecraft.inventory.EntityEquipmentSlot slot, Set<java.util.UUID> seen,
+			java.util.function.BiConsumer<io.github.xponer2.translator.registry.Holder<io.github.xponer2.translator.entity.Attribute>,
+					io.github.xponer2.translator.entity.AttributeModifier> action) {
+		var operations = io.github.xponer2.translator.entity.AttributeModifier.Operation.values();
+		for (var entry : stack.getAttributeModifiers(slot).entries()) {
+			var modifier = entry.getValue();
+			if (!seen.add(modifier.getID())) {
+				continue;
+			}
+			String path = modifier.getName().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
+			action.accept(io.github.xponer2.translator.entity.Attributes.byForgeName(entry.getKey()),
+					new io.github.xponer2.translator.entity.AttributeModifier(new net.minecraft.util.ResourceLocation("minecraft",
+							path.isEmpty() ? modifier.getID().toString() : path), modifier.getAmount(),
+							operations[Math.max(0, Math.min(operations.length - 1, modifier.getOperation()))]));
+		}
 	}
 
 	/** 1.21 {@code goalSelector.availableGoals}: the 1.12.2 task entries. */

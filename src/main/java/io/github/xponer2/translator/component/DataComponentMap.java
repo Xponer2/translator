@@ -10,6 +10,8 @@
  */
 package io.github.xponer2.translator.component;
 
+import com.mojang.serialization.Codec;
+
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
@@ -25,6 +27,11 @@ import java.util.stream.Stream;
  */
 public final class DataComponentMap implements Iterable<TypedDataComponent<?>> {
     public static final DataComponentMap EMPTY = new DataComponentMap(Collections.emptyMap());
+    /**
+     * 1.21 {@code DataComponentMap.CODEC}: component type id to value, as a patch's (Twilight Forest's recipes and
+     * travellers' gear, the 1.21 enchantment components). Types without a codec aren't saved.
+     */
+    public static final Codec<DataComponentMap> CODEC = DataComponentPatch.CODEC.xmap(DataComponentMap::fromPatch, DataComponentMap::toPatch);
 
     private final Map<DataComponentType<?>, Object> values;
 
@@ -34,6 +41,21 @@ public final class DataComponentMap implements Iterable<TypedDataComponent<?>> {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    private static DataComponentMap fromPatch(DataComponentPatch patch) {
+        var values = new LinkedHashMap<DataComponentType<?>, Object>();
+        for (var entry : patch.entrySet()) {
+            entry.getValue().ifPresent(value -> values.put(entry.getKey(), value));
+        }
+        return values.isEmpty() ? EMPTY : new DataComponentMap(Collections.unmodifiableMap(values));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static DataComponentPatch toPatch(DataComponentMap map) {
+        var builder = DataComponentPatch.builder();
+        map.values.forEach((type, value) -> builder.set((DataComponentType) type, value));
+        return builder.build();
     }
 
     @Nullable

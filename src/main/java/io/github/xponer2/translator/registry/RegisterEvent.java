@@ -228,6 +228,9 @@ public class RegisterEvent extends Event implements IContextSetter {
 				bar.close();
 				bar = null;
 			}
+			if (event.getRegistry().getRegistrySuperType() == net.minecraft.item.Item.class) {
+				BrokenBlockItems.fix(event.getRegistry());
+			}
 		}
 
 		static void step(String namespace) {

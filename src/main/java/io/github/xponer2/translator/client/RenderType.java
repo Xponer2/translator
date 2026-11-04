@@ -25,6 +25,7 @@ public class RenderType {
     private Object mode;
     private int bufferSize = 256;
     private boolean sortOnUpload;
+    private boolean affectsCrumbling;
 
     public RenderType(String name, Runnable setup, Runnable clear) {
         this.name = name;
@@ -40,6 +41,11 @@ public class RenderType {
         this.mode = mode;
         this.bufferSize = bufferSize;
         this.sortOnUpload = sortOnUpload;
+        this.affectsCrumbling = affectsCrumbling;
+    }
+
+    public boolean affectsCrumbling() {
+        return this.affectsCrumbling;
     }
 
     public net.minecraft.client.renderer.vertex.VertexFormat format() {

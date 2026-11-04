@@ -16,7 +16,14 @@ package io.github.xponer2.translator.client;
 public final class OverlayTexture {
     public static final int NO_OVERLAY = pack(0, 10);
 
-    private OverlayTexture() { }
+    public OverlayTexture() { }
+
+    /** 1.21 {@code setupOverlayColor()} / {@code teardownOverlayColor()}: no overlay texture on 1.12.2. */
+    public void setupOverlayColor() {
+    }
+
+    public void teardownOverlayColor() {
+    }
 
     public static int pack(int u, int v) {
         return u | v << 16;

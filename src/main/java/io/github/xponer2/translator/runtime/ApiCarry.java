@@ -141,6 +141,70 @@ final class ApiCarry {
 	}
 
 	/**
+	 * The newest NeoForge 1.21.1 (21.1.x) of the player's launcher or Gradle cache (its universal jar, Mojang names):
+	 * mods built against a newer NeoForge than the API jar's use its newer classes (Moonlight: ExtendPoiTypesEvent).
+	 * Only the classes the API jar lacks are taken from it. Null when there is none.
+	 */
+	static File newerNeoForge() {
+		var dirs = new java.util.ArrayList<File>();
+		String appData = System.getenv("APPDATA");
+		if (appData != null) {
+			dirs.add(new File(appData, "PrismLauncher/libraries/net/neoforged/neoforge"));
+			dirs.add(new File(appData, ".minecraft/libraries/net/neoforged/neoforge"));
+		}
+		dirs.add(new File(System.getProperty("user.home"), ".gradle/caches/modules-2/files-2.1/net.neoforged/neoforge"));
+		File best = null;
+		int[] bestVersion = null;
+		for (File dir : dirs) {
+			File[] versions = dir.listFiles((d, name) -> name.startsWith("21.1."));
+			for (File version : versions == null ? new File[0] : versions) {
+				int[] parts = versionParts(version.getName());
+				String file = "neoforge-" + version.getName() + "-universal.jar";
+				File jar = new File(version, file);
+				if (!jar.isFile()) {
+					// the Gradle cache keeps it one folder deeper (by hash)
+					File[] hashes = version.listFiles();
+					jar = null;
+					for (File hash : hashes == null ? new File[0] : hashes) {
+						if (new File(hash, file).isFile()) {
+							jar = new File(hash, file);
+							break;
+						}
+					}
+				}
+				if (parts != null && jar != null && (bestVersion == null || compareVersions(parts, bestVersion) > 0)) {
+					best = jar;
+					bestVersion = parts;
+				}
+			}
+		}
+		return best;
+	}
+
+	/** "21.1.233" as numbers, null when it isn't one (a "-beta" suffix and the like). */
+	private static int[] versionParts(String version) {
+		String[] split = version.split("\\.");
+		int[] parts = new int[split.length];
+		try {
+			for (int i = 0; i < split.length; i++) {
+				parts[i] = Integer.parseInt(split[i]);
+			}
+		} catch (NumberFormatException e) {
+			return null;
+		}
+		return parts;
+	}
+
+	private static int compareVersions(int[] a, int[] b) {
+		for (int i = 0; i < Math.min(a.length, b.length); i++) {
+			if (a[i] != b[i]) {
+				return Integer.compare(a[i], b[i]);
+			}
+		}
+		return Integer.compare(a.length, b.length);
+	}
+
+	/**
 	 * Those libraries from the player's machine: a launcher's libraries folder (Prism, the vanilla launcher) or the
 	 * Gradle cache. Converted like libraries before the API (its classes use them: Codec, CommandDispatcher, ...).
 	 */
@@ -269,6 +333,16 @@ final class ApiCarry {
 	 */
 	static byte[] shadow(byte[] bytes, java.util.function.Predicate<String> unavailable, boolean defaults,
 			java.util.function.Predicate<String> restricted) {
+		return shadow(bytes, unavailable, defaults, restricted, false);
+	}
+
+	/**
+	 * {@code classStandIn}: the tables map the original to a class. When the original is an interface, its nested
+	 * classes implement that class's name, so an initializer making one (DataComponentMap.EMPTY = new
+	 * DataComponentMap$1) can't store it in the shadow's fields: the shadow keeps its static methods only.
+	 */
+	static byte[] shadow(byte[] bytes, java.util.function.Predicate<String> unavailable, boolean defaults,
+			java.util.function.Predicate<String> restricted, boolean classStandIn) {
 		var node = new xyz.wagyourtail.jvmdg.shade.asm.tree.ClassNode();
 		new xyz.wagyourtail.jvmdg.shade.asm.ClassReader(bytes).accept(node, 0);
 		String original = node.name;
@@ -292,8 +366,14 @@ final class ApiCarry {
 				}
 			}
 		}
+		boolean madeOwnNested = classStandIn && (node.access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_INTERFACE) != 0
+				&& node.methods.stream().anyMatch(m -> "<clinit>".equals(m.name) && makesNested(m, original));
+		// a super or private call (invokespecial) can't be made from the shadow, another class: an initializer making
+		// one keeps the fields out, a method making one stays out (fastutil 8 ObjectOpenHashSet.access$100 calls the
+		// private realSize: the whole shadow failed to verify, GeckoLib's cache with it)
 		boolean pure = (node.access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_ENUM) == 0 && pureInitializer(node)
-				&& unreachable.stream().noneMatch(m -> "<clinit>".equals(m.name));
+				&& unreachable.stream().noneMatch(m -> "<clinit>".equals(m.name)) && !madeOwnNested
+				&& node.methods.stream().noneMatch(m -> "<clinit>".equals(m.name) && usesSuperCall(m));
 		if (defaults && (node.access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_INTERFACE) != 0) {
 			int skip = xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_STATIC | xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_ABSTRACT
 					| xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PRIVATE | xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_BRIDGE
@@ -310,7 +390,8 @@ final class ApiCarry {
 		}
 		var privateStatics = new java.util.HashSet<String>();
 		var staticFields = new java.util.HashSet<String>();
-		node.methods.removeIf(m -> (m.access & PUBLIC_STATIC_MASK) == 0 || "<clinit>".equals(m.name) && !pure || unreachable.contains(m));
+		node.methods.removeIf(m -> (m.access & PUBLIC_STATIC_MASK) == 0 || "<clinit>".equals(m.name) && !pure || unreachable.contains(m)
+				|| usesSuperCall(m));
 		for (var m : node.methods) {
 			if ((m.access & (xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PRIVATE | xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_SYNTHETIC)) != 0) {
 				privateStatics.add(m.name + m.desc);
@@ -388,6 +469,17 @@ final class ApiCarry {
 	}
 
 	private static final int PUBLIC_STATIC_MASK = xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_STATIC;
+
+	/** Whether the method makes an instance of a nested class of the original ({@code NEW Original$1}). */
+	private static boolean makesNested(xyz.wagyourtail.jvmdg.shade.asm.tree.MethodNode method, String original) {
+		for (var insn : method.instructions) {
+			if (insn instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode type && type.getOpcode() == xyz.wagyourtail.jvmdg.shade.asm.Opcodes.NEW
+					&& type.desc.startsWith(original + "$")) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	private static boolean usesSuperCall(xyz.wagyourtail.jvmdg.shade.asm.tree.MethodNode method) {
 		for (var insn : method.instructions) {
@@ -522,8 +614,10 @@ final class ApiCarry {
 		// a later start with the same API jar and converter takes the converted jar at once (no selection, no hashing)
 		File marker = new File(cacheDir, "minecraft-1.21.1-api.key");
 		File loader = loaderJar();
+		File newer = newerNeoForge();
 		String key = api.getAbsolutePath() + "|" + api.length() + "|" + api.lastModified() + "|" + JarConverter.VERSION
-				+ (loader == null ? "" : "|" + loader.getAbsolutePath() + "|" + loader.length());
+				+ (loader == null ? "" : "|" + loader.getAbsolutePath() + "|" + loader.length())
+				+ (newer == null ? "" : "|" + newer.getAbsolutePath() + "|" + newer.length());
 		if (marker.isFile()) {
 			String[] saved = new String(java.nio.file.Files.readAllBytes(marker.toPath()), StandardCharsets.UTF_8).split("\n");
 			File cached = saved.length == 2 ? new File(cacheDir, saved[1]) : null;
@@ -535,9 +629,19 @@ final class ApiCarry {
 		var probe = new ModRemapper(table, Collections.emptyMap(), target);
 		int carried = 0;
 		int shadows = 0;
+		int fromNewer = 0;
 		var written = new java.util.HashSet<String>();
+		// the API jar first: the loader and a newer NeoForge only add the classes it lacks
+		var sources = new java.util.ArrayList<File>();
+		sources.add(api);
+		if (loader != null) {
+			sources.add(loader);
+		}
+		if (newer != null) {
+			sources.add(newer);
+		}
 		try (var out = new ZipOutputStream(new FileOutputStream(input))) {
-			for (File source : loader == null ? new File[] { api } : new File[] { api, loader }) {
+			for (File source : sources) {
 			try (var zip = new ZipFile(source)) {
 			for (ZipEntry entry : Collections.list(zip.entries())) {
 				String path = entry.getName();
@@ -550,8 +654,10 @@ final class ApiCarry {
 				if (!probe.map(name).equals(name) || target.exists(name) || !written.add(path)) {
 					if (source == api && !probe.map(name).equals(name) && written.add(SHADOW + path)) {
 						byte[] shadow;
+						var standIn = target.get(probe.map(name));
 						try (InputStream in = zip.getInputStream(entry)) {
-							shadow = shadow(ModJar.readAll(in), nested -> !probe.map(nested).equals(nested) || target.exists(nested));
+							shadow = shadow(ModJar.readAll(in), nested -> !probe.map(nested).equals(nested) || target.exists(nested), false,
+									call -> false, standIn != null && !standIn.isInterface());
 						}
 						var copy = new ZipEntry(SHADOW + path);
 						copy.setTime(0);
@@ -571,11 +677,17 @@ final class ApiCarry {
 				}
 				out.closeEntry();
 				carried++;
+				if (source == newer) {
+					fromNewer++;
+				}
 			}
 			}
 			}
 		}
 		Conversion.LOGGER.info("Minecraft 1.21.1 API: {} classes carried, {} shadows of mapped classes, from {}", carried, shadows, api.getName());
+		if (newer != null) {
+			Conversion.LOGGER.info("Minecraft 1.21.1 API: {} newer NeoForge classes from {}", fromNewer, newer.getName());
+		}
 		ModJar jar = ModJar.library(input, "Minecraft 1.21.1 API");
 		File converted = JarConverter.convert(jar, cacheDir, table, target, classpath, new TreeMap<>());
 		java.nio.file.Files.write(marker.toPath(), (key + "\n" + converted.getName()).getBytes(StandardCharsets.UTF_8));

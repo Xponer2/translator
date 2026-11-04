@@ -101,6 +101,123 @@ public final class ClientGapBridges {
 		sayNow(narrator, new net.minecraft.util.text.TextComponentString(text));
 	}
 
+	// --- HumanoidModel (AgeableListModel) baby proportions: 1.12.2 ModelBiped draws children with these values -------------
+
+	public static float babyHeadScale(net.minecraft.client.model.ModelBiped model) {
+		return 2.0F;
+	}
+
+	public static float babyBodyScale(net.minecraft.client.model.ModelBiped model) {
+		return 2.0F;
+	}
+
+	public static float babyYHeadOffset(net.minecraft.client.model.ModelBiped model) {
+		return 16.0F;
+	}
+
+	public static float babyZHeadOffset(net.minecraft.client.model.ModelBiped model) {
+		return 0.0F;
+	}
+
+	public static float bodyYOffset(net.minecraft.client.model.ModelBiped model) {
+		return 24.0F;
+	}
+
+	public static boolean scaleHead(net.minecraft.client.model.ModelBiped model) {
+		return true;
+	}
+
+	// --- RenderTarget ---------------------------------------------------------------------------------------------------
+
+	public static int getColorTextureId(Framebuffer framebuffer) {
+		return framebuffer.framebufferTexture;
+	}
+
+	/** 1.21 {@code target.resize(width, height, clearError)}: made again at that size. */
+	public static void resize(Framebuffer framebuffer, int width, int height, boolean clearError) {
+		framebuffer.createBindFramebuffer(width, height);
+	}
+
+	// --- LevelRenderer, GameRenderer -------------------------------------------------------------------------------------
+
+	/** 1.21 {@code levelRenderer.getTicks()}: the renderer's tick count (1.12.2 counts it for the clouds). */
+	public static int getTicks(net.minecraft.client.renderer.RenderGlobal renderer) {
+		for (String name : new String[] {"field_72773_u", "cloudTickCounter"}) {
+			try {
+				var field = net.minecraft.client.renderer.RenderGlobal.class.getDeclaredField(name);
+				field.setAccessible(true);
+				return field.getInt(renderer);
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				// the other name
+			}
+		}
+		return (int) Minecraft.getMinecraft().world.getTotalWorldTime();
+	}
+
+	private static final io.github.xponer2.translator.client.OverlayTexture OVERLAY = new io.github.xponer2.translator.client.OverlayTexture();
+
+	/** 1.21 {@code gameRenderer.overlayTexture()}: 1.12.2 has no hurt overlay texture, its setup does nothing. */
+	public static io.github.xponer2.translator.client.OverlayTexture overlayTexture(net.minecraft.client.renderer.EntityRenderer renderer) {
+		return OVERLAY;
+	}
+
+	// --- toasts, sounds -------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code toast.width()} / {@code height()}: the 1.12.2 toast background is 160 x 32. */
+	public static int width(net.minecraft.client.gui.toasts.IToast toast) {
+		return 160;
+	}
+
+	public static int height(net.minecraft.client.gui.toasts.IToast toast) {
+		return 32;
+	}
+
+	/** 1.21 {@code sound.getAttenuationDistance()}: 1.12.2 sounds fade out over 16 blocks. */
+	public static int getAttenuationDistance(net.minecraft.client.audio.Sound sound) {
+		return 16;
+	}
+
+	// --- Options: the carried 1.21 enums of the 1.12.2 settings ---------------------------------------------------------
+
+	/** 1.21 {@code options.getBackgroundColor(opacity)}: black at that opacity (1.12.2 has no text background setting). */
+	public static int getBackgroundColor(net.minecraft.client.settings.GameSettings options, float opacity) {
+		return (int) (Math.max(0.0F, Math.min(1.0F, opacity)) * 255.0F) << 24;
+	}
+
+	public static int getBackgroundColor(net.minecraft.client.settings.GameSettings options, int color) {
+		return color;
+	}
+
+	/** 1.21 {@code options.getCloudsType()}: OFF, FAST or FANCY (1.12.2 clouds 0, 1, 2). */
+	@Nullable
+	public static Object getCloudsType(net.minecraft.client.settings.GameSettings options) {
+		return CarriedBridges.constant("net.minecraft.client.CloudStatus",
+				new String[] {"OFF", "FAST", "FANCY"}[Math.max(0, Math.min(2, options.clouds))]);
+	}
+
+	/** 1.21 {@code options.particles()}: ALL, DECREASED or MINIMAL (1.12.2 particleSetting 0, 1, 2). */
+	public static io.github.xponer2.translator.client.OptionInstance<Object> particles(net.minecraft.client.settings.GameSettings options) {
+		return new io.github.xponer2.translator.client.OptionInstance<>(
+				() -> CarriedBridges.constant("net.minecraft.client.ParticleStatus",
+						new String[] {"ALL", "DECREASED", "MINIMAL"}[Math.max(0, Math.min(2, options.particleSetting))]),
+				value -> {
+					if (value instanceof Enum<?> status) {
+						options.particleSetting = Math.min(2, status.ordinal());
+					}
+				});
+	}
+
+	/** 1.21 {@code options.graphicsMode()}: FANCY or FAST (1.12.2 has no FABULOUS). */
+	public static io.github.xponer2.translator.client.OptionInstance<Object> graphicsMode(net.minecraft.client.settings.GameSettings options) {
+		return new io.github.xponer2.translator.client.OptionInstance<>(
+				() -> CarriedBridges.constant("net.minecraft.client.GraphicsStatus", options.fancyGraphics ? "FANCY" : "FAST"),
+				value -> {
+					if (value instanceof Enum<?> status) {
+						options.fancyGraphics = !"FAST".equals(status.name());
+					}
+				});
+	}
+
 	/** 1.21 {@code levelRenderer.setSectionDirty(x, y, z)}: the 16x16x16 section is drawn again. */
 	public static void setSectionDirty(net.minecraft.client.renderer.RenderGlobal renderer, int x, int y, int z) {
 		renderer.markBlockRangeForRenderUpdate(x << 4, y << 4, z << 4, (x << 4) + 15, (y << 4) + 15, (z << 4) + 15);
