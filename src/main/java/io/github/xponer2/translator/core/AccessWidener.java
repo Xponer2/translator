@@ -64,7 +64,9 @@ public final class AccessWidener implements IClassTransformer {
 
 			@Override
 			public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-				if ("<init>".equals(name) || (access & HIDING) != 0 && !"<clinit>".equals(name)) {
+				// package-private ones too (1.12.2 LanguageMap.getInstance(): the 1.21 Language.getInstance() mods call,
+				// an IllegalAccessError in Jade's config codec)
+				if ("<init>".equals(name) || (access & Opcodes.ACC_PUBLIC) == 0 && !"<clinit>".equals(name)) {
 					access = widen((access & Opcodes.ACC_PRIVATE) != 0 ? access & ~Opcodes.ACC_FINAL : access, changed);
 				}
 				return super.visitMethod(access, name, descriptor, signature, exceptions);

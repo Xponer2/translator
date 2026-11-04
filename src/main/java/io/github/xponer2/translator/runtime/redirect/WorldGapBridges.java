@@ -121,6 +121,17 @@ public final class WorldGapBridges {
 		return manager.getTemplate(server, id);
 	}
 
+	// --- Vec3 and JOML ----------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code new Vec3(vector3f)} (a constructor reference in Jade's entity sync). */
+	public static net.minecraft.util.math.Vec3d newVec3d(org.joml.Vector3f vector) {
+		return new net.minecraft.util.math.Vec3d(vector.x(), vector.y(), vector.z());
+	}
+
+	public static org.joml.Vector3f toVector3f(net.minecraft.util.math.Vec3d vector) {
+		return new org.joml.Vector3f((float) vector.x, (float) vector.y, (float) vector.z);
+	}
+
 	// --- ResourceLocation -----------------------------------------------------------------------------------------------
 
 	/**

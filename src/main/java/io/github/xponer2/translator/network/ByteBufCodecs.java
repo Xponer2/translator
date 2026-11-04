@@ -59,6 +59,18 @@ public final class ByteBufCodecs {
     public static final StreamCodec<ByteBuf, Long> LONG = StreamCodec.of(ByteBuf::writeLong, ByteBuf::readLong);
     public static final StreamCodec<ByteBuf, Float> FLOAT = StreamCodec.of(ByteBuf::writeFloat, ByteBuf::readFloat);
     public static final StreamCodec<ByteBuf, Double> DOUBLE = StreamCodec.of(ByteBuf::writeDouble, ByteBuf::readDouble);
+    /** 1.21 {@code VECTOR3F} / {@code QUATERNIONF}: JOML vectors as their floats (Jade syncs entity parts' positions so). */
+    public static final StreamCodec<ByteBuf, org.joml.Vector3f> VECTOR3F = StreamCodec.of((buffer, value) -> {
+        buffer.writeFloat(value.x());
+        buffer.writeFloat(value.y());
+        buffer.writeFloat(value.z());
+    }, buffer -> new org.joml.Vector3f(buffer.readFloat(), buffer.readFloat(), buffer.readFloat()));
+    public static final StreamCodec<ByteBuf, org.joml.Quaternionf> QUATERNIONF = StreamCodec.of((buffer, value) -> {
+        buffer.writeFloat(value.x());
+        buffer.writeFloat(value.y());
+        buffer.writeFloat(value.z());
+        buffer.writeFloat(value.w());
+    }, buffer -> new org.joml.Quaternionf(buffer.readFloat(), buffer.readFloat(), buffer.readFloat(), buffer.readFloat()));
     public static final StreamCodec<ByteBuf, Integer> VAR_INT = StreamCodec.of(
             (buffer, value) -> packet(buffer).writeVarInt(value), buffer -> packet(buffer).readVarInt());
     public static final StreamCodec<ByteBuf, Long> VAR_LONG = StreamCodec.of(
