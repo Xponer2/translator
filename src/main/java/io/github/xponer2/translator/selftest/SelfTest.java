@@ -110,6 +110,8 @@ public final class SelfTest {
 					+ running.items.size() + " items (stand still, the test builds next to you)"));
 			if (FMLCommonHandler.instance().getSide().isClient()) {
 				SelfTestClient.checkModels(running.blocks, running.items);
+				// text after the mods' HUD (a broken GL state hides every text): checked once in the first seconds
+				SelfTestClient.checkTextOnce();
 			}
 		}
 	}
@@ -723,6 +725,14 @@ public final class SelfTest {
 					this.current.notes.add("screen " + screen);
 					// a player's clicks: the screen's own click code, then the packets to this menu
 					this.waitFor(SelfTestClient.clickSlots(this, this.current.kind, this.current.id, menu.windowId)::get, 200);
+					// a click must reach the server: a test stack picked up through the screen, held on both sides
+					if (this.player.openContainer == menu) {
+						this.player.inventory.setInventorySlotContents(9, new ItemStack(net.minecraft.init.Items.STICK, 3));
+						menu.detectAndSendChanges();
+						this.waitFor(SelfTestClient.checkClickSync(this, this.current.kind, this.current.id, menu.windowId, this.player)::get, 200);
+						this.player.inventory.setItemStack(ItemStack.EMPTY);
+						this.player.inventory.setInventorySlotContents(9, ItemStack.EMPTY);
+					}
 				}
 			}
 			int slots = menu.inventorySlots.size();
@@ -787,6 +797,13 @@ public final class SelfTest {
 
 		private String report(int ok) {
 			var out = new StringBuilder("# Translator self-test\n\n");
+			if (FMLCommonHandler.instance().getSide().isClient()) {
+				synchronized (SelfTestClient.RENDER_PROBLEMS) {
+					for (String problem : SelfTestClient.RENDER_PROBLEMS) {
+						out.append("Rendering: ").append(problem).append("\n\n");
+					}
+				}
+			}
 			out.append(ok).append(" of ").append(this.records.size()).append(" blocks and items work without a problem or an unbridged call.\n\n");
 			// what breaks the most: the unbridged calls and problems by how many blocks and items hit them
 			Map<String, Integer> causes = new TreeMap<>();

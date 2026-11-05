@@ -146,6 +146,121 @@ final class SelfTestClient {
 	}
 
 	/**
+	 * Whether a click on the screen reaches the server: a test stack (put in the player's inventory by the server) is
+	 * picked up through the screen's own click code, and after a moment the server's cursor must hold it too; then it
+	 * is put back and both menus must match. A screen that clicks only on the client (Sophisticated's backpacks moved
+	 * items there and nowhere else) is a problem of the item whose menu it is.
+	 */
+	static AtomicBoolean checkClickSync(SelfTest.Run run, String kind, String id, int windowId, net.minecraft.entity.player.EntityPlayerMP server) {
+		AtomicBoolean done = new AtomicBoolean();
+		Minecraft mc = Minecraft.getMinecraft();
+		mc.addScheduledTask(() -> {
+			try {
+				if (!(mc.currentScreen instanceof GuiContainer screen) || screen.inventorySlots.windowId != windowId) {
+					done.set(true);
+					return;
+				}
+				Slot test = null;
+				for (Slot slot : screen.inventorySlots.inventorySlots) {
+					if (slot.inventory == mc.player.inventory && slot.isEnabled() && slot.getStack().getItem() == net.minecraft.init.Items.STICK) {
+						test = slot;
+						break;
+					}
+				}
+				if (test == null) {
+					done.set(true);
+					return;
+				}
+				Slot clicked = test;
+				int x = GUI_LEFT.getInt(screen) + clicked.xPos + 8;
+				int y = GUI_TOP.getInt(screen) + clicked.yPos + 8;
+				LAST_CLICK_TIME.setLong(screen, 0L);
+				MOUSE_CLICKED.invoke(screen, x, y, 0);
+				MOUSE_RELEASED.invoke(screen, x, y, 0);
+				ItemStack client = mc.player.inventory.getItemStack().copy();
+				// the server gets the packet on its own thread: looked at a moment later, on the client thread again
+				Thread later = new Thread(() -> {
+					try {
+						Thread.sleep(500L);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+					mc.addScheduledTask(() -> {
+						try {
+							ItemStack held = server.inventory.getItemStack();
+							if (!ItemStack.areItemStacksEqual(client, held)) {
+								run.addClientProblem(kind, id, "menu click didn't reach the server: the client holds " + client + ", the server " + held);
+							}
+							if (mc.currentScreen == screen) {
+								LAST_CLICK_TIME.setLong(screen, 0L);
+								MOUSE_CLICKED.invoke(screen, x, y, 0);
+								MOUSE_RELEASED.invoke(screen, x, y, 0);
+							}
+						} catch (Throwable t) {
+							run.addClientProblem(kind, id, "menu click check: " + SelfTest.describe(t));
+						} finally {
+							done.set(true);
+						}
+					});
+				}, "Translator self-test click check");
+				later.setDaemon(true);
+				later.start();
+			} catch (Throwable t) {
+				run.addClientProblem(kind, id, "menu click check: " + SelfTest.describe(t));
+				done.set(true);
+			}
+		});
+		return done;
+	}
+
+	/** Whether text draws after the HUD of the mods (a mod's overlay that leaves GL state wrong hides every text). */
+	static final List<String> RENDER_PROBLEMS = java.util.Collections.synchronizedList(new ArrayList<>());
+
+	static void checkTextOnce() {
+		net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(new TextCheck());
+	}
+
+	public static final class TextCheck {
+		private int frames;
+
+		@net.minecraftforge.fml.common.eventhandler.SubscribeEvent(priority = net.minecraftforge.fml.common.eventhandler.EventPriority.LOWEST)
+		public void onOverlay(net.minecraftforge.client.event.RenderGameOverlayEvent.Post event) {
+			if (event.getType() != net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType.ALL || ++this.frames < 40) {
+				return;
+			}
+			net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(this);
+			Minecraft mc = Minecraft.getMinecraft();
+			try {
+				int scale = new net.minecraft.client.gui.ScaledResolution(mc).getScaleFactor();
+				mc.fontRenderer.drawStringWithShadow("TRANSLATOR TEXT CHECK", 2, 2, 0xFFFFFF);
+				int width = mc.fontRenderer.getStringWidth("TRANSLATOR TEXT CHECK") * scale;
+				int height = 8 * scale;
+				var pixels = org.lwjgl.BufferUtils.createByteBuffer(width * height * 4);
+				org.lwjgl.opengl.GL11.glReadPixels(2 * scale, mc.displayHeight - 2 * scale - height, width, height, org.lwjgl.opengl.GL11.GL_RGBA,
+						org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE, pixels);
+				int white = 0;
+				for (int i = 0; i < width * height; i++) {
+					int r = pixels.get(i * 4) & 0xFF;
+					int g = pixels.get(i * 4 + 1) & 0xFF;
+					int b = pixels.get(i * 4 + 2) & 0xFF;
+					if (r > 230 && g > 230 && b > 230) {
+						white++;
+					}
+				}
+				if (white < 20) {
+					RENDER_PROBLEMS.add("text drawn after the HUD isn't visible (" + white + " white pixels): a mod's overlay left the GL state wrong");
+				}
+				int error = org.lwjgl.opengl.GL11.glGetError();
+				if (error != org.lwjgl.opengl.GL11.GL_NO_ERROR) {
+					RENDER_PROBLEMS.add("GL error after the HUD: " + error);
+				}
+			} catch (Throwable t) {
+				RENDER_PROBLEMS.add("text check: " + SelfTest.describe(t));
+			}
+		}
+	}
+
+	/**
 	 * On the client thread: the faces of the block at {@code pos} as the client draws it with air around. A face toward
 	 * air that the block hides ({@code shouldSideBeRendered}), and a solid model with faces toward one side of an axis
 	 * but none toward the other (a fence post without its top) are problems.
