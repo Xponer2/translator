@@ -62,9 +62,10 @@ public abstract class FallingBlock extends Block {
 		world.scheduleUpdate(pos, this, 2);
 	}
 
+	/** 1.21 FallingBlock.tick: falls when the block below lets it (a mod's tick override calls this through super). */
 	@Override
-	public void updateTick(World world, BlockPos pos, IBlockState state, Random random) {
-		if (!world.isRemote && pos.getY() > 0 && canFallThrough(world.getBlockState(pos.down()))
+	public void tick(IBlockState state, net.minecraft.world.WorldServer world, BlockPos pos, Random random) {
+		if (pos.getY() > 0 && canFallThrough(world.getBlockState(pos.down()))
 				&& world.isAreaLoaded(pos.add(-32, -32, -32), pos.add(32, 32, 32))) {
 			var entity = new net.minecraft.entity.item.EntityFallingBlock(world, pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, state);
 			this.onStartFalling(entity);

@@ -1660,6 +1660,39 @@ public final class MiscBridges {
 				&& bounds.maxZ >= 1.0D;
 	}
 
+	/**
+	 * 1.21 {@code Block.isFaceFull(shape, face)}: whether the shape covers that whole face of the block (the boxes
+	 * touching the face, their areas there). Leaves asked it for their falling particles every frame.
+	 */
+	public static boolean isFaceFull(io.github.xponer2.translator.shape.VoxelShape shape, net.minecraft.util.EnumFacing face) {
+		if (shape == null || shape.isEmpty()) {
+			return false;
+		}
+		double area = 0.0D;
+		for (net.minecraft.util.math.AxisAlignedBB box : shape.toAabbs()) {
+			boolean touches = switch (face) {
+				case DOWN -> box.minY <= 0.0D;
+				case UP -> box.maxY >= 1.0D;
+				case NORTH -> box.minZ <= 0.0D;
+				case SOUTH -> box.maxZ >= 1.0D;
+				case WEST -> box.minX <= 0.0D;
+				case EAST -> box.maxX >= 1.0D;
+			};
+			if (!touches) {
+				continue;
+			}
+			double a = Math.min(1.0D, box.maxX) - Math.max(0.0D, box.minX);
+			double b = Math.min(1.0D, box.maxY) - Math.max(0.0D, box.minY);
+			double c = Math.min(1.0D, box.maxZ) - Math.max(0.0D, box.minZ);
+			area += switch (face.getAxis()) {
+				case X -> b * c;
+				case Y -> a * c;
+				case Z -> a * b;
+			};
+		}
+		return area >= 0.999D;
+	}
+
 	// --- text --------------------------------------------------------------------------------------------------------
 
 	/** A copy of the text without its siblings (1.21 plainCopy): its own content and style. */

@@ -36,8 +36,16 @@ final class DataTree extends WorldGenAbstractTree {
 	private final int maxHeight;
 	private final Shape shape;
 
+	/** Grown from a sapling: the blocks are set with updates and the sapling's ground isn't checked (it was placed). */
+	private final boolean sapling;
+
 	DataTree(IBlockState log, IBlockState leaves, int minHeight, int maxHeight, Shape shape) {
-		super(false);
+		this(log, leaves, minHeight, maxHeight, shape, false);
+	}
+
+	private DataTree(IBlockState log, IBlockState leaves, int minHeight, int maxHeight, Shape shape, boolean sapling) {
+		super(sapling);
+		this.sapling = sapling;
 		this.log = log;
 		this.leaves = leaves;
 		this.minHeight = Math.max(1, minHeight);
@@ -53,7 +61,7 @@ final class DataTree extends WorldGenAbstractTree {
 		}
 		BlockPos below = pos.down();
 		IBlockState ground = world.getBlockState(below);
-		if (!ground.getBlock().canSustainPlant(ground, world, below, EnumFacing.UP, (net.minecraft.block.BlockSapling) Blocks.SAPLING)) {
+		if (!this.sapling && !ground.getBlock().canSustainPlant(ground, world, below, EnumFacing.UP, (net.minecraft.block.BlockSapling) Blocks.SAPLING)) {
 			return false;
 		}
 		for (int y = 0; y < height; y++) {
@@ -105,6 +113,11 @@ final class DataTree extends WorldGenAbstractTree {
 			radius = (height - y) % 2 == 1 ? Math.min(3, radius + 1) : Math.max(1, radius);
 		}
 		this.leaf(world, pos.up(height + 1));
+	}
+
+	/** The same tree grown from a sapling. */
+	DataTree grown() {
+		return new DataTree(this.log, this.leaves, this.minHeight, this.maxHeight, this.shape, true);
 	}
 
 	private void leaf(World world, BlockPos pos) {

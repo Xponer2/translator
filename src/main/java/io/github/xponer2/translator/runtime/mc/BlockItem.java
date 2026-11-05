@@ -136,7 +136,7 @@ public class BlockItem extends ItemBlock implements TooltipContext.HoverText, io
 		} catch (Throwable t) {
 			// the game asks every item's name (statistics, search trees) when the mod may not be ready for it
 			io.github.xponer2.translator.runtime.RuntimeStubs.failed("the name of " + this.getClass().getName(), t);
-			return net.minecraft.util.text.translation.I18n.translateToLocal(this.getUnlocalizedNameInefficiently(stack) + ".name").trim();
+			return ItemNames.displayName(this, stack);
 		}
 	}
 }

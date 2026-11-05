@@ -96,19 +96,13 @@ public class CropBlock extends BushBlock implements net.minecraft.block.IGrowabl
 	}
 
 	/** A random tick: one age more now and then, with light. */
+	@Override
 	public void randomTick(IBlockState state, net.minecraft.world.WorldServer level, BlockPos pos, Random random) {
 		if (!this.isMaxAge(state) && level.getLightFromNeighbors(pos.up()) >= 9 && random.nextInt(5) == 0) {
 			level.setBlockState(pos, this.withAge(this.getAge(state) + 1), 2);
 		}
 	}
 
-	@Override
-	public void updateTick(World world, BlockPos pos, IBlockState state, Random random) {
-		super.updateTick(world, pos, state, random);
-		if (world instanceof net.minecraft.world.WorldServer server && state.getBlock() == this) {
-			this.randomTick(state, server, pos, random);
-		}
-	}
 
 	@Override
 	public net.minecraft.item.ItemStack getPickBlock(IBlockState state, net.minecraft.util.math.RayTraceResult target, World world, BlockPos pos,

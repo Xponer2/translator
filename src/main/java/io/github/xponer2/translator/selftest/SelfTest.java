@@ -463,6 +463,7 @@ public final class SelfTest {
 		private void planBlock(Block block) {
 			String id = String.valueOf(block.getRegistryName());
 			Record[] record = new Record[1];
+			boolean[] needsGround = new boolean[1];
 			// place, block entity
 			this.steps.add(() -> {
 				this.begin(id, "block");
@@ -471,6 +472,7 @@ public final class SelfTest {
 				this.player.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY);
 				this.clearCell();
 				IBlockState state = block.getDefaultState();
+				needsGround[0] = this.groundFor(block);
 				if (!this.attempt("place", () -> this.world.setBlockState(this.cell, state, 3))) {
 					return;
 				}
@@ -521,15 +523,167 @@ public final class SelfTest {
 				}
 				this.testMenu();
 			});
-			// break
+			// what the block does over time and with bone meal (1.21 behaviour the game calls through 1.12.2's hooks)
 			this.steps.add(() -> {
 				this.current = record[0];
 				this.closeMenu();
+				// what grows or falls here goes again (a tree, plants): the world around stays as it was
+				var before = this.snapshot();
+				if (this.world.getBlockState(this.cell).getBlock() == block) {
+					this.testTicks(block);
+				}
+				if (this.world.getBlockState(this.cell).getBlock() == block && block instanceof net.minecraft.block.IGrowable) {
+					this.testBoneMeal(block);
+				}
+				if (block instanceof io.github.xponer2.translator.runtime.mc.LeavesBlock) {
+					this.testDecay(block);
+				}
+				this.restore(before);
+			});
+			// break; a plant without its ground
+			this.steps.add(() -> {
+				this.current = record[0];
+				this.closeMenu();
+				if (needsGround[0]) {
+					this.groundFor(block);
+					if (this.attempt("survive", () -> this.world.setBlockState(this.cell, block.getDefaultState(), 3))
+							&& this.world.getBlockState(this.cell).getBlock() == block) {
+						this.world.setBlockState(this.cell.down(), Blocks.AIR.getDefaultState(), 3);
+						if (this.world.getBlockState(this.cell).getBlock() == block) {
+							this.current.problems.add("survive: stays when the block it stands on is gone");
+						}
+					}
+				}
 				if (this.world.getBlockState(this.cell).getBlock() == block) {
 					this.attempt("break", () -> this.world.destroyBlock(this.cell, true));
 				}
 				this.clearCell();
 			});
+		}
+
+		/** The grounds a block may need under it: the first it can be placed on (stone when it needs none). */
+		private boolean groundFor(Block block) {
+			IBlockState[] grounds = {Blocks.STONE.getDefaultState(), Blocks.GRASS.getDefaultState(), Blocks.FARMLAND.getDefaultState(),
+					Blocks.SAND.getDefaultState(), Blocks.NETHERRACK.getDefaultState(), Blocks.END_STONE.getDefaultState(), Blocks.SOUL_SAND.getDefaultState(),
+					Blocks.MYCELIUM.getDefaultState(), Blocks.WATER.getDefaultState()};
+			for (IBlockState ground : grounds) {
+				this.world.setBlockState(this.cell.down(), ground, 2 | 16);
+				boolean fits;
+				try {
+					fits = block.canPlaceBlockAt(this.world, this.cell);
+				} catch (Throwable t) {
+					fits = true;
+				}
+				if (fits) {
+					return ground.getBlock() != Blocks.STONE && ground.getBlock() != Blocks.WATER;
+				}
+			}
+			this.world.setBlockState(this.cell.down(), Blocks.STONE.getDefaultState(), 2 | 16);
+			return false;
+		}
+
+		/** Random ticks (the blocks that take them) and a scheduled tick: what the mod does then mustn't fail. */
+		private void testTicks(Block block) {
+			java.util.Random random = new java.util.Random(this.cell.hashCode());
+			if (block.getTickRandomly()) {
+				this.attempt("random tick", () -> {
+					for (int i = 0; i < 3 && this.world.getBlockState(this.cell).getBlock() == block; i++) {
+						block.randomTick(this.world, this.cell, this.world.getBlockState(this.cell), random);
+					}
+				});
+			}
+			if (this.world.getBlockState(this.cell).getBlock() == block) {
+				this.attempt("scheduled tick", () -> block.updateTick(this.world, this.cell, this.world.getBlockState(this.cell), random));
+			}
+		}
+
+		/**
+		 * Bone meal as a player uses it (up to 40 times): a block that says it can grow must change something (its state,
+		 * a tree, plants around).
+		 */
+		private void testBoneMeal(Block block) {
+			var growable = (net.minecraft.block.IGrowable) block;
+			IBlockState state = this.world.getBlockState(this.cell);
+			boolean[] can = new boolean[1];
+			if (!this.attempt("bone meal: can grow", () -> can[0] = growable.canGrow(this.world, this.cell, state, false)) || !can[0]) {
+				return;
+			}
+			long before = this.region();
+			ItemStack meal = new ItemStack(net.minecraft.init.Items.DYE, 64, net.minecraft.item.EnumDyeColor.WHITE.getDyeDamage());
+			boolean[] grew = new boolean[1];
+			this.attempt("bone meal", () -> {
+				for (int i = 0; i < 40 && !grew[0]; i++) {
+					net.minecraft.item.ItemDye.applyBonemeal(meal, this.world, this.cell, this.player, EnumHand.MAIN_HAND);
+					grew[0] = this.region() != before;
+				}
+			});
+			if (grew[0]) {
+				this.current.notes.add("grows with bone meal");
+			} else {
+				this.current.problems.add("bone meal: nothing grew in 40 uses (canGrow said it can)");
+			}
+		}
+
+		/** Leaves of a 1.21 mod: alone they decay on a random tick, next to a log they stay. */
+		private void testDecay(Block block) {
+			for (EnumFacing facing : EnumFacing.values()) {
+				this.world.setBlockState(this.cell.offset(facing), Blocks.AIR.getDefaultState(), 2 | 16);
+			}
+			IBlockState leaves = block.getDefaultState();
+			for (var property : leaves.getPropertyKeys()) {
+				if ("persistent".equals(property.getName()) && property.getValueClass() == Boolean.class) {
+					@SuppressWarnings("unchecked")
+					var persistent = (net.minecraft.block.properties.IProperty<Boolean>) property;
+					leaves = leaves.withProperty(persistent, false);
+				}
+			}
+			IBlockState lone = leaves;
+			java.util.Random random = new java.util.Random(1);
+			this.attempt("decay", () -> {
+				this.world.setBlockState(this.cell, lone, 2 | 16);
+				block.randomTick(this.world, this.cell, lone, random);
+				if (this.world.getBlockState(this.cell).getBlock() == block) {
+					throw new IllegalStateException("leaves without a log stay");
+				}
+				this.world.setBlockState(this.cell.down(), Blocks.LOG.getDefaultState(), 2 | 16);
+				this.world.setBlockState(this.cell, lone, 2 | 16);
+				block.randomTick(this.world, this.cell, lone, random);
+				if (this.world.getBlockState(this.cell).getBlock() != block) {
+					throw new IllegalStateException("leaves next to a log fell");
+				}
+			});
+			this.world.setBlockState(this.cell, Blocks.AIR.getDefaultState(), 2 | 16);
+			this.world.setBlockState(this.cell.down(), Blocks.STONE.getDefaultState(), 2 | 16);
+		}
+
+		/** A hash of the blocks around the cell (a tree's height above it). */
+		private long region() {
+			long hash = 1;
+			for (BlockPos pos : BlockPos.getAllInBoxMutable(this.cell.add(-3, -1, -3), this.cell.add(3, 16, 3))) {
+				hash = hash * 31 + System.identityHashCode(this.world.getBlockState(pos));
+			}
+			return hash;
+		}
+
+		/** The blocks around the cell (where a tree from it grows). */
+		private Map<BlockPos, IBlockState> snapshot() {
+			var blocks = new java.util.HashMap<BlockPos, IBlockState>();
+			for (BlockPos pos : BlockPos.getAllInBox(this.cell.add(-6, -1, -6), this.cell.add(6, 30, 6))) {
+				blocks.put(pos, this.world.getBlockState(pos));
+			}
+			return blocks;
+		}
+
+		/** The blocks as they were (block entities of the changed ones go with them), the drops gone. */
+		private void restore(Map<BlockPos, IBlockState> blocks) {
+			for (var entry : blocks.entrySet()) {
+				if (this.world.getBlockState(entry.getKey()) != entry.getValue()) {
+					this.world.setBlockState(entry.getKey(), entry.getValue(), 2 | 16);
+				}
+			}
+			for (EntityItem drop : this.world.getEntitiesWithinAABB(EntityItem.class, new AxisAlignedBB(this.cell).grow(8, 32, 8))) {
+				drop.setDead();
+			}
 		}
 
 		/**
@@ -624,7 +778,14 @@ public final class SelfTest {
 					this.current.problems.add("stack: empty");
 					return;
 				}
-				this.attempt("name", stack::getDisplayName);
+				this.attempt("name", () -> {
+					String name = stack.getDisplayName();
+					// the client's language is the integrated server's: a key or "Name.name" is what the player sees
+					if (FMLCommonHandler.instance().getSide().isClient() && (name.endsWith(".name") || name.equals(item.getTranslationKey(stack))
+							|| (!name.contains(" ") && (name.startsWith("item.") || name.startsWith("block.") || name.startsWith("tile."))))) {
+						throw new IllegalStateException("shows \"" + name + "\"");
+					}
+				});
 				this.attempt("save/load", () -> {
 					ItemStack copy = new ItemStack(stack.writeToNBT(new NBTTagCompound()));
 					if (copy.getItem() != item) {

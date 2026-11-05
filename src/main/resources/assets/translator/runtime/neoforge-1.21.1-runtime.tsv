@@ -414,3 +414,10 @@ C	net/neoforged/neoforge/event/entity/EntityAttributeModificationEvent	io/github
 X	net/minecraft/client/renderer/block/model/BakedQuad	getVertexData	()[I	io/github/xponer2/translator/runtime/redirect/MiscBridges
 C	net/minecraft/world/level/block/state/properties/DoorHingeSide	net/minecraft/block/BlockDoor$EnumHingePosition
 C	net/minecraft/core/component/PatchedDataComponentMap	io/github/xponer2/translator/component/PatchedDataComponentMap
+# X with a helper descriptor: the carried 1.21 registries mods fill directly (multiloader libraries: GlitchCore's render
+# types and renderers), which nothing reads here: the Translator's own (block layers, entity and block entity renderers)
+X	net/minecraft/client/renderer/ItemBlockRenderTypes	setRenderLayer	(Lnet/minecraft/block/Block;Lio/github/xponer2/translator/client/RenderType;)V	io/github/xponer2/translator/client/RenderLayers
+X	net/minecraft/client/renderer/ItemBlockRenderTypes	setRenderLayer	(Lnet/minecraft/block/Block;Ljava/util/function/Predicate;)V	io/github/xponer2/translator/client/RenderLayers
+X	net/minecraft/client/renderer/ItemBlockRenderTypes	setRenderLayer	(Lnet/minecraftforge/fluids/Fluid;Lio/github/xponer2/translator/client/RenderType;)V	io/github/xponer2/translator/client/RenderLayers
+X	net/minecraft/client/renderer/entity/EntityRenderers	register	(Lio/github/xponer2/translator/registry/EntityType;Lnet/minecraft/client/renderer/entity/EntityRendererProvider;)V	io/github/xponer2/translator/client/EntityRenderers	(Lio/github/xponer2/translator/registry/EntityType;Ljava/lang/Object;)V
+X	net/minecraft/client/renderer/blockentity/BlockEntityRenderers	register	(Lio/github/xponer2/translator/registry/BlockEntityType;Lio/github/xponer2/translator/client/BlockEntityRendererProvider;)V	io/github/xponer2/translator/client/TesrAdapter

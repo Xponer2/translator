@@ -19,4 +19,19 @@ public class ShieldItem extends ItemShield {
 	public ShieldItem(ItemProperties properties) {
 		properties.applyTo(this);
 	}
+
+	/** 1.21 {@code getName(stack)}: the name by the 1.21 rules (1.12.2's vanilla items show "Blood Bucket.name"). */
+	public net.minecraft.util.text.ITextComponent getName(net.minecraft.item.ItemStack stack) {
+		return new net.minecraft.util.text.TextComponentString(io.github.xponer2.translator.text.ItemNames.displayName(this, stack));
+	}
+
+	@Override
+	public String getItemStackDisplayName(net.minecraft.item.ItemStack stack) {
+		try {
+			return this.getName(stack).getFormattedText();
+		} catch (Throwable t) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("the name of " + this.getClass().getName(), t);
+			return io.github.xponer2.translator.text.ItemNames.displayName(this, stack);
+		}
+	}
 }

@@ -129,6 +129,29 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 		return state;
 	}
 
+	/** 1.21 {@code canSurvive(state, level, pos)}: whether the block can stay there (plants on their ground). */
+	public boolean canSurvive(IBlockState state, World level, BlockPos pos) {
+		return true;
+	}
+
+	/** 1.21 {@code neighborChanged(state, level, pos, block, fromPos, movedByPiston)}. */
+	public void neighborChanged(IBlockState state, World level, BlockPos pos, net.minecraft.block.Block neighborBlock, BlockPos neighborPos,
+			boolean movedByPiston) {
+	}
+
+	/** 1.21 scheduled tick ({@code level.scheduleTick}): 1.12.2's updateTick calls it. */
+	public void tick(IBlockState state, net.minecraft.world.WorldServer level, BlockPos pos, java.util.Random random) {
+	}
+
+	/** 1.21 random tick: 1.12.2's random tick calls it when {@link #isRandomlyTicking} says so. */
+	public void randomTick(IBlockState state, net.minecraft.world.WorldServer level, BlockPos pos, java.util.Random random) {
+	}
+
+	/** 1.21 {@code isRandomlyTicking(state)}: the block's randomTicks() property. */
+	public boolean isRandomlyTicking(IBlockState state) {
+		return this.needsRandomTick;
+	}
+
 	public io.github.xponer2.translator.util.FluidState getFluidState(IBlockState state) {
 		return io.github.xponer2.translator.util.FluidState.EMPTY;
 	}
@@ -320,6 +343,99 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 	}
 
 	// the 1.12.2 hooks of what happens to the block, calling the 1.21 methods the mod overrides
+
+	// ticks: 1.12.2 has one updateTick for both, 1.21 a scheduled tick and a random tick
+
+	private Boolean ownRandomTicking;
+
+	/**
+	 * Random ticks for the blocks that want them: the randomTicks() property, or a mod's isRandomlyTicking (a state
+	 * that grows). 1.12.2 counts a chunk's ticking blocks by this when they're set: without it they never ticked.
+	 */
+	@Override
+	public boolean getTickRandomly() {
+		if (this.needsRandomTick) {
+			return true;
+		}
+		if (this.ownRandomTicking == null) {
+			boolean own;
+			try {
+				own = this.getClass().getMethod("isRandomlyTicking", IBlockState.class).getDeclaringClass() != Block.class;
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				own = false;
+			}
+			this.ownRandomTicking = own;
+		}
+		return this.ownRandomTicking;
+	}
+
+	@Override
+	public void randomTick(World world, BlockPos pos, IBlockState state, java.util.Random random) {
+		if (world instanceof net.minecraft.world.WorldServer server
+				&& Boolean.TRUE.equals(this.guarded("isRandomlyTicking", () -> this.isRandomlyTicking(state), false))) {
+			this.guarded("randomTick", () -> {
+				this.randomTick(state, server, pos, random);
+				return null;
+			}, null);
+		}
+	}
+
+	@Override
+	public void updateTick(World world, BlockPos pos, IBlockState state, java.util.Random random) {
+		if (world instanceof net.minecraft.world.WorldServer server) {
+			this.guarded("tick", () -> {
+				this.tick(state, server, pos, random);
+				return null;
+			}, null);
+		}
+	}
+
+	/**
+	 * A neighbour changed: 1.21 asks the block its new state for that side (updateShape: a plant whose ground went
+	 * becomes air and breaks, a waterlogged block schedules its water), then calls its neighborChanged.
+	 */
+	@Override
+	@SuppressWarnings("deprecation")
+	public void neighborChanged(IBlockState state, World world, BlockPos pos, net.minecraft.block.Block block, BlockPos from) {
+		super.neighborChanged(state, world, pos, block, from);
+		if (world.isRemote) {
+			return;
+		}
+		EnumFacing direction = null;
+		for (EnumFacing facing : EnumFacing.values()) {
+			if (pos.offset(facing).equals(from)) {
+				direction = facing;
+			}
+		}
+		if (direction != null) {
+			EnumFacing side = direction;
+			IBlockState current = world.getBlockState(pos);
+			if (current.getBlock() != this) {
+				return;
+			}
+			IBlockState updated = this.guarded("updateShape", () -> this.updateShape(current, side, world.getBlockState(from), world, pos, from), current);
+			if (updated != null && updated != current) {
+				if (updated.getBlock() == Blocks.AIR) {
+					world.destroyBlock(pos, true);
+					return;
+				}
+				world.setBlockState(pos, updated, 2);
+			}
+		}
+		if (world.getBlockState(pos).getBlock() == this) {
+			this.guarded("neighborChanged", () -> {
+				this.neighborChanged(world.getBlockState(pos), world, pos, block, from, false);
+				return null;
+			}, null);
+		}
+	}
+
+	/** 1.21 placement: the block must survive there (a plant needs its ground). */
+	@Override
+	public boolean canPlaceBlockAt(World world, BlockPos pos) {
+		return super.canPlaceBlockAt(world, pos)
+				&& Boolean.TRUE.equals(this.guarded("canSurvive", () -> this.canSurvive(this.getDefaultState(), world, pos), true));
+	}
 
 	@Override
 	public void onFallenUpon(World world, BlockPos pos, Entity entity, float fallDistance) {

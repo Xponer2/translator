@@ -45,6 +45,8 @@ public final class BlockStateProperties {
 	public static final PropertyEnum<EnumFacing.Axis> AXIS = PropertyEnum.create("axis", EnumFacing.Axis.class);
 	public static final PropertyEnum<EnumFacing.Axis> HORIZONTAL_AXIS = PropertyEnum.create("axis", EnumFacing.Axis.class,
 			EnumFacing.Axis.X, EnumFacing.Axis.Z);
+	/** A sapling's growth stage (1.21 BlockStateProperties.STAGE, the same object as the sapling facade's). */
+	public static final PropertyInteger STAGE = PropertyInteger.create("stage", 0, 1);
 	public static final PropertyInteger AGE_1 = PropertyInteger.create("age", 0, 1);
 	public static final PropertyInteger AGE_2 = PropertyInteger.create("age", 0, 2);
 	public static final PropertyInteger AGE_3 = PropertyInteger.create("age", 0, 3);

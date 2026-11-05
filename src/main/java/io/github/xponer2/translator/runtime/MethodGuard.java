@@ -934,6 +934,11 @@ final class MethodGuard {
 					? this.forced.get(candidate.owner + "." + candidate.name + candidate.desc) : null;
 			if (forcedHelper != null && insn instanceof MethodInsnNode forcedCall) {
 				String desc = forcedCall.getOpcode() == Opcodes.INVOKESTATIC ? forcedCall.desc : "(L" + forcedCall.owner + ";" + forcedCall.desc.substring(1);
+				int space = forcedHelper.indexOf(' ');
+				if (space > 0) {
+					desc = forcedHelper.substring(space + 1);
+					forcedHelper = forcedHelper.substring(0, space);
+				}
 				method.instructions.set(forcedCall, new MethodInsnNode(Opcodes.INVOKESTATIC, forcedHelper, forcedCall.name, desc, false));
 				this.redirected.incrementAndGet();
 				changed = true;

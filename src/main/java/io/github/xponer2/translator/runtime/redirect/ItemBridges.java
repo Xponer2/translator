@@ -194,4 +194,13 @@ public final class ItemBridges {
 	public static boolean isSame(Fluid fluid, Fluid other) {
 		return fluid == other;
 	}
+
+	/**
+	 * 1.21 {@code Item.getPlayerPOVHitResult(level, player, fluid)} for any item (a static the carried items call on
+	 * themselves: lily pads' PlaceOnWaterBlockItem, buckets, boats): the Item facade's.
+	 */
+	public static net.minecraft.util.math.RayTraceResult getPlayerPOVHitResult(World world, EntityPlayer player,
+			io.github.xponer2.translator.util.ClipContext.Fluid fluid) {
+		return io.github.xponer2.translator.runtime.mc.Item.getPlayerPOVHitResult(world, player, fluid);
+	}
 }

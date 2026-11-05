@@ -10,44 +10,97 @@
  */
 package io.github.xponer2.translator.runtime.mc;
 
+import java.util.Random;
+
+import javax.annotation.Nullable;
+
 import io.github.xponer2.translator.block.BlockProperties;
+import io.github.xponer2.translator.block.BlockStateProperties;
+import io.github.xponer2.translator.shape.CollisionContext;
+import io.github.xponer2.translator.shape.Shapes;
+import io.github.xponer2.translator.shape.VoxelShape;
+import io.github.xponer2.translator.world.TreeGrowing;
 
-import net.minecraft.block.BlockBush;
+import net.minecraft.block.IGrowable;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 
-/** Facade of the 1.21 {@code SaplingBlock}: a plant on soil, with properties; the 1.21 tree grower doesn't grow it. */
-public class SaplingBlock extends BlockBush {
-	public static final net.minecraft.block.properties.PropertyInteger STAGE = net.minecraft.block.properties.PropertyInteger.create("stage", 0, 1);
+/**
+ * Facade of the 1.21 {@code SaplingBlock}: a plant that grows with light (random ticks) and with bone meal, first to
+ * its second stage, then into the tree of its 1.21 tree grower (the mod's tree from its worldgen data).
+ */
+public class SaplingBlock extends BushBlock implements IGrowable {
+	public static final net.minecraft.block.properties.PropertyInteger STAGE = BlockStateProperties.STAGE;
+
+	/** The 1.21 TreeGrower (a carried class: the trees it names are grown by {@link TreeGrowing}). */
+	@Nullable
+	protected final Object treeGrower;
 
 	public SaplingBlock(Object treeGrower, BlockProperties properties) {
-		super(properties.material(), properties.mapColor());
-		properties.applyTo(this, this::setSoundType);
-		this.setDefaultState(this.blockState.getBaseState().withProperty(STAGE, 0));
+		super(properties.randomTicks());
+		this.treeGrower = treeGrower;
+		var state = this.getDefaultState();
+		if (state.getPropertyKeys().contains(STAGE)) {
+			this.setDefaultState(state.withProperty(STAGE, 0));
+		}
+	}
+
+	/** The 1.21 sapling's stage (a mod overriding this adds its own, STAGE among them). */
+	@Override
+	protected void createBlockStateDefinition(net.minecraft.block.state.BlockStateContainer.Builder builder) {
+		builder.add(STAGE);
 	}
 
 	@Override
-	protected net.minecraft.block.state.BlockStateContainer createBlockState() {
-		return new net.minecraft.block.state.BlockStateContainer(this, STAGE);
+	public VoxelShape getShape(IBlockState state, @Nullable IBlockAccess level, @Nullable BlockPos pos, CollisionContext context) {
+		return Shapes.box16(2, 0, 2, 14, 12, 14);
+	}
+
+	/** 1.21 random tick: with light, now and then one step of growth. */
+	@Override
+	public void randomTick(IBlockState state, WorldServer level, BlockPos pos, Random random) {
+		if (level.isAreaLoaded(pos, 1) && level.getLightFromNeighbors(pos.up()) >= 9 && random.nextInt(7) == 0) {
+			this.grow(level, pos, state, random);
+		}
+	}
+
+	/** 1.21 {@code advanceTree} (renamed by the table): the second stage, then the tree. */
+	public void grow(WorldServer level, BlockPos pos, IBlockState state, Random random) {
+		if (state.getPropertyKeys().contains(STAGE) && state.getValue(STAGE) == 0) {
+			level.setBlockState(pos, state.cycleProperty(STAGE), 4);
+		} else {
+			TreeGrowing.growTree(this.treeGrower, level, null, pos, state, random);
+		}
+	}
+
+	// --- bone meal: the 1.21 methods (a mod overrides them) and 1.12.2's IGrowable calling them ----------------------
+
+	public boolean isValidBonemealTarget(World level, BlockPos pos, IBlockState state) {
+		return true;
+	}
+
+	public void performBonemeal(WorldServer level, Random random, BlockPos pos, IBlockState state) {
+		this.grow(level, pos, state, random);
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
-	public net.minecraft.block.state.IBlockState getStateFromMeta(int meta) {
-		return this.getDefaultState().withProperty(STAGE, meta & 1);
+	public boolean canGrow(World world, BlockPos pos, IBlockState state, boolean isClient) {
+		return this.isValidBonemealTarget(world, pos, state);
+	}
+
+	/** 1.21 {@code isBonemealSuccess} (the table gives it this name): 45 %. */
+	@Override
+	public boolean canUseBonemeal(World world, Random random, BlockPos pos, IBlockState state) {
+		return world.rand.nextFloat() < 0.45F;
 	}
 
 	@Override
-	public int getMetaFromState(net.minecraft.block.state.IBlockState state) {
-		return state.getValue(STAGE);
-	}
-
-	/** The drops of the block's 1.21 loot table (when the mod has one), else 1.12.2's. */
-	@Override
-	public void getDrops(net.minecraft.util.NonNullList<net.minecraft.item.ItemStack> drops, net.minecraft.world.IBlockAccess world,
-			net.minecraft.util.math.BlockPos pos, net.minecraft.block.state.IBlockState state, int fortune) {
-		java.util.Random random = world instanceof net.minecraft.world.World level ? level.rand : RANDOM;
-		if (!io.github.xponer2.translator.loot.BlockLoot.drop(io.github.xponer2.translator.loot.BlockLoot.tableOf(this, null), drops, world, pos, state,
-				fortune, harvesters.get(), random)) {
-			super.getDrops(drops, world, pos, state, fortune);
+	public void grow(World world, Random random, BlockPos pos, IBlockState state) {
+		if (world instanceof WorldServer server) {
+			this.performBonemeal(server, random, pos, state);
 		}
 	}
 }

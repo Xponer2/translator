@@ -61,6 +61,52 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
  * Biomes of other dimensions (Twilight Forest, the Aether) are registered for their dimensions only.
  */
 public final class DataBiomes {
+	/** The one instance (registered on the event bus by the Translator): the mods' feature data for the saplings. */
+	@Nullable
+	private static DataBiomes instance;
+
+	public DataBiomes() {
+		instance = this;
+	}
+
+	/**
+	 * The tree of a configured feature of a 1.21.1 mod's worldgen data (a random selector picks one, by its chances),
+	 * as a sapling grows it; null when the data has no tree there.
+	 */
+	@Nullable
+	static net.minecraft.world.gen.feature.WorldGenAbstractTree treeFor(ResourceLocation configuredFeature, java.util.Random random) {
+		DataBiomes self = instance;
+		if (self == null) {
+			return null;
+		}
+		if (self.configured.isEmpty()) {
+			self.scan();
+		}
+		var choices = new ArrayList<Object[]>();
+		self.choices(new com.google.gson.JsonPrimitive(configuredFeature.toString()), false, 1.0, 0, choices);
+		if (choices.isEmpty()) {
+			return null;
+		}
+		double total = 0;
+		for (Object[] choice : choices) {
+			total += (Double) choice[1];
+		}
+		double pick = random.nextDouble() * total;
+		for (Object[] choice : choices) {
+			pick -= (Double) choice[1];
+			if (pick <= 0) {
+				return ((DataTree) choice[0]).grown();
+			}
+		}
+		return ((DataTree) choices.get(choices.size() - 1)[0]).grown();
+	}
+
+	/** A vanilla tree like a 1.21 vanilla feature's name says (the 1.21.1 game's data isn't here). */
+	static net.minecraft.world.gen.feature.WorldGenAbstractTree vanillaTree(String path) {
+		return new DataTree(log("minecraft:" + vanillaWood(path) + "_log"), leaves("minecraft:" + vanillaWood(path) + "_leaves"), 4, 7,
+				shapeOf(path, "")).grown();
+	}
+
 	private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger("Translator Runtime");
 	private static final Pattern FILE = Pattern.compile("([a-z0-9_.-]+)/worldgen/(biome|placed_feature|configured_feature)/([a-z0-9_./-]+)\\.json");
 	private static final Pattern TAG = Pattern.compile("(minecraft|c)/tags/worldgen/biome/(is_overworld|is_nether|is_end)\\.json");

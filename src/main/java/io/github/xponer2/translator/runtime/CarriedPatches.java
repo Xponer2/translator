@@ -34,7 +34,56 @@ final class CarriedPatches {
 		if ("net/minecraft/data/BlockFamilies.class".equals(path)) {
 			return mapPutFirst(bytes, "familyBuilder");
 		}
+		if ("net/minecraft/world/level/block/grower/TreeGrower.class".equals(path)) {
+			return callInstead(bytes, "growTree", "io/github/xponer2/translator/world/TreeGrowing");
+		}
 		return bytes;
+	}
+
+	/**
+	 * The method's body becomes a call of the helper's static method of the same name (this and the arguments, as
+	 * Object). TreeGrower.growTree places a configured feature of the 1.21 registries, which don't run here: a sapling
+	 * of a 1.21.1 mod never grew (bone meal did nothing); the helper grows the tree of the mod's worldgen data.
+	 */
+	private static byte[] callInstead(byte[] bytes, String methodName, String helper) {
+		var node = new ClassNode();
+		new ClassReader(bytes).accept(node, 0);
+		boolean changed = false;
+		for (MethodNode method : node.methods) {
+			if (!methodName.equals(method.name) || (method.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_STATIC)) != 0) {
+				continue;
+			}
+			var insns = new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnList();
+			insns.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.VarInsnNode(Opcodes.ALOAD, 0));
+			var helperDesc = new StringBuilder("(Ljava/lang/Object;");
+			int slot = 1;
+			for (var arg : xyz.wagyourtail.jvmdg.shade.asm.Type.getArgumentTypes(method.desc)) {
+				insns.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.VarInsnNode(arg.getOpcode(Opcodes.ILOAD), slot));
+				slot += arg.getSize();
+				boolean object = arg.getSort() == xyz.wagyourtail.jvmdg.shade.asm.Type.OBJECT || arg.getSort() == xyz.wagyourtail.jvmdg.shade.asm.Type.ARRAY;
+				helperDesc.append(object ? "Ljava/lang/Object;" : arg.getDescriptor());
+			}
+			var returns = xyz.wagyourtail.jvmdg.shade.asm.Type.getReturnType(method.desc);
+			boolean objectReturn = returns.getSort() == xyz.wagyourtail.jvmdg.shade.asm.Type.OBJECT || returns.getSort() == xyz.wagyourtail.jvmdg.shade.asm.Type.ARRAY;
+			helperDesc.append(')').append(objectReturn ? "Ljava/lang/Object;" : returns.getDescriptor());
+			insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, helper, methodName, helperDesc.toString(), false));
+			if (objectReturn) {
+				insns.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode(Opcodes.CHECKCAST, returns.getInternalName()));
+			}
+			insns.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(returns.getOpcode(Opcodes.IRETURN)));
+			method.instructions = insns;
+			method.tryCatchBlocks.clear();
+			if (method.localVariables != null) {
+				method.localVariables.clear();
+			}
+			changed = true;
+		}
+		if (!changed) {
+			return bytes;
+		}
+		var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+		node.accept(writer);
+		return writer.toByteArray();
 	}
 
 	/**

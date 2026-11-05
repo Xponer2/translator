@@ -79,7 +79,9 @@ final class RemapTable {
 					case "R" -> this.redirects.computeIfAbsent(cols[1], k -> new java.util.ArrayList<>()).add(cols[2]);
 					// K owner name desc value: int-like fields (Z, B, C, S, I) as a number
 					case "K" -> this.constants.put(cols[1] + "." + cols[2] + ":" + cols[3], Integer.valueOf(cols[4]));
-					case "X" -> this.forced.put(cols[1] + "." + cols[2] + cols[3], cols[4]);
+					// X owner name desc helper [helperDesc]: the helper's descriptor when it takes wider types (Object for a
+					// carried 1.21 class the Translator can't name)
+					case "X" -> this.forced.put(cols[1] + "." + cols[2] + cols[3], cols.length > 5 && !cols[5].isEmpty() ? cols[4] + " " + cols[5] : cols[4]);
 					default -> {
 					}
 				}

@@ -38,6 +38,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public final class RenderLayers {
 	private static final Map<Block, BlockRenderLayer> SET = new ConcurrentHashMap<>();
 	private static final Map<Block, Optional<BlockRenderLayer>> FROM_MODELS = new ConcurrentHashMap<>();
+	private static final Map<String, BlockRenderLayer> FLUIDS = new ConcurrentHashMap<>();
 
 	private RenderLayers() {
 	}
@@ -47,6 +48,14 @@ public final class RenderLayers {
 		BlockRenderLayer layer = type == null ? null : layer(type.getChunkLayerId());
 		if (block != null && layer != null) {
 			SET.put(block, layer);
+		}
+	}
+
+	/** 1.21 {@code ItemBlockRenderTypes.setRenderLayer(fluid, type)}: the layer of the fluid's block. */
+	public static void setRenderLayer(net.minecraftforge.fluids.Fluid fluid, @Nullable RenderType type) {
+		BlockRenderLayer layer = type == null ? null : layer(type.getChunkLayerId());
+		if (fluid != null && layer != null) {
+			FLUIDS.put(fluid.getName(), layer);
 		}
 	}
 
@@ -64,6 +73,12 @@ public final class RenderLayers {
 		BlockRenderLayer set = SET.get(block);
 		if (set != null) {
 			return set;
+		}
+		if (!FLUIDS.isEmpty() && block instanceof net.minecraftforge.fluids.IFluidBlock fluidBlock && fluidBlock.getFluid() != null) {
+			BlockRenderLayer fluid = FLUIDS.get(fluidBlock.getFluid().getName());
+			if (fluid != null) {
+				return fluid;
+			}
 		}
 		return FROM_MODELS.computeIfAbsent(block, RenderLayers::fromModels).orElse(null);
 	}

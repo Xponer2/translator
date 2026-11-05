@@ -49,9 +49,17 @@ public abstract class BushBlock extends Block {
 								new net.minecraft.util.ResourceLocation("minecraft", "dirt")));
 	}
 
+	@Override
 	public boolean canSurvive(IBlockState state, World level, BlockPos pos) {
 		BlockPos below = pos.down();
 		return this.mayPlaceOn(level.getBlockState(below), level, below);
+	}
+
+	/** 1.21: a plant that can't stay becomes air (and breaks with its drops). */
+	@Override
+	public IBlockState updateShape(IBlockState state, EnumFacing direction, IBlockState neighborState, World level, BlockPos pos, BlockPos neighborPos) {
+		return !this.canSurvive(state, level, pos) ? net.minecraft.init.Blocks.AIR.getDefaultState()
+				: super.updateShape(state, direction, neighborState, level, pos, neighborPos);
 	}
 
 	@Override
@@ -59,20 +67,6 @@ public abstract class BushBlock extends Block {
 		return Shapes.box16(2, 0, 2, 14, 13, 14);
 	}
 
-	@Override
-	public boolean canPlaceBlockAt(World world, BlockPos pos) {
-		return super.canPlaceBlockAt(world, pos) && this.canSurvive(this.getDefaultState(), world, pos);
-	}
-
-	@Override
-	@SuppressWarnings("deprecation")
-	public void neighborChanged(IBlockState state, World world, BlockPos pos, net.minecraft.block.Block block, BlockPos from) {
-		super.neighborChanged(state, world, pos, block, from);
-		if (!world.isRemote && !this.canSurvive(state, world, pos)) {
-			this.dropBlockAsItem(world, pos, state, 0);
-			world.setBlockToAir(pos);
-		}
-	}
 
 	@Override
 	@SuppressWarnings("deprecation")

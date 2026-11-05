@@ -30,6 +30,11 @@ final class InterfaceBridges {
 	private static final String FLUID_HANDLER_ITEM = "net/minecraftforge/fluids/capability/IFluidHandlerItem";
 	private static final String HELPER = "io/github/xponer2/translator/runtime/FluidHandlers";
 	private static final String STACK = "Lnet/minecraftforge/fluids/FluidStack;";
+	private static final String GROWABLE = "net/minecraft/block/IGrowable";
+	private static final String WORLD = "Lnet/minecraft/world/World;";
+	private static final String POS = "Lnet/minecraft/util/math/BlockPos;";
+	private static final String STATE = "Lnet/minecraft/block/state/IBlockState;";
+	private static final String RANDOM = "Ljava/util/Random;";
 
 	private InterfaceBridges() {
 	}
@@ -38,25 +43,84 @@ final class InterfaceBridges {
 		var reader = new ClassReader(bytes);
 		String[] interfaces = reader.getInterfaces();
 		boolean fluid = false;
+		boolean growable = false;
 		for (String itf : interfaces) {
 			fluid |= FLUID_HANDLER.equals(itf) || FLUID_HANDLER_ITEM.equals(itf);
+			growable |= GROWABLE.equals(itf);
 		}
-		if (!fluid || (reader.getAccess() & Opcodes.ACC_INTERFACE) != 0) {
+		if (!(fluid || growable) || (reader.getAccess() & Opcodes.ACC_INTERFACE) != 0) {
 			return bytes;
 		}
 		var node = new ClassNode();
 		reader.accept(node, 0);
 		boolean changed = false;
-		changed |= bridge(node, "getTankProperties", "()[Lnet/minecraftforge/fluids/capability/IFluidTankProperties;", "properties");
-		changed |= bridge(node, "fill", "(" + STACK + "Z)I", "fill");
-		changed |= bridge(node, "drain", "(" + STACK + "Z)" + STACK, "drain");
-		changed |= bridge(node, "drain", "(IZ)" + STACK, "drain");
+		if (fluid) {
+			changed |= bridge(node, "getTankProperties", "()[Lnet/minecraftforge/fluids/capability/IFluidTankProperties;", "properties");
+			changed |= bridge(node, "fill", "(" + STACK + "Z)I", "fill");
+			changed |= bridge(node, "drain", "(" + STACK + "Z)" + STACK, "drain");
+			changed |= bridge(node, "drain", "(IZ)" + STACK, "drain");
+		}
+		if (growable) {
+			// 1.21 BonemealableBlock under 1.12.2's IGrowable: isValidBonemealTarget has no isClient, performBonemeal a
+			// server level. The game asked canGrow, which the converter made a stub (false): bone meal did nothing
+			changed |= self(node, "canGrow", "(" + WORLD + POS + STATE + "Z)Z", "isValidBonemealTarget", "(" + WORLD + POS + STATE + ")Z", false);
+			changed |= self(node, "grow", "(" + WORLD + RANDOM + POS + STATE + ")V", "performBonemeal",
+					"(Lnet/minecraft/world/WorldServer;" + RANDOM + POS + STATE + ")V", true);
+			changed |= self(node, "canUseBonemeal", "(" + WORLD + RANDOM + POS + STATE + ")Z", "isBonemealSuccess", "(" + WORLD + RANDOM + POS + STATE + ")Z",
+					false);
+		}
 		if (!changed) {
 			return bytes;
 		}
 		var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 		node.accept(writer);
 		return writer.toByteArray();
+	}
+
+	/**
+	 * A public method {name desc} calling the class's own {target targetDesc} with the leading arguments (the world
+	 * cast to a server world, skipped on the client, when {@code serverWorld}), when the class has the target and not
+	 * the method.
+	 */
+	private static boolean self(ClassNode node, String name, String desc, String target, String targetDesc, boolean serverWorld) {
+		boolean hasTarget = false;
+		for (MethodNode method : node.methods) {
+			if (method.name.equals(name) && method.desc.equals(desc)) {
+				return false;
+			}
+			hasTarget |= method.name.equals(target) && method.desc.equals(targetDesc) && (method.access & Opcodes.ACC_STATIC) == 0;
+		}
+		if (!hasTarget) {
+			return false;
+		}
+		var method = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, name, desc, null, null);
+		var skip = new xyz.wagyourtail.jvmdg.shade.asm.tree.LabelNode();
+		if (serverWorld) {
+			method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+			method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode(Opcodes.INSTANCEOF, "net/minecraft/world/WorldServer"));
+			method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.JumpInsnNode(Opcodes.IFEQ, skip));
+		}
+		method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		Type[] args = Type.getArgumentTypes(desc);
+		Type[] targetArgs = Type.getArgumentTypes(targetDesc);
+		int slot = 1;
+		for (int i = 0; i < targetArgs.length; i++) {
+			method.instructions.add(new VarInsnNode(args[i].getOpcode(Opcodes.ILOAD), slot));
+			if (i == 0 && serverWorld) {
+				method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode(Opcodes.CHECKCAST, "net/minecraft/world/WorldServer"));
+			}
+			slot += args[i].getSize();
+		}
+		method.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, node.name, target, targetDesc, false));
+		Type returns = Type.getReturnType(desc);
+		method.instructions.add(new InsnNode(returns.getOpcode(Opcodes.IRETURN)));
+		if (serverWorld) {
+			method.instructions.add(skip);
+			method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.FrameNode(Opcodes.F_SAME, 0, null, 0, null));
+			method.instructions.add(new InsnNode(Opcodes.RETURN));
+		}
+		node.methods.add(method);
+		return true;
 	}
 
 	/** A public method {name desc} calling the helper's {helperName (Object this, args)}, unless the class has it. */
