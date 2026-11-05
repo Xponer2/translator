@@ -1639,6 +1639,27 @@ public final class MiscBridges {
 		return new long[0];
 	}
 
+	/**
+	 * 1.21 {@code Block.isShapeFullBlock(shape)}: whether the shape fills the block (a box of the whole cube, or boxes
+	 * covering its volume). The carried Block's needs its shape cache, which 1.12.2's Block hasn't: it threw for every
+	 * block of a mod that asks (Biomes O' Plenty's sands and stones).
+	 */
+	public static boolean isShapeFullBlock(io.github.xponer2.translator.shape.VoxelShape shape) {
+		if (shape == null || shape.isEmpty()) {
+			return false;
+		}
+		double volume = 0.0D;
+		for (net.minecraft.util.math.AxisAlignedBB box : shape.toAabbs()) {
+			if (box.minX <= 0.0D && box.minY <= 0.0D && box.minZ <= 0.0D && box.maxX >= 1.0D && box.maxY >= 1.0D && box.maxZ >= 1.0D) {
+				return true;
+			}
+			volume += (box.maxX - box.minX) * (box.maxY - box.minY) * (box.maxZ - box.minZ);
+		}
+		var bounds = shape.bounds();
+		return volume >= 0.999D && bounds.minX <= 0.0D && bounds.minY <= 0.0D && bounds.minZ <= 0.0D && bounds.maxX >= 1.0D && bounds.maxY >= 1.0D
+				&& bounds.maxZ >= 1.0D;
+	}
+
 	// --- text --------------------------------------------------------------------------------------------------------
 
 	/** A copy of the text without its siblings (1.21 plainCopy): its own content and style. */

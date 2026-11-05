@@ -107,6 +107,15 @@ public class PropertiesBlock extends Block {
 
 	@Override
 	public boolean canCreatureSpawn(IBlockState state, IBlockAccess world, BlockPos pos, EntityLiving.SpawnPlacementType type) {
-		return this.properties.isValidSpawn(state, world, pos, type) && super.canCreatureSpawn(state, world, pos, type);
+		// 1.12.2 asks by the placement type, the mod's 1.21 predicate takes the entity type, which isn't known here: none
+		// (a predicate that needs it and fails lets the mob spawn; the spawner gave it a SpawnPlacementType and the world
+		// crashed on its cast to EntityType)
+		boolean valid;
+		try {
+			valid = this.properties.isValidSpawn(state, world, pos, null);
+		} catch (RuntimeException e) {
+			valid = true;
+		}
+		return valid && super.canCreatureSpawn(state, world, pos, type);
 	}
 }

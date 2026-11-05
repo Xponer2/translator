@@ -27,16 +27,28 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class LeavesBlock extends Block {
 	public static final net.minecraft.block.properties.PropertyInteger DISTANCE = io.github.xponer2.translator.block.BlockStateProperties.DISTANCE;
 	public static final net.minecraft.block.properties.PropertyBool PERSISTENT = io.github.xponer2.translator.block.BlockStateProperties.PERSISTENT;
+	/** 1.21 leaves can be waterlogged: the property as 1.21 has it (a mod's leaves add it to their states). */
+	public static final net.minecraft.block.properties.PropertyBool WATERLOGGED = io.github.xponer2.translator.block.BlockStateProperties.WATERLOGGED;
 
 	public LeavesBlock(BlockProperties properties) {
 		super(properties.noOcclusion());
-		this.setDefaultState(this.getDefaultState().withProperty(DISTANCE, 7).withProperty(PERSISTENT, false));
+		var state = this.getDefaultState();
+		if (state.getPropertyKeys().contains(DISTANCE)) {
+			state = state.withProperty(DISTANCE, 7);
+		}
+		if (state.getPropertyKeys().contains(PERSISTENT)) {
+			state = state.withProperty(PERSISTENT, false);
+		}
+		if (state.getPropertyKeys().contains(WATERLOGGED)) {
+			state = state.withProperty(WATERLOGGED, false);
+		}
+		this.setDefaultState(state);
 	}
 
 	/** The 1.21 leaves properties (a mod's leaves add theirs after super's). */
 	@Override
 	protected void createBlockStateDefinition(net.minecraft.block.state.BlockStateContainer.Builder builder) {
-		builder.add(DISTANCE, PERSISTENT);
+		builder.add(DISTANCE, PERSISTENT, WATERLOGGED);
 	}
 
 	@Override

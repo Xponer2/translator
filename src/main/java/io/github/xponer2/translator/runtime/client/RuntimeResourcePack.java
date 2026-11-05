@@ -174,7 +174,9 @@ public final class RuntimeResourcePack implements IResourcePack {
 			throw new FileNotFoundException(location.toString());
 		}
 		if (path.endsWith(".json") && path.contains("/blockstates/")) {
-			return text(blockstate(this.read(entry)).toString());
+			JsonElement json = blockstate(this.read(entry));
+			fullVariants(json, location);
+			return text(json.toString());
 		}
 		if (path.endsWith(".json") && path.contains("/models/")) {
 			return text(model(this.read(entry)).toString());
@@ -279,6 +281,94 @@ public final class RuntimeResourcePack implements IResourcePack {
 			variants.remove(key);
 		}
 		converted.forEach(variants::add);
+	}
+
+	/**
+	 * 1.21 matches a variant key against a block's state partly ("mossy=false" for every state with mossy false, the
+	 * waterlogged ones too); 1.12.2 needs the whole state string. For a block that exists, every state gets the variant
+	 * whose key fits it best (a property of the key the state lacks counts when its value is false or none).
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void fullVariants(JsonElement json, ResourceLocation location) {
+		if (!json.isJsonObject() || !json.getAsJsonObject().has("variants") || !json.getAsJsonObject().get("variants").isJsonObject()) {
+			return;
+		}
+		String path = location.getPath();
+		String name = path.substring(path.lastIndexOf('/') + 1).replace(".json", "");
+		var block = net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS.getValue(new ResourceLocation(location.getNamespace(), name));
+		if (block == null || block == net.minecraft.init.Blocks.AIR) {
+			return;
+		}
+		JsonObject variants = json.getAsJsonObject().getAsJsonObject("variants");
+		var keys = new java.util.ArrayList<java.util.Map.Entry<java.util.Map<String, String>, JsonElement>>();
+		for (var entry : variants.entrySet()) {
+			var properties = new java.util.HashMap<String, String>();
+			if (!"normal".equals(entry.getKey()) && !entry.getKey().isEmpty()) {
+				for (String part : entry.getKey().split(",")) {
+					int equals = part.indexOf('=');
+					if (equals > 0) {
+						properties.put(part.substring(0, equals), part.substring(equals + 1));
+					}
+				}
+			}
+			keys.add(new java.util.AbstractMap.SimpleEntry<>(properties, entry.getValue()));
+		}
+		var additions = new java.util.LinkedHashMap<String, JsonElement>();
+		java.util.List<net.minecraft.block.state.IBlockState> states;
+		try {
+			states = block.getBlockState().getValidStates();
+		} catch (RuntimeException e) {
+			return;
+		}
+		if (states.size() > 4096) {
+			return;
+		}
+		for (var state : states) {
+			var actual = new java.util.TreeMap<String, String>();
+			for (var property : state.getProperties().entrySet()) {
+				net.minecraft.block.properties.IProperty key = property.getKey();
+				actual.put(key.getName(), key.getName((Comparable) property.getValue()));
+			}
+			var full = new StringBuilder();
+			for (var property : actual.entrySet()) {
+				if (full.length() > 0) {
+					full.append(',');
+				}
+				full.append(property.getKey()).append('=').append(property.getValue());
+			}
+			String fullKey = actual.isEmpty() ? "normal" : full.toString();
+			if (variants.has(fullKey) || additions.containsKey(fullKey)) {
+				continue;
+			}
+			JsonElement best = null;
+			int bestScore = -1;
+			for (var key : keys) {
+				int score = 0;
+				boolean fits = true;
+				for (var wanted : key.getKey().entrySet()) {
+					String value = actual.get(wanted.getKey());
+					if (value == null) {
+						if (!"false".equals(wanted.getValue()) && !"none".equals(wanted.getValue())) {
+							fits = false;
+							break;
+						}
+					} else if (value.equals(wanted.getValue())) {
+						score++;
+					} else {
+						fits = false;
+						break;
+					}
+				}
+				if (fits && score > bestScore) {
+					bestScore = score;
+					best = key.getValue();
+				}
+			}
+			if (best != null) {
+				additions.put(fullKey, best);
+			}
+		}
+		additions.forEach(variants::add);
 	}
 
 	private static final Set<String> SIDES = new HashSet<>(java.util.Arrays.asList("north", "east", "south", "west"));
