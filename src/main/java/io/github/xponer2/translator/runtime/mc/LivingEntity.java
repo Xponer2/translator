@@ -52,4 +52,15 @@ public abstract class LivingEntity extends net.minecraft.entity.EntityLivingBase
 	public static AttributeSupplier.Builder createLivingAttributes() {
 		return AttributeSupplier.living();
 	}
+
+	/** The drops of the mob's 1.21 loot table (entities/<type>), else 1.12.2's. */
+	@Override
+	protected void dropLoot(boolean recentlyHit, int looting, net.minecraft.util.DamageSource source) {
+		net.minecraft.util.ResourceLocation id = this.type == null ? null : EntityType.getKey(this.type);
+		net.minecraft.util.ResourceLocation table = id == null ? null : new net.minecraft.util.ResourceLocation(id.getNamespace(), "entities/" + id.getPath());
+		boolean byPlayer = recentlyHit && source != null && source.getTrueSource() instanceof net.minecraft.entity.player.EntityPlayer;
+		if (!io.github.xponer2.translator.loot.BlockLoot.entityDrops(table, this, byPlayer, looting, stack -> this.entityDropItem(stack, 0.0F))) {
+			super.dropLoot(recentlyHit, looting, source);
+		}
+	}
 }

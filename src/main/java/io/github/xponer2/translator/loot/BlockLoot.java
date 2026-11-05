@@ -80,6 +80,29 @@ public final class BlockLoot {
 		return true;
 	}
 
+	/**
+	 * The drops of a mod mob's 1.21 loot table ({@code <mod>:entities/<type>}); false when it has none. Looting,
+	 * killed-by-player and on-fire conditions as 1.21 has them.
+	 */
+	public static boolean entityDrops(@Nullable ResourceLocation table, net.minecraft.entity.EntityLivingBase entity, boolean killedByPlayer, int looting,
+			Consumer<ItemStack> out) {
+		JsonObject json = table == null ? null : table(table);
+		if (json == null) {
+			return false;
+		}
+		try {
+			var context = new Context(null, ItemStack.EMPTY, 0, entity.getRNG());
+			context.entity = entity;
+			context.killedByPlayer = killedByPlayer;
+			context.looting = looting;
+			context.table(json, out, 0);
+		} catch (RuntimeException e) {
+			LOGGER.warn("Couldn't evaluate the loot table {}: {}", table, e.toString());
+			return false;
+		}
+		return true;
+	}
+
 	@Nullable
 	static JsonObject table(ResourceLocation id) {
 		return TABLES.computeIfAbsent(id, key -> {
@@ -103,12 +126,17 @@ public final class BlockLoot {
 	}
 
 	private static final class Context {
+		@Nullable
 		final IBlockState state;
 		final ItemStack tool;
 		final int fortune;
 		final Random random;
+		@Nullable
+		net.minecraft.entity.EntityLivingBase entity;
+		boolean killedByPlayer;
+		int looting;
 
-		Context(IBlockState state, ItemStack tool, int fortune, Random random) {
+		Context(@Nullable IBlockState state, ItemStack tool, int fortune, Random random) {
 			this.state = state;
 			this.tool = tool;
 			this.fortune = fortune;
@@ -253,8 +281,20 @@ public final class BlockLoot {
 					return this.conditions(condition.get("terms"));
 				case "random_chance":
 					return this.random.nextFloat() < this.numberFloat(condition.get("chance"), 1.0F);
-				case "random_chance_with_enchanted_bonus":
-					return this.random.nextFloat() < this.numberFloat(condition.get("unenchanted_chance"), 0.0F);
+				case "random_chance_with_enchanted_bonus": {
+					float chance = this.numberFloat(condition.get("unenchanted_chance"), 0.0F);
+					if (this.looting > 0 && condition.has("enchanted_chance")) {
+						JsonElement enchanted = condition.get("enchanted_chance");
+						if (enchanted.isJsonObject() && enchanted.getAsJsonObject().has("base")) {
+							JsonObject linear = enchanted.getAsJsonObject();
+							chance = linear.get("base").getAsFloat()
+									+ (linear.has("per_level_above_first") ? linear.get("per_level_above_first").getAsFloat() : 0.0F) * (this.looting - 1);
+						} else {
+							chance = this.numberFloat(enchanted, chance);
+						}
+					}
+					return this.random.nextFloat() < chance;
+				}
 				case "table_bonus": {
 					JsonArray chances = condition.getAsJsonArray("chances");
 					int level = this.level(condition.get("enchantment").getAsString());
@@ -265,7 +305,15 @@ public final class BlockLoot {
 				case "block_state_property":
 					return this.properties(condition.has("properties") ? condition.getAsJsonObject("properties") : new JsonObject());
 				case "killed_by_player":
-					return false;
+					return this.killedByPlayer;
+				case "entity_properties": {
+					JsonObject predicate = condition.has("predicate") ? condition.getAsJsonObject("predicate") : new JsonObject();
+					if (predicate.has("flags") && predicate.getAsJsonObject("flags").has("is_on_fire")) {
+						boolean onFire = predicate.getAsJsonObject("flags").get("is_on_fire").getAsBoolean();
+						return this.entity != null && this.entity.isBurning() == onFire;
+					}
+					return true;
+				}
 				default:
 					// survives_explosion, entity / location / weather / time checks: as for a block a player breaks
 					return true;
@@ -321,6 +369,9 @@ public final class BlockLoot {
 
 		@SuppressWarnings({"rawtypes", "unchecked"})
 		private boolean properties(JsonObject properties) {
+			if (this.state == null) {
+				return true;
+			}
 			for (var entry : properties.entrySet()) {
 				IProperty property = null;
 				for (IProperty<?> candidate : this.state.getPropertyKeys()) {
@@ -389,6 +440,16 @@ public final class BlockLoot {
 							int max = limit.isJsonObject() && limit.getAsJsonObject().has("max") ? this.number(limit.getAsJsonObject().get("max"), 64)
 									: limit.isJsonPrimitive() ? limit.getAsInt() : 64;
 							current.setCount(Math.max(min, Math.min(max, current.getCount())));
+						}
+						break;
+					case "enchanted_count_increase":
+					case "looting_enchant":
+						if (this.looting > 0) {
+							float per = this.numberFloat(function.get("count"), 1.0F);
+							int extra = Math.round(this.looting * per * this.random.nextFloat());
+							int limit = function.has("limit") ? function.get("limit").getAsInt() : 0;
+							int count = current.getCount() + extra;
+							current.setCount(Math.min(current.getMaxStackSize(), limit > 0 ? Math.min(limit, count) : count));
 						}
 						break;
 					case "furnace_smelt": {
