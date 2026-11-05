@@ -48,18 +48,14 @@ final class WorldChecks {
 	@SuppressWarnings("deprecation")
 	static List<String> dimensionsOfMods(@Nullable String filter) {
 		var found = new LinkedHashSet<String>();
-		for (var mod : Loader.instance().getActiveModList()) {
-			if (!RuntimeMods.isRuntimeNamespace(mod.getModId())) {
-				continue;
-			}
-			CraftingHelper.findFiles(mod, "data", null, (root, file) -> {
-				var m = DIMENSION_FILE.matcher(root.relativize(file).toString().replace('\\', '/'));
+		RuntimeMods.forEachData((path, bytes) -> {
+			{
+				var m = DIMENSION_FILE.matcher(path);
 				if (m.matches() && SelfTest.wanted(filter, m.group(1))) {
 					found.add(m.group(1) + ":" + m.group(2));
 				}
-				return true;
-			}, true, true);
-		}
+			}
+		});
 		return new ArrayList<>(found);
 	}
 

@@ -96,29 +96,24 @@ public final class DataDimensions {
 		var dimensions = new LinkedHashMap<ResourceLocation, JsonObject>();
 		var types = new HashMap<ResourceLocation, JsonObject>();
 		var noise = new HashMap<ResourceLocation, JsonObject>();
-		for (ModContainer mod : Loader.instance().getActiveModList()) {
-			if (!RuntimeMods.isRuntimeNamespace(mod.getModId())) {
-				continue;
+		// from the mods' jars (FML lists the 1.21.1 mods only after post-init: none of their dimensions was found here)
+		RuntimeMods.forEachData((path, bytes) -> {
+			var m = FILE.matcher(path);
+			if (!m.matches()) {
+				return;
 			}
-			CraftingHelper.findFiles(mod, "data", null, (root, file) -> {
-				var m = FILE.matcher(root.relativize(file).toString().replace('\\', '/'));
-				if (!m.matches()) {
-					return true;
+			try {
+				var json = new JsonParser().parse(new String(bytes.get(), StandardCharsets.UTF_8)).getAsJsonObject();
+				var id = new ResourceLocation(m.group(1), m.group(3));
+				switch (m.group(2)) {
+					case "dimension" -> dimensions.put(id, json);
+					case "dimension_type" -> types.put(id, json);
+					default -> noise.put(id, json);
 				}
-				try {
-					var json = new JsonParser().parse(new String(Files.readAllBytes(file), StandardCharsets.UTF_8)).getAsJsonObject();
-					var id = new ResourceLocation(m.group(1), m.group(3));
-					switch (m.group(2)) {
-						case "dimension" -> dimensions.put(id, json);
-						case "dimension_type" -> types.put(id, json);
-						default -> noise.put(id, json);
-					}
-				} catch (IOException | RuntimeException e) {
-					LOGGER.warn("Couldn't read {} of {}: {}", file, mod.getModId(), e.toString());
-				}
-				return true;
-			}, true, true);
-		}
+			} catch (RuntimeException e) {
+				LOGGER.warn("Couldn't read {}: {}", path, e.toString());
+			}
+		});
 		for (var entry : dimensions.entrySet()) {
 			ResourceLocation id = entry.getKey();
 			if ("minecraft".equals(id.getNamespace())) {

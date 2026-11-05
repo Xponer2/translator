@@ -44,6 +44,20 @@ public final class DataEnchantments {
 
 	@SubscribeEvent
 	public void onRegister(RegistryEvent.Register<Enchantment> event) {
+		// the original 1.21.1 mods' enchantments, from their jars (FML lists them only after post-init)
+		io.github.xponer2.translator.runtime.RuntimeMods.forEachData((path, bytes) -> {
+			var m = FILE.matcher(path);
+			if (!m.matches() || "minecraft".equals(m.group(1)) || !io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(m.group(1))) {
+				return;
+			}
+			var id = new ResourceLocation(m.group(1), m.group(2));
+			try {
+				var json = new JsonParser().parse(new String(bytes.get(), StandardCharsets.UTF_8)).getAsJsonObject();
+				event.getRegistry().register(new DataEnchantment(id, json).setRegistryName(id));
+			} catch (RuntimeException e) {
+				Translator.LOGGER.error("Couldn't load the enchantment {}", id, e);
+			}
+		});
 		for (var mod : Loader.instance().getActiveModList()) {
 			if (!Translator.isPortedMod(mod.getModId())) {
 				continue;
