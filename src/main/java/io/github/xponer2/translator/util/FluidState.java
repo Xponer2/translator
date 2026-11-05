@@ -177,4 +177,42 @@ public final class FluidState {
 	public int getAmount() {
 		return this.amount;
 	}
+
+	/**
+	 * 1.21 {@code state.getValue(property)} of a fluid state: its level (the amount) and falling (never here); a
+	 * property the Translator's fluid states don't keep gives its first value. A mod's flowing fluid reads its level so
+	 * (NeoForge BaseFlowingFluid.Flowing.getAmount).
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends Comparable<T>> T getValue(net.minecraft.block.properties.IProperty<T> property) {
+		if ("level".equals(property.getName()) && property.getValueClass() == Integer.class) {
+			int level = this.amount;
+			for (T value : property.getAllowedValues()) {
+				if (value instanceof Integer allowed && allowed == level) {
+					return value;
+				}
+			}
+			return (T) Integer.valueOf(Math.max(1, Math.min(8, level)));
+		}
+		if ("falling".equals(property.getName()) && property.getValueClass() == Boolean.class) {
+			return (T) Boolean.FALSE;
+		}
+		return property.getAllowedValues().iterator().next();
+	}
+
+	/**
+	 * 1.21 {@code state.setValue(property, value)}: a level sets the amount; other properties aren't kept. It returns
+	 * Object as 1.21's StateHolder.setValue does once erased (S), so the mods' calls find it.
+	 */
+	public <T extends Comparable<T>, V extends T> Object setValue(net.minecraft.block.properties.IProperty<T> property, V value) {
+		if ("level".equals(property.getName()) && value instanceof Integer level) {
+			return of(this.fluid, this.source, level);
+		}
+		return this;
+	}
+
+	/** 1.21 {@code state.hasProperty(property)}: level and falling. */
+	public boolean hasProperty(net.minecraft.block.properties.IProperty<?> property) {
+		return "level".equals(property.getName()) || "falling".equals(property.getName());
+	}
 }

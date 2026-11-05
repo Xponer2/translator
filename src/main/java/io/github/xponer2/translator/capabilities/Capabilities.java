@@ -34,7 +34,10 @@ public final class Capabilities {
 	public static final class ItemHandler {
 		public static final BlockCapability<IItemHandler, EnumFacing> BLOCK = new BlockCapability<>(() -> CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
 		public static final ItemCapability<IItemHandler, Void> ITEM = new ItemCapability<>(() -> CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
-		public static final ItemCapability<IItemHandler, Void> ENTITY = ITEM;
+		/** An entity's items (a player's inventory: a backpack's feeding and refill upgrades read it). */
+		public static final EntityCapability<IItemHandler, Void> ENTITY = new EntityCapability<>(() -> CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
+		public static final EntityCapability<IItemHandler, EnumFacing> ENTITY_AUTOMATION = new EntityCapability<>(
+				() -> CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
 
 		private ItemHandler() {
 		}

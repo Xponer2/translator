@@ -45,6 +45,7 @@ import io.github.xponer2.translator.content.Copper;
 public final class CopperTextures {
 	private static final ResourceLocation IRON_INGOT = new ResourceLocation("minecraft", "textures/items/iron_ingot.png");
 	private static final ResourceLocation IRON_ORE = new ResourceLocation("minecraft", "textures/blocks/iron_ore.png");
+	private static final ResourceLocation IRON_BLOCK = new ResourceLocation("minecraft", "textures/blocks/iron_block.png");
 	private static final ResourceLocation STONE = new ResourceLocation("minecraft", "textures/blocks/stone.png");
 
 	// copper gradient (dark to light): brightness 0..255 followed by the RGB it maps to
@@ -65,6 +66,7 @@ public final class CopperTextures {
 	public void onModels(ModelRegistryEvent event) {
 		ModelLoader.setCustomModelResourceLocation(Copper.ingot, 0, new ModelResourceLocation(Copper.INGOT_ID, "inventory"));
 		ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(Copper.ore), 0, new ModelResourceLocation(Copper.ORE_ID, "inventory"));
+		ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(Copper.block), 0, new ModelResourceLocation(Copper.BLOCK_ID, "inventory"));
 	}
 
 	/**
@@ -76,6 +78,7 @@ public final class CopperTextures {
 		var map = event.getMap();
 		map.setTextureEntry(new RecoloredSprite(Translator.MOD_ID + ":item/copper_ingot", IRON_INGOT, false));
 		map.setTextureEntry(new RecoloredSprite(Translator.MOD_ID + ":block/copper_ore", IRON_ORE, true));
+		map.setTextureEntry(new RecoloredSprite(Translator.MOD_ID + ":block/copper_block", IRON_BLOCK, false));
 	}
 
 	private static final class RecoloredSprite extends TextureAtlasSprite {

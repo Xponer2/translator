@@ -208,6 +208,16 @@ public abstract class Screen extends GuiScreen implements ContainerEventHandler,
 		this.drawDefaultBackground();
 	}
 
+	/** 1.21 {@code Screen.getTooltipFromItem(minecraft, stack)}: the stack's tooltip lines as text components. */
+	public static List<ITextComponent> getTooltipFromItem(Minecraft minecraft, net.minecraft.item.ItemStack stack) {
+		var lines = new ArrayList<ITextComponent>();
+		for (String line : stack.getTooltip(minecraft.player, minecraft.gameSettings.advancedItemTooltips
+				? net.minecraft.client.util.ITooltipFlag.TooltipFlags.ADVANCED : net.minecraft.client.util.ITooltipFlag.TooltipFlags.NORMAL)) {
+			lines.add(new net.minecraft.util.text.TextComponentString(line));
+		}
+		return lines;
+	}
+
 	public static boolean hasShiftDown() {
 		return isShiftKeyDown();
 	}

@@ -35,11 +35,27 @@ public final class AttributeInstance {
 	private final Attribute attribute;
 	@Nullable
 	private final IAttributeInstance forge;
+	/** The modifiers of one made on its own (not an entity's). */
+	@Nullable
+	private final Map<ResourceLocation, AttributeModifier> own;
 
 	private AttributeInstance(EntityLivingBase entity, Attribute attribute, @Nullable IAttributeInstance forge) {
 		this.entity = entity;
 		this.attribute = attribute;
 		this.forge = forge;
+		this.own = null;
+	}
+
+	/**
+	 * 1.21 {@code new AttributeInstance(attribute, onDirty)}: one of no entity (a backpack's tool swapper works out a
+	 * weapon's damage with one): on 1.12.2's instance of a map of its own when 1.12.2 has the attribute.
+	 */
+	public AttributeInstance(Holder<Attribute> holder, @Nullable java.util.function.Consumer<AttributeInstance> onDirty) {
+		this.entity = null;
+		this.attribute = holder.value();
+		this.forge = this.attribute.forge() == null ? null
+				: new net.minecraft.entity.ai.attributes.AttributeMap().registerAttribute(this.attribute.forge());
+		this.own = new HashMap<>();
 	}
 
 	/** 1.21 entity.getAttribute(attribute): null when the entity doesn't have it. */
@@ -69,6 +85,9 @@ public final class AttributeInstance {
 	}
 
 	private Map<ResourceLocation, AttributeModifier> virtual() {
+		if (this.own != null) {
+			return this.own;
+		}
 		return VIRTUAL.computeIfAbsent(this.entity, e -> new HashMap<>()).computeIfAbsent(this.attribute.name(), n -> new HashMap<>());
 	}
 
@@ -174,6 +193,9 @@ public final class AttributeInstance {
 	}
 
 	private void applyVirtual() {
+		if (this.entity == null) {
+			return;
+		}
 		if (this.attribute == Attributes.STEP_HEIGHT.value()) {
 			this.entity.stepHeight = (float) this.getValue();
 		} else if (this.attribute == Attributes.CREATIVE_FLIGHT.value() && this.entity instanceof EntityPlayer player

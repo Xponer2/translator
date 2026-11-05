@@ -453,6 +453,11 @@ public final class MiscBridges {
 	}
 
 	@Nullable
+	/** 1.21 {@code itemEntity.setThrower(entity)}: 1.12.2 keeps the thrower's name. */
+	public static void setThrower(net.minecraft.entity.item.EntityItem item, @Nullable net.minecraft.entity.Entity thrower) {
+		item.setThrower(thrower == null ? null : thrower.getName());
+	}
+
 	public static net.minecraft.entity.Entity getOwner(net.minecraft.entity.item.EntityItem item) {
 		String owner = item.getOwner();
 		return owner == null ? null : item.world.getPlayerEntityByName(owner);
@@ -563,6 +568,32 @@ public final class MiscBridges {
 		Object value = function.apply(key);
 		map.put(key, value);
 		return value;
+	}
+
+	/** 1.21 {@code stack.getDrinkingSound()}: the item's own (a 1.21.1 mod's item may have one), else the generic drink. */
+	public static net.minecraft.util.SoundEvent getDrinkingSound(ItemStack stack) {
+		try {
+			var method = stack.getItem().getClass().getMethod("getDrinkingSound");
+			if (method.invoke(stack.getItem()) instanceof net.minecraft.util.SoundEvent sound) {
+				return sound;
+			}
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			// none of its own
+		}
+		return net.minecraft.init.SoundEvents.ENTITY_GENERIC_DRINK;
+	}
+
+	/** 1.21 {@code stack.is(holderSet)}: whether its item is in the set. */
+	public static boolean is(ItemStack stack, Object set) {
+		if (!(set instanceof Iterable<?> holders) || stack.isEmpty()) {
+			return false;
+		}
+		for (Object holder : holders) {
+			if (holder instanceof Holder<?> h && h.value() == stack.getItem()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

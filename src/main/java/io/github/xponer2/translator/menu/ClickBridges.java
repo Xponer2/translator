@@ -95,6 +95,17 @@ public final class ClickBridges {
 		return Optional.of(taken);
 	}
 
+	/**
+	 * NeoForge {@code slot.setBackground(atlas, sprite)}: the icon of an empty slot (a tank's input), 1.12.2's background
+	 * sprite of the blocks atlas when the slot draws it; the slot itself back (a mod adds the slot it returns).
+	 */
+	public static Slot setBackground(Slot slot, net.minecraft.util.ResourceLocation atlas, net.minecraft.util.ResourceLocation sprite) {
+		if (sprite != null) {
+			slot.setBackgroundName(sprite.toString());
+		}
+		return slot;
+	}
+
 	/** 1.21 {@code slot.setByPlayer(stack)}: the stack into the slot. */
 	public static void setByPlayer(Slot slot, ItemStack stack) {
 		slot.putStack(stack);

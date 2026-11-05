@@ -353,3 +353,5 @@ R	net/minecraftforge/fluids/FluidUtil	io/github/xponer2/translator/runtime/redir
 R	net/minecraft/advancements/AdvancementManager	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
 R	net/minecraft/advancements/PlayerAdvancements	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
 R	net/minecraft/world/gen/NoiseGeneratorPerlin	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/client/audio/ISound	io/github/xponer2/translator/client/SoundBridges
+R	net/minecraftforge/common/IShearable	io/github/xponer2/translator/runtime/redirect/CommonGapBridges

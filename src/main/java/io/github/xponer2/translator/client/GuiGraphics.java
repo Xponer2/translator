@@ -84,6 +84,52 @@ public class GuiGraphics {
         this.fillGradient(x1, y1, x2, y2, colorFrom, colorTo);
     }
 
+    /**
+     * 1.21 {@code renderTooltipInternal(font, components, x, y, positioner)}: the text of each tooltip component (a
+     * text line holds a FormattedCharSequence, a text component here) drawn the 1.12.2 way; images are left out.
+     */
+    public void renderTooltipInternal(FontRenderer font, List<?> components, int mouseX, int mouseY, Object positioner) {
+        var lines = new java.util.ArrayList<String>();
+        for (Object component : components) {
+            String text = tooltipText(component);
+            if (text != null) {
+                lines.add(text);
+            }
+        }
+        if (!lines.isEmpty()) {
+            this.renderTooltipLines(font, lines, mouseX, mouseY);
+        }
+    }
+
+    @javax.annotation.Nullable
+    private static String tooltipText(@javax.annotation.Nullable Object component) {
+        if (component == null) {
+            return null;
+        }
+        if (component instanceof ITextComponent text) {
+            return text.getFormattedText();
+        }
+        for (Class<?> type = component.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+            for (var field : type.getDeclaredFields()) {
+                if (ITextComponent.class.isAssignableFrom(field.getType()) || String.class == field.getType()) {
+                    try {
+                        field.setAccessible(true);
+                        Object value = field.get(component);
+                        if (value instanceof ITextComponent text) {
+                            return text.getFormattedText();
+                        }
+                        if (value instanceof String string) {
+                            return string;
+                        }
+                    } catch (ReflectiveOperationException | RuntimeException e) {
+                        // not readable: the next field
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     /** A tooltip placed by a 1.21 positioner: placed the 1.12.2 way. */
     public void renderTooltip(FontRenderer font, List<ITextComponent> lines, Object positioner, int mouseX, int mouseY) {
         this.renderTooltip(font, lines, mouseX, mouseY);

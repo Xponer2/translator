@@ -109,7 +109,8 @@ final class ModChecks {
 					}
 					continue;
 				}
-				if (recipe.getRecipeOutput().isEmpty() && !type.contains("special")) {
+				// a recipe whose data names no result makes it from the grid (a dye or clear recipe, 1.21's special ones)
+				if (recipe.getRecipeOutput().isEmpty() && !type.contains("special") && json.has("result")) {
 					broken.add(entry.getKey().getPath() + " (no result)");
 				} else {
 					int index = 0;

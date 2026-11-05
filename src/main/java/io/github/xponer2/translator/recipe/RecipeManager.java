@@ -319,7 +319,13 @@ public final class RecipeManager {
             recipe = serializer.codec().codec().parse(JsonOps.INSTANCE, object);
         } catch (RuntimeException | LinkageError e) {
             // a serializer whose codec doesn't work yet (an original 1.21.1 mod's, partly converted): this recipe only
-            errors.accept("the serializer " + type + " failed: " + e);
+            var where = new StringBuilder();
+            StackTraceElement[] trace = e.getStackTrace();
+            for (int i = 0; i < Math.min(4, trace.length); i++) {
+                where.append(i == 0 ? " at " : " < ").append(trace[i].getClassName()).append('.').append(trace[i].getMethodName()).append(':')
+                        .append(trace[i].getLineNumber());
+            }
+            errors.accept("the serializer " + type + " failed: " + e + where);
             return null;
         }
         var error = recipe.error();

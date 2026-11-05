@@ -62,6 +62,24 @@ public final class CommonGapBridges {
 		result.setRecipeUsed(recipe);
 	}
 
+	/** NeoForge {@code FluidUtil.getFluidHandler(level, pos, side)}: the block's fluid handler, empty when it has none. */
+	public static Optional<net.minecraftforge.fluids.capability.IFluidHandler> getFluidHandler(World world, BlockPos pos,
+			@Nullable net.minecraft.util.EnumFacing side) {
+		return Optional.ofNullable(FluidUtil.getFluidHandler(world, pos, side));
+	}
+
+	/** NeoForge {@code FluidUtil.tryPlaceFluid(player, level, hand, pos, handler, fluid)}: 1.12.2's takes no hand. */
+	public static boolean tryPlaceFluid(@Nullable net.minecraft.entity.player.EntityPlayer player, World world, net.minecraft.util.EnumHand hand,
+			BlockPos pos, net.minecraftforge.fluids.capability.IFluidHandler handler, FluidStack fluid) {
+		return FluidUtil.tryPlaceFluid(player, world, pos, handler, fluid);
+	}
+
+	/** NeoForge {@code IShearable.isShearable(player, stack, level, pos)}: 1.12.2's asks the stack, world and position. */
+	public static boolean isShearable(net.minecraftforge.common.IShearable shearable, @Nullable net.minecraft.entity.player.EntityPlayer player,
+			ItemStack stack, World world, BlockPos pos) {
+		return shearable.isShearable(stack, world, pos);
+	}
+
 	/** NeoForge {@code FluidUtil.getFluidContained(stack)}: the fluid of a container item, empty when none. */
 	public static Optional<FluidStack> getFluidContained(ItemStack stack) {
 		return Optional.ofNullable(FluidUtil.getFluidContained(stack));

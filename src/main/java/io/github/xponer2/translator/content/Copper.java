@@ -46,9 +46,12 @@ import net.minecraftforge.oredict.OreDictionary;
 public final class Copper {
 	public static final ResourceLocation INGOT_ID = new ResourceLocation(Translator.MOD_ID, "copper_ingot");
 	public static final ResourceLocation ORE_ID = new ResourceLocation(Translator.MOD_ID, "copper_ore");
+	public static final ResourceLocation BLOCK_ID = new ResourceLocation(Translator.MOD_ID, "copper_block");
 
 	public static Item ingot;
 	public static Block ore;
+	/** The block of copper (1.21 {@code minecraft:copper_block}: mods' recipes take it, a backpack's starter stack upgrade). */
+	public static Block block;
 	private static boolean active;
 	private static boolean generateOre = true;
 
@@ -72,6 +75,8 @@ public final class Copper {
 		public void onBlocks(RegistryEvent.Register<Block> event) {
 			ore = new OreBlock().setTranslationKey(Translator.MOD_ID + ".copper_ore").setRegistryName(ORE_ID);
 			event.getRegistry().register(ore);
+			block = new StorageBlock().setTranslationKey(Translator.MOD_ID + ".copper_block").setRegistryName(BLOCK_ID);
+			event.getRegistry().register(block);
 		}
 
 		@SubscribeEvent
@@ -79,6 +84,30 @@ public final class Copper {
 			ingot = new Item().setTranslationKey(Translator.MOD_ID + ".copper_ingot").setRegistryName(INGOT_ID);
 			event.getRegistry().register(ingot);
 			event.getRegistry().register(new ItemBlock(ore).setRegistryName(ORE_ID));
+			event.getRegistry().register(new ItemBlock(block).setRegistryName(BLOCK_ID));
+		}
+
+		/** Nine ingots make a block and a block nine ingots, as in 1.21. */
+		@SubscribeEvent
+		public void onRecipes(RegistryEvent.Register<net.minecraft.item.crafting.IRecipe> event) {
+			var ingots = net.minecraft.item.crafting.Ingredient.fromItem(ingot);
+			var grid = net.minecraft.util.NonNullList.withSize(9, ingots);
+			event.getRegistry().register(new net.minecraft.item.crafting.ShapedRecipes("", 3, 3, grid, new ItemStack(block))
+					.setRegistryName(new ResourceLocation(Translator.MOD_ID, "copper_block")));
+			event.getRegistry().register(new net.minecraft.item.crafting.ShapelessRecipes("", new ItemStack(ingot, 9),
+					net.minecraft.util.NonNullList.from(net.minecraft.item.crafting.Ingredient.EMPTY, net.minecraft.item.crafting.Ingredient.fromItem(Item.getItemFromBlock(block))))
+					.setRegistryName(new ResourceLocation(Translator.MOD_ID, "copper_ingot_from_block")));
+		}
+	}
+
+	// like the 1.21 block of copper: a stone pickaxe mines it
+	private static final class StorageBlock extends Block {
+		StorageBlock() {
+			super(Material.IRON);
+			this.setHardness(3.0F);
+			this.setResistance(6.0F);
+			this.setSoundType(SoundType.METAL);
+			this.setHarvestLevel("pickaxe", 1);
 		}
 	}
 
@@ -103,8 +132,11 @@ public final class Copper {
 		if (active) {
 			ingot.setCreativeTab(CreativeTabs.MATERIALS);
 			ore.setCreativeTab(CreativeTabs.BUILDING_BLOCKS);
+			block.setCreativeTab(CreativeTabs.BUILDING_BLOCKS);
 			OreDictionary.registerOre("ingotCopper", ingot);
 			OreDictionary.registerOre("oreCopper", ore);
+			OreDictionary.registerOre("blockCopper", block);
+			ItemIds.registerFlattened(new ResourceLocation("minecraft", "copper_block"), Item.getItemFromBlock(block), 0);
 			GameRegistry.addSmelting(ore, new ItemStack(ingot), 0.7F);
 			ItemIds.registerFlattened(new ResourceLocation("minecraft", "copper_ingot"), ingot, 0);
 			ItemIds.registerFlattened(new ResourceLocation("minecraft", "copper_ore"), Item.getItemFromBlock(ore), 0);
@@ -117,6 +149,8 @@ public final class Copper {
 			ItemIds.registerFlattened(new ResourceLocation("minecraft", "copper_ingot"), copper.getItem(), meta(copper));
 			OreDictionary.getOres("oreCopper", false).stream().findFirst().ifPresent(o ->
 					ItemIds.registerFlattened(new ResourceLocation("minecraft", "copper_ore"), o.getItem(), meta(o)));
+			OreDictionary.getOres("blockCopper", false).stream().filter(s -> s.getItem() != Item.getItemFromBlock(block)).findFirst().ifPresent(b ->
+					ItemIds.registerFlattened(new ResourceLocation("minecraft", "copper_block"), b.getItem(), meta(b)));
 			Translator.LOGGER.info("Copper comes from {}: the Translator's copper is hidden", copper.getItem().getRegistryName());
 		}
 	}

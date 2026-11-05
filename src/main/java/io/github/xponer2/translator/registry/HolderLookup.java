@@ -23,6 +23,11 @@ public interface HolderLookup {
             return RegistryOps.create(ops, this);
         }
 
+        /** 1.21 {@code listRegistries()}: the registries there are (a command's argument lists an item registry). */
+        default java.util.stream.Stream<Registry<?>> listRegistries() {
+            return java.util.stream.StreamSupport.stream(BuiltInRegistries.REGISTRY.spliterator(), false);
+        }
+
         default <T> Registry<T> lookupOrThrow(ResourceKey<? extends Registry<? extends T>> key) {
             @SuppressWarnings("unchecked")
             var registry = (Registry<T>) BuiltInRegistries.byKey((ResourceKey<Registry<T>>) (ResourceKey<?>) key);

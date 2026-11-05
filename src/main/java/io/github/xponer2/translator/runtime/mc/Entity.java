@@ -68,4 +68,15 @@ public abstract class Entity extends net.minecraft.entity.Entity {
 	public void tick() {
 		super.onUpdate();
 	}
+
+	/** 1.21: in a bubble column (1.12.2 has none): pulled down or pushed up as there. */
+	public void onInsideBubbleColumn(boolean down) {
+		this.motionY = down ? Math.max(-0.3D, this.motionY - 0.03D) : Math.min(0.7D, this.motionY + 0.06D);
+		this.fallDistance = 0.0F;
+	}
+
+	/** 1.21: above a bubble column. */
+	public void onAboveBubbleCol(boolean down) {
+		this.motionY = down ? Math.max(-0.9D, this.motionY - 0.03D) : Math.min(1.8D, this.motionY + 0.1D);
+	}
 }

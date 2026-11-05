@@ -634,6 +634,49 @@ public final class SelfTest {
 		}
 
 		/**
+		 * An item that takes what is clicked onto it in a menu (1.21 {@code overrideOtherStackedOnMe}: a backpack takes
+		 * the item): in the player's inventory, sticks on the cursor clicked onto it (right, then left button) through
+		 * 1.12.2's own click code; some of them must leave the cursor.
+		 */
+		private void testStackedOnMe(Item item) {
+			var inventory = this.player.inventory;
+			int index = 9;
+			ItemStack previous = inventory.getStackInSlot(index);
+			try {
+				inventory.setInventorySlotContents(index, new ItemStack(item));
+				net.minecraft.inventory.Slot target = null;
+				for (net.minecraft.inventory.Slot slot : this.player.inventoryContainer.inventorySlots) {
+					if (slot.inventory == inventory && slot.getSlotIndex() == index) {
+						target = slot;
+					}
+				}
+				if (target == null) {
+					return;
+				}
+				boolean taken = false;
+				for (int button : new int[] {1, 0}) {
+					inventory.setItemStack(new ItemStack(net.minecraft.init.Items.STICK, 3));
+					int slotNumber = target.slotNumber;
+					this.attempt("click onto it (button " + button + ")", () -> this.player.inventoryContainer.slotClick(slotNumber, button,
+							net.minecraft.inventory.ClickType.PICKUP, this.player));
+					ItemStack cursor = inventory.getItemStack();
+					if (cursor.getItem() != net.minecraft.init.Items.STICK || cursor.getCount() < 3) {
+						taken = true;
+						break;
+					}
+				}
+				if (!taken) {
+					this.current.problems.add("click onto it: sticks clicked onto it in the inventory stay on the cursor (its overrideOtherStackedOnMe isn't asked)");
+				} else {
+					this.current.notes.add("takes items clicked onto it");
+				}
+			} finally {
+				inventory.setItemStack(ItemStack.EMPTY);
+				inventory.setInventorySlotContents(index, previous);
+			}
+		}
+
+		/**
 		 * A mod's fluid bucket as a player uses it, looking at the ground of the cell: the fluid is placed there, and an
 		 * empty bucket takes the source back.
 		 */
@@ -942,6 +985,13 @@ public final class SelfTest {
 				this.current = record[0];
 				this.testMenu();
 			});
+			if (declaresOwn(item.getClass(), "overrideOtherStackedOnMe")) {
+				this.steps.add(() -> {
+					this.current = record[0];
+					this.closeMenu();
+					this.testStackedOnMe(item);
+				});
+			}
 			if (item instanceof io.github.xponer2.translator.runtime.mc.BucketItem bucket) {
 				this.steps.add(() -> {
 					this.current = record[0];
@@ -1156,6 +1206,18 @@ public final class SelfTest {
 	@FunctionalInterface
 	interface ThrowingRunnable {
 		void run() throws Throwable;
+	}
+
+	/** Whether a class of a 1.21.1 mod (not the Translator's facades) declares the method in its own chain. */
+	static boolean declaresOwn(Class<?> type, String name) {
+		for (Class<?> c = type; c != null && !c.getName().startsWith("io.github.xponer2.translator.") && !c.getName().startsWith("net.minecraft."); c = c.getSuperclass()) {
+			for (java.lang.reflect.Method method : c.getDeclaredMethods()) {
+				if (method.getName().equals(name)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	/** The exception and where in a mod it came from (the first frame outside the game, Forge and the JDK). */

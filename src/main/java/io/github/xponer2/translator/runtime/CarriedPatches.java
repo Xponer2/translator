@@ -37,7 +37,53 @@ final class CarriedPatches {
 		if ("net/minecraft/world/level/block/grower/TreeGrower.class".equals(path)) {
 			return callInstead(bytes, "growTree", "io/github/xponer2/translator/world/TreeGrowing");
 		}
+		if ("net/neoforged/neoforge/fluids/BaseFlowingFluid$Flowing.class".equals(path)) {
+			return withoutDefaultState(bytes);
+		}
 		return absentCasts(putOnce(bytes));
+	}
+
+	/**
+	 * NeoForge's flowing fluid sets its default state from its state definition ({@code
+	 * registerDefaultState(getStateDefinition().any().setValue(LEVEL, 7))}): the Translator's fluid states keep no state
+	 * definition, so the constructor threw and no mod's flowing fluid was registered (Sophisticated Core's experience,
+	 * every mod fluid made with BaseFlowingFluid). The statement is left out; the level is the state's amount here.
+	 */
+	private static byte[] withoutDefaultState(byte[] bytes) {
+		var node = new ClassNode();
+		new ClassReader(bytes).accept(node, 0);
+		boolean changed = false;
+		for (MethodNode method : node.methods) {
+			if (!"<init>".equals(method.name)) {
+				continue;
+			}
+			AbstractInsnNode superCall = null;
+			for (AbstractInsnNode insn : method.instructions.toArray()) {
+				if (superCall == null && insn instanceof MethodInsnNode call && call.getOpcode() == Opcodes.INVOKESPECIAL && "<init>".equals(call.name)) {
+					superCall = insn;
+				} else if (superCall != null && insn instanceof MethodInsnNode call && "registerDefaultState".equals(call.name)) {
+					for (AbstractInsnNode remove = superCall.getNext(); remove != null; ) {
+						AbstractInsnNode next = remove.getNext();
+						boolean last = remove == insn;
+						if (remove.getOpcode() >= 0) {
+							method.instructions.remove(remove);
+						}
+						if (last) {
+							break;
+						}
+						remove = next;
+					}
+					changed = true;
+					break;
+				}
+			}
+		}
+		if (!changed) {
+			return bytes;
+		}
+		var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+		node.accept(writer);
+		return writer.toByteArray();
 	}
 
 	private static final String VANILLA_BLOCKS = "net/minecraft/world/level/block/Blocks";

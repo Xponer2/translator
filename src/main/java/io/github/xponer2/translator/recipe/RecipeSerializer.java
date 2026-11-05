@@ -19,6 +19,12 @@ import com.mojang.serialization.MapCodec;
  * {@code "type"} id in {@code Registries.RECIPE_SERIALIZER}.
  */
 public interface RecipeSerializer<T extends Recipe<?>> {
+    /** The vanilla serializers (a mod's serializer wrapping the shaped one: Sophisticated Core's upgrade recipes). */
+    RecipeSerializer<ShapedRecipe> SHAPED_RECIPE = VanillaRecipes.SHAPED;
+    RecipeSerializer<ShapelessRecipe> SHAPELESS_RECIPE = VanillaRecipes.SHAPELESS;
+    RecipeSerializer<VanillaRecipes.SmeltingRecipe> SMELTING_RECIPE = VanillaRecipes.SMELTING;
+    RecipeSerializer<VanillaRecipes.StonecutterRecipe> STONECUTTER = VanillaRecipes.STONECUTTER;
+
     MapCodec<T> codec();
 
     StreamCodec<RegistryFriendlyByteBuf, T> streamCodec();

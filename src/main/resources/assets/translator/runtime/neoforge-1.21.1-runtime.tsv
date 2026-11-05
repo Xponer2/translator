@@ -468,3 +468,5 @@ C	net/minecraft/world/inventory/ClickAction	io/github/xponer2/translator/menu/Cl
 C	net/neoforged/neoforge/event/entity/player/ItemEntityPickupEvent$Post	io/github/xponer2/translator/runtime/neoforge/ItemEntityPickupEvent$Post
 # the item entity renderer a mod's own item entity uses, made from a renderer context
 C	net/minecraft/client/renderer/entity/ItemEntityRenderer	io/github/xponer2/translator/client/entity/ItemEntityRenderer
+# the creation mode of a chunk's block entity read (immediate, queued, check): 1.12.2's enum of the same constants
+C	net/minecraft/world/level/chunk/LevelChunk$EntityCreationType	net/minecraft/world/chunk/Chunk$EnumCreateEntityType

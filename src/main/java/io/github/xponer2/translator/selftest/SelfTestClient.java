@@ -188,7 +188,9 @@ final class SelfTestClient {
 					mc.addScheduledTask(() -> {
 						try {
 							ItemStack held = server.inventory.getItemStack();
-							if (!ItemStack.areItemStacksEqual(client, held)) {
+							// the server went on to the next item meanwhile (its menu closed, the cursor emptied): nothing to compare
+							boolean sameMenu = server.openContainer != null && server.openContainer.windowId == windowId;
+							if (sameMenu && !ItemStack.areItemStacksEqual(client, held)) {
 								run.addClientProblem(kind, id, "menu click didn't reach the server: the client holds " + client + ", the server " + held);
 							}
 							if (mc.currentScreen == screen) {
