@@ -74,7 +74,8 @@ public abstract class RandomizableContainerBlockEntity extends BaseContainerBloc
 		if (this.lootTable == null || !(this.world instanceof WorldServer server)) {
 			return;
 		}
-		LootTable table = server.getLootTableManager().getLootTableFromLocation(this.lootTable);
+		LootTable table = io.github.xponer2.translator.loot.JsonLootTable.of(this.lootTable,
+				server.getLootTableManager().getLootTableFromLocation(this.lootTable));
 		this.lootTable = null;
 		java.util.Random random = this.lootTableSeed == 0L ? new java.util.Random() : new java.util.Random(this.lootTableSeed);
 		LootContext.Builder context = new LootContext.Builder(server);

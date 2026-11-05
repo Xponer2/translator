@@ -38,7 +38,8 @@ public class ReloadableRegistries {
 		if (key == null || world == null) {
 			return LootTable.EMPTY_LOOT_TABLE;
 		}
-		LootTable table = world.getLootTableManager().getLootTableFromLocation(key.location());
+		LootTable table = io.github.xponer2.translator.loot.JsonLootTable.of(key.location(),
+				world.getLootTableManager().getLootTableFromLocation(key.location()));
 		return table == null ? LootTable.EMPTY_LOOT_TABLE : table;
 	}
 

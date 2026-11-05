@@ -103,8 +103,22 @@ public final class BlockLoot {
 		return true;
 	}
 
+	/** The items of a 1.21 table for a 1.12.2 loot context (chests, a mod's own rolls). */
+	public static void generate(JsonObject table, Random random, @Nullable net.minecraft.entity.EntityLivingBase entity, boolean byPlayer,
+			Consumer<ItemStack> out) {
+		var context = new Context(null, ItemStack.EMPTY, 0, random);
+		context.entity = entity;
+		context.killedByPlayer = byPlayer;
+		context.table(table, out, 0);
+	}
+
 	@Nullable
-	static JsonObject table(ResourceLocation id) {
+	public static JsonObject table(ResourceLocation id) {
+		return lookup(id);
+	}
+
+	@Nullable
+	private static JsonObject lookup(ResourceLocation id) {
 		return TABLES.computeIfAbsent(id, key -> {
 			for (String folder : new String[] {"loot_table", "loot_tables"}) {
 				String path = "data/" + key.getNamespace() + "/" + folder + "/" + key.getPath() + ".json";
