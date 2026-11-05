@@ -79,19 +79,16 @@ public final class BiomeSpawns {
 	}
 
 	private void scan() {
-		for (ModContainer mod : Loader.instance().getActiveModList()) {
-			if (!RuntimeMods.isRuntimeNamespace(mod.getModId())) {
-				continue;
-			}
-			CraftingHelper.findFiles(mod, "data", null, (root, file) -> {
-				String path = root.relativize(file).toString().replace('\\', '/');
+		// from the mods' jars (FML lists the 1.21.1 mods only after post-init)
+		RuntimeMods.forEachData((path, bytes) -> {
+			{
 				boolean modifier = MODIFIER.matcher(path).matches();
 				var tag = TAG.matcher(path);
 				if (!modifier && !tag.matches()) {
-					return true;
+					return;
 				}
 				try {
-					JsonElement json = new JsonParser().parse(new String(Files.readAllBytes(file), StandardCharsets.UTF_8));
+					JsonElement json = new JsonParser().parse(new String(bytes.get(), StandardCharsets.UTF_8));
 					if (modifier && json.isJsonObject()) {
 						this.modifiers.add(json.getAsJsonObject());
 					} else if (tag.matches() && json.isJsonObject() && json.getAsJsonObject().has("values")) {
@@ -100,12 +97,11 @@ public final class BiomeSpawns {
 							values.add(value.isJsonObject() ? value.getAsJsonObject().get("id").getAsString() : value.getAsString());
 						}
 					}
-				} catch (IOException | RuntimeException e) {
-					LOGGER.warn("Couldn't read {} of {}: {}", path, mod.getModId(), e.toString());
+				} catch (RuntimeException e) {
+					LOGGER.warn("Couldn't read {}: {}", path, e.toString());
 				}
-				return true;
-			}, true, true);
-		}
+			}
+		});
 	}
 
 	private int add(JsonObject modifier) {

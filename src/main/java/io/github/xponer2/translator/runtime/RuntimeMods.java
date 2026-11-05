@@ -144,6 +144,43 @@ public final class RuntimeMods {
 		return value;
 	}
 
+	/**
+	 * Every data file of the original 1.21.1 mods' jars ({@code data/<path>}), by its path under data/, from the jar
+	 * files themselves: the mods join FML's mod list only after post-init, so a scan of FML's active mods before (the
+	 * biomes at their registry event, the spawns at setup) found none of them ("0 biomes registered").
+	 */
+	public static void forEachData(java.util.function.BiConsumer<String, java.util.function.Supplier<byte[]>> consumer) {
+		var seen = new java.util.HashSet<java.io.File>();
+		for (var mod : new ArrayList<>(MODS)) {
+			java.io.File jar;
+			try {
+				jar = mod.getModInfo().getOwningFile().getFile().getFilePath().toFile();
+			} catch (RuntimeException e) {
+				continue;
+			}
+			if (jar == null || !seen.add(jar) || !jar.isFile()) {
+				continue;
+			}
+			try (var zip = new java.util.zip.ZipFile(jar)) {
+				for (var entry : java.util.Collections.list(zip.entries())) {
+					String name = entry.getName();
+					if (entry.isDirectory() || !name.startsWith("data/")) {
+						continue;
+					}
+					consumer.accept(name.substring("data/".length()), () -> {
+						try (var in = zip.getInputStream(entry)) {
+							return ModJar.readAll(in);
+						} catch (java.io.IOException e) {
+							throw new java.io.UncheckedIOException(e);
+						}
+					});
+				}
+			} catch (java.io.IOException | RuntimeException e) {
+				LOGGER.warn("Can't read the data of {}: {}", jar.getName(), e.toString());
+			}
+		}
+	}
+
 	/** A namespace of an original 1.21.1 mod: its registrations are lenient (an entry that fails is skipped). */
 	public static boolean isRuntimeNamespace(String namespace) {
 		for (var mod : MODS) {

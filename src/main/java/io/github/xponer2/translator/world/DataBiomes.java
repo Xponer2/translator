@@ -88,7 +88,9 @@ public final class DataBiomes {
 				continue;
 			}
 			var active = Loader.instance().activeModContainer();
-			Loader.instance().setActiveModContainer(this.owners.get(id));
+			if (this.owners.containsKey(id)) {
+				Loader.instance().setActiveModContainer(this.owners.get(id));
+			}
 			try {
 				var biome = new DataBiome(id, entry.getValue());
 				this.decorate(biome);
@@ -116,40 +118,37 @@ public final class DataBiomes {
 	/** The mods' biome, feature and tag files. */
 	private void scan() {
 		var overworldTags = new ArrayList<JsonObject>();
-		for (ModContainer mod : Loader.instance().getActiveModList()) {
-			if (!RuntimeMods.isRuntimeNamespace(mod.getModId())) {
-				continue;
+		// from the mods' jars (FML lists the 1.21.1 mods only after post-init: its active mods had none of them here)
+		RuntimeMods.forEachData((path, bytes) -> {
+			var m = FILE.matcher(path);
+			var t = TAG.matcher(path);
+			if (!m.matches() && !(t.matches() && "is_overworld".equals(t.group(2)))) {
+				return;
 			}
-			CraftingHelper.findFiles(mod, "data", null, (root, file) -> {
-				String path = root.relativize(file).toString().replace('\\', '/');
-				var m = FILE.matcher(path);
-				var t = TAG.matcher(path);
-				if (!m.matches() && !(t.matches() && "is_overworld".equals(t.group(2)))) {
-					return true;
-				}
-				JsonObject json;
-				try {
-					json = new JsonParser().parse(new String(Files.readAllBytes(file), StandardCharsets.UTF_8)).getAsJsonObject();
-				} catch (IOException | RuntimeException e) {
-					LOGGER.warn("Couldn't read {} of {}: {}", path, mod.getModId(), e.toString());
-					return true;
-				}
-				if (!m.matches()) {
-					overworldTags.add(json);
-					return true;
-				}
-				var id = new ResourceLocation(m.group(1), m.group(3));
-				switch (m.group(2)) {
-					case "biome" -> {
-						this.biomes.put(id, json);
-						this.owners.put(id, mod);
+			JsonObject json;
+			try {
+				json = new JsonParser().parse(new String(bytes.get(), StandardCharsets.UTF_8)).getAsJsonObject();
+			} catch (RuntimeException e) {
+				LOGGER.warn("Couldn't read {}: {}", path, e.toString());
+				return;
+			}
+			if (!m.matches()) {
+				overworldTags.add(json);
+				return;
+			}
+			var id = new ResourceLocation(m.group(1), m.group(3));
+			switch (m.group(2)) {
+				case "biome" -> {
+					this.biomes.put(id, json);
+					ModContainer owner = Loader.instance().getIndexedModList().get(id.getNamespace());
+					if (owner != null) {
+						this.owners.put(id, owner);
 					}
-					case "placed_feature" -> this.placed.put(id, json);
-					default -> this.configured.put(id, json);
 				}
-				return true;
-			}, true, true);
-		}
+				case "placed_feature" -> this.placed.put(id, json);
+				default -> this.configured.put(id, json);
+			}
+		});
 		for (JsonObject tag : overworldTags) {
 			if (tag.has("values")) {
 				for (JsonElement value : tag.getAsJsonArray("values")) {
