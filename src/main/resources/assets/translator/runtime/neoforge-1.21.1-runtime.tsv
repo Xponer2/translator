@@ -462,3 +462,9 @@ X	com/mojang/serialization/Codec	dispatchMap	(Ljava/lang/String;Ljava/util/funct
 X	net/neoforged/neoforge/client/ClientHooks	registerLayerDefinition	(Lnet/minecraft/client/model/geom/ModelLayerLocation;Ljava/util/function/Supplier;)V	io/github/xponer2/translator/client/model/EntityModelSet	(Ljava/lang/Object;Ljava/util/function/Supplier;)V
 # NeoForge's block outline event (a mod drawing its own outline): 1.12.2 Forge's
 C	net/neoforged/neoforge/client/event/RenderHighlightEvent$Block	net/minecraftforge/client/event/DrawBlockHighlightEvent
+# the mouse button of a menu click: the Translator's, so the item facade has the 1.21 stacked-on methods
+C	net/minecraft/world/inventory/ClickAction	io/github/xponer2/translator/menu/ClickAction
+# the item pickup after it happened
+C	net/neoforged/neoforge/event/entity/player/ItemEntityPickupEvent$Post	io/github/xponer2/translator/runtime/neoforge/ItemEntityPickupEvent$Post
+# the item entity renderer a mod's own item entity uses, made from a renderer context
+C	net/minecraft/client/renderer/entity/ItemEntityRenderer	io/github/xponer2/translator/client/entity/ItemEntityRenderer

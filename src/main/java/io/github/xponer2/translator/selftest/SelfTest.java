@@ -644,6 +644,10 @@ public final class SelfTest {
 			double py = this.player.posY;
 			double pz = this.player.posZ;
 			try {
+				// a fluid without a block (Sophisticated Core's experience): 1.21's bucket places nothing either
+				if (bucket.getFluid() != null && bucket.getFluid().getBlock() == null) {
+					return;
+				}
 				// above the cell, looking straight down at its ground: the fluid goes into the cell
 				this.player.setPositionAndUpdate(this.cell.getX() + 0.5D, this.cell.getY() + 1.0D, this.cell.getZ() + 0.5D);
 				this.player.rotationYaw = 0.0F;

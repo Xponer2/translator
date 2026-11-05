@@ -100,6 +100,18 @@ public class Item extends net.minecraft.item.Item implements TooltipContext.Hove
 		return new TextComponentString(ItemNames.displayName(this, stack));
 	}
 
+	/** 1.21: this stack, carried, clicked onto the one in a slot does something of its own (a bundle); here nothing. */
+	public boolean overrideStackedOnOther(ItemStack stack, net.minecraft.inventory.Slot slot, io.github.xponer2.translator.menu.ClickAction action,
+			EntityPlayer player) {
+		return false;
+	}
+
+	/** 1.21: another stack clicked onto this one in a slot (a backpack taking it); here nothing. */
+	public boolean overrideOtherStackedOnMe(ItemStack stack, ItemStack other, net.minecraft.inventory.Slot slot,
+			io.github.xponer2.translator.menu.ClickAction action, EntityPlayer player, io.github.xponer2.translator.menu.SlotAccess access) {
+		return false;
+	}
+
 	public boolean isFoil(ItemStack stack) {
 		return super.hasEffect(stack);
 	}

@@ -37,6 +37,52 @@ public final class DataComponentPatch {
             Codec.STRING.xmap(io.github.xponer2.translator.util.ResourceLocations::parse, ResourceLocation::toString), Codec.PASSTHROUGH)
             .comapFlatMap(DataComponentPatch::decode, DataComponentPatch::encode);
 
+    /**
+     * 1.21 {@code DataComponentPatch.STREAM_CODEC}: the components a stack sends (each type by its id, its value by the
+     * type's stream codec; a type without one stays on the server). The carried one read the 1.21 patch's own map, which
+     * this class hasn't: every stack with components a mod sent in its packets failed (Sophisticated Backpacks' contents).
+     */
+    public static final io.github.xponer2.translator.network.StreamCodec<io.github.xponer2.translator.network.RegistryFriendlyByteBuf, DataComponentPatch> STREAM_CODEC =
+            io.github.xponer2.translator.network.StreamCodec.of(DataComponentPatch::write, DataComponentPatch::read);
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void write(io.github.xponer2.translator.network.RegistryFriendlyByteBuf buffer, DataComponentPatch patch) {
+        var sent = new java.util.ArrayList<Map.Entry<DataComponentType<?>, Object>>();
+        for (var entry : patch.values.entrySet()) {
+            if (entry.getKey().streamCodec() != null && id(entry.getKey()) != null) {
+                sent.add(entry);
+            }
+        }
+        buffer.writeVarInt(sent.size());
+        for (var entry : sent) {
+            buffer.writeResourceLocation(id(entry.getKey()));
+            ((io.github.xponer2.translator.network.StreamCodec) entry.getKey().streamCodec()).encode(buffer, entry.getValue());
+        }
+    }
+
+    private static DataComponentPatch read(io.github.xponer2.translator.network.RegistryFriendlyByteBuf buffer) {
+        int count = buffer.readVarInt();
+        if (count == 0) {
+            return EMPTY;
+        }
+        var values = new LinkedHashMap<DataComponentType<?>, Object>();
+        var registry = io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.DATA_COMPONENT_TYPE);
+        for (int i = 0; i < count; i++) {
+            ResourceLocation id = buffer.readResourceLocation();
+            DataComponentType<?> type = (DataComponentType<?>) registry.get(id);
+            if (type == null || type.streamCodec() == null) {
+                throw new IllegalStateException("Unknown data component type " + id);
+            }
+            values.put(type, type.streamCodec().decode(buffer));
+        }
+        return new DataComponentPatch(Collections.unmodifiableMap(values));
+    }
+
+    @Nullable
+    private static ResourceLocation id(DataComponentType<?> type) {
+        return io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.DATA_COMPONENT_TYPE).getKey(type);
+    }
+
     private final Map<DataComponentType<?>, Object> values;
 
     public DataComponentPatch(Map<DataComponentType<?>, Object> values) {

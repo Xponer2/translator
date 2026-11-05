@@ -359,11 +359,9 @@ final class ApiCarry {
 			}
 		}
 		var unreachable = new java.util.HashSet<xyz.wagyourtail.jvmdg.shade.asm.tree.MethodNode>();
-		if (!hidden.isEmpty()) {
-			for (var m : node.methods) {
-				if (usesAny(m, hidden)) {
-					unreachable.add(m);
-				}
+		for (var m : node.methods) {
+			if (!hidden.isEmpty() && usesAny(m, hidden) || makesRestricted(m, original, restricted)) {
+				unreachable.add(m);
 			}
 		}
 		boolean madeOwnNested = classStandIn && (node.access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_INTERFACE) != 0
@@ -496,6 +494,23 @@ final class ApiCarry {
 	 * the registries) would register it twice when the shadow is initialized.
 	 */
 	/** Whether a method's code names one of the classes (as an owner, a type, a constant or a handle). */
+	/**
+	 * Whether the method makes an object with a constructor the shadow (another package) can't call: fastutil 8
+	 * Reference2ObjectMaps' initializer makes an EmptyMap, whose constructor is protected (the whole shadow failed with an
+	 * IllegalAccessError, a backpack's components with it).
+	 */
+	private static boolean makesRestricted(xyz.wagyourtail.jvmdg.shade.asm.tree.MethodNode method, String original,
+			java.util.function.Predicate<String> restricted) {
+		for (var insn : method.instructions) {
+			if (insn instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.MethodInsnNode call && "<init>".equals(call.name)
+					&& call.getOpcode() == xyz.wagyourtail.jvmdg.shade.asm.Opcodes.INVOKESPECIAL && !original.equals(call.owner)
+					&& restricted.test(call.owner + ".<init> " + call.desc)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private static boolean usesAny(xyz.wagyourtail.jvmdg.shade.asm.tree.MethodNode method, java.util.Set<String> classes) {
 		for (var insn : method.instructions) {
 			if (insn instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode type && classes.contains(type.desc)
@@ -572,6 +587,10 @@ final class ApiCarry {
 							boolean hidden = (access & (xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PUBLIC | xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PRIVATE)) == 0;
 							if (isStatic && !name.startsWith("<") && (!publicClass || hidden)) {
 								restricted.add(owner + "." + name + " " + desc);
+							}
+							// a constructor the shadows can't call (protected or package-private, or of a class that isn't public)
+							if ("<init>".equals(name) && (!publicClass || (access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PUBLIC) == 0)) {
+								restricted.add(owner + ".<init> " + desc);
 							}
 							return null;
 						}

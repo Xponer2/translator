@@ -72,6 +72,28 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
         return this.validBlocks.contains(state.getBlock());
     }
 
+    /** Whether the block entity is one of this type (1.21 {@code blockEntity.getType() == type}). */
+    public boolean is(@Nullable TileEntity tile) {
+        if (tile == null) {
+            return false;
+        }
+        if (tile instanceof io.github.xponer2.translator.block.BlockEntity facade && facade.getType() != null) {
+            return facade.getType() == this;
+        }
+        if (tile instanceof io.github.xponer2.translator.runtime.mc.SignBlockEntity sign && sign.getType() != null) {
+            return sign.getType() == this;
+        }
+        return this.tileClass != null && this.tileClass == tile.getClass();
+    }
+
+    /** 1.21 {@code getBlockEntity(level, pos)}: the block entity there when it is of this type, else null. */
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public T getBlockEntity(net.minecraft.world.IBlockAccess level, BlockPos pos) {
+        TileEntity tile = level.getTileEntity(pos);
+        return this.is(tile) ? (T) tile : null;
+    }
+
     public Set<Block> getValidBlocks() {
         return this.validBlocks;
     }

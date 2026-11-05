@@ -28,6 +28,18 @@ public final class ItemStackStatics {
 	public static final Codec<ItemStack> SINGLE_ITEM_CODEC = Codecs.SINGLE_ITEM;
 	public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> STREAM_CODEC = ByteBufCodecs.ITEM_STACK;
 	public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> OPTIONAL_STREAM_CODEC = ByteBufCodecs.OPTIONAL_ITEM_STACK;
+	/** 1.21 {@code OPTIONAL_UNTRUSTED_STREAM_CODEC}: the same stacks, checked the same way here. */
+	public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> OPTIONAL_UNTRUSTED_STREAM_CODEC = ByteBufCodecs.OPTIONAL_ITEM_STACK;
+	/**
+	 * Lists of stacks as 1.21 sends them (a size, then each stack): the codec of the API's own ItemStack read a stack
+	 * through 1.21's item codec and components, which the stacks written here didn't match (a mod's container sync failed).
+	 */
+	public static final StreamCodec<RegistryFriendlyByteBuf, java.util.List<ItemStack>> OPTIONAL_LIST_STREAM_CODEC = ByteBufCodecs.collection(
+			size -> net.minecraft.util.NonNullList.create(), ByteBufCodecs.OPTIONAL_ITEM_STACK);
+	public static final StreamCodec<RegistryFriendlyByteBuf, java.util.List<ItemStack>> LIST_STREAM_CODEC = ByteBufCodecs.collection(
+			size -> net.minecraft.util.NonNullList.create(), ByteBufCodecs.ITEM_STACK);
+	public static final Codec<ItemStack> STRICT_SINGLE_ITEM_CODEC = Codecs.SINGLE_ITEM;
+	public static final Codec<io.github.xponer2.translator.registry.Holder<net.minecraft.item.Item>> ITEM_NON_AIR_CODEC = Codecs.ITEM_NON_AIR;
 
 	private ItemStackStatics() {
 	}

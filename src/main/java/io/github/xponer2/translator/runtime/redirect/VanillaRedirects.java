@@ -562,6 +562,57 @@ public final class VanillaRedirects {
 		return add(list, (NBTBase) value);
 	}
 
+	/** 1.21 {@code ListTag} is a {@code List}: {@code addAll} (a mod saving its inventory's slots at once). */
+	public static boolean addAll(NBTTagList list, java.util.Collection<?> values) {
+		for (Object value : values) {
+			add(list, (NBTBase) value);
+		}
+		return !values.isEmpty();
+	}
+
+	public static void clear(NBTTagList list) {
+		while (!list.isEmpty()) {
+			list.removeTag(list.tagCount() - 1);
+		}
+	}
+
+	public static boolean contains(NBTTagList list, Object value) {
+		for (NBTBase tag : list) {
+			if (tag.equals(value)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** 1.21 {@code ListTag.set(index, tag)}: the tag that was there. */
+	public static NBTBase set(NBTTagList list, int index, NBTBase value) {
+		NBTBase previous = list.get(index);
+		list.set(index, value);
+		return previous;
+	}
+
+	/** The erased {@code List.set}. */
+	public static Object set(NBTTagList list, int index, Object value) {
+		return set(list, index, (NBTBase) value);
+	}
+
+	/** 1.21 {@code ListTag.add(index, tag)}: inserted (1.12.2's list appends only). */
+	public static void add(NBTTagList list, int index, NBTBase value) {
+		var after = new java.util.ArrayList<NBTBase>();
+		while (list.tagCount() > index) {
+			after.add(0, list.removeTag(list.tagCount() - 1));
+		}
+		add(list, value);
+		for (NBTBase tag : after) {
+			list.appendTag(tag);
+		}
+	}
+
+	public static void add(NBTTagList list, int index, Object value) {
+		add(list, index, (NBTBase) value);
+	}
+
 	/** A 1.21 {@code ListTag} is a {@code List}: 1.12.2's is only {@code Iterable}. */
 	public static java.util.stream.Stream<NBTBase> stream(NBTTagList list) {
 		return java.util.stream.StreamSupport.stream(list.spliterator(), false);

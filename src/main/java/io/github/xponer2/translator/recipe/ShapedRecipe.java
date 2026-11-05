@@ -27,11 +27,11 @@ import net.minecraft.world.World;
  * A shaped crafting recipe (1.21 {@code ShapedRecipe}, type {@code minecraft:crafting_shaped}).
  */
 public class ShapedRecipe implements CraftingRecipe {
-    protected final ShapedRecipePattern pattern;
-    protected final ItemStack result;
-    protected final String group;
-    protected final CraftingBookCategory category;
-    protected final boolean showNotification;
+    public final ShapedRecipePattern pattern;
+    public final ItemStack result;
+    public final String group;
+    public final CraftingBookCategory category;
+    public final boolean showNotification;
 
     public ShapedRecipe(String group, CraftingBookCategory category, ShapedRecipePattern pattern, ItemStack result, boolean showNotification) {
         this.group = group;

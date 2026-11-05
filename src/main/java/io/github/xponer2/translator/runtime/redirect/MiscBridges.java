@@ -49,6 +49,16 @@ import net.minecraft.world.chunk.Chunk;
  * entities, chunks, living entities) that they lack (runtime, neoforge-1.21.1-redirects.tsv).
  */
 public final class MiscBridges {
+	/**
+	 * 1.21 {@code level.getBlockEntity(pos, type)}: the block entity there when it is of that type (a backpack's model
+	 * reads its block entity's colors so; the call was skipped and every placed backpack showed the default).
+	 */
+	public static Optional<TileEntity> getBlockEntity(net.minecraft.world.IBlockAccess level, BlockPos pos,
+			io.github.xponer2.translator.registry.BlockEntityType<?> type) {
+		TileEntity tile = level == null || pos == null ? null : level.getTileEntity(pos);
+		return type != null && type.is(tile) ? Optional.of(tile) : Optional.empty();
+	}
+
 	// --- small 1.21 calls of the tested mods, each a 1.12.2 equivalent ----------------------------------------------
 
 	public static int getMiddleBlockX(net.minecraft.util.math.ChunkPos chunk) {

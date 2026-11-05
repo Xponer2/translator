@@ -1,0 +1,8 @@
+{
+  "values": [
+    "minecraft:brick",
+    "minecraft:nether_brick",
+    "ore:ingotBrick",
+    "ore:ingotBrickNether"
+  ]
+}

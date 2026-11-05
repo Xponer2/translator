@@ -54,6 +54,12 @@ public final class EntityRenderers {
 	}
 
 	private static Render<? extends Entity> create(Object provider, RenderManager manager, EntityType<?> type) {
+		if (provider == null) {
+			// a provider the converter left out: an item entity still draws its item
+			return net.minecraft.entity.item.EntityItem.class.isAssignableFrom(type.getEntityClass())
+					? new net.minecraft.client.renderer.entity.RenderEntityItem(manager, Minecraft.getMinecraft().getRenderItem())
+					: new Nothing(manager);
+		}
 		try {
 			Method create = null;
 			for (Method method : provider.getClass().getMethods()) {

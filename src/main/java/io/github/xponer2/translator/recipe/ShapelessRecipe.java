@@ -30,10 +30,10 @@ import java.util.ArrayList;
  * A shapeless crafting recipe (1.21 {@code ShapelessRecipe}, type {@code minecraft:crafting_shapeless}).
  */
 public class ShapelessRecipe implements CraftingRecipe {
-    protected final String group;
-    protected final CraftingBookCategory category;
-    protected final ItemStack result;
-    protected final NonNullList<Ingredient> ingredients;
+    public final String group;
+    public final CraftingBookCategory category;
+    public final ItemStack result;
+    public final NonNullList<Ingredient> ingredients;
 
     public ShapelessRecipe(String group, CraftingBookCategory category, ItemStack result, NonNullList<Ingredient> ingredients) {
         this.group = group;

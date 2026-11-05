@@ -61,3 +61,4 @@ S	net/minecraft/world/level/block/BedBlock	io/github/xponer2/translator/runtime/
 S	net/minecraft/world/entity/vehicle/Boat	io/github/xponer2/translator/runtime/mc/Boat
 S	net/minecraft/world/level/block/VineBlock	io/github/xponer2/translator/runtime/mc/VineBlock
 S	net/minecraft/world/level/block/entity/SignBlockEntity	io/github/xponer2/translator/runtime/mc/SignBlockEntity
+S	net/minecraft/world/entity/item/ItemEntity	io/github/xponer2/translator/runtime/mc/ItemEntity

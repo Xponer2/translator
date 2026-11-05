@@ -32,7 +32,47 @@ public final class ClickBridges {
 	private static final Map<Class<?>, Optional<Method>> STACKED_ON_OTHER = new ConcurrentHashMap<>();
 	private static final Map<Class<?>, Optional<Method>> OTHER_STACKED_ON_ME = new ConcurrentHashMap<>();
 
+	private static final ThreadLocal<ItemStack> RESULT = new ThreadLocal<>();
+
 	private ClickBridges() {
+	}
+
+	/**
+	 * The start of 1.12.2's {@code Container.slotClick} ({@code core.MenuClicks}): 1.21's
+	 * {@code tryItemClickBehaviourOverride}, a left or right click of a slot asking the carried item, then the clicked
+	 * one, whether it takes the click (a backpack takes the item clicked onto it). True when one did: the click is done.
+	 */
+	public static boolean overridesClick(net.minecraft.inventory.Container container, int slotId, int button, net.minecraft.inventory.ClickType type,
+			EntityPlayer player) {
+		if (type != net.minecraft.inventory.ClickType.PICKUP || button != 0 && button != 1 || player == null || slotId < 0
+				|| slotId >= container.inventorySlots.size()) {
+			return false;
+		}
+		Slot slot = container.inventorySlots.get(slotId);
+		if (slot == null) {
+			return false;
+		}
+		ItemStack clicked = slot.getStack();
+		ItemStack carried = player.inventory.getItemStack();
+		if (clicked.isEmpty() && carried.isEmpty()) {
+			return false;
+		}
+		ClickAction action = ClickAction.of(button);
+		ItemStack before = clicked.copy();
+		SlotAccess access = SlotAccess.of(player.inventory::getItemStack, player.inventory::setItemStack);
+		boolean taken = !carried.isEmpty() && overrideStackedOnOther(carried, slot, action, player)
+				|| !clicked.isEmpty() && overrideOtherStackedOnMe(clicked, carried, slot, action, player, access);
+		if (taken) {
+			RESULT.set(before);
+		}
+		return taken;
+	}
+
+	/** What 1.12.2's slotClick returns for a click an item took (the slot's stack before it). */
+	public static ItemStack clickResult() {
+		ItemStack result = RESULT.get();
+		RESULT.remove();
+		return result == null ? ItemStack.EMPTY : result;
 	}
 
 	/** 1.21 {@code slot.tryRemove(count, max, player)}: what the player may take, taken (empty when nothing). */

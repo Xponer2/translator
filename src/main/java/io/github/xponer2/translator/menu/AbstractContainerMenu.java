@@ -491,4 +491,14 @@ public abstract class AbstractContainerMenu extends Container {
 	private interface DataSlotConsumer {
 		void accept(int index, int value);
 	}
+
+	/**
+	 * A 1.12.2 container read where 1.21 code expects a menu (player.containerMenu is the player's inventory container
+	 * when nothing is open): its 1.21 view, not a failed cast (Sophisticated Backpacks' block entities checked the
+	 * players' menus every tick and threw).
+	 */
+	@javax.annotation.Nullable
+	public static AbstractContainerMenu of(@javax.annotation.Nullable net.minecraft.inventory.Container container) {
+		return VanillaMenu.of(container);
+	}
 }

@@ -99,7 +99,8 @@ final class ModChecks {
 			JsonObject json = entry.getValue();
 			String type = json.has("type") ? json.get("type").getAsString() : "";
 			boolean conditional = json.has("neoforge:conditions") || json.has("conditions");
-			if (type.startsWith("minecraft:crafting")) {
+			// a mod's own kind that is in 1.12.2's crafting table (Sophisticated Backpacks' upgrade recipes) is checked the same way
+			if (type.startsWith("minecraft:crafting") || ForgeRegistries.RECIPES.containsKey(entry.getKey())) {
 				crafting++;
 				IRecipe recipe = ForgeRegistries.RECIPES.getValue(entry.getKey());
 				if (recipe == null) {

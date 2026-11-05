@@ -50,6 +50,17 @@ public final class VanillaMenu extends AbstractContainerMenu {
 		}
 	}
 
+	/** Any container as 1.21 code sees it (a 1.12.2 one: its view, without a player). */
+	@Nullable
+	public static AbstractContainerMenu of(@Nullable Container open) {
+		if (open == null || open instanceof AbstractContainerMenu) {
+			return (AbstractContainerMenu) open;
+		}
+		synchronized (VIEWS) {
+			return VIEWS.computeIfAbsent(open, container -> new VanillaMenu(container, null));
+		}
+	}
+
 	@Override
 	public ItemStack quickMoveStack(EntityPlayer player, int index) {
 		return this.container.transferStackInSlot(player, index);
