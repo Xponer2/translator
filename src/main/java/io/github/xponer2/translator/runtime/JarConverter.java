@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "128";
+	static final String VERSION = "129";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
@@ -73,7 +73,7 @@ final class JarConverter {
 			missingClasses.putAll(remapper.missingClasses);
 			long t1 = System.currentTimeMillis();
 
-			downgrade(remapped, downgraded, jar.displayName(), target);
+			downgrade(remapped, downgraded, jar.displayName(), target, new File(cacheDir, name + DOWNGRADE_CACHE_SUFFIX));
 			long t2 = System.currentTimeMillis();
 			// the Java 9+ API stubs go under a prefix of this jar: jars shade different subsets of the same stub classes,
 			// and with one shared name the first one loaded would hide the methods of the others
@@ -114,6 +114,86 @@ final class JarConverter {
 			shaded.delete();
 		}
 		return out;
+	}
+
+	/** Each class -> the SHA-1 of its family's remapped bytes (the top-level class and its nested classes, by name). */
+	private static Map<String, String> familyHashes(Map<String, byte[]> classes) {
+		var families = new java.util.TreeMap<String, java.util.List<String>>();
+		for (String className : classes.keySet()) {
+			int slash = className.lastIndexOf('/');
+			int dollar = className.indexOf('$', slash + 1);
+			families.computeIfAbsent(dollar < 0 ? className : className.substring(0, dollar), k -> new java.util.ArrayList<>()).add(className);
+		}
+		var hashes = new java.util.HashMap<String, String>();
+		for (var members : families.values()) {
+			Collections.sort(members);
+			try {
+				var digest = MessageDigest.getInstance("SHA-1");
+				for (String member : members) {
+					digest.update(member.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+					digest.update(classes.get(member));
+				}
+				var hex = new StringBuilder();
+				for (byte b : digest.digest()) {
+					hex.append(String.format("%02x", b));
+				}
+				for (String member : members) {
+					hashes.put(member, hex.toString());
+				}
+			} catch (java.security.NoSuchAlgorithmException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+		return hashes;
+	}
+
+	/** "family hash/class" -> the classes its downgrade made, from the cache zip (entries family/class/made.class). */
+	private static Map<String, Map<String, byte[]>> readDowngradeCache(File cacheFile) {
+		var cached = new java.util.HashMap<String, Map<String, byte[]>>();
+		if (!cacheFile.isFile()) {
+			return cached;
+		}
+		try (var zip = new ZipFile(cacheFile)) {
+			for (ZipEntry entry : Collections.list(zip.entries())) {
+				String path = entry.getName();
+				int first = path.indexOf("//");
+				if (entry.isDirectory() || first < 0 || !path.endsWith(".class")) {
+					continue;
+				}
+				String key = path.substring(0, first);
+				String made = path.substring(first + 2, path.length() - 6);
+				try (InputStream in = zip.getInputStream(entry)) {
+					cached.computeIfAbsent(key, k -> new java.util.LinkedHashMap<>()).put(made, ModJar.readAll(in));
+				}
+			}
+		} catch (IOException | RuntimeException e) {
+			// a broken cache only costs the time it would have saved
+			Conversion.LOGGER.warn("Can't read the downgrade cache {}: {}", cacheFile.getName(), e.toString());
+			cached.clear();
+		}
+		return cached;
+	}
+
+	private static void writeDowngradeCache(File cacheFile, Map<String, Map<String, byte[]>> current) {
+		File temp = new File(cacheFile.getPath() + ".tmp");
+		try (var out = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(temp))) {
+			out.setLevel(java.util.zip.Deflater.BEST_SPEED);
+			for (var entry : current.entrySet()) {
+				for (var made : entry.getValue().entrySet()) {
+					out.putNextEntry(new ZipEntry(entry.getKey() + "//" + made.getKey() + ".class"));
+					out.write(made.getValue());
+					out.closeEntry();
+				}
+			}
+		} catch (IOException e) {
+			Conversion.LOGGER.warn("Can't write the downgrade cache {}: {}", cacheFile.getName(), e.toString());
+			temp.delete();
+			return;
+		}
+		cacheFile.delete();
+		if (!temp.renameTo(cacheFile)) {
+			temp.delete();
+		}
 	}
 
 	private static synchronized ClassDowngrader downgrader() {
@@ -179,7 +259,16 @@ final class JarConverter {
 	 * come from the jar itself, then the game's class path. Files under META-INF (multi-release versions) stay as
 	 * they are; Java 8 doesn't read them.
 	 */
-	private static void downgrade(File input, File output, String name, TargetClasses target) throws IOException {
+	/**
+	 * The downgraded classes of this mod's last conversion, kept across converter versions: the downgrade is most of a
+	 * conversion (about 60%), and a new converter version remaps most classes the same way. Keyed by the SHA-1 of the
+	 * remapped bytes of the class's family (its top-level class and nested classes: a downgrade reads its nest-mates),
+	 * so a class is downgraded again only when it or a nest-mate changed. The suffix names the format: change it with
+	 * JvmDowngrader's version or FLAGS.
+	 */
+	private static final String DOWNGRADE_CACHE_SUFFIX = ".downgrade-cache-1.zip";
+
+	private static void downgrade(File input, File output, String name, TargetClasses target, File cacheFile) throws IOException {
 		var classes = new java.util.LinkedHashMap<String, byte[]>();
 		var resources = new java.util.LinkedHashMap<String, byte[]>();
 		try (var zip = new ZipFile(input)) {
@@ -214,15 +303,25 @@ final class JarConverter {
 		};
 		var downgraded = new java.util.concurrent.ConcurrentHashMap<String, byte[]>();
 		var failure = new java.util.concurrent.atomic.AtomicReference<Throwable>();
+		Map<String, String> families = familyHashes(classes);
+		Map<String, Map<String, byte[]>> previous = readDowngradeCache(cacheFile);
+		var current = new java.util.concurrent.ConcurrentHashMap<String, Map<String, byte[]>>();
 		classes.entrySet().parallelStream().forEach(entry -> {
+			String key = families.get(entry.getKey()) + "/" + entry.getKey();
+			Map<String, byte[]> reused = previous.get(key);
+			if (reused != null) {
+				downgraded.putAll(reused);
+				current.put(key, reused);
+				return;
+			}
 			try {
 				Map<String, byte[]> result = downgrader.downgrade(new java.util.concurrent.atomic.AtomicReference<>(entry.getKey()), entry.getValue(),
 						false, lookup);
 				if (result == null) {
-					downgraded.put(entry.getKey(), entry.getValue());
-				} else {
-					downgraded.putAll(result);
+					result = Collections.singletonMap(entry.getKey(), entry.getValue());
 				}
+				downgraded.putAll(result);
+				current.put(key, result);
 			} catch (Throwable t) {
 				// a class the downgrader can't handle stays as it is (MethodGuard reports it if it doesn't verify)
 				failure.compareAndSet(null, t);
@@ -232,6 +331,16 @@ final class JarConverter {
 		if (failure.get() != null) {
 			Conversion.LOGGER.warn("{}: some classes couldn't be downgraded, e.g. {}", name, failure.get().toString());
 		}
+		int reusedCount = 0;
+		for (String key : current.keySet()) {
+			if (previous.containsKey(key)) {
+				reusedCount++;
+			}
+		}
+		if (reusedCount > 0) {
+			Conversion.LOGGER.info("{}: {} of {} classes' downgrade reused from the last conversion", name, reusedCount, classes.size());
+		}
+		writeDowngradeCache(cacheFile, current);
 		byte[] manifest = resources.get("META-INF/MANIFEST.MF");
 		if (manifest != null) {
 			// marked like JvmDowngrader marks what it downgrades

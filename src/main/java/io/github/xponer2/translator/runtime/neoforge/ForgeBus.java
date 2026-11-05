@@ -172,8 +172,12 @@ public final class ForgeBus implements IEventBus {
 			return;
 		}
 		try {
-			// what EventBus#register does: FML gives every event class a no-arg constructor for this
-			Event instance = type.getConstructor().newInstance();
+			// what EventBus#register does: FML gives every event class a no-arg constructor for this. The Translator's own
+			// events may keep it package-private (ModelEvent.RegisterGeometryLoaders: no mod's geometry loader was ever
+			// registered, so Sophisticated Backpacks' backpack model baked empty and the item was invisible)
+			var constructor = type.getDeclaredConstructor();
+			constructor.setAccessible(true);
+			Event instance = constructor.newInstance();
 			boolean[] reported = new boolean[1];
 			IEventListener listener = event -> {
 				if (receiveCanceled || !event.isCancelable() || !event.isCanceled()) {

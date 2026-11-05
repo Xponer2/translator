@@ -56,6 +56,11 @@ public class ModelEvent extends Event {
 			this.models = models;
 		}
 
+		/** Public and without arguments: an event bus makes one to set up its listeners. */
+		public RegisterAdditional() {
+			this(new java.util.ArrayList<>());
+		}
+
 		public void register(ModelResourceLocation location) {
 			this.models.add(new ResourceLocation(location.getNamespace(), location.getPath()));
 		}
@@ -67,7 +72,8 @@ public class ModelEvent extends Event {
 
 	/** NeoForge {@code ModelEvent.RegisterGeometryLoaders}: the mods' model loaders, by the id their json names. */
 	public static class RegisterGeometryLoaders extends ModelEvent {
-		RegisterGeometryLoaders() {
+		/** Public: an event bus makes one to set up its listeners. */
+		public RegisterGeometryLoaders() {
 		}
 
 		public void register(ResourceLocation id, Object loader) {
@@ -80,6 +86,11 @@ public class ModelEvent extends Event {
 
 		ModifyBakingResult(IRegistry<ModelResourceLocation, IBakedModel> registry) {
 			this.models = new Models(registry);
+		}
+
+		/** Public and without arguments: an event bus makes one to set up its listeners (it holds no models). */
+		public ModifyBakingResult() {
+			this.models = null;
 		}
 
 		public Models getModels() {
