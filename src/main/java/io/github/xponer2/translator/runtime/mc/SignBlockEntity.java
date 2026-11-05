@@ -45,4 +45,22 @@ public class SignBlockEntity extends TileEntitySign {
 	public BlockEntityType<?> getType() {
 		return this.type;
 	}
+
+	/**
+	 * Saved and sent with its class's id: a class its type didn't register (its sample was another class, or none could
+	 * be made) gets the type's id, else one of its own; 1.12.2 threw for it ("missing a mapping") and the server stopped.
+	 */
+	@Override
+	@SuppressWarnings("deprecation")
+	public net.minecraft.nbt.NBTTagCompound writeToNBT(net.minecraft.nbt.NBTTagCompound tag) {
+		if (net.minecraft.tileentity.TileEntity.getKey(this.getClass()) == null) {
+			net.minecraft.util.ResourceLocation id = this.type == null ? null
+					: io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.BLOCK_ENTITY_TYPE).getKey(this.type);
+			if (id == null) {
+				id = new net.minecraft.util.ResourceLocation("translator", "sign_" + this.getClass().getName().toLowerCase(java.util.Locale.ROOT).replace('.', '_').replace('$', '_'));
+			}
+			net.minecraftforge.fml.common.registry.GameRegistry.registerTileEntity(this.getClass(), id);
+		}
+		return super.writeToNBT(tag);
+	}
 }

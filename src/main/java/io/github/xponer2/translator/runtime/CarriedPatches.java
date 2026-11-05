@@ -37,7 +37,42 @@ final class CarriedPatches {
 		if ("net/minecraft/world/level/block/grower/TreeGrower.class".equals(path)) {
 			return callInstead(bytes, "growTree", "io/github/xponer2/translator/world/TreeGrowing");
 		}
-		return putOnce(bytes);
+		return absentCasts(putOnce(bytes));
+	}
+
+	private static final String VANILLA_BLOCKS = "net/minecraft/world/level/block/Blocks";
+
+	/**
+	 * A vanilla block of 1.21 cast to its class ({@code (MultifaceBlock) Blocks.GLOW_LICHEN}): 1.12.2 hasn't the block
+	 * (it stands for none), and the cast threw in MultifaceGrowthConfiguration's static initializer, which took the
+	 * whole Feature class down with it (every 1.21 feature after it). Such a cast gives null for a block that isn't one.
+	 */
+	private static byte[] absentCasts(byte[] bytes) {
+		if (!new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1).contains(VANILLA_BLOCKS)) {
+			return bytes;
+		}
+		var node = new ClassNode();
+		new ClassReader(bytes).accept(node, 0);
+		boolean changed = false;
+		for (MethodNode method : node.methods) {
+			for (AbstractInsnNode insn : method.instructions.toArray()) {
+				if (insn instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.FieldInsnNode read && read.getOpcode() == Opcodes.GETSTATIC
+						&& VANILLA_BLOCKS.equals(read.owner) && read.getNext() instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode cast
+						&& cast.getOpcode() == Opcodes.CHECKCAST) {
+					var safe = new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnList();
+					safe.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.LdcInsnNode(xyz.wagyourtail.jvmdg.shade.asm.Type.getObjectType(cast.desc)));
+					safe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, BRIDGES, "castOrNull", "(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;", false));
+					method.instructions.insertBefore(cast, safe);
+					changed = true;
+				}
+			}
+		}
+		if (!changed) {
+			return bytes;
+		}
+		var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+		node.accept(writer);
+		return writer.toByteArray();
 	}
 
 	private static final String MAP_BUILDER = "com/google/common/collect/ImmutableMap$Builder";

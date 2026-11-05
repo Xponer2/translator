@@ -255,4 +255,9 @@ public final class CarriedBridges {
 		}
 		return builder;
 	}
+
+	/** The object when it is of that class, else null (a 1.21 block 1.12.2 hasn't, cast to its 1.21 class). */
+	public static Object castOrNull(Object value, Class<?> type) {
+		return type.isInstance(value) ? value : null;
+	}
 }

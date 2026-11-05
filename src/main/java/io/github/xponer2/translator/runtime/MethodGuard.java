@@ -1090,6 +1090,17 @@ final class MethodGuard {
 				changed = true;
 				continue;
 			}
+			// a write of a static field the 1.12.2 class lacks: the shadow's, as the reads (a mod widens a 1.21 map and
+			// sets it: GlitchCore's AxeItem.STRIPPABLES = new HashMap(...) was skipped, the put that followed threw)
+			if (insn instanceof FieldInsnNode write && write.getOpcode() == Opcodes.PUTSTATIC && !this.hasMember(write.owner, write.name, write.desc, false)) {
+				String shadow = this.shadowWith(write.owner, write.name, write.desc, false);
+				if (shadow != null) {
+					write.owner = shadow;
+					this.redirected.incrementAndGet();
+					changed = true;
+					continue;
+				}
+			}
 			if (insn instanceof FieldInsnNode field && (field.getOpcode() == Opcodes.GETSTATIC || field.getOpcode() == Opcodes.GETFIELD)
 					&& !this.hasMember(field.owner, field.name, field.desc, false)) {
 				if (this.registryByKey(method, field)) {
