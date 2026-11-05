@@ -77,7 +77,12 @@ public class BlockProperties {
         var state = block.getDefaultState();
         var properties = new BlockProperties();
         properties.material = state.getMaterial();
-        properties.mapColor = block.getMapColor(state, null, null);
+        try {
+            properties.mapColor = block.getMapColor(state, null, null);
+        } catch (RuntimeException e) {
+            // a bed's color comes from its block entity: Aether's and Handcrafted's beds failed here
+            properties.mapColor = state.getMaterial().getMaterialMapColor();
+        }
         properties.soundType = block.getSoundType();
         properties.destroyTime = block.getBlockHardness(state, null, null);
         // 1.12.2 keeps 3x the given resistance and uses a fifth of that, 1.21 uses the given value

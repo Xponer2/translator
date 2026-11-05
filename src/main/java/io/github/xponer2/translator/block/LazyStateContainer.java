@@ -56,10 +56,15 @@ public class LazyStateContainer extends BlockStateContainer {
 
 		@Override
 		public BlockStateContainer.Builder add(IProperty<?>... props) {
+			var present = new ArrayList<IProperty<?>>();
 			for (IProperty<?> prop : props) {
-				this.listed.add(prop);
+				// a property a mod's code couldn't make (null) is left out, and one of a name the block has already
+				if (prop != null && this.listed.stream().noneMatch(other -> other.getName().equals(prop.getName()))) {
+					this.listed.add(prop);
+					present.add(prop);
+				}
 			}
-			return super.add(props);
+			return super.add(present.toArray(new IProperty<?>[0]));
 		}
 
 		@Override

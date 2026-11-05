@@ -35,4 +35,18 @@ public enum FMLPaths {
 	public Path relative() {
 		return java.nio.file.Paths.get(this.relative);
 	}
+
+	/**
+	 * FML {@code getOrCreateGameRelativePath(path)}: the folder under the game folder, made when missing. Mekanism sets its
+	 * config folder so in a static initializer; without it the initializer was left out and Mekanism didn't load.
+	 */
+	public static Path getOrCreateGameRelativePath(Path path) {
+		Path folder = GAMEDIR.get().resolve(path);
+		try {
+			java.nio.file.Files.createDirectories(folder);
+		} catch (java.io.IOException e) {
+			throw new java.io.UncheckedIOException("Can't make the folder " + folder, e);
+		}
+		return folder;
+	}
 }

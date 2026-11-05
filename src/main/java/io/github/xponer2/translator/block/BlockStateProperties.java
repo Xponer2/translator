@@ -57,6 +57,10 @@ public final class BlockStateProperties {
 	public static final PropertyInteger ROTATION_16 = PropertyInteger.create("rotation", 0, 15);
 	public static final PropertyInteger DISTANCE = PropertyInteger.create("distance", 1, 7);
 	public static final PropertyEnum<DoubleBlockHalf> DOUBLE_BLOCK_HALF = PropertyEnum.create("half", DoubleBlockHalf.class);
+	/** 1.12.2's door hinge: a mod's door (Macaw's) adds it to the door's states, which BlockDoor sets. */
+	public static final PropertyEnum<net.minecraft.block.BlockDoor.EnumHingePosition> DOOR_HINGE = net.minecraft.block.BlockDoor.HINGE;
+	public static final PropertyEnum<net.minecraft.block.BlockBed.EnumPartType> BED_PART = net.minecraft.block.BlockBed.PART;
+	public static final PropertyBool OCCUPIED = net.minecraft.block.BlockBed.OCCUPIED;
 
 	private BlockStateProperties() {
 	}
