@@ -36,6 +36,17 @@ public final class MappedRegistry<T> implements Registry<T> {
         this.fromData = io.github.xponer2.translator.world.DataFeatures.isDataRegistry(key.location());
     }
 
+    /** Whether the id is registered already (a data registry isn't asked to read it). */
+    public boolean hasEntry(ResourceLocation location) {
+        return this.byLocation.containsKey(location);
+    }
+
+    /** The registered value (a data registry doesn't read a file for it). */
+    @Nullable
+    public T direct(ResourceLocation location) {
+        return this.byLocation.get(location);
+    }
+
     public synchronized T register(ResourceLocation location, T value) {
         if (this.byLocation.containsKey(location)) {
             throw new IllegalStateException("Duplicate id " + location + " in " + this.key.location());

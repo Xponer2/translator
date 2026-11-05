@@ -647,11 +647,16 @@ public final class SelfTest {
 				this.player.rotationYaw = (float) (Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F;
 				this.player.rotationPitch = (float) -(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 180.0D / Math.PI);
 				this.player.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(bucket));
-				this.attempt("bucket: empty", () -> this.player.getHeldItemMainhand().useItemRightClick(this.world, this.player, EnumHand.MAIN_HAND));
+				net.minecraft.util.math.RayTraceResult look = this.player.rayTrace(5.0D, 1.0F);
+				Object[] used = new Object[1];
+				this.attempt("bucket: empty", () -> used[0] = this.player.getHeldItemMainhand().useItemRightClick(this.world, this.player, EnumHand.MAIN_HAND)
+						.getType());
 				IBlockState placed = this.world.getBlockState(this.cell);
 				if (!(placed.getBlock() instanceof net.minecraftforge.fluids.IFluidBlock fluid) || bucket.getFluid() == null
 						|| fluid.getFluid() == null || !bucket.getFluid().getName().equals(fluid.getFluid().getName())) {
-					this.current.problems.add("bucket: no fluid placed where the player looks (" + placed + ")");
+					this.current.problems.add("bucket: no fluid placed where the player looks (" + placed + "; fluid " + (bucket.getFluid() == null ? null
+							: bucket.getFluid().getName()) + ", its block " + (bucket.getFluid() == null ? null : bucket.getFluid().getBlock()) + ", use " + used[0]
+							+ ", looking at " + (look == null ? null : look.typeOfHit + " " + look.getBlockPos()) + ", cell " + this.cell + ")");
 					return;
 				}
 				this.player.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(net.minecraft.init.Items.BUCKET));

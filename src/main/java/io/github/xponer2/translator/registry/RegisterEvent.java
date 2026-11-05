@@ -297,6 +297,22 @@ public class RegisterEvent extends Event implements IContextSetter {
 				// and the fluids (1.21 registers them before the blocks: a LiquidBlock and a BucketItem take their fluid;
 				// Biomes O' Plenty's blood was null in both, its bucket placed nothing)
 				if (BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.FLUID) instanceof MappedRegistry<?> fluids && EARLY_MAPPED.add(fluids)) {
+					// the vanilla fluids under their 1.21 names (a feature or a codec names minecraft:water: "Failed to get
+					// element" before), and 1.21's empty fluid
+					@SuppressWarnings("unchecked")
+					MappedRegistry<Object> vanilla = (MappedRegistry<Object>) fluids;
+					Object[][] names = {{"water", net.minecraftforge.fluids.FluidRegistry.WATER}, {"lava", net.minecraftforge.fluids.FluidRegistry.LAVA},
+							{"empty", io.github.xponer2.translator.util.FluidState.EMPTY_FLUID}};
+					for (Object[] name : names) {
+						var id = new net.minecraft.util.ResourceLocation("minecraft", (String) name[0]);
+						if (!vanilla.hasEntry(id) && name[1] != null) {
+							try {
+								vanilla.register(id, name[1]);
+							} catch (IllegalStateException e) {
+								// a mod registered it
+							}
+						}
+					}
 					try {
 						MinecraftForge.EVENT_BUS.post(new RegisterEvent(fluids));
 						// their Forge fluids (name, FluidRegistry) now: a fluid block keeps its fluid's name when made

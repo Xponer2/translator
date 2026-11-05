@@ -85,6 +85,15 @@ public final class DataFeatures {
 	/** The feature of a mod's file for that registry, read by the 1.21.1 codec; null when there is none or it doesn't read. */
 	@Nullable
 	public static Object decode(ResourceLocation registry, ResourceLocation id) {
+		if ("minecraft".equals(id.getNamespace())) {
+			// a vanilla feature a mod's biome or feature names: made by 1.21's own feature bootstraps
+			VanillaFeatures.ensure();
+			var vanilla = io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.registry.ResourceKey.createRegistryKey(registry));
+			Object value = vanilla instanceof io.github.xponer2.translator.registry.MappedRegistry<?> mapped ? mapped.direct(id) : null;
+			if (value != null) {
+				return value;
+			}
+		}
 		boolean placed = PLACED.equals(registry);
 		JsonObject json = DataBiomes.featureFile(placed, id);
 		if (json == null) {

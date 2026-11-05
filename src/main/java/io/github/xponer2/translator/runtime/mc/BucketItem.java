@@ -34,7 +34,7 @@ public class BucketItem extends ItemBucket {
 	/** The bucket of each mod fluid (by its name): what an empty bucket gives on the fluid's source. */
 	private static final java.util.Map<String, BucketItem> BY_FLUID = new java.util.concurrent.ConcurrentHashMap<>();
 
-	private final Fluid content;
+	private Fluid content;
 
 	public BucketItem(Fluid content, ItemProperties properties) {
 		super(Blocks.AIR);
@@ -49,15 +49,16 @@ public class BucketItem extends ItemBucket {
 	/** The fluid's block: its own when set, else the mod's LiquidBlock of that fluid (registered after the bucket). */
 	@javax.annotation.Nullable
 	private Block fluidBlock() {
-		if (this.content == null) {
+		Fluid content = this.getFluid();
+		if (content == null) {
 			return null;
 		}
-		if (this.content.getBlock() != null) {
-			return this.content.getBlock();
+		if (content.getBlock() != null) {
+			return content.getBlock();
 		}
 		for (Block block : net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS) {
 			if (block instanceof net.minecraftforge.fluids.IFluidBlock fluidBlock && fluidBlock.getFluid() != null
-					&& this.content.getName().equals(fluidBlock.getFluid().getName())) {
+					&& content.getName().equals(fluidBlock.getFluid().getName())) {
 				return block;
 			}
 		}
@@ -95,6 +96,19 @@ public class BucketItem extends ItemBucket {
 	}
 
 	public Fluid getFluid() {
+		if (this.content == null) {
+			// made before its fluid was (a mod creating its items first): the fluid of the item's name ("blood_bucket")
+			var id = this.getRegistryName();
+			if (id != null) {
+				String name = id.getPath().endsWith("_bucket") ? id.getPath().substring(0, id.getPath().length() - 7) : id.getPath();
+				Fluid found = net.minecraftforge.fluids.FluidRegistry.getFluid(name) != null ? net.minecraftforge.fluids.FluidRegistry.getFluid(name)
+						: net.minecraftforge.fluids.FluidRegistry.getFluid(id.getNamespace() + ":" + name);
+				if (found != null) {
+					this.content = found;
+					BY_FLUID.putIfAbsent(found.getName(), this);
+				}
+			}
+		}
 		return this.content;
 	}
 
