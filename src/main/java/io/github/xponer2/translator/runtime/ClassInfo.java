@@ -35,6 +35,11 @@ final class ClassInfo {
 	final Set<String> publicInstanceFields = new HashSet<>();
 	/** "name desc" of the final instance methods (not private): a subclass can't declare them. */
 	final Set<String> finalMethods = new HashSet<>();
+	/**
+	 * "name desc" of the protected fields and methods: another package reaches them only through its own class's type
+	 * (the guard casts a facade member's receiver to that class, see MethodGuard.receiverType).
+	 */
+	final Set<String> protectedMembers = new HashSet<>();
 	/** "name desc" of the fields (a GETSTATIC resolves by both: 1.21 Enchantments.SILK_TOUCH is a key, not an Enchantment). */
 	final Set<String> fields = new HashSet<>();
 	/**
@@ -104,6 +109,9 @@ final class ClassInfo {
 			@Override
 			public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
 				holder[0].fields.add(name + " " + descriptor);
+				if ((access & Opcodes.ACC_PROTECTED) != 0) {
+					holder[0].protectedMembers.add(name + " " + descriptor);
+				}
 				if ((access & (Opcodes.ACC_STATIC | Opcodes.ACC_PUBLIC)) == Opcodes.ACC_PUBLIC) {
 					holder[0].publicInstanceFields.add(name + " " + descriptor);
 				}
@@ -116,6 +124,9 @@ final class ClassInfo {
 			@Override
 			public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 				holder[0].methods.add(name + " " + descriptor);
+				if ((access & Opcodes.ACC_PROTECTED) != 0) {
+					holder[0].protectedMembers.add(name + " " + descriptor);
+				}
 				if (signature != null && signature.charAt(signature.lastIndexOf(')') + 1) == 'T') {
 					holder[0].typeVariables.add(name + " " + descriptor);
 				}

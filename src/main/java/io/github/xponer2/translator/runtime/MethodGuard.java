@@ -533,7 +533,7 @@ final class MethodGuard {
 			if (method.instructions.size() == 0) {
 				continue;
 			}
-			changed |= this.redirect(method);
+			changed |= this.redirect(method, node.name);
 			changed |= this.fixInvokeKinds(method);
 			if ("<clinit>".equals(method.name)) {
 				// a throwing static initializer would take the whole class down: what is missing there gives null / 0,
@@ -926,7 +926,7 @@ final class MethodGuard {
 	 * Calls of methods a 1.12.2 class doesn't have become calls of a static stand-in with the same name in one of the
 	 * Translator classes registered for that class or a supertype (the receiver as the first parameter).
 	 */
-	private boolean redirect(MethodNode method) {
+	private boolean redirect(MethodNode method, String currentClass) {
 		boolean changed = false;
 		for (AbstractInsnNode insn : method.instructions.toArray()) {
 			// an X line: the member exists but means something else in 1.21 (its helper gives the 1.21 meaning)
@@ -982,13 +982,41 @@ final class MethodGuard {
 					&& this.hasMember(this.facades.get(member.owner), member.name, member.desc, false)
 					&& (member.getOpcode() == Opcodes.GETFIELD || Type.getType(member.desc).getSize() == 1)) {
 				String facade = this.facades.get(member.owner);
+				if (!this.extendsClass(currentClass, facade)) {
+					// reached from outside the facade's classes: the object may be another facade of the same 1.12.2 class
+					// (a container screen is no Screen: Sophisticated's GuiHelper read screen.font and its backpack screen
+					// failed every frame), and the member may be protected (mods widen Screen.font with an access
+					// transformer): read or written by name on the object itself
+					var dynamic = new InsnList();
+					Type type = Type.getType(member.desc);
+					if (member.getOpcode() == Opcodes.GETFIELD) {
+						dynamic.add(new LdcInsnNode(facade));
+						dynamic.add(new LdcInsnNode(member.name));
+						dynamic.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ACCESSOR_BRIDGE, "get",
+								"(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;", false));
+						unboxTo(dynamic, type);
+					} else {
+						boxFrom(dynamic, type);
+						dynamic.add(new LdcInsnNode(facade));
+						dynamic.add(new LdcInsnNode(member.name));
+						dynamic.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ACCESSOR_BRIDGE, "put",
+								"(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V", false));
+					}
+					method.instructions.insertBefore(member, dynamic);
+					method.instructions.remove(member);
+					method.maxStack += 4;
+					this.redirected.incrementAndGet();
+					changed = true;
+					continue;
+				}
+				String receiver = this.receiverType(facade, member.name, member.desc, currentClass);
 				var cast = new InsnList();
 				if (member.getOpcode() == Opcodes.PUTFIELD) {
 					cast.add(new InsnNode(Opcodes.SWAP));
-					cast.add(new TypeInsnNode(Opcodes.CHECKCAST, facade));
+					cast.add(new TypeInsnNode(Opcodes.CHECKCAST, receiver));
 					cast.add(new InsnNode(Opcodes.SWAP));
 				} else {
-					cast.add(new TypeInsnNode(Opcodes.CHECKCAST, facade));
+					cast.add(new TypeInsnNode(Opcodes.CHECKCAST, receiver));
 				}
 				method.instructions.insertBefore(member, cast);
 				member.owner = facade;
@@ -1002,6 +1030,40 @@ final class MethodGuard {
 				// the same for a method only the facade has: the arguments into new locals, the receiver cast, back
 				String facade = this.facades.get(call.owner);
 				Type[] args = Type.getArgumentTypes(call.desc);
+				if (!this.extendsClass(currentClass, facade)) {
+					// from outside the facade's classes (see the fields above): invoked by name on the object itself
+					var dynamic = new InsnList();
+					int array = method.maxLocals++;
+					dynamic.add(new LdcInsnNode(args.length));
+					dynamic.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
+					dynamic.add(new VarInsnNode(Opcodes.ASTORE, array));
+					for (int i = args.length - 1; i >= 0; i--) {
+						// the last argument is on top: boxed into the array from the end
+						boxFrom(dynamic, args[i]);
+						dynamic.add(new VarInsnNode(Opcodes.ALOAD, array));
+						dynamic.add(new InsnNode(Opcodes.SWAP));
+						dynamic.add(new LdcInsnNode(i));
+						dynamic.add(new InsnNode(Opcodes.SWAP));
+						dynamic.add(new InsnNode(Opcodes.AASTORE));
+					}
+					dynamic.add(new LdcInsnNode(facade));
+					dynamic.add(new LdcInsnNode(call.name));
+					dynamic.add(new VarInsnNode(Opcodes.ALOAD, array));
+					dynamic.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ACCESSOR_BRIDGE, "invoke",
+							"(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;", false));
+					Type returned = Type.getReturnType(call.desc);
+					if (returned.getSort() == Type.VOID) {
+						dynamic.add(new InsnNode(Opcodes.POP));
+					} else {
+						unboxTo(dynamic, returned);
+					}
+					method.instructions.insertBefore(call, dynamic);
+					method.instructions.remove(call);
+					method.maxStack += 6;
+					this.redirected.incrementAndGet();
+					changed = true;
+					continue;
+				}
 				int[] slots = new int[args.length];
 				var spill = new InsnList();
 				for (int i = args.length - 1; i >= 0; i--) {
@@ -1009,7 +1071,7 @@ final class MethodGuard {
 					method.maxLocals += args[i].getSize();
 					spill.add(new VarInsnNode(args[i].getOpcode(Opcodes.ISTORE), slots[i]));
 				}
-				spill.add(new TypeInsnNode(Opcodes.CHECKCAST, facade));
+				spill.add(new TypeInsnNode(Opcodes.CHECKCAST, this.receiverType(facade, call.name, call.desc, currentClass)));
 				for (int i = 0; i < args.length; i++) {
 					spill.add(new VarInsnNode(args[i].getOpcode(Opcodes.ILOAD), slots[i]));
 				}
@@ -2197,6 +2259,89 @@ final class MethodGuard {
 	}
 
 	// --- the class hierarchy: the mod, then 1.12.2 / Forge / Translator, then the JDK ----------------------------------
+
+	private static final String ACCESSOR_BRIDGE = "io/github/xponer2/translator/runtime/AccessorBridge";
+
+	/** A value of that type on the stack, boxed (an object stays as it is). */
+	private static void boxFrom(InsnList out, Type type) {
+		String box = switch (type.getSort()) {
+			case Type.BOOLEAN -> "java/lang/Boolean";
+			case Type.BYTE -> "java/lang/Byte";
+			case Type.CHAR -> "java/lang/Character";
+			case Type.SHORT -> "java/lang/Short";
+			case Type.INT -> "java/lang/Integer";
+			case Type.LONG -> "java/lang/Long";
+			case Type.FLOAT -> "java/lang/Float";
+			case Type.DOUBLE -> "java/lang/Double";
+			default -> null;
+		};
+		if (box != null) {
+			out.add(new MethodInsnNode(Opcodes.INVOKESTATIC, box, "valueOf", "(" + type.getDescriptor() + ")L" + box + ";", false));
+		}
+	}
+
+	/** An Object on the stack as that type: cast, or unboxed (null reads as 0 / false). */
+	private static void unboxTo(InsnList out, Type type) {
+		String unbox = switch (type.getSort()) {
+			case Type.BOOLEAN -> "booleanValue";
+			case Type.BYTE -> "byteValue";
+			case Type.CHAR -> "charValue";
+			case Type.SHORT -> "shortValue";
+			case Type.INT -> "intValue";
+			case Type.LONG -> "longValue";
+			case Type.FLOAT -> "floatValue";
+			case Type.DOUBLE -> "doubleValue";
+			default -> null;
+		};
+		if (unbox != null) {
+			out.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ACCESSOR_BRIDGE, unbox, "(Ljava/lang/Object;)" + type.getDescriptor(), false));
+		} else {
+			out.add(new TypeInsnNode(Opcodes.CHECKCAST, type.getSort() == Type.ARRAY ? type.getDescriptor() : type.getInternalName()));
+		}
+	}
+
+	/**
+	 * The type a facade member's receiver is cast to: the facade, or the current class when the member is protected in
+	 * the facade (or a superclass of it) and the current class extends the facade. Another package reaches a protected
+	 * member only through its own class's type, javac made sure of that in the original code, and a cast to the facade
+	 * failed verification: "Bad access to protected data" in JourneyMap's screens (this.renderables), so JourneyMap's
+	 * client never started.
+	 */
+	private String receiverType(String facade, String name, String desc, String currentClass) {
+		if (currentClass == null || currentClass.equals(facade)) {
+			return facade;
+		}
+		String member = name + " " + desc;
+		for (String owner = facade; owner != null; ) {
+			ClassInfo info = this.info(owner);
+			if (info == null) {
+				break;
+			}
+			if (info.protectedMembers.contains(member)) {
+				return this.extendsClass(currentClass, facade) ? currentClass : facade;
+			}
+			if (info.fields.contains(member) || info.methods.contains(member)) {
+				break;
+			}
+			owner = info.superName;
+		}
+		return facade;
+	}
+
+	/** Whether the class is {@code wanted} or a subclass of it (the mod's classes first). */
+	private boolean extendsClass(String name, String wanted) {
+		for (String current = name; current != null; ) {
+			if (current.equals(wanted)) {
+				return true;
+			}
+			ClassInfo info = this.info(current);
+			if (info == null) {
+				return false;
+			}
+			current = info.superName;
+		}
+		return false;
+	}
 
 	private ClassInfo info(String name) {
 		ClassInfo info = this.mod.get(name);

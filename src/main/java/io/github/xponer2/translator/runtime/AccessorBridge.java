@@ -70,6 +70,14 @@ public final class AccessorBridge {
 		virtual(target, owner).put(names, value);
 	}
 
+	/**
+	 * {@link #set} with the value before the names: what a field write leaves on the stack (the target, the value), so
+	 * the guard only adds the names (a facade's field written from outside its classes, see MethodGuard).
+	 */
+	public static void put(@Nullable Object target, @Nullable Object value, String owner, String names) {
+		set(target, owner, names, value);
+	}
+
 	/** An invoker: the method (one of {@code names}) with that many arguments, or the constructor for {@code <init>}. */
 	@Nullable
 	public static Object invoke(@Nullable Object target, String owner, String names, Object[] args) {
