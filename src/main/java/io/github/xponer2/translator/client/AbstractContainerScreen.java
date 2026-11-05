@@ -52,6 +52,8 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 	protected int inventoryLabelY;
 	private final List<GuiEventListener> children = new ArrayList<>();
 	private final List<Renderable> panels = new ArrayList<>();
+	/** 1.21 {@code renderables}: every renderable widget (the panels and the buttons), which mods' screens draw and read. */
+	protected final List<Renderable> renderables = new ArrayList<>();
 	@Nullable
 	private GuiEventListener focused;
 	private boolean dragging;
@@ -157,7 +159,17 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 		if (!(widget instanceof GuiButton) && widget instanceof Renderable) {
 			this.panels.add((Renderable) widget);
 		}
+		if (widget instanceof Renderable renderable) {
+			this.renderables.add(renderable);
+		}
 		return this.addWidget(widget);
+	}
+
+	/** 1.21 {@code addRenderableOnly(renderable)}: drawn, not clicked. */
+	protected <W extends Renderable> W addRenderableOnly(W renderable) {
+		this.panels.add(renderable);
+		this.renderables.add(renderable);
+		return renderable;
 	}
 
 	protected <W extends GuiEventListener> W addWidget(W listener) {
@@ -170,6 +182,7 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 
 	protected void removeWidget(GuiEventListener listener) {
 		this.panels.remove(listener);
+		this.renderables.remove(listener);
 		this.buttonList.remove(listener);
 		this.children.remove(listener);
 	}
@@ -177,6 +190,7 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 	/** 1.21 {@code clearWidgets()}: Create's package port screen rebuilds its widgets with it. */
 	protected void clearWidgets() {
 		this.panels.clear();
+		this.renderables.clear();
 		this.buttonList.clear();
 		this.children.clear();
 	}
@@ -223,6 +237,29 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 
 	protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
 		return this.isPointInRegion(x, y, width, height, (int) mouseX, (int) mouseY);
+	}
+
+	/** 1.21 {@code isHovering(slot, mouseX, mouseY)}: the mouse over the slot (Sophisticated finds the clicked slot so). */
+	protected boolean isHovering(net.minecraft.inventory.Slot slot, double mouseX, double mouseY) {
+		return this.isHovering(slot.xPos, slot.yPos, 16, 16, mouseX, mouseY);
+	}
+
+	/** 1.21 {@code Screen.hasShiftDown()} and friends, for screens that are containers. */
+	public static boolean hasShiftDown() {
+		return net.minecraft.client.gui.GuiScreen.isShiftKeyDown();
+	}
+
+	public static boolean hasControlDown() {
+		return net.minecraft.client.gui.GuiScreen.isCtrlKeyDown();
+	}
+
+	public static boolean hasAltDown() {
+		return net.minecraft.client.gui.GuiScreen.isAltKeyDown();
+	}
+
+	/** 1.21 {@code renderTransparentBackground(gfx)}: the dark gradient behind a screen. */
+	public void renderTransparentBackground(GuiGraphics gfx) {
+		this.drawDefaultBackground();
 	}
 
 	public T getMenu() {

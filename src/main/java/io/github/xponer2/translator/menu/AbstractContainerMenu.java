@@ -42,6 +42,18 @@ public abstract class AbstractContainerMenu extends Container {
 		this.windowId = windowId;
 	}
 
+	private int stateId;
+
+	/** 1.21 {@code getStateId()}: the version of the menu's contents the client last saw (sent with a click). */
+	public int getStateId() {
+		return this.stateId;
+	}
+
+	public int incrementStateId() {
+		this.stateId = this.stateId + 1 & 32767;
+		return this.stateId;
+	}
+
 	public MenuType<?> getType() {
 		if (this.menuType == null) {
 			throw new UnsupportedOperationException("Unable to construct this menu by type");

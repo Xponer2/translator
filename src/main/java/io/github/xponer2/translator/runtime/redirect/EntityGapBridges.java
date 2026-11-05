@@ -28,6 +28,13 @@ public final class EntityGapBridges {
 	private EntityGapBridges() {
 	}
 
+	/** 1.21 {@code player.inventoryMenu}: 1.12.2's inventory container (a ContainerPlayer, declared as Container). */
+	@javax.annotation.Nullable
+	public static net.minecraft.inventory.ContainerPlayer inventoryContainer(net.minecraft.entity.EntityLivingBase entity) {
+		return entity instanceof net.minecraft.entity.player.EntityPlayer player && player.inventoryContainer instanceof net.minecraft.inventory.ContainerPlayer menu
+				? menu : null;
+	}
+
 	// --- 1.21 goals whose 1.12.2 classes take other arguments ---------------------------------------------------------
 
 	private static <T> com.google.common.base.Predicate<T> guava(@javax.annotation.Nullable java.util.function.Predicate<T> predicate) {

@@ -126,6 +126,25 @@ public final class ClientGapBridges {
 		return io.github.xponer2.translator.client.model.GeometryLoaders.bakeModel(model);
 	}
 
+	/**
+	 * 1.21 {@code new ServerboundContainerClickPacket(container, stateId, slot, button, type, carried, changed)}: 1.12.2's
+	 * click packet with the open menu's next transaction id. The server applies the click to its menu (and sends the
+	 * contents back when its result differs); a screen sending its own clicks (Sophisticated's) changed only the client.
+	 */
+	public static net.minecraft.network.play.client.CPacketClickWindow newCPacketClickWindow(int container, int stateId, int slot, int button,
+			net.minecraft.inventory.ClickType type, net.minecraft.item.ItemStack carried, @Nullable Object changed) {
+		var player = Minecraft.getMinecraft().player;
+		short action = player != null && player.openContainer != null ? player.openContainer.getNextTransactionID(player.inventory) : 0;
+		return new net.minecraft.network.play.client.CPacketClickWindow(container, slot, button, type,
+				carried == null ? net.minecraft.item.ItemStack.EMPTY : carried, action);
+	}
+
+	/** 1.21 {@code slot.getNoItemIcon()}: the empty slot's icon (1.12.2 slots draw theirs themselves). */
+	@Nullable
+	public static Object getNoItemIcon(net.minecraft.inventory.Slot slot) {
+		return null;
+	}
+
 	/** NeoForge {@code flag.hasShiftDown()}: shift held now (tooltips that show more with shift). */
 	public static boolean hasShiftDown(net.minecraft.client.util.ITooltipFlag flag) {
 		return net.minecraft.client.gui.GuiScreen.isShiftKeyDown();

@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "122";
+	static final String VERSION = "123";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
@@ -84,6 +84,9 @@ final class JarConverter {
 			var guard = new MethodGuard(target, table.redirects, table::namesOf);
 			guard.constants = table.constants;
 			guard.forced = table.forced;
+			var facades = new java.util.HashMap<String, String>();
+			table.supers.forEach((modern, facade) -> facades.putIfAbsent(table.classes.getOrDefault(modern, modern), facade));
+			guard.facades = facades;
 			guard.guard(shaded, out);
 			// the release game names Minecraft's members by SRG: the jar is renamed so (no-op in development)
 			Mappings mappings = Mappings.instance();

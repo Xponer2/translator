@@ -203,6 +203,11 @@ public abstract class Screen extends GuiScreen implements ContainerEventHandler,
 		return this.mc;
 	}
 
+	/** 1.21 {@code renderTransparentBackground(gfx)}: the dark gradient behind a screen (JourneyMap's popups draw it). */
+	public void renderTransparentBackground(GuiGraphics gfx) {
+		this.drawDefaultBackground();
+	}
+
 	public static boolean hasShiftDown() {
 		return isShiftKeyDown();
 	}

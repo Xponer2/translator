@@ -66,6 +66,8 @@ final class MethodGuard {
 	Map<String, Object> constants = java.util.Collections.emptyMap();
 	/** X lines of the table ("owner.name desc" -> helper): calls redirected although the member exists. */
 	Map<String, String> forced = java.util.Collections.emptyMap();
+	/** The 1.12.2 class of an S row -> its facade (Screen's GuiScreen -> the Translator's Screen). */
+	Map<String, String> facades = java.util.Collections.emptyMap();
 
 	/** The 1.21 names of a 1.12.2 / Translator class (the classes the tables map to it): where its shadows are. */
 	private final java.util.function.Function<String, List<String>> originals;
@@ -970,6 +972,50 @@ final class MethodGuard {
 				replacement.add(new InsnNode(Opcodes.ICONST_0));
 				method.instructions.insertBefore(check, replacement);
 				method.instructions.remove(check);
+				changed = true;
+				continue;
+			}
+			// a member of a facade reached through its 1.21 class (javac names Screen as the owner of a subclass's
+			// this.renderables): 1.12.2's class (GuiScreen) hasn't it, the facade has; the receiver is cast to it
+			if (insn instanceof FieldInsnNode member && (member.getOpcode() == Opcodes.GETFIELD || member.getOpcode() == Opcodes.PUTFIELD)
+					&& !this.facades.isEmpty() && this.facades.containsKey(member.owner) && !this.hasMember(member.owner, member.name, member.desc, false)
+					&& this.hasMember(this.facades.get(member.owner), member.name, member.desc, false)
+					&& (member.getOpcode() == Opcodes.GETFIELD || Type.getType(member.desc).getSize() == 1)) {
+				String facade = this.facades.get(member.owner);
+				var cast = new InsnList();
+				if (member.getOpcode() == Opcodes.PUTFIELD) {
+					cast.add(new InsnNode(Opcodes.SWAP));
+					cast.add(new TypeInsnNode(Opcodes.CHECKCAST, facade));
+					cast.add(new InsnNode(Opcodes.SWAP));
+				} else {
+					cast.add(new TypeInsnNode(Opcodes.CHECKCAST, facade));
+				}
+				method.instructions.insertBefore(member, cast);
+				member.owner = facade;
+				this.redirected.incrementAndGet();
+				changed = true;
+				continue;
+			}
+			if (insn instanceof MethodInsnNode call && call.getOpcode() == Opcodes.INVOKEVIRTUAL && !this.facades.isEmpty()
+					&& this.facades.containsKey(call.owner) && !this.hasMember(call.owner, call.name, call.desc, true)
+					&& this.hasMember(this.facades.get(call.owner), call.name, call.desc, true)) {
+				// the same for a method only the facade has: the arguments into new locals, the receiver cast, back
+				String facade = this.facades.get(call.owner);
+				Type[] args = Type.getArgumentTypes(call.desc);
+				int[] slots = new int[args.length];
+				var spill = new InsnList();
+				for (int i = args.length - 1; i >= 0; i--) {
+					slots[i] = method.maxLocals;
+					method.maxLocals += args[i].getSize();
+					spill.add(new VarInsnNode(args[i].getOpcode(Opcodes.ISTORE), slots[i]));
+				}
+				spill.add(new TypeInsnNode(Opcodes.CHECKCAST, facade));
+				for (int i = 0; i < args.length; i++) {
+					spill.add(new VarInsnNode(args[i].getOpcode(Opcodes.ILOAD), slots[i]));
+				}
+				method.instructions.insertBefore(call, spill);
+				call.owner = facade;
+				this.redirected.incrementAndGet();
 				changed = true;
 				continue;
 			}
