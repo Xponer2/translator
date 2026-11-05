@@ -218,7 +218,67 @@ public final class RuntimeResourcePack implements IResourcePack {
 		}
 		blockstateModels(json);
 		wallSides(json);
+		attachFaces(json);
 		return json;
+	}
+
+	/**
+	 * A 1.21 button's variants are by face (floor, wall, ceiling) and facing; 1.12.2's button has one facing, up and down
+	 * included: floor becomes up, ceiling down, a wall face its facing (the first variant of a 1.12.2 state is kept). The
+	 * buttons of every mod had no model ("missing variant facing=up,powered=false": Biomes O' Plenty's 165 errors).
+	 */
+	private static void attachFaces(JsonElement json) {
+		if (!json.isJsonObject() || !json.getAsJsonObject().has("variants") || !json.getAsJsonObject().get("variants").isJsonObject()) {
+			return;
+		}
+		JsonObject variants = json.getAsJsonObject().getAsJsonObject("variants");
+		boolean faces = false;
+		for (var entry : variants.entrySet()) {
+			String key = entry.getKey();
+			faces |= key.contains("face=floor") || key.contains("face=wall") || key.contains("face=ceiling");
+		}
+		if (!faces) {
+			return;
+		}
+		var converted = new java.util.LinkedHashMap<String, JsonElement>();
+		for (var entry : variants.entrySet()) {
+			var properties = new java.util.TreeMap<String, String>();
+			String face = null;
+			for (String part : entry.getKey().split(",")) {
+				int equals = part.indexOf('=');
+				if (equals < 0) {
+					continue;
+				}
+				String name = part.substring(0, equals);
+				String value = part.substring(equals + 1);
+				if ("face".equals(name)) {
+					face = value;
+				} else {
+					properties.put(name, value);
+				}
+			}
+			if ("floor".equals(face)) {
+				properties.put("facing", "up");
+			} else if ("ceiling".equals(face)) {
+				properties.put("facing", "down");
+			}
+			var key = new StringBuilder();
+			for (var property : properties.entrySet()) {
+				if (key.length() > 0) {
+					key.append(',');
+				}
+				key.append(property.getKey()).append('=').append(property.getValue());
+			}
+			converted.putIfAbsent(key.toString(), entry.getValue());
+		}
+		var old = new java.util.ArrayList<String>();
+		for (var entry : variants.entrySet()) {
+			old.add(entry.getKey());
+		}
+		for (String key : old) {
+			variants.remove(key);
+		}
+		converted.forEach(variants::add);
 	}
 
 	private static final Set<String> SIDES = new HashSet<>(java.util.Arrays.asList("north", "east", "south", "west"));

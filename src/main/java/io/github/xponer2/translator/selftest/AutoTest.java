@@ -172,7 +172,14 @@ public final class AutoTest {
 			}
 			case 3 -> {
 				if (this.ticks > 40) {
-					mc.shutdown();
+					if (Boolean.getBoolean("translator.autotest.stay")) {
+						// -Dtranslator.autotest.stay=true: the game stays in the world for a look (the report is written)
+						LOGGER.info("Self-test finished, staying in the world (translator.autotest.stay)");
+						this.state = 5;
+						this.started = 0;
+					} else {
+						mc.shutdown();
+					}
 				}
 			}
 			case 4 -> {
