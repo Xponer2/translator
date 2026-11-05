@@ -249,8 +249,39 @@ public final class SelfTest {
 					this.planDimension(dimension);
 				}
 			}
+			// the rest of each mod: recipes, tags, creative tabs, sounds, advancements (one shard checks them)
+			if (shard == 0) {
+				var namespaces = new java.util.TreeSet<String>();
+				for (Block block : this.blocks) {
+					namespaces.add(block.getRegistryName().getNamespace());
+				}
+				for (Item item : this.items) {
+					namespaces.add(item.getRegistryName().getNamespace());
+				}
+				for (String namespace : namespaces) {
+					if (!done.contains("content " + namespace + ":content")) {
+						this.planMod(namespace);
+					}
+				}
+			}
 			this.steps.add(this::finish);
 		}
+
+		/** A mod's content besides its blocks and items, each against its data ({@link ModChecks}). */
+		private void planMod(String namespace) {
+			this.steps.add(() -> {
+				this.begin(namespace + ":content", "content");
+				this.attempt("recipes", () -> ModChecks.recipes(namespace, this.current.problems, this.current.notes));
+				this.attempt("tags", () -> ModChecks.tags(namespace, this.current.problems, this.current.notes));
+				this.attempt("creative tabs", () -> ModChecks.creativeTabs(namespace, this.current.problems, this.current.notes));
+				this.attempt("sounds", () -> ModChecks.sounds(namespace, this.current.problems, this.current.notes));
+				this.attempt("advancements", () -> ModChecks.advancements(this.world.getMinecraftServer(), namespace, this.current.problems,
+						this.current.notes));
+			});
+		}
+
+		/** The blocks of a mod whose loot table drops something plainly (read once per mod). */
+		private final Map<String, Set<net.minecraft.util.ResourceLocation>> plainDrops = new java.util.HashMap<>();
 
 		/** The records of the automatic test's earlier starts (before a crash), and what crashed it ("kind id" each). */
 		private Set<String> resume() {
@@ -566,9 +597,19 @@ public final class SelfTest {
 			});
 		}
 
+		/** Broken as the game breaks it: a block whose loot table drops it plainly must drop something. */
 		private void breakAndClear(Block block) {
 			if (this.world.getBlockState(this.cell).getBlock() == block) {
-				this.attempt("break", () -> this.world.destroyBlock(this.cell, true));
+				for (EntityItem drop : this.world.getEntitiesWithinAABB(EntityItem.class, new AxisAlignedBB(this.cell).grow(3))) {
+					drop.setDead();
+				}
+				boolean broken = this.attempt("break", () -> this.world.destroyBlock(this.cell, true));
+				var name = block.getRegistryName();
+				boolean plain = name != null && this.plainDrops.computeIfAbsent(name.getNamespace(), ModChecks::plainDrops).contains(name);
+				if (broken && plain && this.world.getEntitiesWithinAABB(EntityItem.class, new AxisAlignedBB(this.cell).grow(3), drop -> !drop.isDead)
+						.isEmpty()) {
+					this.current.problems.add("drops: nothing when broken (its loot table drops it plainly)");
+				}
 			}
 			this.clearCell();
 		}
@@ -677,16 +718,23 @@ public final class SelfTest {
 			long before = this.region();
 			ItemStack meal = new ItemStack(net.minecraft.init.Items.DYE, 64, net.minecraft.item.EnumDyeColor.WHITE.getDyeDamage());
 			boolean[] grew = new boolean[1];
+			// a sapling: until its tree is there (its stage first), then the tree is checked against its data
+			boolean sapling = block instanceof io.github.xponer2.translator.runtime.mc.SaplingBlock;
 			this.attempt("bone meal", () -> {
-				for (int i = 0; i < 40 && !grew[0]; i++) {
+				for (int i = 0; i < 60 && !grew[0]; i++) {
+					meal.setCount(64);
 					net.minecraft.item.ItemDye.applyBonemeal(meal, this.world, this.cell, this.player, EnumHand.MAIN_HAND);
-					grew[0] = this.region() != before;
+					grew[0] = sapling ? ModChecks.isLog(this.world.getBlockState(this.cell)) : this.region() != before;
 				}
 			});
-			if (grew[0]) {
-				this.current.notes.add("grows with bone meal");
+			if (!grew[0]) {
+				this.current.problems.add(sapling ? "sapling: no tree in 60 uses of bone meal" : "bone meal: nothing grew in 60 uses (canGrow said it can)");
+			} else if (sapling) {
+				Block[] expected = io.github.xponer2.translator.world.TreeInfo.saplingTree(
+						((io.github.xponer2.translator.runtime.mc.SaplingBlock) block).translatorTreeGrower());
+				this.attempt("sapling tree", () -> ModChecks.checkTree(this.world, this.cell, expected, this.current.problems, this.current.notes, "sapling tree"));
 			} else {
-				this.current.problems.add("bone meal: nothing grew in 40 uses (canGrow said it can)");
+				this.current.notes.add("grows with bone meal");
 			}
 		}
 
@@ -734,7 +782,7 @@ public final class SelfTest {
 		/** The blocks around the cell (where a tree from it grows). */
 		private Map<BlockPos, IBlockState> snapshot() {
 			var blocks = new java.util.HashMap<BlockPos, IBlockState>();
-			for (BlockPos pos : BlockPos.getAllInBox(this.cell.add(-6, -1, -6), this.cell.add(6, 30, 6))) {
+			for (BlockPos pos : BlockPos.getAllInBox(this.cell.add(-8, -1, -8), this.cell.add(8, 48, 8))) {
 				blocks.put(pos, this.world.getBlockState(pos));
 			}
 			return blocks;
@@ -808,6 +856,10 @@ public final class SelfTest {
 					this.current.problems.add("not generated: no world of 1.12.2 places this biome (the 1.21.1 biome sources, TerraBlender "
 							+ "regions and the mods' dimensions aren't in 1.12.2's world generation)");
 				}
+				// what it grows: its trees (upright, joined leaves, its own woods), plants and features
+				boolean features = io.github.xponer2.translator.world.TreeInfo.hasFeatures(biome);
+				int index = this.biomes.indexOf(biome);
+				this.attempt("worldgen", () -> ModChecks.decorate(this.world, biome, index, features, this.current.problems, this.current.notes));
 			});
 		}
 

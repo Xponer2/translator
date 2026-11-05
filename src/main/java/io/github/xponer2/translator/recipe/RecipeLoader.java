@@ -93,6 +93,16 @@ public final class RecipeLoader {
                         FurnaceRecipes.instance().addSmeltingRecipe(input, result, smeltingRecipe.getExperience());
                         smelting++;
                     }
+                } else if (recipe.getType() == RecipeType.SMELTING) {
+                    // a smelting recipe another serializer made (the carried 1.21 one): its ingredient and result
+                    var result = recipe.getResultItem(RegistryAccess.INSTANCE);
+                    var ingredients = recipe.getIngredients();
+                    if (result != null && !result.isEmpty() && !ingredients.isEmpty()) {
+                        for (var input : ingredients.get(0).getMatchingStacks()) {
+                            FurnaceRecipes.instance().addSmeltingRecipe(input, result.copy(), 0.1F);
+                            smelting++;
+                        }
+                    }
                 }
             }
         } finally {

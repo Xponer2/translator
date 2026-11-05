@@ -115,6 +115,15 @@ final class DataTree extends WorldGenAbstractTree {
 		this.leaf(world, pos.up(height + 1));
 	}
 
+	/** The trunk's block state (the self-test compares the trees that grow with it). */
+	IBlockState log() {
+		return this.log;
+	}
+
+	IBlockState leaves() {
+		return this.leaves;
+	}
+
 	/** The same tree grown from a sapling. */
 	DataTree grown() {
 		return new DataTree(this.log, this.leaves, this.minHeight, this.maxHeight, this.shape, true);

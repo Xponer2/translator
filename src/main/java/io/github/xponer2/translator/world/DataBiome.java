@@ -88,6 +88,11 @@ final class DataBiome extends Biome {
 	}
 
 	/** The tree features of the biome, with how many of each grow in a chunk (DataBiomes reads them). */
+	/** The trees of its data (DataTree, or 1.12.2's for vanilla ones). */
+	List<WorldGenAbstractTree> trees() {
+		return java.util.Collections.unmodifiableList(this.trees);
+	}
+
 	void addTree(WorldGenAbstractTree tree, double weight) {
 		this.trees.add(tree);
 		this.treeWeights.add(weight);

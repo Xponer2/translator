@@ -91,6 +91,16 @@ public final class TreeGrowing {
 		return false;
 	}
 
+	/** The (not 2x2) tree a grower names, without growing it (the self-test). */
+	@Nullable
+	static WorldGenAbstractTree treeOf(@Nullable Object grower, Random random) {
+		if (grower == null) {
+			return null;
+		}
+		ResourceLocation feature = key(call(grower, "getConfiguredFeature", random, false));
+		return feature == null ? null : tree(feature, random, false);
+	}
+
 	/** The tree of a configured feature: the mod's data, or 1.12.2's tree for a vanilla one. */
 	@Nullable
 	static WorldGenAbstractTree tree(ResourceLocation feature, Random random, boolean mega) {

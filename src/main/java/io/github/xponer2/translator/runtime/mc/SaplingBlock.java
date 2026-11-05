@@ -39,6 +39,12 @@ public class SaplingBlock extends BushBlock implements IGrowable {
 	@Nullable
 	protected final Object treeGrower;
 
+	/** The tree grower (the self-test compares the tree that grew with the one its data names). */
+	@Nullable
+	public final Object translatorTreeGrower() {
+		return this.treeGrower;
+	}
+
 	public SaplingBlock(Object treeGrower, BlockProperties properties) {
 		super(properties.randomTicks());
 		this.treeGrower = treeGrower;
