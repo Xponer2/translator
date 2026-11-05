@@ -259,6 +259,11 @@ public final class RuntimeResourcePack implements IResourcePack {
 					properties.put(name, value);
 				}
 			}
+			// on the floor and the ceiling 1.12.2 has one button, lying along x (its box): the 1.21 variant of that
+			// orientation (floor facing north: no turn; ceiling facing south: x 180 only), not the first one (turned 90
+			// degrees: the box and the button crossed)
+			String along = properties.get("facing");
+			boolean preferred = "floor".equals(face) && "north".equals(along) || "ceiling".equals(face) && "south".equals(along);
 			if ("floor".equals(face)) {
 				properties.put("facing", "up");
 			} else if ("ceiling".equals(face)) {
@@ -271,7 +276,11 @@ public final class RuntimeResourcePack implements IResourcePack {
 				}
 				key.append(property.getKey()).append('=').append(property.getValue());
 			}
-			converted.putIfAbsent(key.toString(), entry.getValue());
+			if (preferred) {
+				converted.put(key.toString(), entry.getValue());
+			} else {
+				converted.putIfAbsent(key.toString(), entry.getValue());
+			}
 		}
 		var old = new java.util.ArrayList<String>();
 		for (var entry : variants.entrySet()) {

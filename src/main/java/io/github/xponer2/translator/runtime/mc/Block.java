@@ -147,6 +147,57 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 	public void randomTick(IBlockState state, net.minecraft.world.WorldServer level, BlockPos pos, java.util.Random random) {
 	}
 
+	/** 1.21 {@code propagatesSkylightDown}: a shape that doesn't fill the block lets the sky light through unchanged. */
+	public boolean propagatesSkylightDown(IBlockState state, IBlockAccess level, BlockPos pos) {
+		return !io.github.xponer2.translator.runtime.redirect.MiscBridges.isShapeFullBlock(this.getShape(state, level, pos, CollisionContext.empty()));
+	}
+
+	/** 1.21 {@code getLightBlock}: 15 through a solid block, 0 when the sky light goes through, else 1 (leaves). */
+	public int getLightBlock(IBlockState state, IBlockAccess level, BlockPos pos) {
+		if (this.isOpaqueCube(state)) {
+			return 15;
+		}
+		return this.propagatesSkylightDown(state, level, pos) ? 0 : 1;
+	}
+
+	/** The light a state takes, per state (a mod overriding the 1.21 methods is asked each time). */
+	private final java.util.Map<IBlockState, Integer> lightBlock = new java.util.concurrent.ConcurrentHashMap<>();
+	private Boolean ownLightBlock;
+
+	/**
+	 * 1.12.2's light opacity by the 1.21 rules: a full block that isn't solid (leaves, a mod's glass-like full blocks)
+	 * dims the light by one, as in 1.21; 1.12.2 gave every block that isn't opaque none, so under a mod's trees it was
+	 * as light as in the open and their leaves were lit the same inside and out.
+	 */
+	@Override
+	@SuppressWarnings("deprecation")
+	public int getLightOpacity(IBlockState state, IBlockAccess world, BlockPos pos) {
+		if (this.ownLightBlock == null) {
+			boolean own;
+			try {
+				Class<?> type = this.getClass();
+				own = type.getMethod("getLightBlock", IBlockState.class, IBlockAccess.class, BlockPos.class).getDeclaringClass() != Block.class
+						|| type.getMethod("propagatesSkylightDown", IBlockState.class, IBlockAccess.class, BlockPos.class).getDeclaringClass() != Block.class;
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				own = false;
+			}
+			this.ownLightBlock = own;
+		}
+		int light;
+		if (this.ownLightBlock) {
+			light = this.guarded("getLightBlock", () -> this.getLightBlock(state, world, pos), this.lightOpacity);
+		} else {
+			light = this.lightBlock.computeIfAbsent(state, key -> this.guarded("getLightBlock", () -> this.getLightBlock(key, null, null), this.lightOpacity));
+		}
+		return light >= 15 ? 255 : light;
+	}
+
+	@Override
+	@SuppressWarnings("deprecation")
+	public int getLightOpacity(IBlockState state) {
+		return this.getLightOpacity(state, null, null);
+	}
+
 	/** 1.21 {@code isRandomlyTicking(state)}: the block's randomTicks() property. */
 	public boolean isRandomlyTicking(IBlockState state) {
 		return this.needsRandomTick;

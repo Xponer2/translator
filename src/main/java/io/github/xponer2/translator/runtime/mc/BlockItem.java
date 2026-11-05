@@ -89,6 +89,50 @@ public class BlockItem extends ItemBlock implements TooltipContext.HoverText, io
 		return true;
 	}
 
+	/**
+	 * 1.21 {@code placeBlock(context, state)}: the block set (a door's item clears the block above first). 1.12.2's
+	 * placement goes through here, so a mod's override of it runs: doors were placed without their upper half.
+	 */
+	public boolean placeBlock(io.github.xponer2.translator.util.BlockPlaceContext context, net.minecraft.block.state.IBlockState state) {
+		return context.getLevel().setBlockState(context.getClickedPos(), state, 11);
+	}
+
+	/** 1.12.2's placement: the block by the 1.21 placeBlock, then its block entity data and setPlacedBy as 1.12.2 does. */
+	@Override
+	public boolean placeBlockAt(ItemStack stack, net.minecraft.entity.player.EntityPlayer player, World world, net.minecraft.util.math.BlockPos pos,
+			net.minecraft.util.EnumFacing side, float hitX, float hitY, float hitZ, net.minecraft.block.state.IBlockState newState) {
+		io.github.xponer2.translator.util.BlockPlaceContext context;
+		try {
+			net.minecraft.util.EnumHand hand = player != null && player.getHeldItem(net.minecraft.util.EnumHand.OFF_HAND) == stack
+					? net.minecraft.util.EnumHand.OFF_HAND : net.minecraft.util.EnumHand.MAIN_HAND;
+			context = player == null ? null : io.github.xponer2.translator.util.BlockPlaceContext.of(world, pos, side, hitX, hitY, hitZ, player, hand);
+		} catch (RuntimeException e) {
+			context = null;
+		}
+		if (context == null) {
+			return super.placeBlockAt(stack, player, world, pos, side, hitX, hitY, hitZ, newState);
+		}
+		boolean placed;
+		try {
+			placed = this.placeBlock(context, newState);
+		} catch (RuntimeException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".placeBlock", e);
+			placed = world.setBlockState(pos, newState, 11);
+		}
+		if (!placed) {
+			return false;
+		}
+		net.minecraft.block.state.IBlockState state = world.getBlockState(pos);
+		if (state.getBlock() == this.block) {
+			setTileEntityNBT(world, player, pos, stack);
+			this.block.onBlockPlacedBy(world, pos, state, player, stack);
+			if (player instanceof net.minecraft.entity.player.EntityPlayerMP serverPlayer) {
+				net.minecraft.advancements.CriteriaTriggers.PLACED_BLOCK.trigger(serverPlayer, pos, stack);
+			}
+		}
+		return true;
+	}
+
 	public boolean updateCustomBlockEntityTag(net.minecraft.util.math.BlockPos pos, World world, @Nullable net.minecraft.entity.player.EntityPlayer player,
 			ItemStack stack, net.minecraft.block.state.IBlockState state) {
 		return ItemBlock.setTileEntityNBT(world, player, pos, stack);

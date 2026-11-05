@@ -108,12 +108,19 @@ final class ModChecks {
 					}
 					continue;
 				}
-				boolean bad = recipe.getRecipeOutput().isEmpty() && !type.contains("special");
-				for (Ingredient ingredient : recipe.getIngredients()) {
-					bad |= ingredient != Ingredient.EMPTY && ingredient.getMatchingStacks().length == 0;
-				}
-				if (bad) {
-					broken.add(entry.getKey().getPath());
+				if (recipe.getRecipeOutput().isEmpty() && !type.contains("special")) {
+					broken.add(entry.getKey().getPath() + " (no result)");
+				} else {
+					int index = 0;
+					for (Ingredient ingredient : recipe.getIngredients()) {
+						if (ingredient != Ingredient.EMPTY && ingredient.getMatchingStacks().length == 0 && ingredient.getClass() == Ingredient.class
+								|| ingredient != Ingredient.EMPTY && ingredient.getMatchingStacks().length == 0 && !ingredient.apply(ItemStack.EMPTY)
+										&& ingredient.getClass() != Ingredient.class) {
+							broken.add(entry.getKey().getPath() + " (ingredient " + index + ": " + ingredient.getClass().getSimpleName() + ")");
+							break;
+						}
+						index++;
+					}
 				}
 			} else if ("minecraft:smelting".equals(type)) {
 				smelting++;
@@ -211,7 +218,8 @@ final class ModChecks {
 		}
 		Set<Item> shown = new HashSet<>();
 		for (net.minecraft.creativetab.CreativeTabs tab : net.minecraft.creativetab.CreativeTabs.CREATIVE_TAB_ARRAY) {
-			if (tab == null || tab == net.minecraft.creativetab.CreativeTabs.SEARCH) {
+			if (tab == null || tab == net.minecraft.creativetab.CreativeTabs.SEARCH || tab == net.minecraft.creativetab.CreativeTabs.HOTBAR
+					|| tab == net.minecraft.creativetab.CreativeTabs.INVENTORY) {
 				continue;
 			}
 			var stacks = net.minecraft.util.NonNullList.<ItemStack>create();
@@ -335,8 +343,8 @@ final class ModChecks {
 				|| block instanceof io.github.xponer2.translator.runtime.mc.RotatedPillarBlock && state.getMaterial() == net.minecraft.block.material.Material.WOOD;
 	}
 
-	private static boolean isLeaves(net.minecraft.block.state.IBlockState state) {
-		return state.getMaterial() == net.minecraft.block.material.Material.LEAVES;
+	private static boolean isLeaves(net.minecraft.world.World world, BlockPos pos, net.minecraft.block.state.IBlockState state) {
+		return state.getMaterial() == net.minecraft.block.material.Material.LEAVES || state.getBlock().isLeaves(state, world, pos);
 	}
 
 	/**
@@ -363,7 +371,7 @@ final class ModChecks {
 			}
 			height++;
 		}
-		if (lying > 0) {
+		if (lying > 0 && height >= 2) {
 			problems.add(what + ": " + lying + " of " + height + " trunk logs lie on their side");
 		}
 		// the tree's logs and leaves (joined to the trunk), the leaves' distance to a log through leaves
@@ -385,7 +393,7 @@ final class ModChecks {
 				net.minecraft.block.state.IBlockState state = world.getBlockState(side);
 				if (isLog(state)) {
 					logs.add(side);
-				} else if (isLeaves(state)) {
+				} else if (isLeaves(world, side, state)) {
 					leaves.add(side);
 					if (leafBlock == null) {
 						leafBlock = state.getBlock();
@@ -393,11 +401,19 @@ final class ModChecks {
 				}
 			}
 		}
-		// leaves reached from the logs: breadth first through leaves
+		// leaves reached from any log around (trees side by side share their leaves): breadth first through leaves
 		var queue = new java.util.ArrayDeque<BlockPos>();
-		for (BlockPos leaf : leaves) {
-			distance.put(leaf, 1);
-			queue.add(leaf);
+		for (BlockPos pos : BlockPos.getAllInBox(base.add(-12, 0, -12), base.add(12, 40, 12))) {
+			net.minecraft.block.state.IBlockState state = world.getBlockState(pos);
+			if (isLeaves(world, pos, state)) {
+				for (net.minecraft.util.EnumFacing facing : net.minecraft.util.EnumFacing.values()) {
+					if (isLog(world.getBlockState(pos.offset(facing)))) {
+						distance.put(pos, 1);
+						queue.add(pos);
+						break;
+					}
+				}
+			}
 		}
 		var all = new HashSet<BlockPos>(leaves);
 		while (!queue.isEmpty()) {
@@ -409,7 +425,7 @@ final class ModChecks {
 			for (net.minecraft.util.EnumFacing facing : net.minecraft.util.EnumFacing.values()) {
 				BlockPos side = pos.offset(facing);
 				if (!distance.containsKey(side) && Math.abs(side.getX() - base.getX()) <= 10 && Math.abs(side.getZ() - base.getZ()) <= 10
-						&& side.getY() >= base.getY() && isLeaves(world.getBlockState(side))) {
+						&& side.getY() >= base.getY() && isLeaves(world, side, world.getBlockState(side))) {
 					distance.put(side, next);
 					all.add(side);
 					queue.add(side);

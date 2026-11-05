@@ -26,6 +26,40 @@ public final class FluidState {
 	public static final Fluid EMPTY_FLUID = new Fluid("translator_empty", null, null);
 	public static final FluidState EMPTY = new FluidState(EMPTY_FLUID, false, 0);
 
+	/**
+	 * 1.21 {@code FluidState.CODEC} ({@code {"Name": "minecraft:lava", "Properties": {...}}}): the fluid by its name, a
+	 * source. The carried one failed (its StateHolder.codec isn't here), and with it every feature class (springs read
+	 * it): no mod's feature could be made.
+	 */
+	public static final com.mojang.serialization.Codec<FluidState> CODEC = com.mojang.serialization.codecs.RecordCodecBuilder.create(
+			instance -> instance.group(
+					com.mojang.serialization.Codec.STRING.fieldOf("Name").forGetter(FluidState::name),
+					com.mojang.serialization.Codec.unboundedMap(com.mojang.serialization.Codec.STRING, com.mojang.serialization.Codec.STRING)
+							.optionalFieldOf("Properties", java.util.Collections.emptyMap()).forGetter(state -> java.util.Collections.emptyMap()))
+					.apply(instance, (name, properties) -> byName(name)));
+
+	/** The fluid of a 1.21 fluid name (water, lava, empty, a mod's fluid by its Forge name). */
+	public static FluidState byName(String name) {
+		String path = name.substring(name.indexOf(':') + 1);
+		if ("empty".equals(path)) {
+			return EMPTY;
+		}
+		Fluid fluid = "water".equals(path) || "flowing_water".equals(path) ? FluidRegistry.WATER
+				: "lava".equals(path) || "flowing_lava".equals(path) ? FluidRegistry.LAVA
+				: FluidRegistry.getFluid(path) != null ? FluidRegistry.getFluid(path) : FluidRegistry.getFluid(name);
+		return fluid == null ? EMPTY : new FluidState(fluid, !path.startsWith("flowing_"), 8);
+	}
+
+	private String name() {
+		if (this.fluid == EMPTY_FLUID) {
+			return "minecraft:empty";
+		}
+		if (this.fluid == FluidRegistry.WATER || this.fluid == FluidRegistry.LAVA) {
+			return "minecraft:" + this.fluid.getName();
+		}
+		return this.fluid.getName();
+	}
+
 	private final Fluid fluid;
 	private final boolean source;
 	private final int amount;
