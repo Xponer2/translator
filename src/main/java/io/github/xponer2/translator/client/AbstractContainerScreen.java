@@ -239,6 +239,68 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 		return this.isPointInRegion(x, y, width, height, (int) mouseX, (int) mouseY);
 	}
 
+	/**
+	 * NeoForge {@code renderSlotHighlight(gfx, x, y, z, color)}: the hovered slot's highlight in that color. Screens that
+	 * draw their own slots (Sophisticated's backpacks) call it; without it no slot lit up under the mouse.
+	 */
+	public static void renderSlotHighlight(GuiGraphics gfx, int x, int y, int z, int color) {
+		net.minecraft.client.renderer.GlStateManager.disableLighting();
+		net.minecraft.client.renderer.GlStateManager.disableDepth();
+		gfx.fill(x, y, x + 16, y + 16, color);
+		net.minecraft.client.renderer.GlStateManager.enableDepth();
+	}
+
+	/** NeoForge {@code getSlotColor(index)}: the highlight color of a slot (the vanilla white). */
+	public int getSlotColor(int index) {
+		return 0x80FFFFFF;
+	}
+
+	/**
+	 * 1.21 {@code renderFloatingItem(gfx, stack, x, y, text)} (the tables name it 1.12.2's drawItemStack, which is private
+	 * and takes no GuiGraphics): the stack on the cursor or being dragged, drawn over everything. Screens that draw
+	 * themselves (Sophisticated's backpacks) call it; without it a picked-up item vanished from sight.
+	 */
+	protected void drawItemStack(GuiGraphics gfx, net.minecraft.item.ItemStack stack, int x, int y, @Nullable String text) {
+		this.renderFloatingItem(gfx, stack, x, y, text);
+	}
+
+	protected void renderFloatingItem(GuiGraphics gfx, net.minecraft.item.ItemStack stack, int x, int y, @Nullable String text) {
+		if (stack.isEmpty()) {
+			return;
+		}
+		net.minecraft.client.renderer.GlStateManager.pushMatrix();
+		net.minecraft.client.renderer.GlStateManager.translate(0.0F, 0.0F, 232.0F);
+		net.minecraft.client.renderer.RenderHelper.enableGUIStandardItemLighting();
+		this.zLevel = 200.0F;
+		this.itemRender.zLevel = 200.0F;
+		FontRenderer itemFont = stack.getItem().getFontRenderer(stack);
+		if (itemFont == null) {
+			itemFont = this.fontRenderer;
+		}
+		this.itemRender.renderItemAndEffectIntoGUI(stack, x, y);
+		this.itemRender.renderItemOverlayIntoGUI(itemFont, stack, x, y, text);
+		this.zLevel = 0.0F;
+		this.itemRender.zLevel = 0.0F;
+		net.minecraft.client.renderer.RenderHelper.disableStandardItemLighting();
+		net.minecraft.client.renderer.GlStateManager.popMatrix();
+	}
+
+	/** 1.21 {@code findSlot(mouseX, mouseY)}: the slot under the mouse, null if none. */
+	@Nullable
+	protected net.minecraft.inventory.Slot findSlot(double mouseX, double mouseY) {
+		for (net.minecraft.inventory.Slot slot : this.inventorySlots.inventorySlots) {
+			if (slot.isEnabled() && this.isHovering(slot, mouseX, mouseY)) {
+				return slot;
+			}
+		}
+		return null;
+	}
+
+	/** 1.21 {@code hasClickedOutside}: the click is outside the screen's panel (the carried stack is thrown out). */
+	protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
+		return mouseX < left || mouseY < top || mouseX >= left + this.xSize || mouseY >= top + this.ySize;
+	}
+
 	/** 1.21 {@code isHovering(slot, mouseX, mouseY)}: the mouse over the slot (Sophisticated finds the clicked slot so). */
 	protected boolean isHovering(net.minecraft.inventory.Slot slot, double mouseX, double mouseY) {
 		return this.isHovering(slot.xPos, slot.yPos, 16, 16, mouseX, mouseY);

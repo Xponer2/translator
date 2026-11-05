@@ -334,3 +334,4 @@ R	net/minecraft/entity/ai/EntityAIWander	io/github/xponer2/translator/runtime/re
 R	net/minecraft/entity/ai/EntityAIWatchClosest	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
 R	net/minecraft/network/play/client/CPacketClickWindow	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/inventory/Slot	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/renderer/block/model/BlockPart	io/github/xponer2/translator/client/model/BlockElementFields
