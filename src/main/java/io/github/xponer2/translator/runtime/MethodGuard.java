@@ -1132,6 +1132,11 @@ final class MethodGuard {
 						// a vanilla model's part is a plain ModelRenderer: a stand-in with its pose, not a failed cast
 						method.instructions.insert(field, new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/client/model/ModelPart", "of",
 								"(Lnet/minecraft/client/model/ModelRenderer;)Lio/github/xponer2/translator/client/model/ModelPart;", false));
+					} else if (this.adapter(expected, actual) != null) {
+						// a Translator type with an adapter of the 1.12.2 one (DispenseItemBehavior.of(IBehaviorDispenseItem)):
+						// the 1.12.2 value adapted, not a failed cast (Artifacts' umbrella read ArmorItem.DISPENSE_ITEM_BEHAVIOR)
+						method.instructions.insert(field, new MethodInsnNode(Opcodes.INVOKESTATIC, Type.getType(expected).getInternalName(), "of",
+								this.adapter(expected, actual), this.isInterfaceType(Type.getType(expected).getInternalName())));
 					} else {
 						method.instructions.insert(field, new TypeInsnNode(Opcodes.CHECKCAST, Type.getType(expected).getInternalName()));
 					}
@@ -2304,6 +2309,30 @@ final class MethodGuard {
 	}
 
 	/** SimpleVerifier on the converted class hierarchy, without loading any class. */
+	/** The descriptor of {@code expected.of(x)} taking the 1.12.2 type (or a supertype of it), null when it has none. */
+	@javax.annotation.Nullable
+	private String adapter(String expected, String actual) {
+		String owner = Type.getType(expected).getInternalName();
+		ClassInfo info = this.info(owner);
+		if (info == null) {
+			return null;
+		}
+		for (String member : info.methods) {
+			if (member.startsWith("of (") && member.endsWith(")" + expected)) {
+				Type[] params = Type.getArgumentTypes(member.substring(3));
+				if (params.length == 1 && this.isSubtype(actual, params[0].getDescriptor())) {
+					return member.substring(3);
+				}
+			}
+		}
+		return null;
+	}
+
+	private boolean isInterfaceType(String name) {
+		ClassInfo info = this.info(name);
+		return info != null && info.isInterface();
+	}
+
 	/** Object, Cloneable or Serializable: the supertypes of every array. */
 	private static boolean isArraySupertype(Type type) {
 		String name = type.getInternalName();
