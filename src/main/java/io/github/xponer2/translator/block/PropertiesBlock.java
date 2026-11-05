@@ -37,6 +37,16 @@ public class PropertiesBlock extends Block {
 		this.lightOpacity = this.fullBlock ? 255 : 0;
 	}
 
+	/** The drops of the block's 1.21 loot table (when the mod has one), else 1.12.2's (the block itself). */
+	@Override
+	public void getDrops(net.minecraft.util.NonNullList<net.minecraft.item.ItemStack> drops, IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
+		java.util.Random random = world instanceof net.minecraft.world.World level ? level.rand : RANDOM;
+		if (!io.github.xponer2.translator.loot.BlockLoot.drop(io.github.xponer2.translator.loot.BlockLoot.tableOf(this, this.properties), drops, world, pos,
+				state, fortune, harvesters.get(), random)) {
+			super.getDrops(drops, world, pos, state, fortune);
+		}
+	}
+
 	/** The model data of the block entity here, for its model (a 1.21 model reads it in getQuads). */
 	@Override
 	public IBlockState getExtendedState(IBlockState state, IBlockAccess world, BlockPos pos) {

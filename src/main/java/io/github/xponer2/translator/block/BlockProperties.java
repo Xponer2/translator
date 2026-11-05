@@ -97,7 +97,22 @@ public class BlockProperties {
 
     /** 1.21 {@code lootFrom}: drops like another block. 1.12.2 blocks drop by their own code: the block keeps its own. */
     public BlockProperties lootFrom(java.util.function.Supplier<?> block) {
+        this.lootSource = block;
         return this;
+    }
+
+    @javax.annotation.Nullable
+    private java.util.function.Supplier<?> lootSource;
+
+    /** The block whose loot table this one drops by (lootFrom), null for its own. */
+    @javax.annotation.Nullable
+    public java.util.function.Supplier<?> lootSource() {
+        return this.lootSource;
+    }
+
+    /** Whether the block drops nothing (noLootTable). */
+    public boolean hasNoLootTable() {
+        return this.noLootTable;
     }
 
     public BlockProperties material(Material material) {

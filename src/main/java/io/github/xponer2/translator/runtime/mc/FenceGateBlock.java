@@ -32,4 +32,15 @@ public class FenceGateBlock extends BlockFenceGate {
 	public FenceGateBlock(Object woodType, BlockProperties properties, Object openSound, Object closeSound) {
 		this(woodType, properties);
 	}
+
+	/** The drops of the block's 1.21 loot table (when the mod has one), else 1.12.2's. */
+	@Override
+	public void getDrops(net.minecraft.util.NonNullList<net.minecraft.item.ItemStack> drops, net.minecraft.world.IBlockAccess world,
+			net.minecraft.util.math.BlockPos pos, net.minecraft.block.state.IBlockState state, int fortune) {
+		java.util.Random random = world instanceof net.minecraft.world.World level ? level.rand : RANDOM;
+		if (!io.github.xponer2.translator.loot.BlockLoot.drop(io.github.xponer2.translator.loot.BlockLoot.tableOf(this, null), drops, world, pos, state,
+				fortune, harvesters.get(), random)) {
+			super.getDrops(drops, world, pos, state, fortune);
+		}
+	}
 }
