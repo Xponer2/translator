@@ -314,4 +314,51 @@ public final class DfuRedirects {
 	public static <T> T unwrap(Either<? extends T, ? extends T> either) {
 		return either.map(Function.identity(), Function.identity());
 	}
+
+	// --- DFU 8 dispatch: the codec of each kind is a MapCodec (DFU 4 wants a Codec and cast it: every 1.21 feature,
+	// placement, block state provider and trunk placer threw "MapCodec$1 cannot be cast to Codec") ----------------------
+
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	private static <K, V> Function<? super K, ? extends Codec<? extends V>> asCodecs(Function<? super K, ?> codecs) {
+		return key -> {
+			Object codec = codecs.apply(key);
+			return codec instanceof MapCodec map ? map.codec() : (Codec<? extends V>) codec;
+		};
+	}
+
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	private static <K, V> Function<? super K, ? extends DataResult<? extends Codec<? extends V>>> asCodecResults(Function<? super K, ?> codecs) {
+		return key -> ((DataResult<Object>) codecs.apply(key)).map(codec -> codec instanceof MapCodec map ? map.codec() : (Codec) codec);
+	}
+
+	/** DFU 8 {@code codec.dispatch(type, codec)} with MapCodecs. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static <K, V> Codec<V> dispatch(Codec<K> keys, Function<? super V, ? extends K> type, Function<? super K, ?> codecs) {
+		return keys.dispatch(type, (Function) asCodecs(codecs));
+	}
+
+	/** DFU 8 {@code codec.dispatch(typeKey, type, codec)} with MapCodecs. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static <K, V> Codec<V> dispatch(Codec<K> keys, String typeKey, Function<? super V, ? extends K> type, Function<? super K, ?> codecs) {
+		return keys.dispatch(typeKey, type, (Function) asCodecs(codecs));
+	}
+
+	/** DFU 8 {@code codec.dispatchStable(type, codec)} with MapCodecs. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static <K, V> Codec<V> dispatchStable(Codec<K> keys, Function<? super V, ? extends K> type, Function<? super K, ?> codecs) {
+		return keys.dispatchStable(type, (Function) asCodecs(codecs));
+	}
+
+	/** DFU 8 {@code codec.partialDispatch(typeKey, type, codec)} with MapCodec results. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static <K, V> Codec<V> partialDispatch(Codec<K> keys, String typeKey, Function<? super V, ? extends DataResult<? extends K>> type,
+			Function<? super K, ?> codecs) {
+		return keys.partialDispatch(typeKey, (Function) type, (Function) asCodecResults(codecs));
+	}
+
+	/** DFU 8 {@code codec.dispatchMap(typeKey, type, codec)} with MapCodecs. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static <K, V> MapCodec<V> dispatchMap(Codec<K> keys, String typeKey, Function<? super V, ? extends K> type, Function<? super K, ?> codecs) {
+		return keys.dispatchMap(typeKey, type, (Function) asCodecs(codecs));
+	}
 }

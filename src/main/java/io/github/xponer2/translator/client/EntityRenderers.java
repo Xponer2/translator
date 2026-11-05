@@ -43,7 +43,11 @@ public final class EntityRenderers {
 			return;
 		}
 		RenderManager manager = Minecraft.getMinecraft().getRenderManager();
-		Render<? extends Entity> renderer = create(provider, manager, type);
+		// a mod's boat: 1.12.2's boat renderer with the wood's texture (the 1.21 boat renderer can't be made here: the
+		// boats were invisible); the boat model and its texture layout are the same in both versions
+		Render<? extends Entity> renderer = io.github.xponer2.translator.runtime.mc.Boat.class.isAssignableFrom(entityClass)
+				? new ModBoatRenderer(manager)
+				: create(provider, manager, type);
 		if (manager != null) {
 			manager.entityRenderMap.put(entityClass, renderer);
 		}

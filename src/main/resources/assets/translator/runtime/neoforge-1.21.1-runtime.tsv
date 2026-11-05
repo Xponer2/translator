@@ -452,3 +452,9 @@ C	net/minecraft/world/level/block/WallHangingSignBlock	io/github/xponer2/transla
 # 1.21 menu sync (Sophisticated Core: stacks of thousands, its own synchronizer) and a stack clicked onto another: the Translator's
 C	net/minecraft/world/inventory/ContainerSynchronizer	io/github/xponer2/translator/menu/ContainerSynchronizer
 C	net/minecraft/world/entity/SlotAccess	io/github/xponer2/translator/menu/SlotAccess
+# DFU 8 dispatch: the codec of each kind is a MapCodec (DFU 4's dispatch cast it to a Codec: 1.21 features, placements, providers failed)
+X	com/mojang/serialization/Codec	dispatch	(Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/Codec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects
+X	com/mojang/serialization/Codec	dispatch	(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/Codec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects
+X	com/mojang/serialization/Codec	dispatchStable	(Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/Codec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects
+X	com/mojang/serialization/Codec	partialDispatch	(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/Codec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects
+X	com/mojang/serialization/Codec	dispatchMap	(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/MapCodec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects

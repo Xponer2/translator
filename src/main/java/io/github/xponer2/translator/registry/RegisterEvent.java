@@ -228,6 +228,15 @@ public class RegisterEvent extends Event implements IContextSetter {
 		}
 	}
 
+	/** The 1.21.1 world generation registries mods register into (their features, placers, providers). */
+	private static final String[] VANILLA_REGISTRIES = {"worldgen/feature", "worldgen/carver", "worldgen/structure_type", "worldgen/structure_piece",
+			"worldgen/structure_placement", "worldgen/structure_processor", "worldgen/structure_pool_element", "worldgen/placement_modifier_type",
+			"worldgen/block_state_provider_type", "worldgen/foliage_placer_type", "worldgen/trunk_placer_type", "worldgen/root_placer_type",
+			"worldgen/tree_decorator_type", "worldgen/feature_size_type", "worldgen/biome_source", "worldgen/chunk_generator",
+			"worldgen/material_condition", "worldgen/material_rule", "worldgen/density_function_type", "worldgen/pool_alias_binding",
+			"block_predicate_type", "rule_test", "rule_block_entity_modifier", "pos_rule_test", "float_provider_type", "int_provider_type",
+			"height_provider_type"};
+
 	public static final class Forwarder {
 		/** The loading screen's bar of the registry event going on: a step per DeferredRegister (the mod's id). */
 		@javax.annotation.Nullable
@@ -287,6 +296,16 @@ public class RegisterEvent extends Event implements IContextSetter {
 			if (event.getRegistry().getRegistrySuperType() == Item.class) {
 				// the registries 1.12.2 has no event for (the mods' own, block entity types, menus, ...): an event each,
 				// as NeoForge posts, then the bake (their callbacks); DeferredRegisters fill them after this (LOWEST)
+				// the 1.21 registries a mod may fill through these events, made now: a registry made later (the features,
+				// when the first feature file is read) had no event, and the mod's entries never came (Biomes O' Plenty's
+				// features through GlitchCore: its biomes grew nothing of their own)
+				for (String name : VANILLA_REGISTRIES) {
+					try {
+						BuiltInRegistries.byKey(ResourceKey.createRegistryKey(new net.minecraft.util.ResourceLocation(name)));
+					} catch (RuntimeException e) {
+						// a registry of its own kind (made elsewhere)
+					}
+				}
 				for (MappedRegistry<?> registry : BuiltInRegistries.mappedRegistries()) {
 					try {
 						MinecraftForge.EVENT_BUS.post(new RegisterEvent(registry));
