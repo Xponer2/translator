@@ -72,6 +72,16 @@ public final class AttributeInstance {
 		return VIRTUAL.computeIfAbsent(this.entity, e -> new HashMap<>()).computeIfAbsent(this.attribute.name(), n -> new HashMap<>());
 	}
 
+	/** 1.21 {@code setBaseValue(value)} (21 sites: mobs' health, speed and damage set in their constructors). */
+	public void setBaseValue(double value) {
+		if (this.forge != null) {
+			this.forge.setBaseValue(value);
+			if (this.entity != null && this.attribute.forge() == net.minecraft.entity.SharedMonsterAttributes.MAX_HEALTH && this.entity.getHealth() > value) {
+				this.entity.setHealth((float) value);
+			}
+		}
+	}
+
 	public double getBaseValue() {
 		return this.forge != null ? this.forge.getBaseValue() : this.attribute.getDefaultValue();
 	}

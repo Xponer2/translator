@@ -327,3 +327,8 @@ R	net/minecraft/world/biome/Biome$SpawnListEntry	io/github/xponer2/translator/ru
 R	net/minecraft/client/renderer/ItemRenderer	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/client/renderer/block/model/ModelBlock	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/client/renderer/block/model/ItemOverrideList	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/entity/ai/EntityAIHurtByTarget	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/entity/ai/EntityAINearestAttackableTarget	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/entity/ai/EntityAIAvoidEntity	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/entity/ai/EntityAIWander	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/entity/ai/EntityAIWatchClosest	io/github/xponer2/translator/runtime/redirect/EntityGapBridges

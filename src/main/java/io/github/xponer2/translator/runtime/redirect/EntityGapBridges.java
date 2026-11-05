@@ -28,6 +28,70 @@ public final class EntityGapBridges {
 	private EntityGapBridges() {
 	}
 
+	// --- 1.21 goals whose 1.12.2 classes take other arguments ---------------------------------------------------------
+
+	private static <T> com.google.common.base.Predicate<T> guava(@javax.annotation.Nullable java.util.function.Predicate<T> predicate) {
+		return predicate == null ? null : predicate::test;
+	}
+
+	/** 1.21 {@code new HurtByTargetGoal(mob, ignored...)}: 1.12.2's, not calling others for help (setAlertOthers does). */
+	public static net.minecraft.entity.ai.EntityAIHurtByTarget newEntityAIHurtByTarget(net.minecraft.entity.EntityCreature mob, Class<?>[] ignored) {
+		return new net.minecraft.entity.ai.EntityAIHurtByTarget(mob, false, ignored);
+	}
+
+	/** 1.21 {@code hurtByTarget.setAlertOthers(types...)}: 1.12.2 decides that when the goal is made. */
+	public static net.minecraft.entity.ai.EntityAIHurtByTarget setAlertOthers(net.minecraft.entity.ai.EntityAIHurtByTarget goal, Class<?>[] types) {
+		return goal;
+	}
+
+	/** 1.21 {@code new NearestAttackableTargetGoal(mob, type, interval, mustSee, mustReach, condition)}. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static net.minecraft.entity.ai.EntityAINearestAttackableTarget newEntityAINearestAttackableTarget(net.minecraft.entity.EntityLiving mob, Class type,
+			int interval, boolean mustSee, boolean mustReach, @javax.annotation.Nullable java.util.function.Predicate condition) {
+		if (mob instanceof net.minecraft.entity.EntityCreature creature) {
+			return new net.minecraft.entity.ai.EntityAINearestAttackableTarget(creature, type, interval, mustSee, mustReach, guava(condition));
+		}
+		return new io.github.xponer2.translator.entity.LivingTargetGoal(mob, type, interval, mustSee, condition);
+	}
+
+	@SuppressWarnings("rawtypes")
+	public static net.minecraft.entity.ai.EntityAINearestAttackableTarget newEntityAINearestAttackableTarget(net.minecraft.entity.EntityLiving mob, Class type,
+			boolean mustSee) {
+		return newEntityAINearestAttackableTarget(mob, type, 10, mustSee, false, null);
+	}
+
+	@SuppressWarnings("rawtypes")
+	public static net.minecraft.entity.ai.EntityAINearestAttackableTarget newEntityAINearestAttackableTarget(net.minecraft.entity.EntityLiving mob, Class type,
+			boolean mustSee, boolean mustReach) {
+		return newEntityAINearestAttackableTarget(mob, type, 10, mustSee, mustReach, null);
+	}
+
+	@SuppressWarnings("rawtypes")
+	public static net.minecraft.entity.ai.EntityAINearestAttackableTarget newEntityAINearestAttackableTarget(net.minecraft.entity.EntityLiving mob, Class type,
+			boolean mustSee, @javax.annotation.Nullable java.util.function.Predicate condition) {
+		return newEntityAINearestAttackableTarget(mob, type, 10, mustSee, false, condition);
+	}
+
+	/** 1.21 {@code new AvoidEntityGoal(mob, type, distance, walk, sprint, condition)}. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static net.minecraft.entity.ai.EntityAIAvoidEntity newEntityAIAvoidEntity(net.minecraft.entity.EntityCreature mob, Class type, float distance,
+			double walkSpeed, double sprintSpeed, @javax.annotation.Nullable java.util.function.Predicate condition) {
+		return new net.minecraft.entity.ai.EntityAIAvoidEntity(mob, type, condition == null ? com.google.common.base.Predicates.alwaysTrue() : guava(condition), distance,
+				walkSpeed, sprintSpeed);
+	}
+
+	/** 1.21 {@code new RandomStrollGoal(mob, speed, interval, checkNoActionTime)}. */
+	public static net.minecraft.entity.ai.EntityAIWander newEntityAIWander(net.minecraft.entity.EntityCreature mob, double speed, int interval, boolean checkNoActionTime) {
+		return new net.minecraft.entity.ai.EntityAIWander(mob, speed, interval);
+	}
+
+	/** 1.21 {@code new LookAtPlayerGoal(mob, type, distance, probability, onlyHorizontal)}. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static net.minecraft.entity.ai.EntityAIWatchClosest newEntityAIWatchClosest(net.minecraft.entity.EntityLiving mob, Class type, float distance,
+			float probability, boolean onlyHorizontal) {
+		return new net.minecraft.entity.ai.EntityAIWatchClosest(mob, type, distance, probability);
+	}
+
 	/** 1.21 {@code living.getArmorCoverPercentage()}: the share of armor slots with something in them. */
 	public static float getArmorCoverPercentage(net.minecraft.entity.EntityLivingBase entity) {
 		int worn = 0;

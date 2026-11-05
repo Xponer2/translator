@@ -98,6 +98,8 @@ public final class Translator {
 		CapabilityAttacher.registerAll();
 		// every registry filled (DeferredRegisters too): baked once more, as NeoForge does after registration
 		io.github.xponer2.translator.registry.RegistryCallbacks.bakeAll();
+		// the mods' living entity types get their attributes (their entities apply them when made)
+		io.github.xponer2.translator.entity.EntityAttributeCreationEvent.fire();
 		io.github.xponer2.translator.runtime.neoforge.ConfigLoader.loadServerConfigs();
 		io.github.xponer2.translator.runtime.RuntimeMods.setup();
 	}

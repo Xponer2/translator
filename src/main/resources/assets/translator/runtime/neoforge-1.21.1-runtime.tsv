@@ -405,3 +405,9 @@ C	net/minecraft/world/level/levelgen/SingleThreadedRandomSource	io/github/xponer
 C	net/minecraft/world/level/levelgen/ThreadSafeLegacyRandomSource	io/github/xponer2/translator/util/random/ThreadSafeLegacyRandomSource
 C	net/minecraft/world/level/levelgen/XoroshiroRandomSource	io/github/xponer2/translator/util/random/XoroshiroRandomSource
 C	net/minecraft/world/level/levelgen/WorldgenRandom	io/github/xponer2/translator/util/random/WorldgenRandom
+C	net/minecraft/world/entity/PathfinderMob	net/minecraft/entity/EntityCreature
+C	net/minecraft/world/entity/monster/Monster	net/minecraft/entity/monster/EntityMob
+C	net/minecraft/world/entity/ai/attributes/AttributeSupplier	io/github/xponer2/translator/entity/AttributeSupplier
+C	net/minecraft/world/entity/ai/attributes/AttributeSupplier$Builder	io/github/xponer2/translator/entity/AttributeSupplier$Builder
+C	net/neoforged/neoforge/event/entity/EntityAttributeCreationEvent	io/github/xponer2/translator/entity/EntityAttributeCreationEvent
+C	net/neoforged/neoforge/event/entity/EntityAttributeModificationEvent	io/github/xponer2/translator/entity/EntityAttributeModificationEvent

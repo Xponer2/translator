@@ -50,3 +50,10 @@ S	net/minecraft/world/level/material/FlowingFluid	io/github/xponer2/translator/f
 S	net/minecraft/client/model/HumanoidModel	io/github/xponer2/translator/client/model/HumanoidModel
 S	net/minecraft/client/renderer/BlockEntityWithoutLevelRenderer	io/github/xponer2/translator/client/BlockEntityWithoutLevelRenderer
 S	net/minecraft/client/renderer/block/model/ItemOverrides	io/github/xponer2/translator/client/model/ItemOverrides
+S	net/minecraft/world/entity/LivingEntity	io/github/xponer2/translator/runtime/mc/LivingEntity
+S	net/minecraft/world/entity/Mob	io/github/xponer2/translator/runtime/mc/Mob
+S	net/minecraft/world/entity/PathfinderMob	io/github/xponer2/translator/runtime/mc/PathfinderMob
+S	net/minecraft/world/entity/monster/Monster	io/github/xponer2/translator/runtime/mc/Monster
+S	net/minecraft/world/entity/AgeableMob	io/github/xponer2/translator/runtime/mc/AgeableMob
+S	net/minecraft/world/entity/animal/Animal	io/github/xponer2/translator/runtime/mc/Animal
+S	net/minecraft/world/entity/TamableAnimal	io/github/xponer2/translator/runtime/mc/TamableAnimal
