@@ -59,6 +59,25 @@ public final class ClientEventBridges {
         return MultiBufferSource.INSTANCE;
     }
 
+    // NeoForge RenderHighlightEvent.Block = 1.12.2 DrawBlockHighlightEvent (a mod's own block outline: Mekanism): drawn
+    // where the outline is, in the GL matrix of the world, buffers drawn at once
+
+    public static PoseStack getPoseStack(net.minecraftforge.client.event.DrawBlockHighlightEvent event) {
+        return PoseStack.INSTANCE;
+    }
+
+    public static MultiBufferSource getMultiBufferSource(net.minecraftforge.client.event.DrawBlockHighlightEvent event) {
+        return MultiBufferSource.INSTANCE;
+    }
+
+    public static io.github.xponer2.translator.client.Camera getCamera(net.minecraftforge.client.event.DrawBlockHighlightEvent event) {
+        return io.github.xponer2.translator.client.Camera.main();
+    }
+
+    public static DeltaTracker getDeltaTracker(net.minecraftforge.client.event.DrawBlockHighlightEvent event) {
+        return DeltaTracker.INSTANCE;
+    }
+
     /** The packed light (block &lt;&lt; 4 | sky &lt;&lt; 20, the same layout in 1.12.2 and 1.21) at the player's eyes. */
     public static int getPackedLight(RenderSpecificHandEvent event) {
         var mc = Minecraft.getMinecraft();

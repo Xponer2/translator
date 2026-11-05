@@ -460,3 +460,5 @@ X	com/mojang/serialization/Codec	partialDispatch	(Ljava/lang/String;Ljava/util/f
 X	com/mojang/serialization/Codec	dispatchMap	(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/MapCodec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects
 # the layers a library registers through NeoForge's ClientHooks (GlitchCore: BOP's boats): the Translator's layer set
 X	net/neoforged/neoforge/client/ClientHooks	registerLayerDefinition	(Lnet/minecraft/client/model/geom/ModelLayerLocation;Ljava/util/function/Supplier;)V	io/github/xponer2/translator/client/model/EntityModelSet	(Ljava/lang/Object;Ljava/util/function/Supplier;)V
+# NeoForge's block outline event (a mod drawing its own outline): 1.12.2 Forge's
+C	net/neoforged/neoforge/client/event/RenderHighlightEvent$Block	net/minecraftforge/client/event/DrawBlockHighlightEvent

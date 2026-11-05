@@ -345,3 +345,10 @@ R	net/minecraft/inventory/Slot	io/github/xponer2/translator/menu/ClickBridges
 R	net/minecraft/item/ItemStack	io/github/xponer2/translator/menu/ClickBridges
 R	net/minecraft/network/play/server/SPacketSetSlot	io/github/xponer2/translator/menu/PacketBridges
 R	net/minecraft/network/play/server/SPacketWindowItems	io/github/xponer2/translator/menu/PacketBridges
+R	net/minecraftforge/client/event/DrawBlockHighlightEvent	io/github/xponer2/translator/runtime/redirect/ClientEventBridges
+R	net/minecraft/item/EnumRarity	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
+R	net/minecraftforge/common/util/BlockSnapshot	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
+R	net/minecraft/inventory/InventoryCraftResult	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
+R	net/minecraftforge/fluids/FluidUtil	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
+R	net/minecraft/advancements/AdvancementManager	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
+R	net/minecraft/advancements/PlayerAdvancements	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
