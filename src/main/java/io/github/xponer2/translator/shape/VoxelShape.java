@@ -65,6 +65,11 @@ public class VoxelShape {
 		return Collections.unmodifiableList(this.boxes);
 	}
 
+	/** 1.21 {@code singleEncompassing()}: one box around the whole shape (flower beds build theirs so). */
+	public VoxelShape singleEncompassing() {
+		return this.isEmpty() ? this : Shapes.create(this.bounds());
+	}
+
 	public AxisAlignedBB bounds() {
 		if (this.boxes.isEmpty()) {
 			throw new UnsupportedOperationException("No bounds for empty shape.");

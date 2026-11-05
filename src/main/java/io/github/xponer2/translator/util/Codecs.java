@@ -266,9 +266,13 @@ public final class Codecs {
             if (stack.isEmpty()) {
                 return DataResult.error("Unknown item " + item.get());
             }
-            if (!stack.getHasSubtypes()) {
-                stack.setItemDamage(OreDictionary.WILDCARD_VALUE);
+            if (!stack.getHasSubtypes() && stack.isItemStackDamageable()) {
+                // a tool: any damage
+                return DataResult.success(new AnyDamageIngredient(stack));
             }
+            // not the wildcard meta for an item without subtypes: Forge lists a wildcard stack by the item's creative tab
+            // (getSubItems), so the ingredient of an item in no tab (a mod's block item takes its block's tab) matched
+            // nothing: 248 of Biomes O' Plenty's crafting recipes and all its smelting ones
             return DataResult.success(Ingredient.fromStacks(stack));
         }
         var tag = input.get("tag").asString().result();
@@ -326,6 +330,24 @@ public final class Codecs {
     /**
      * An ingredient of an item tag, resolved on first use.
      */
+    /**
+     * One damageable item, at any damage (a tool in a recipe): listed as the undamaged item even when the item is in no
+     * creative tab (a wildcard stack lists the item's tab variants, none then).
+     */
+    private static final class AnyDamageIngredient extends Ingredient {
+        private final Item item;
+
+        AnyDamageIngredient(ItemStack stack) {
+            super(stack);
+            this.item = stack.getItem();
+        }
+
+        @Override
+        public boolean apply(@Nullable ItemStack input) {
+            return input != null && !input.isEmpty() && input.getItem() == this.item;
+        }
+    }
+
     private static final class TagIngredient extends Ingredient {
         private final ResourceLocation tag;
         @Nullable

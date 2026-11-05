@@ -134,13 +134,23 @@ public class CreativeModeTab implements RegistrationCallback {
                 items.addAll(tab.getDisplayItems());
             }
         };
-        for (var stack : this.getDisplayItems()) {
+        List<ItemStack> items = this.getDisplayItems();
+        for (var stack : items) {
             Item item = stack.getItem();
             if (item.getCreativeTab() == null) {
                 item.setCreativeTab(this.vanilla);
+                // a block item's tab is its block's (1.12.2 ItemBlock.getCreativeTab): without it the item was in no tab,
+                // and in no recipe either (an ingredient lists its items by their tabs)
+                if (item instanceof net.minecraft.item.ItemBlock blockItem && blockItem.getBlock() != null
+                        && blockItem.getBlock().getCreativeTab() == null) {
+                    blockItem.getBlock().setCreativeTab(this.vanilla);
+                }
             }
         }
+        LOGGER.info("Creative tab {}: {} items", id, items.size());
     }
+
+    private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger("Translator Runtime");
 
     @FunctionalInterface
     public interface DisplayItemsGenerator {

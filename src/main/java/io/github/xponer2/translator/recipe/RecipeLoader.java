@@ -58,6 +58,26 @@ public final class RecipeLoader {
         LOADED.add(listener);
     }
 
+    /** The furnace recipes of a 1.21 smelting recipe file: one per item its ingredient matches. */
+    private static int smeltingFromFile(com.google.gson.JsonObject json) {
+        var ingredient = json.has("ingredient")
+                ? io.github.xponer2.translator.util.Codecs.INGREDIENT.parse(com.mojang.serialization.JsonOps.INSTANCE, json.get("ingredient")).result()
+                : java.util.Optional.<net.minecraft.item.crafting.Ingredient>empty();
+        var result = json.has("result")
+                ? io.github.xponer2.translator.util.Codecs.ITEM_STACK.parse(com.mojang.serialization.JsonOps.INSTANCE, json.get("result")).result()
+                : java.util.Optional.<net.minecraft.item.ItemStack>empty();
+        if (!ingredient.isPresent() || !result.isPresent() || result.get().isEmpty()) {
+            return 0;
+        }
+        float experience = json.has("experience") ? json.get("experience").getAsFloat() : 0.0F;
+        int added = 0;
+        for (var input : ingredient.get().getMatchingStacks()) {
+            FurnaceRecipes.instance().addSmeltingRecipe(input, result.get().copy(), experience);
+            added++;
+        }
+        return added;
+    }
+
     public static void load() {
         VanillaRecipes.bootstrap();
         TagManager.reload();
@@ -72,11 +92,13 @@ public final class RecipeLoader {
 
         int crafting = 0;
         int smelting = 0;
+        int unknownSmelting = 0;
         var loader = Loader.instance();
         var active = loader.activeModContainer();
         try {
             for (var holder : recipes) {
                 var recipe = holder.value();
+                int before = smelting;
                 if (recipe instanceof CraftingRecipe craftingRecipe) {
                     if (ForgeRegistries.RECIPES.containsKey(holder.id())) {
                         LOGGER.warn("Recipe {} exists in 1.12.2 already, the 1.21 one is only used by the recipe manager", holder.id());
@@ -102,6 +124,15 @@ public final class RecipeLoader {
                             FurnaceRecipes.instance().addSmeltingRecipe(input, result.copy(), 0.1F);
                             smelting++;
                         }
+                    }
+                }
+                if (smelting == before && manager.smeltingFile(holder.id()) != null) {
+                    // a smelting recipe none of those gave a furnace recipe: its own file (ingredient, result, experience)
+                    int added = smeltingFromFile(manager.smeltingFile(holder.id()));
+                    smelting += added;
+                    if (unknownSmelting++ == 0) {
+                        LOGGER.info("Smelting recipe {} was read as {} (type {}) and gave no furnace recipe: {} from its file", holder.id(),
+                                recipe.getClass().getName(), recipe.getType(), added);
                     }
                 }
             }

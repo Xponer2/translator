@@ -90,4 +90,10 @@ public class DiggerItem extends net.minecraft.item.ItemTool {
 			return io.github.xponer2.translator.text.ItemNames.displayName(this, stack);
 		}
 	}
+
+	/** Every item of a 1.21.1 mod is in the search tab, as in 1.21 (Forge lists an ingredient of any damage through it). */
+	@Override
+	protected boolean isInCreativeTab(net.minecraft.creativetab.CreativeTabs tab) {
+		return tab == net.minecraft.creativetab.CreativeTabs.SEARCH || super.isInCreativeTab(tab);
+	}
 }

@@ -32,6 +32,12 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
     /** The types whose sample couldn't be made when they were registered: their class is registered later. */
     private static final java.util.List<BlockEntityType<?>> PENDING = new java.util.ArrayList<>();
 
+    /** 1.21 vanilla sign types: 1.12.2's signs are its own; a mod's sign block entity made through them gets none. */
+    @Nullable
+    public static BlockEntityType<?> SIGN;
+    @Nullable
+    public static BlockEntityType<?> HANGING_SIGN;
+
     private final BlockEntitySupplier<? extends T> factory;
     private final Set<Block> validBlocks;
     private Class<? extends TileEntity> tileClass;

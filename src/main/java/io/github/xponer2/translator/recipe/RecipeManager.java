@@ -176,7 +176,17 @@ public final class RecipeManager {
     /**
      * Loads the recipes of all mods; returns them, also to hand them to the 1.12.2 recipe systems.
      */
+    /** The files of the smelting recipes read by {@link #load} (the furnace takes them from there, {@code RecipeLoader}). */
+    private final Map<ResourceLocation, JsonObject> smeltingFiles = new LinkedHashMap<>();
+
+    /** The file of a smelting recipe {@link #load} read, null for another recipe. */
+    @Nullable
+    public JsonObject smeltingFile(ResourceLocation id) {
+        return this.smeltingFiles.get(id);
+    }
+
     public List<RecipeHolder<?>> load() {
+        this.smeltingFiles.clear();
         var files = new LinkedHashMap<ResourceLocation, JsonElement>();
         for (var mod : Loader.instance().getActiveModList()) {
             CraftingHelper.findFiles(mod, "data", null, (root, file) -> {
@@ -204,6 +214,10 @@ public final class RecipeManager {
             var holder = this.parse(entry.getKey(), entry.getValue(), errors::add);
             if (holder != null) {
                 recipes.add(holder);
+                if (entry.getValue().isJsonObject() && entry.getValue().getAsJsonObject().has("type")
+                        && "minecraft:smelting".equals(entry.getValue().getAsJsonObject().get("type").getAsString())) {
+                    this.smeltingFiles.put(entry.getKey(), entry.getValue().getAsJsonObject());
+                }
                 continue;
             }
             skipped++;

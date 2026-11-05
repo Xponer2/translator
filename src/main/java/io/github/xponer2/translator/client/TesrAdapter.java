@@ -32,11 +32,25 @@ public final class TesrAdapter<T extends TileEntity> extends TileEntitySpecialRe
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static <T extends TileEntity> void register(BlockEntityType<? extends T> type, BlockEntityRendererProvider<T> provider) {
+        // never thrown into the mod: its client setup goes on with its other renderers (Biomes O' Plenty's stopped here)
+        if (type == null || provider == null) {
+            io.github.xponer2.translator.runtime.RuntimeStubs.missing("a block entity renderer of a type that isn't there");
+            return;
+        }
         var tileClass = type.getTileClass();
         if (tileClass == null) {
-            throw new IllegalStateException("Block entity type not registered yet: " + type);
+            io.github.xponer2.translator.runtime.RuntimeStubs.missing("the block entity renderer of " + type + " (its type has no class yet)");
+            return;
         }
-        ClientRegistry.bindTileEntitySpecialRenderer((Class) tileClass, new TesrAdapter<>(provider.create(BlockEntityRendererProvider.Context.INSTANCE)));
+        // signs: SignRenderers draws them (the 1.21 sign renderer reads what 1.12.2's sign hasn't)
+        if (io.github.xponer2.translator.runtime.mc.SignBlockEntity.class.isAssignableFrom(tileClass)) {
+            return;
+        }
+        try {
+            ClientRegistry.bindTileEntitySpecialRenderer((Class) tileClass, new TesrAdapter<>(provider.create(BlockEntityRendererProvider.Context.INSTANCE)));
+        } catch (RuntimeException | LinkageError e) {
+            io.github.xponer2.translator.runtime.RuntimeStubs.failed("the block entity renderer of " + type, e);
+        }
     }
 
     @Override
