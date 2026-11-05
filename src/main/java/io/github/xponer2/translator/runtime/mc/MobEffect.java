@@ -107,7 +107,13 @@ public class MobEffect extends Potion {
 	@Override
 	public String getName() {
 		ResourceLocation id = this.getRegistryName();
-		return id == null ? super.getName() : "effect." + id.getNamespace() + "." + id.getPath();
+		if (id == null) {
+			// before registration (a mod's effect adds its attribute modifiers in its constructor, which 1.12.2 names
+			// by the effect: an empty name threw and Iron's Spellbooks' effects weren't registered)
+			String name = super.getName();
+			return name == null || name.isEmpty() ? "effect.translator.unnamed" : name;
+		}
+		return "effect." + id.getNamespace() + "." + id.getPath();
 	}
 
 	/** 1.12.2 draws effects by an index of its own texture: a mod's effect has none. */

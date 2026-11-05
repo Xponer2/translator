@@ -37,15 +37,19 @@ public abstract class AgeableMob extends net.minecraft.entity.EntityAgeable {
 		return this.type;
 	}
 
-	/** 1.21 {@code defineSynchedData(builder)} (the tables name it entityInit): a mod's override calls it as super. */
-	protected void entityInit(SynchedDataBuilder builder) {
+	/**
+	 * 1.21 {@code defineSynchedData(builder)}: a mod's mob defines its data here (its override keeps the 1.21 name, the
+	 * facade has it) and calls it as super. Under the table's name (entityInit) the mod's override was never called and
+	 * every mob with data crashed when it ticked (the Aether's aerbunny).
+	 */
+	protected void defineSynchedData(SynchedDataBuilder builder) {
 	}
 
-	/** 1.12.2 defines the data here: the 1.12.2 data first, then the mod's (its override of the builder method). */
+	/** 1.12.2 defines the data here: the 1.12.2 data first, then the mod's. */
 	@Override
 	protected void entityInit() {
 		super.entityInit();
-		this.entityInit(SynchedDataBuilder.of(this));
+		this.defineSynchedData(SynchedDataBuilder.of(this));
 	}
 
 	/** 1.21 {@code LivingEntity.createLivingAttributes()}. */
