@@ -25,6 +25,10 @@ public class LiquidBlock extends BlockFluidClassic {
 	public LiquidBlock(Fluid fluid, BlockProperties properties) {
 		super(fluid == null ? FluidRegistry.WATER : fluid, fluid != null && fluid.getTemperature() > 600 ? Material.LAVA : Material.WATER);
 		properties.applyTo(this, this::setSoundType);
+		// the fluid's block is this one (its bucket places it, Forge's fluid handlers find it)
+		if (fluid != null && fluid.getBlock() == null) {
+			fluid.setBlock(this);
+		}
 	}
 
 	public Fluid getFluid() {

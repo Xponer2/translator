@@ -2011,7 +2011,7 @@ public final class MiscBridges {
 	}
 
 	public static String getDescriptionId(Block block) {
-		return block.getTranslationKey();
+		return block instanceof io.github.xponer2.translator.runtime.mc.Block facade ? facade.getDescriptionId() : block.getTranslationKey();
 	}
 
 	@SuppressWarnings("deprecation")

@@ -31,6 +31,9 @@ import net.minecraftforge.fluids.Fluid;
  * fluid's block may be registered after the bucket) and gives the empty bucket back.
  */
 public class BucketItem extends ItemBucket {
+	/** The bucket of each mod fluid (by its name): what an empty bucket gives on the fluid's source. */
+	private static final java.util.Map<String, BucketItem> BY_FLUID = new java.util.concurrent.ConcurrentHashMap<>();
+
 	private final Fluid content;
 
 	public BucketItem(Fluid content, ItemProperties properties) {
@@ -38,6 +41,57 @@ public class BucketItem extends ItemBucket {
 		this.content = content;
 		properties.applyTo(this);
 		this.setContainerItem(Items.BUCKET);
+		if (content != null) {
+			BY_FLUID.putIfAbsent(content.getName(), this);
+		}
+	}
+
+	/** The fluid's block: its own when set, else the mod's LiquidBlock of that fluid (registered after the bucket). */
+	@javax.annotation.Nullable
+	private Block fluidBlock() {
+		if (this.content == null) {
+			return null;
+		}
+		if (this.content.getBlock() != null) {
+			return this.content.getBlock();
+		}
+		for (Block block : net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS) {
+			if (block instanceof net.minecraftforge.fluids.IFluidBlock fluidBlock && fluidBlock.getFluid() != null
+					&& this.content.getName().equals(fluidBlock.getFluid().getName())) {
+				return block;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 1.21 BucketPickup: an empty bucket on the source of a mod's fluid gives that fluid's bucket (1.12.2's bucket
+	 * knows water and lava only: blood couldn't be picked up).
+	 */
+	public static final class Pickup {
+		@net.minecraftforge.fml.common.eventhandler.SubscribeEvent
+		public void onFillBucket(net.minecraftforge.event.entity.player.FillBucketEvent event) {
+			RayTraceResult hit = event.getTarget();
+			if (hit == null || hit.typeOfHit != RayTraceResult.Type.BLOCK || event.getEmptyBucket().getItem() != Items.BUCKET) {
+				return;
+			}
+			World world = event.getWorld();
+			BlockPos pos = hit.getBlockPos();
+			net.minecraft.block.state.IBlockState state = world.getBlockState(pos);
+			if (!(state.getBlock() instanceof LiquidBlock liquid) || state.getValue(net.minecraftforge.fluids.BlockFluidBase.LEVEL) != 0) {
+				return;
+			}
+			Fluid fluid = liquid.getFluid();
+			BucketItem bucket = fluid == null ? null : BY_FLUID.get(fluid.getName());
+			if (bucket == null) {
+				return;
+			}
+			if (!world.isRemote) {
+				world.setBlockToAir(pos);
+			}
+			event.setFilledBucket(new ItemStack(bucket));
+			event.setResult(net.minecraftforge.fml.common.eventhandler.Event.Result.ALLOW);
+		}
 	}
 
 	public Fluid getFluid() {
@@ -47,7 +101,7 @@ public class BucketItem extends ItemBucket {
 	@Override
 	public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand) {
 		ItemStack stack = player.getHeldItem(hand);
-		Block block = this.content == null ? null : this.content.getBlock();
+		Block block = this.fluidBlock();
 		RayTraceResult hit = this.rayTrace(world, player, false);
 		if (block == null || hit == null || hit.typeOfHit != RayTraceResult.Type.BLOCK) {
 			return new ActionResult<>(EnumActionResult.PASS, stack);

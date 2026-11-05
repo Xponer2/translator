@@ -72,6 +72,8 @@ public final class Translator {
 		// the biomes of the 1.21.1 mods (data/<mod>/worldgen/biome), into the 1.12.2 overworld
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.DataBiomes());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.VanillaDimensionBiomes());
+		// an empty bucket on a mod fluid's source: the mod's bucket of it
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.mc.BucketItem.Pickup());
 		// ids earlier Translator versions registered under another name (silver_ -> light_gray_), kept in old worlds
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.registry.RenamedIds());
 		if (event.getSide().isClient()) {

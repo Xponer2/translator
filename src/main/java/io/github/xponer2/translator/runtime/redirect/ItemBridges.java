@@ -55,12 +55,22 @@ public final class ItemBridges {
 		return new TextComponentTranslation(item.getTranslationKey() + ".name");
 	}
 
+	/** 1.21 {@code item.getDescriptionId()} on any item: a facade's own (a mod may override it), else 1.12.2's key. */
 	public static String getDescriptionId(Item item) {
+		if (item instanceof io.github.xponer2.translator.runtime.mc.Item facade) {
+			return facade.getDescriptionId();
+		}
+		if (item instanceof io.github.xponer2.translator.runtime.mc.BlockItem facade) {
+			return facade.getDescriptionId();
+		}
 		return item.getTranslationKey();
 	}
 
 	/** 1.21 {@code getDescriptionId(stack)}: the key of that stack (Powah names its blocks with it). */
 	public static String getDescriptionId(Item item, ItemStack stack) {
+		if (item instanceof io.github.xponer2.translator.runtime.mc.Item facade) {
+			return facade.getDescriptionId(stack);
+		}
 		return item.getTranslationKey(stack);
 	}
 

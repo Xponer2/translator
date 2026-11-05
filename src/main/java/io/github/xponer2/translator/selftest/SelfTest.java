@@ -592,6 +592,41 @@ public final class SelfTest {
 			});
 		}
 
+		/**
+		 * A mod's fluid bucket as a player uses it, looking at the ground of the cell: the fluid is placed there, and an
+		 * empty bucket takes the source back.
+		 */
+		private void testBucket(io.github.xponer2.translator.runtime.mc.BucketItem bucket) {
+			float yaw = this.player.rotationYaw;
+			float pitch = this.player.rotationPitch;
+			try {
+				double dx = this.cell.getX() + 0.5D - this.player.posX;
+				double dz = this.cell.getZ() + 0.5D - this.player.posZ;
+				double dy = this.cell.getY() - (this.player.posY + this.player.getEyeHeight());
+				this.player.rotationYaw = (float) (Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F;
+				this.player.rotationPitch = (float) -(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 180.0D / Math.PI);
+				this.player.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(bucket));
+				this.attempt("bucket: empty", () -> this.player.getHeldItemMainhand().useItemRightClick(this.world, this.player, EnumHand.MAIN_HAND));
+				IBlockState placed = this.world.getBlockState(this.cell);
+				if (!(placed.getBlock() instanceof net.minecraftforge.fluids.IFluidBlock fluid) || bucket.getFluid() == null
+						|| fluid.getFluid() == null || !bucket.getFluid().getName().equals(fluid.getFluid().getName())) {
+					this.current.problems.add("bucket: no fluid placed where the player looks (" + placed + ")");
+					return;
+				}
+				this.player.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(net.minecraft.init.Items.BUCKET));
+				this.attempt("bucket: fill", () -> this.player.getHeldItemMainhand().useItemRightClick(this.world, this.player, EnumHand.MAIN_HAND));
+				if (this.world.getBlockState(this.cell).getBlock() == placed.getBlock()) {
+					this.current.problems.add("bucket: an empty bucket doesn't take the fluid back");
+				} else {
+					this.current.notes.add("bucket places and takes its fluid");
+				}
+			} finally {
+				this.player.rotationYaw = yaw;
+				this.player.rotationPitch = pitch;
+				this.player.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY);
+			}
+		}
+
 		/** The grounds a block may need under it: the first it can be placed on (stone when it needs none). */
 		private boolean groundFor(Block block) {
 			IBlockState[] grounds = {Blocks.STONE.getDefaultState(), Blocks.GRASS.getDefaultState(), Blocks.FARMLAND.getDefaultState(),
@@ -842,6 +877,15 @@ public final class SelfTest {
 				this.current = record[0];
 				this.testMenu();
 			});
+			if (item instanceof io.github.xponer2.translator.runtime.mc.BucketItem bucket) {
+				this.steps.add(() -> {
+					this.current = record[0];
+					this.closeMenu();
+					this.clearCell();
+					this.testBucket(bucket);
+					this.clearCell();
+				});
+			}
 			this.steps.add(() -> {
 				this.current = record[0];
 				this.closeMenu();

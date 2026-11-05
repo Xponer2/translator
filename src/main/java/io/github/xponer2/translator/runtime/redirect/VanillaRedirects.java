@@ -367,8 +367,9 @@ public final class VanillaRedirects {
 		return container.getBaseState();
 	}
 
+	/** 1.21 {@code block.defaultBlockState()} on any block (a facade's own, which a mod may override, or 1.12.2's). */
 	public static IBlockState defaultBlockState(Block block) {
-		return block.getDefaultState();
+		return block instanceof io.github.xponer2.translator.runtime.mc.Block facade ? facade.defaultBlockState() : block.getDefaultState();
 	}
 
 	public static IBlockState getBlockState(TileEntity tile) {
