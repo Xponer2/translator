@@ -260,4 +260,23 @@ public final class CarriedBridges {
 	public static Object castOrNull(Object value, Class<?> type) {
 		return type.isInstance(value) ? value : null;
 	}
+
+	/**
+	 * 1.21 {@code fluidState.is(holderSet)}: whether its fluid is one of the set (a block predicate of a feature: "the
+	 * block here is water"). The set is carried; its holders are the Translator's.
+	 */
+	public static boolean is(io.github.xponer2.translator.util.FluidState state, Object fluids) {
+		if (!(fluids instanceof Iterable<?> holders) || state.isEmpty()) {
+			return false;
+		}
+		Object fluid = state.getType();
+		for (Object holder : holders) {
+			Object value = holder instanceof io.github.xponer2.translator.registry.Holder<?> h ? h.value() : holder;
+			if (value == fluid || value instanceof net.minecraftforge.fluids.Fluid other && fluid instanceof net.minecraftforge.fluids.Fluid own
+					&& other.getName().equals(own.getName())) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

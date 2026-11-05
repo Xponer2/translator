@@ -212,7 +212,9 @@ public final class DataFeatures {
 				for (Object member : (Iterable<?>) step) {
 					Object placed = ((io.github.xponer2.translator.registry.Holder<?>) member).value();
 					ResourceLocation id = placedRegistry.getKey(placed);
-					if (placed == null || id == null || DataBiomes.treeLike(id.getPath()) || isBroken(placed)) {
+					// a vanilla feature of the biome's list: 1.12.2's decorator has its look-alike (ores, lakes, springs,
+					// grass and flowers by DataBiomes' counts); placing it too made two of each
+					if (placed == null || id == null || "minecraft".equals(id.getNamespace()) || DataBiomes.treeLike(id.getPath()) || isBroken(placed)) {
 						continue;
 					}
 					place(id, placed, world, chunkGenerator, random, origin);

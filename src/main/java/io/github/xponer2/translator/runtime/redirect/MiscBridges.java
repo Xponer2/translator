@@ -2193,4 +2193,9 @@ public final class MiscBridges {
 			throw new UnsupportedOperationException("Translator: Files.fileTraverser needs Guava's graph classes", e);
 		}
 	}
+
+	/** 1.21 {@code noise.getValue(x, z, useOrigin)} of a simplex noise (Biome.BIOME_INFO_NOISE): 1.12.2's value. */
+	public static double getValue(net.minecraft.world.gen.NoiseGeneratorPerlin noise, double x, double z, boolean useOrigin) {
+		return noise.getValue(x, z);
+	}
 }

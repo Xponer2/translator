@@ -480,4 +480,9 @@ public final class WorldBridges {
 		});
 		return future;
 	}
+
+	/** 1.21 {@code level.getSectionIndex(y)}: the section of a height (1.12.2's sections start at 0). */
+	public static int getSectionIndex(World world, int y) {
+		return y >> 4;
+	}
 }

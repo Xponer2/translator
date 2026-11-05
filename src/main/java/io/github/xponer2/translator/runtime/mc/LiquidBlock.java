@@ -22,8 +22,12 @@ import net.minecraftforge.fluids.FluidRegistry;
  * Forge way), lava-like when the fluid is hot.
  */
 public class LiquidBlock extends BlockFluidClassic {
+	/** Made before its fluid was (null): water stands in until the fluid of its name is known. */
+	private boolean standIn;
+
 	public LiquidBlock(Fluid fluid, BlockProperties properties) {
 		super(fluid == null ? FluidRegistry.WATER : fluid, fluid != null && fluid.getTemperature() > 600 ? Material.LAVA : Material.WATER);
+		this.standIn = fluid == null;
 		properties.applyTo(this, this::setSoundType);
 		// the fluid's block is this one (its bucket places it, Forge's fluid handlers find it)
 		if (fluid != null && fluid.getBlock() == null) {
@@ -31,8 +35,46 @@ public class LiquidBlock extends BlockFluidClassic {
 		}
 	}
 
+	@Override
 	public Fluid getFluid() {
+		if (this.standIn) {
+			this.resolve();
+		}
 		return this.getFluid0();
+	}
+
+	/**
+	 * The fluid of the block's name ("biomesoplenty:blood": Forge's "biomesoplenty.blood") in place of the water that stood
+	 * in: its bucket finds this block, an empty bucket takes it as its own fluid.
+	 */
+	private void resolve() {
+		var id = this.getRegistryName();
+		if (id == null) {
+			return;
+		}
+		Fluid found = null;
+		for (String name : new String[] {id.getNamespace() + "." + id.getPath(), id.getPath(), id.toString()}) {
+			if (found == null && FluidRegistry.getFluid(name) != null && FluidRegistry.getFluid(name) != FluidRegistry.WATER) {
+				found = FluidRegistry.getFluid(name);
+			}
+		}
+		if (found == null) {
+			return;
+		}
+		this.standIn = false;
+		try {
+			var fluidName = net.minecraftforge.fluids.BlockFluidBase.class.getDeclaredField("fluidName");
+			fluidName.setAccessible(true);
+			fluidName.set(this, found.getName());
+			var defined = net.minecraftforge.fluids.BlockFluidBase.class.getDeclaredField("definedFluid");
+			defined.setAccessible(true);
+			defined.set(this, found);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return;
+		}
+		if (found.getBlock() == null) {
+			found.setBlock(this);
+		}
 	}
 
 	private Fluid getFluid0() {

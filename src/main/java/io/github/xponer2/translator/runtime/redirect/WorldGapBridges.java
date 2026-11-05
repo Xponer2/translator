@@ -648,4 +648,25 @@ public final class WorldGapBridges {
 	public static Set<EntityAITasks.EntityAITaskEntry> getAvailableGoals(EntityAITasks tasks) {
 		return tasks.taskEntries;
 	}
+
+	/** 1.21 {@code section.acquire()} / {@code release()}: the lock of a section 1.12.2 hasn't. */
+	public static void acquire(@javax.annotation.Nullable ExtendedBlockStorage section) {
+	}
+
+	public static void release(@javax.annotation.Nullable ExtendedBlockStorage section) {
+	}
+
+	/**
+	 * 1.21 {@code section.setBlockState(x, y, z, state, useLocks)} (an ore feature writes straight into the chunk's
+	 * sections): 1.12.2's set, the state that was there.
+	 */
+	public static net.minecraft.block.state.IBlockState setBlockState(@javax.annotation.Nullable ExtendedBlockStorage section, int x, int y, int z,
+			net.minecraft.block.state.IBlockState state, boolean useLocks) {
+		if (section == null) {
+			return net.minecraft.init.Blocks.AIR.getDefaultState();
+		}
+		net.minecraft.block.state.IBlockState old = section.get(x, y, z);
+		section.set(x, y, z, state);
+		return old;
+	}
 }
