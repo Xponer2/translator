@@ -324,3 +324,6 @@ R	io/github/xponer2/translator/client/RenderType	io/github/xponer2/translator/ru
 R	net/minecraft/advancements/CriteriaTriggers	io/github/xponer2/translator/runtime/redirect/TriggerHolders
 R	net/minecraft/inventory/EntityEquipmentSlot	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
 R	net/minecraft/world/biome/Biome$SpawnListEntry	io/github/xponer2/translator/runtime/redirect/WorldGapBridges
+R	net/minecraft/client/renderer/ItemRenderer	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/renderer/block/model/ModelBlock	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/renderer/block/model/ItemOverrideList	io/github/xponer2/translator/runtime/redirect/ClientGapBridges

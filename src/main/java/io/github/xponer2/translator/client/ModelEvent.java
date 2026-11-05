@@ -65,6 +65,16 @@ public class ModelEvent extends Event {
 		}
 	}
 
+	/** NeoForge {@code ModelEvent.RegisterGeometryLoaders}: the mods' model loaders, by the id their json names. */
+	public static class RegisterGeometryLoaders extends ModelEvent {
+		RegisterGeometryLoaders() {
+		}
+
+		public void register(ResourceLocation id, Object loader) {
+			io.github.xponer2.translator.client.model.GeometryLoaders.INSTANCE.register(id, loader);
+		}
+	}
+
 	public static class ModifyBakingResult extends ModelEvent {
 		private final Models models;
 
@@ -126,6 +136,12 @@ public class ModelEvent extends Event {
 			// NeoForge's setup events come before the models
 			io.github.xponer2.translator.Translator.setupMods();
 			this.standalone.clear();
+			// the mods' geometry loaders first: their models are read with the others
+			try {
+				MinecraftForge.EVENT_BUS.post(new RegisterGeometryLoaders());
+			} catch (RuntimeException | LinkageError e) {
+				org.apache.logging.log4j.LogManager.getLogger("Translator").error("A 1.21.1 mod's geometry loader registration failed", e);
+			}
 			// NeoForge loads the models on worker threads, and a mod may wait there for its setup (Patchouli for its
 			// books): here too, so a wait that never ends costs a minute, not the game
 			List<ResourceLocation> added = java.util.Collections.synchronizedList(new ArrayList<>());

@@ -28,6 +28,7 @@ public final class ClientSetup {
 		MinecraftForge.EVENT_BUS.register(new ItemTooltipEvent.Forwarder());
 		MinecraftForge.EVENT_BUS.register(new ItemModels.Registrar());
 		MinecraftForge.EVENT_BUS.register(new ModelEvent.Forwarder());
+		io.github.xponer2.translator.client.model.GeometryLoaders.INSTANCE.install();
 		MinecraftForge.EVENT_BUS.register(new RegisterColorHandlersEvent.Forwarder());
 		MinecraftForge.EVENT_BUS.register(new RegisterClientExtensionsEvent.HandRenderer());
 		MinecraftForge.EVENT_BUS.register(new AtlasTextures());

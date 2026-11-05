@@ -49,15 +49,24 @@ final class FacadeRemapper extends ClassRemapper {
 	 * InventoryCrafting): the JVM refuses to load a class that "implements" a class. The class loses that type.
 	 */
 	private String[] interfaces(String[] interfaces) {
-		var out = new java.util.ArrayList<String>();
+		var out = new java.util.LinkedHashSet<String>();
 		for (String mapped : this.remapper.mapTypes(interfaces)) {
 			ClassInfo info = this.names.isOwn(mapped) ? null : this.target.get(mapped);
 			if (info == null || info.isInterface()) {
 				out.add(mapped);
 			}
+			// a 1.21 BakedModel (IBakedModel now, or NeoForge's IDynamicBakedModel): 1.12.2's getQuads(state, side, long)
+			// on to the mod's getQuads with a random (and model data)
+			if (BAKED_MODELS.contains(mapped)) {
+				out.add(BAKED_MODEL_BRIDGE);
+			}
 		}
 		return out.toArray(new String[0]);
 	}
+
+	private static final String BAKED_MODEL_BRIDGE = "io/github/xponer2/translator/client/model/BakedModelBridge";
+	private static final java.util.Set<String> BAKED_MODELS = new java.util.HashSet<>(java.util.Arrays.asList(
+			"net/minecraft/client/renderer/block/model/IBakedModel", "net/neoforged/neoforge/client/model/IDynamicBakedModel"));
 
 	// --- mixins: the names in the strings of their annotations (method = "tick", @At(target = "L...;m(..)V")) are 1.21
 	// names; the class literals are remapped like any type

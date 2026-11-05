@@ -345,6 +345,9 @@ public final class ClientRedirects {
 	public static List<net.minecraft.client.renderer.block.model.BakedQuad> getQuads(net.minecraft.client.renderer.block.model.IBakedModel model,
 			@javax.annotation.Nullable net.minecraft.block.state.IBlockState state, @javax.annotation.Nullable net.minecraft.util.EnumFacing side,
 			java.util.Random random) {
+		if (model instanceof io.github.xponer2.translator.client.model.BakedModelBridge bridge) {
+			return bridge.getQuads(state, side, random == null ? new java.util.Random(0L) : random);
+		}
 		return model.getQuads(state, side, random == null ? 0L : random.nextLong());
 	}
 
@@ -352,6 +355,11 @@ public final class ClientRedirects {
 			@javax.annotation.Nullable net.minecraft.block.state.IBlockState state, @javax.annotation.Nullable net.minecraft.util.EnumFacing side,
 			java.util.Random random, io.github.xponer2.translator.client.ModelData data,
 			@javax.annotation.Nullable io.github.xponer2.translator.client.RenderType type) {
+		if (model instanceof io.github.xponer2.translator.client.model.BakedModelBridge bridge) {
+			// a mod's model (a backpack's parts): with the data it asked for
+			return bridge.getQuads(state, side, random == null ? new java.util.Random(0L) : random,
+					data == null ? io.github.xponer2.translator.client.ModelData.EMPTY : data, type);
+		}
 		return getQuads(model, state, side, random);
 	}
 

@@ -206,4 +206,16 @@ public class BlockEntity extends TileEntity implements ITickable {
 	public void setChanged() {
 		this.markDirty();
 	}
+
+	/** NeoForge {@code getModelData()}: what this block entity tells its block's model (a mod's override). */
+	public io.github.xponer2.translator.client.ModelData getModelData() {
+		return io.github.xponer2.translator.client.ModelData.EMPTY;
+	}
+
+	/** NeoForge {@code requestModelDataUpdate()}: the block drawn again, with the new data. */
+	public void requestModelDataUpdate() {
+		if (this.world != null && this.world.isRemote) {
+			this.world.markBlockRangeForRenderUpdate(this.pos, this.pos);
+		}
+	}
 }

@@ -49,3 +49,4 @@ S	net/minecraft/world/level/material/Fluid	io/github/xponer2/translator/fluids/F
 S	net/minecraft/world/level/material/FlowingFluid	io/github/xponer2/translator/fluids/FlowingFluid
 S	net/minecraft/client/model/HumanoidModel	io/github/xponer2/translator/client/model/HumanoidModel
 S	net/minecraft/client/renderer/BlockEntityWithoutLevelRenderer	io/github/xponer2/translator/client/BlockEntityWithoutLevelRenderer
+S	net/minecraft/client/renderer/block/model/ItemOverrides	io/github/xponer2/translator/client/model/ItemOverrides

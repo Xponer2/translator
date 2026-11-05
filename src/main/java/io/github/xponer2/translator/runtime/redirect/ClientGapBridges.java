@@ -64,6 +64,68 @@ public final class ClientGapBridges {
 		return mode != null ? mode : CarriedBridges.constant("com.mojang.blaze3d.vertex.VertexFormat$Mode", "QUADS");
 	}
 
+	/**
+	 * 1.21 {@code itemInHandRenderer.renderItem(entity, stack, context, leftHand, pose, buffers, light)}: 1.12.2's
+	 * renderItemSide, in the pose stack's current GL matrix (giants' and mobs' held items, worn charms).
+	 */
+	public static void renderItem(net.minecraft.client.renderer.ItemRenderer renderer, net.minecraft.entity.EntityLivingBase entity, net.minecraft.item.ItemStack stack,
+			net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType context, boolean leftHand,
+			io.github.xponer2.translator.client.PoseStack pose, io.github.xponer2.translator.client.MultiBufferSource buffers, int light) {
+		if (stack != null && !stack.isEmpty()) {
+			renderer.renderItemSide(entity, stack, context, leftHand);
+		}
+	}
+
+	// --- 1.21 BlockModels (ModelBlock): the parts mods bake their own models from --------------------------------------
+
+	/**
+	 * 1.21 {@code new BlockModel(parent, elements, textures, ambientOcclusion, guiLight, transforms, overrides)}: the
+	 * 1.12.2 model of the same json shape (the textures' {@code Either<Material, String>} as names or "#references").
+	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static net.minecraft.client.renderer.block.model.ModelBlock newModelBlock(@Nullable ResourceLocation parent, @Nullable java.util.List elements,
+			@Nullable java.util.Map textures, @Nullable Boolean ambientOcclusion, @Nullable Object guiLight,
+			@Nullable net.minecraft.client.renderer.block.model.ItemCameraTransforms transforms, @Nullable java.util.List overrides) {
+		var names = new java.util.LinkedHashMap<String, String>();
+		if (textures != null) {
+			for (Object entry : textures.entrySet()) {
+				var mapping = (java.util.Map.Entry<Object, Object>) entry;
+				String name = io.github.xponer2.translator.client.model.GeometryLoaders.textureName(mapping.getValue());
+				if (name != null) {
+					names.put(String.valueOf(mapping.getKey()), name);
+				}
+			}
+		}
+		return new net.minecraft.client.renderer.block.model.ModelBlock(parent, elements == null ? new java.util.ArrayList<>() : elements, names,
+				ambientOcclusion == null || ambientOcclusion, true, transforms == null ? net.minecraft.client.renderer.block.model.ItemCameraTransforms.DEFAULT : transforms,
+				overrides == null ? new java.util.ArrayList<>() : overrides);
+	}
+
+	/**
+	 * 1.21 {@code overrides.resolve(model, stack, level, entity, seed)} on any model's overrides: a mod's own (the
+	 * facade) answers in resolve, 1.12.2's in handleItemState (renderers draw the model of a stack so).
+	 */
+	@Nullable
+	public static net.minecraft.client.renderer.block.model.IBakedModel resolve(net.minecraft.client.renderer.block.model.ItemOverrideList overrides,
+			net.minecraft.client.renderer.block.model.IBakedModel model, net.minecraft.item.ItemStack stack,
+			@Nullable net.minecraft.client.multiplayer.WorldClient level, @Nullable net.minecraft.entity.EntityLivingBase entity, int seed) {
+		if (overrides instanceof io.github.xponer2.translator.client.model.ItemOverrides own) {
+			return own.resolve(model, stack, level, entity, seed);
+		}
+		return overrides.handleItemState(model, stack, level, entity);
+	}
+
+	/** 1.21 {@code blockModel.resolveParents(getter)}: its parents' json read. */
+	public static void resolveParents(net.minecraft.client.renderer.block.model.ModelBlock model, @Nullable java.util.function.Function<?, ?> getter) {
+		io.github.xponer2.translator.client.model.GeometryLoaders.parents(model);
+	}
+
+	/** 1.21 {@code blockModel.bake(baker, sprites, state)}: its elements as quads, in the rotation of the model baking it. */
+	public static net.minecraft.client.renderer.block.model.IBakedModel bake(net.minecraft.client.renderer.block.model.ModelBlock model, @Nullable Object baker,
+			@Nullable java.util.function.Function<?, ?> sprites, @Nullable Object state) {
+		return io.github.xponer2.translator.client.model.GeometryLoaders.bakeModel(model);
+	}
+
 	/** NeoForge {@code flag.hasShiftDown()}: shift held now (tooltips that show more with shift). */
 	public static boolean hasShiftDown(net.minecraft.client.util.ITooltipFlag flag) {
 		return net.minecraft.client.gui.GuiScreen.isShiftKeyDown();

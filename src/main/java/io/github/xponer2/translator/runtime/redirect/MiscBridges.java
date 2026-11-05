@@ -1058,6 +1058,11 @@ public final class MiscBridges {
 	}
 
 	public static void requestModelDataUpdate(TileEntity tile) {
+		if (tile instanceof io.github.xponer2.translator.block.BlockEntity entity) {
+			entity.requestModelDataUpdate();
+		} else if (tile.getWorld() != null && tile.getWorld().isRemote) {
+			tile.getWorld().markBlockRangeForRenderUpdate(tile.getPos(), tile.getPos());
+		}
 	}
 
 	public static void handleUpdateTag(TileEntity tile, NBTTagCompound tag, io.github.xponer2.translator.registry.HolderLookup.Provider registries) {
@@ -1943,7 +1948,7 @@ public final class MiscBridges {
 	}
 
 	public static io.github.xponer2.translator.client.ModelData getModelData(TileEntity tile) {
-		return io.github.xponer2.translator.client.ModelData.EMPTY;
+		return tile instanceof io.github.xponer2.translator.block.BlockEntity entity ? entity.getModelData() : io.github.xponer2.translator.client.ModelData.EMPTY;
 	}
 
 	public static void loadWithComponents(TileEntity tile, NBTTagCompound tag, io.github.xponer2.translator.registry.HolderLookup.Provider registries) {

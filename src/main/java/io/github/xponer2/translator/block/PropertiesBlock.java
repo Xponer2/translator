@@ -37,6 +37,16 @@ public class PropertiesBlock extends Block {
 		this.lightOpacity = this.fullBlock ? 255 : 0;
 	}
 
+	/** The model data of the block entity here, for its model (a 1.21 model reads it in getQuads). */
+	@Override
+	public IBlockState getExtendedState(IBlockState state, IBlockAccess world, BlockPos pos) {
+		IBlockState extended = super.getExtendedState(state, world, pos);
+		if (this.hasTileEntity(state) && net.minecraftforge.fml.common.FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+			return io.github.xponer2.translator.client.model.ModelDataState.extend(extended, world, pos);
+		}
+		return extended;
+	}
+
 	/** Null when a builder call couldn't run (a part of 1.21 the Translator lacks): the defaults, the block still made. */
 	private static BlockProperties orDefault(@javax.annotation.Nullable BlockProperties properties) {
 		return properties != null ? properties : BlockProperties.of();
