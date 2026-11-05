@@ -340,3 +340,8 @@ R	io/github/xponer2/translator/registry/Registry	io/github/xponer2/translator/ru
 R	net/minecraft/world/biome/Biome	io/github/xponer2/translator/runtime/redirect/BiomeBridges
 R	net/minecraft/client/particle/Particle	io/github/xponer2/translator/runtime/redirect/ParticleFields
 R	net/minecraft/util/EnumFacing$Plane	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	net/minecraft/inventory/IContainerListener	io/github/xponer2/translator/menu/ListenerBridges
+R	net/minecraft/inventory/Slot	io/github/xponer2/translator/menu/ClickBridges
+R	net/minecraft/item/ItemStack	io/github/xponer2/translator/menu/ClickBridges
+R	net/minecraft/network/play/server/SPacketSetSlot	io/github/xponer2/translator/menu/PacketBridges
+R	net/minecraft/network/play/server/SPacketWindowItems	io/github/xponer2/translator/menu/PacketBridges

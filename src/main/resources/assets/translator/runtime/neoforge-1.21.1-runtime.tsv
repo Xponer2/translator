@@ -449,3 +449,6 @@ F	net/minecraft/world/entity/MobCategory	AXOLOTLS	WATER_CREATURE
 # hanging signs of their own (they were standing and wall signs: placed flat on walls, drawn as those)
 C	net/minecraft/world/level/block/CeilingHangingSignBlock	io/github/xponer2/translator/runtime/mc/CeilingHangingSignBlock
 C	net/minecraft/world/level/block/WallHangingSignBlock	io/github/xponer2/translator/runtime/mc/WallHangingSignBlock
+# 1.21 menu sync (Sophisticated Core: stacks of thousands, its own synchronizer) and a stack clicked onto another: the Translator's
+C	net/minecraft/world/inventory/ContainerSynchronizer	io/github/xponer2/translator/menu/ContainerSynchronizer
+C	net/minecraft/world/entity/SlotAccess	io/github/xponer2/translator/menu/SlotAccess

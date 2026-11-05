@@ -69,4 +69,10 @@ public final class VanillaMenu extends AbstractContainerMenu {
 	public void detectAndSendChanges() {
 		this.container.detectAndSendChanges();
 	}
+
+	/** 1.21 code's broadcastChanges: the vanilla container's sync (this view has no copies of its own). */
+	@Override
+	public void broadcastChanges() {
+		this.container.detectAndSendChanges();
+	}
 }
