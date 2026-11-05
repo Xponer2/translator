@@ -25,6 +25,12 @@ public class RotatedPillarBlock extends BlockRotatedPillar {
 	public RotatedPillarBlock(BlockProperties properties) {
 		super(properties.material(), properties.mapColor());
 		properties.applyTo(this, this::setSoundType);
+		// 1.21's default: upright (1.12.2's pillar sets none, the first axis was x: the trees of the mods' worldgen,
+		// placed with the default state, lay on their side)
+		var state = this.getDefaultState();
+		if (state.getPropertyKeys().contains(AXIS)) {
+			this.setDefaultState(state.withProperty(AXIS, net.minecraft.util.EnumFacing.Axis.Y));
+		}
 	}
 
 	protected void createBlockStateDefinition(BlockStateContainer.Builder builder) {

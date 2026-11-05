@@ -257,7 +257,8 @@ public final class DataBiomes {
 			}
 		} else if (config.has("trunk_provider") && config.has("foliage_provider")) {
 			int[] height = heights(config);
-			out.add(new Object[] {new DataTree(log(stateName(config.get("trunk_provider"))), leaves(stateName(config.get("foliage_provider"))),
+			out.add(new Object[] {new DataTree(withProperties(log(stateName(config.get("trunk_provider"))), config.get("trunk_provider")),
+					withProperties(leaves(stateName(config.get("foliage_provider"))), config.get("foliage_provider")),
 					height[0], height[1], shapeOf(type, config.has("foliage_placer") ? config.getAsJsonObject("foliage_placer").get("type").getAsString() : "")),
 					weight});
 		}
@@ -374,6 +375,32 @@ public final class DataBiomes {
 	// --- blocks ---------------------------------------------------------------------------------------------------------
 
 	/** The block name of a 1.21 block state provider (simple, rotated, weighted: its first entry). */
+	/** The provider's state properties ({@code "Properties": {"axis": "y"}}) on the state, those its block has. */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static IBlockState withProperties(IBlockState state, JsonElement provider) {
+		try {
+			JsonObject object = provider.getAsJsonObject();
+			JsonObject data = object.has("state") ? object.getAsJsonObject("state")
+					: object.has("entries") ? object.getAsJsonArray("entries").get(0).getAsJsonObject().getAsJsonObject("data") : null;
+			if (data == null || !data.has("Properties") || !data.getAsJsonObject("Properties").isJsonObject()) {
+				return state;
+			}
+			for (var entry : data.getAsJsonObject("Properties").entrySet()) {
+				for (IProperty property : state.getPropertyKeys()) {
+					if (property.getName().equals(entry.getKey())) {
+						var value = property.parseValue(entry.getValue().getAsString());
+						if (value.isPresent()) {
+							state = state.withProperty(property, (Comparable) value.get());
+						}
+					}
+				}
+			}
+		} catch (RuntimeException e) {
+			// the state as it is
+		}
+		return state;
+	}
+
 	private static String stateName(JsonElement provider) {
 		JsonObject object = provider.getAsJsonObject();
 		if (object.has("state")) {

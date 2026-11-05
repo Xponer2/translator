@@ -74,4 +74,21 @@ public class LeavesBlock extends Block {
 	public boolean isLeaves(IBlockState state, IBlockAccess world, BlockPos pos) {
 		return true;
 	}
+
+	/**
+	 * Leaves shade each other as 1.12.2's do (they are full cubes there: the ambient occlusion of a solid block). A mod's
+	 * leaves had none: their insides were as bright as their outsides.
+	 */
+	@Override
+	@SideOnly(Side.CLIENT)
+	@SuppressWarnings("deprecation")
+	public float getAmbientOcclusionLightValue(IBlockState state) {
+		return 0.2F;
+	}
+
+	@Override
+	@SuppressWarnings("deprecation")
+	public boolean isFullCube(IBlockState state) {
+		return true;
+	}
 }
