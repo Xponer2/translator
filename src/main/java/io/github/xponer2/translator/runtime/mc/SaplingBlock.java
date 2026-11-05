@@ -69,12 +69,22 @@ public class SaplingBlock extends BushBlock implements IGrowable {
 
 	/** 1.21 {@code advanceTree} (renamed by the table): the second stage, then the tree. */
 	public void grow(WorldServer level, BlockPos pos, IBlockState state, Random random) {
+		this.advance(level, pos, state, random);
+	}
+
+	private void advance(WorldServer level, BlockPos pos, IBlockState state, Random random) {
 		if (state.getPropertyKeys().contains(STAGE) && state.getValue(STAGE) == 0) {
 			level.setBlockState(pos, state.cycleProperty(STAGE), 4);
 		} else {
 			TreeGrowing.growTree(this.treeGrower, level, null, pos, state, random);
 		}
 	}
+
+	/**
+	 * Inside performBonemeal on this thread: a mod's advanceTree calls its performBonemeal (BOP), and when that one
+	 * ends in this one (its own couldn't run), the loop is broken here (it was a StackOverflowError at every tick).
+	 */
+	private static final ThreadLocal<Boolean> GROWING = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
 	// --- bone meal: the 1.21 methods (a mod overrides them) and 1.12.2's IGrowable calling them ----------------------
 
@@ -83,7 +93,16 @@ public class SaplingBlock extends BushBlock implements IGrowable {
 	}
 
 	public void performBonemeal(WorldServer level, Random random, BlockPos pos, IBlockState state) {
-		this.grow(level, pos, state, random);
+		if (GROWING.get()) {
+			this.advance(level, pos, state, random);
+			return;
+		}
+		GROWING.set(Boolean.TRUE);
+		try {
+			this.grow(level, pos, state, random);
+		} finally {
+			GROWING.set(Boolean.FALSE);
+		}
 	}
 
 	@Override

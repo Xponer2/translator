@@ -143,6 +143,24 @@ public class LeavesBlock extends Block {
 		return state;
 	}
 
+	/** 1.21 {@code getOptionalDistanceAt(state)}: 0 for a log, a leaf's own distance, else none (BOP's willow leaves). */
+	public static java.util.OptionalInt getOptionalDistanceAt(IBlockState state) {
+		net.minecraft.block.Block block = state.getBlock();
+		boolean log = block instanceof net.minecraft.block.BlockLog
+				|| block instanceof RotatedPillarBlock && state.getMaterial() == net.minecraft.block.material.Material.WOOD;
+		if (!log) {
+			try {
+				log = io.github.xponer2.translator.tags.TagManager.is(state, LOGS);
+			} catch (RuntimeException e) {
+				log = false;
+			}
+		}
+		if (log) {
+			return java.util.OptionalInt.of(0);
+		}
+		return state.getPropertyKeys().contains(DISTANCE) ? java.util.OptionalInt.of(state.getValue(DISTANCE)) : java.util.OptionalInt.empty();
+	}
+
 	private static boolean decaying(IBlockState state) {
 		return state.getPropertyKeys().contains(DISTANCE) && state.getValue(DISTANCE) == 7
 				&& !(state.getPropertyKeys().contains(PERSISTENT) && state.getValue(PERSISTENT));

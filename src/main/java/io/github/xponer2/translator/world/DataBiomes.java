@@ -58,7 +58,8 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
  * id (the mods' code finds it by its key), and those in the {@code is_overworld} tags join the 1.12.2 overworld
  * biome lists (BiomeManager) by their temperature, with BiomeDictionary types from their climate and name. Their tree
  * features are read down to the log, leaves, height and shape ({@link DataTree}); the 1.21 feature code doesn't run.
- * Biomes of other dimensions (Twilight Forest, the Aether) are registered for their dimensions only.
+ * Biomes of other dimensions (Twilight Forest, the Aether) are registered for their dimensions only; those of the Nether
+ * and the End (is_nether, is_end) are placed there ({@link VanillaDimensionBiomes}).
  */
 public final class DataBiomes {
 	/** The one instance (registered on the event bus by the Translator): the mods' feature data for the saplings. */
@@ -116,11 +117,25 @@ public final class DataBiomes {
 	private final Map<ResourceLocation, JsonObject> placed = new HashMap<>();
 	private final Map<ResourceLocation, JsonObject> configured = new HashMap<>();
 	private final Set<ResourceLocation> overworld = new HashSet<>();
+	private final Set<ResourceLocation> nether = new HashSet<>();
+	private final Set<ResourceLocation> end = new HashSet<>();
 	private static final List<Biome> REGISTERED = new ArrayList<>();
+	private static final List<Biome> NETHER = new ArrayList<>();
+	private static final List<Biome> END = new ArrayList<>();
 
 	/** The 1.12.2 biomes made from the mods' data. */
 	public static List<Biome> registered() {
 		return java.util.Collections.unmodifiableList(REGISTERED);
+	}
+
+	/** Those in the mods' is_nether tags (Biomes O' Plenty's five): placed in the Nether by {@link VanillaDimensionBiomes}. */
+	public static List<Biome> nether() {
+		return java.util.Collections.unmodifiableList(NETHER);
+	}
+
+	/** Those in the mods' is_end tags: placed in the End's outer islands by {@link VanillaDimensionBiomes}. */
+	public static List<Biome> end() {
+		return java.util.Collections.unmodifiableList(END);
 	}
 
 	@SubscribeEvent
@@ -144,7 +159,15 @@ public final class DataBiomes {
 				event.getRegistry().register(biome);
 				REGISTERED.add(biome);
 				boolean inOverworld = this.overworld.contains(id);
-				BiomeDictionary.addTypes(biome, types(biome, inOverworld));
+				boolean inNether = !inOverworld && this.nether.contains(id);
+				boolean inEnd = !inOverworld && !inNether && this.end.contains(id);
+				BiomeDictionary.addTypes(biome, types(biome, inOverworld || inNether || inEnd));
+				if (inNether || inEnd) {
+					// 1.12.2's Nether and End decorate their biomes with the overworld decorator: nothing of it there
+					quiet(biome.decorator);
+					BiomeDictionary.addTypes(biome, inNether ? BiomeDictionary.Type.NETHER : BiomeDictionary.Type.END);
+					(inNether ? NETHER : END).add(biome);
+				}
 				if (inOverworld) {
 					BiomeManager.addBiome(climate(biome), new BiomeManager.BiomeEntry(biome, 10));
 					if (!DataBiome.has(id.getPath(), "ocean", "river", "beach", "peak", "mountain", "volcano")) {
@@ -158,17 +181,51 @@ public final class DataBiomes {
 				Loader.instance().setActiveModContainer(active);
 			}
 		}
-		LOGGER.info("Biomes of the 1.21.1 mods: {} registered, {} in the overworld", REGISTERED.size(), added);
+		LOGGER.info("Biomes of the 1.21.1 mods: {} registered, {} in the overworld, {} in the Nether, {} in the End", REGISTERED.size(), added,
+				NETHER.size(), END.size());
 	}
+
+	/** A mod's configured or placed feature file ({@code data/<mod>/worldgen/placed_feature/<path>.json}), null when there is none. */
+	@Nullable
+	static JsonObject featureFile(boolean placedFeature, ResourceLocation id) {
+		DataBiomes self = instance;
+		if (self == null) {
+			return null;
+		}
+		synchronized (self) {
+			if (!self.scanned) {
+				self.scan();
+			}
+		}
+		return (placedFeature ? self.placed : self.configured).get(id);
+	}
+
+	/** A mod's biome file ({@code data/<mod>/worldgen/biome/<path>.json}), null when there is none. */
+	@Nullable
+	static JsonObject biomeFile(ResourceLocation id) {
+		DataBiomes self = instance;
+		if (self == null) {
+			return null;
+		}
+		synchronized (self) {
+			if (!self.scanned) {
+				self.scan();
+			}
+		}
+		return self.biomes.get(id);
+	}
+
+	private boolean scanned;
 
 	/** The mods' biome, feature and tag files. */
 	private void scan() {
-		var overworldTags = new ArrayList<JsonObject>();
+		this.scanned = true;
+		var tags = new HashMap<String, List<JsonObject>>();
 		// from the mods' jars (FML lists the 1.21.1 mods only after post-init: its active mods had none of them here)
 		RuntimeMods.forEachData((path, bytes) -> {
 			var m = FILE.matcher(path);
 			var t = TAG.matcher(path);
-			if (!m.matches() && !(t.matches() && "is_overworld".equals(t.group(2)))) {
+			if (!m.matches() && !t.matches()) {
 				return;
 			}
 			JsonObject json;
@@ -179,7 +236,7 @@ public final class DataBiomes {
 				return;
 			}
 			if (!m.matches()) {
-				overworldTags.add(json);
+				tags.computeIfAbsent(t.group(2), k -> new ArrayList<>()).add(json);
 				return;
 			}
 			var id = new ResourceLocation(m.group(1), m.group(3));
@@ -195,16 +252,39 @@ public final class DataBiomes {
 				default -> this.configured.put(id, json);
 			}
 		});
-		for (JsonObject tag : overworldTags) {
+		tagged(tags.get("is_overworld"), this.overworld);
+		tagged(tags.get("is_nether"), this.nether);
+		tagged(tags.get("is_end"), this.end);
+	}
+
+	private static void tagged(@Nullable List<JsonObject> tags, Set<ResourceLocation> into) {
+		for (JsonObject tag : tags == null ? java.util.Collections.<JsonObject>emptyList() : tags) {
 			if (tag.has("values")) {
 				for (JsonElement value : tag.getAsJsonArray("values")) {
 					String name = value.isJsonObject() ? value.getAsJsonObject().get("id").getAsString() : value.getAsString();
 					if (!name.startsWith("#")) {
-						this.overworld.add(new ResourceLocation(name));
+						into.add(new ResourceLocation(name));
 					}
 				}
 			}
 		}
+	}
+
+	private static void quiet(net.minecraft.world.biome.BiomeDecorator decorator) {
+		decorator.treesPerChunk = -999;
+		decorator.extraTreeChance = 0.0F;
+		decorator.flowersPerChunk = 0;
+		decorator.grassPerChunk = 0;
+		decorator.deadBushPerChunk = 0;
+		decorator.mushroomsPerChunk = 0;
+		decorator.reedsPerChunk = 0;
+		decorator.cactiPerChunk = 0;
+		decorator.waterlilyPerChunk = 0;
+		decorator.sandPatchesPerChunk = 0;
+		decorator.gravelPatchesPerChunk = 0;
+		decorator.clayPerChunk = 0;
+		decorator.bigMushroomsPerChunk = 0;
+		decorator.generateFalls = false;
 	}
 
 	// --- decoration -----------------------------------------------------------------------------------------------------
@@ -218,9 +298,12 @@ public final class DataBiomes {
 		boolean anyTree = false;
 		for (String feature : biome.features()) {
 			String path = feature.substring(feature.indexOf(':') + 1);
-			if (path.contains("tree") || path.startsWith("forest_") || path.contains("_forest_") || path.contains("bush")) {
+			if (treeLike(path)) {
 				anyTree = true;
 				trees += this.addTrees(biome, new ResourceLocation(feature), path);
+			} else if (feature.indexOf(':') > 0 && !feature.startsWith("minecraft:") && !feature.startsWith("#")) {
+				// a mod's own placed feature: placed by its 1.21.1 code (DataFeatures.decorate), not 1.12.2's look-alike
+				continue;
 			} else if (path.contains("flower")) {
 				flowers += 2;
 			} else if (path.contains("grass") || path.contains("fern")) {
@@ -242,6 +325,11 @@ public final class DataBiomes {
 		trees = Math.min(trees, 24);
 		decorator.treesPerChunk = anyTree ? (int) trees : -999;
 		decorator.extraTreeChance = anyTree ? (float) (trees - Math.floor(trees)) : 0.0F;
+	}
+
+	/** Whether a placed feature's name says trees (they grow from the data, {@link DataTree}, not by the 1.21 code). */
+	static boolean treeLike(String path) {
+		return path.contains("tree") || path.startsWith("forest_") || path.contains("_forest_") || path.contains("bush");
 	}
 
 	/** The trees of a placed tree feature: how many per chunk, and each tree it picks (with its share). */

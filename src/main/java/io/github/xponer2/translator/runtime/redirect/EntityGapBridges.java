@@ -518,4 +518,16 @@ public final class EntityGapBridges {
 			this.run(TICK);
 		}
 	}
+
+	/** 1.21 {@code spawnAtLocation(item)}: one of the item dropped where the entity is (BOP's boats break into theirs). */
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.item.EntityItem spawnAtLocation(Entity entity, io.github.xponer2.translator.util.ItemLike item) {
+		return spawnAtLocation(entity, item, 0);
+	}
+
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.item.EntityItem spawnAtLocation(Entity entity, io.github.xponer2.translator.util.ItemLike item, int offset) {
+		var dropped = io.github.xponer2.translator.util.ItemLike.item(item);
+		return dropped == net.minecraft.init.Items.AIR ? null : entity.entityDropItem(new ItemStack(dropped), offset);
+	}
 }

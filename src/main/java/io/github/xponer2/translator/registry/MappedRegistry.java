@@ -33,6 +33,7 @@ public final class MappedRegistry<T> implements Registry<T> {
 
     public MappedRegistry(ResourceKey<? extends Registry<T>> key) {
         this.key = key;
+        this.fromData = io.github.xponer2.translator.world.DataFeatures.isDataRegistry(key.location());
     }
 
     public synchronized T register(ResourceLocation location, T value) {
@@ -99,12 +100,44 @@ public final class MappedRegistry<T> implements Registry<T> {
     @Nullable
     @Override
     public T get(@Nullable ResourceLocation location) {
-        return location == null ? null : this.byLocation.get(location);
+        if (location == null) {
+            return null;
+        }
+        T value = this.byLocation.get(location);
+        return value != null || !this.fromData ? value : this.fromData(location);
     }
 
     @Override
     public boolean containsKey(ResourceLocation location) {
-        return this.byLocation.containsKey(location);
+        return this.byLocation.containsKey(location) || this.fromData && this.get(location) != null;
+    }
+
+    /**
+     * Whether the entries of this registry are the mods' data files, read on first use (configured and placed features:
+     * {@link io.github.xponer2.translator.world.DataFeatures}). Those not asked for yet aren't in {@link #keySet}.
+     */
+    private final boolean fromData;
+    private final Set<ResourceLocation> loading = new java.util.HashSet<>();
+    private final Set<ResourceLocation> missing = new java.util.HashSet<>();
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    private synchronized T fromData(ResourceLocation location) {
+        T value = this.byLocation.get(location);
+        if (value != null || this.missing.contains(location) || !this.loading.add(location)) {
+            return value;
+        }
+        try {
+            value = (T) io.github.xponer2.translator.world.DataFeatures.decode(this.key.location(), location);
+        } finally {
+            this.loading.remove(location);
+        }
+        if (value == null) {
+            this.missing.add(location);
+        } else if (!this.byLocation.containsKey(location)) {
+            this.register(location, value);
+        }
+        return this.byLocation.get(location);
     }
 
     @Override

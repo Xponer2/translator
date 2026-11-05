@@ -458,6 +458,83 @@ public final class WorldGapBridges {
 		return chunks.getLoadedChunk(x, z);
 	}
 
+	/** 1.21 {@code useShapeForLightOcclusion()}: 1.12.2 lights by whole blocks, never by a block's shape. */
+	public static boolean useShapeForLightOcclusion(IBlockState state) {
+		return false;
+	}
+
+	/**
+	 * 1.21 {@code getGenerator()}: the 1.21 ChunkGenerator, which 1.12.2 hasn't (its IChunkGenerator is another kind).
+	 * The mods pass it on to TreeGrower.growTree and ConfiguredFeature.place (BOP's saplings, mushrooms and moss): a
+	 * generator that only tells the heights a placed feature asks for ({@link io.github.xponer2.translator.world.DataFeatures#generator}).
+	 */
+	@javax.annotation.Nullable
+	public static Object getGenerator(net.minecraft.world.gen.ChunkProviderServer chunks) {
+		return io.github.xponer2.translator.world.DataFeatures.generator();
+	}
+
+	/** 1.21 {@code ensureCanWrite(pos)} of a world generation level: a 1.12.2 world writes anywhere (a feature placed in it). */
+	public static boolean ensureCanWrite(World world, BlockPos pos) {
+		return true;
+	}
+
+	/** 1.21 {@code isFluidAtPosition(pos, test)}: the test on the fluid there (empty when the block isn't a fluid). */
+	public static boolean isFluidAtPosition(World world, BlockPos pos, java.util.function.Predicate<Object> test) {
+		return test.test(io.github.xponer2.translator.util.FluidState.of(world.getBlockState(pos)));
+	}
+
+	/** 1.21 {@code getMinSection()}: 1.12.2 starts at section 0. */
+	public static int getMinSection(World world) {
+		return 0;
+	}
+
+	/** 1.21 {@code getMaxSection()}: one past the top section (16 in 1.12.2). */
+	public static int getMaxSection(World world) {
+		return world.getHeight() >> 4;
+	}
+
+	/**
+	 * 1.21 {@code getMaxLocalRawBrightness(pos, darkening)}: the light there with the sky darkened that much (a
+	 * monster's spawn check in a thunderstorm), as 1.12.2's EntityMob does it.
+	 */
+	public static int getMaxLocalRawBrightness(World world, BlockPos pos, int darkening) {
+		int before = world.getSkylightSubtracted();
+		world.setSkylightSubtracted(darkening);
+		try {
+			return world.getLightFromNeighbors(pos);
+		} finally {
+			world.setSkylightSubtracted(before);
+		}
+	}
+
+	/** 1.21 {@code noCollision(entity)}: no block or entity box in the entity's way. */
+	public static boolean noCollision(World world, net.minecraft.entity.Entity entity) {
+		return world.getCollisionBoxes(entity, entity.getEntityBoundingBox()).isEmpty();
+	}
+
+	/** 1.21 {@code isUnobstructed(entity)}: no other entity in the entity's box. */
+	public static boolean isUnobstructed(World world, net.minecraft.entity.Entity entity) {
+		return world.checkNoEntityCollision(entity.getEntityBoundingBox(), entity);
+	}
+
+	/** 1.21 {@code getMoonBrightness()}: the moon phase's brightness (1 full moon .. 0 new moon). */
+	public static float getMoonBrightness(World world) {
+		return world.getCurrentMoonPhaseFactor();
+	}
+
+	/** 1.21 {@code hasNearbyAlivePlayer(x, y, z, range)}: a player (not a spectator) within the range. */
+	public static boolean hasNearbyAlivePlayer(World world, double x, double y, double z, double range) {
+		return world.isAnyPlayerWithinRangeAt(x, y, z, range);
+	}
+
+	/** 1.21 {@code addFreshEntityWithPassengers(entity)}: the entity and its passengers in the world. */
+	public static void addFreshEntityWithPassengers(World world, net.minecraft.entity.Entity entity) {
+		world.spawnEntity(entity);
+		for (net.minecraft.entity.Entity one : entity.getRecursivePassengers()) {
+			world.spawnEntity(one);
+		}
+	}
+
 	/** 1.21 {@code isPositionTicking(chunkPos)}: the chunk (packed x, z) is loaded. */
 	public static boolean isPositionTicking(net.minecraft.world.gen.ChunkProviderServer chunks, long chunkPos) {
 		return chunks.chunkExists((int) chunkPos, (int) (chunkPos >> 32));

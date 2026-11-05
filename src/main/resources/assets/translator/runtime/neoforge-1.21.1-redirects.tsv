@@ -335,3 +335,7 @@ R	net/minecraft/entity/ai/EntityAIWatchClosest	io/github/xponer2/translator/runt
 R	net/minecraft/network/play/client/CPacketClickWindow	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/inventory/Slot	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/client/renderer/block/model/BlockPart	io/github/xponer2/translator/client/model/BlockElementFields
+R	net/minecraft/block/state/IBlockState	io/github/xponer2/translator/runtime/redirect/BlockStateStatics
+R	io/github/xponer2/translator/registry/Registry	io/github/xponer2/translator/runtime/redirect/RegistryBridges
+R	net/minecraft/world/biome/Biome	io/github/xponer2/translator/runtime/redirect/BiomeBridges
+R	net/minecraft/client/particle/Particle	io/github/xponer2/translator/runtime/redirect/ParticleFields

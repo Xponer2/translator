@@ -212,6 +212,24 @@ public final class CarriedBridges {
 		}
 	}
 
+	/**
+	 * NeoForge's {@code CommonHooks.overridesEqualsAndHashCode(type)}: whether a data component class has its own
+	 * equals and hashCode. CommonHooks marks BlockState, FluidState and ResourceKey valid while it loads (1.21 compares
+	 * them by identity); here BlockState is the interface IBlockState, which Class.getMethod finds no equals on, and the
+	 * Translator's ResourceKey has its own: CommonHooks failed to load (BOP's spanish moss, every hook of it). An
+	 * interface or the ResourceKey has none of its own, as in 1.21.
+	 */
+	public static boolean overridesEqualsAndHashCode(Class<?> type) {
+		if (type.isInterface() || type == io.github.xponer2.translator.registry.ResourceKey.class) {
+			return false;
+		}
+		try {
+			return type.getMethod("equals", Object.class).getDeclaringClass() != Object.class && type.getMethod("hashCode").getDeclaringClass() != Object.class;
+		} catch (NoSuchMethodException e) {
+			return false;
+		}
+	}
+
 	static Class<?> carried(String name) throws ClassNotFoundException {
 		return Class.forName(name, true, net.minecraft.launchwrapper.Launch.classLoader);
 	}

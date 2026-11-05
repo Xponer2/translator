@@ -23,8 +23,8 @@ import xyz.wagyourtail.jvmdg.shade.asm.Opcodes;
  * Minecraft's classes and their members public (an access transformer for the 1.21.1 mods): the converted code
  * reaches 1.12.2 classes from other packages (the Translator's shadows of 1.21 classes, its own facades) and members
  * 1.21 has public (Minecraft.cameraEntity is the private renderViewEntity, MapColor's constructor, BlockRedstoneWire's
- * EnumAttachPosition). What would change how the game runs stays: static final fields (Forge takes the public ones of
- * Blocks, Items, ... for object holders) and package-private methods (public, a subclass in another package with a
+ * EnumAttachPosition). What would change how the game runs stays: the static final fields of net.minecraft.init (Forge
+ * takes the public ones of Blocks, Items, ... for object holders) and package-private methods (public, a subclass in another package with a
  * method of that name would override them). Private methods stay called directly (invokespecial); they lose final, so
  * a subclass's method of the same name still loads.
  */
@@ -74,8 +74,12 @@ public final class AccessWidener implements IClassTransformer {
 
 			@Override
 			public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-				boolean constant = (access & Opcodes.ACC_STATIC) != 0 && (access & Opcodes.ACC_FINAL) != 0;
-				return super.visitField(constant ? access : widen(access, changed), name, descriptor, signature, value);
+				// the static final fields of Blocks, Items, ... stay: Forge fills the public ones as object holders. Those
+				// of other classes are widened: mods widen them with access transformers (BOP's boats read
+				// EntityBoat.BOAT_TYPE, 1.21 Boat.DATA_ID_TYPE)
+				boolean holder = (access & Opcodes.ACC_STATIC) != 0 && (access & Opcodes.ACC_FINAL) != 0
+						&& transformedName.startsWith("net.minecraft.init.");
+				return super.visitField(holder ? access : widen(access, changed), name, descriptor, signature, value);
 			}
 		}, 0);
 		return changed[0] ? writer.toByteArray() : basicClass;

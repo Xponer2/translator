@@ -550,14 +550,45 @@ public final class SelfTest {
 							&& this.world.getBlockState(this.cell).getBlock() == block) {
 						this.world.setBlockState(this.cell.down(), Blocks.AIR.getDefaultState(), 3);
 						if (this.world.getBlockState(this.cell).getBlock() == block) {
-							this.current.problems.add("survive: stays when the block it stands on is gone");
+							// a 1.21 plant may go a few ticks later: GrowingPlantBlock schedules the tick that breaks it
+							// (BOP's high grass and lumaloop, vines), as 1.21 does
+							this.afterTicks(() -> this.world.getBlockState(this.cell).getBlock() != block, 5, gone -> {
+								if (!gone) {
+									this.current.problems.add("survive: stays when the block it stands on is gone");
+								}
+								this.breakAndClear(block);
+							});
+							return;
 						}
 					}
 				}
-				if (this.world.getBlockState(this.cell).getBlock() == block) {
-					this.attempt("break", () -> this.world.destroyBlock(this.cell, true));
+				this.breakAndClear(block);
+			});
+		}
+
+		private void breakAndClear(Block block) {
+			if (this.world.getBlockState(this.cell).getBlock() == block) {
+				this.attempt("break", () -> this.world.destroyBlock(this.cell, true));
+			}
+			this.clearCell();
+		}
+
+		/** Runs {@code then} once {@code done} holds or {@code ticks} ticks went by (with whether it held), before the next steps. */
+		private void afterTicks(java.util.function.BooleanSupplier done, int ticks, java.util.function.Consumer<Boolean> then) {
+			Record record = this.current;
+			this.steps.addFirst(new Runnable() {
+				private int left = ticks;
+
+				@Override
+				public void run() {
+					Run.this.current = record;
+					boolean seen = done.getAsBoolean();
+					if (!seen && --this.left > 0) {
+						Run.this.steps.addFirst(this);
+						return;
+					}
+					then.accept(seen);
 				}
-				this.clearCell();
 			});
 		}
 

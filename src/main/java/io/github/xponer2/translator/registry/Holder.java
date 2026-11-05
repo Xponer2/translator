@@ -52,6 +52,20 @@ public interface Holder<T> {
         return java.util.stream.Stream.empty();
     }
 
+    /**
+     * 1.21 {@code kind()}: the holder of a registered entry or a direct one. The 1.21 codec of a list of holders
+     * ({@code HolderSetCodec}: the blocks of a feature's {@code matching_blocks}) checks that they are of one kind.
+     */
+    default Kind kind() {
+        return this.unwrapKey().isPresent() ? Kind.REFERENCE : Kind.DIRECT;
+    }
+
+    /** 1.21 {@code Holder.Kind}. */
+    enum Kind {
+        REFERENCE,
+        DIRECT
+    }
+
     static <T> Holder<T> direct(T value) {
         return new Direct<>(value);
     }

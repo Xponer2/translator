@@ -421,3 +421,28 @@ X	net/minecraft/client/renderer/ItemBlockRenderTypes	setRenderLayer	(Lnet/minecr
 X	net/minecraft/client/renderer/ItemBlockRenderTypes	setRenderLayer	(Lnet/minecraftforge/fluids/Fluid;Lio/github/xponer2/translator/client/RenderType;)V	io/github/xponer2/translator/client/RenderLayers
 X	net/minecraft/client/renderer/entity/EntityRenderers	register	(Lio/github/xponer2/translator/registry/EntityType;Lnet/minecraft/client/renderer/entity/EntityRendererProvider;)V	io/github/xponer2/translator/client/EntityRenderers	(Lio/github/xponer2/translator/registry/EntityType;Ljava/lang/Object;)V
 X	net/minecraft/client/renderer/blockentity/BlockEntityRenderers	register	(Lio/github/xponer2/translator/registry/BlockEntityType;Lio/github/xponer2/translator/client/BlockEntityRendererProvider;)V	io/github/xponer2/translator/client/TesrAdapter
+# 1.21 BiomeColors.getAverage*Color: 1.12.2 BiomeColorHelper.get*ColorAtPos (unmapped, the carried 1.21 code read the tint as 0: black leaves of BOP willow, pine and every mod leaf tinted by the biome)
+M	net/minecraft/client/renderer/BiomeColors	getAverageFoliageColor(net.minecraft.world.level.BlockAndTintGetter,net.minecraft.core.BlockPos)	getFoliageColorAtPos
+M	net/minecraft/client/renderer/BiomeColors	getAverageGrassColor(net.minecraft.world.level.BlockAndTintGetter,net.minecraft.core.BlockPos)	getGrassColorAtPos
+M	net/minecraft/client/renderer/BiomeColors	getAverageWaterColor(net.minecraft.world.level.BlockAndTintGetter,net.minecraft.core.BlockPos)	getWaterColorAtPos
+# The level interfaces of 1.21 Level the tables didn't map (a feature's level is a WorldGenLevel, a World here, and the 1.21 feature code calls them on it: isStateAtPosition, getMinBuildHeight, getLevel): World too, like Level (else IncompatibleClassChangeError)
+C	net/minecraft/world/level/LevelHeightAccessor	net/minecraft/world/World
+C	net/minecraft/world/level/LevelSimulatedReader	net/minecraft/world/World
+C	net/minecraft/world/level/LevelSimulatedRW	net/minecraft/world/World
+C	net/minecraft/world/level/CommonLevelAccessor	net/minecraft/world/World
+C	net/minecraft/world/level/ServerLevelAccessor	net/minecraft/world/World
+# 1.21 Holder.Kind: the Translator's (Holder.kind() gives it; the codec of a list of holders, HolderSetCodec, compares the kinds)
+C	net/minecraft/core/Holder$Kind	io/github/xponer2/translator/registry/Holder$Kind
+# NeoForge CommonHooks' own check of data component classes (BlockState is the interface IBlockState here: its static initializer failed)
+X	net/neoforged/neoforge/common/CommonHooks	overridesEqualsAndHashCode	(Ljava/lang/Class;)Z	io/github/xponer2/translator/runtime/redirect/CarriedBridges
+# 1.21 VehicleEntity's hurt wobble (a mod's boat renderer reads them): 1.12.2 EntityBoat's
+M	net/minecraft/world/entity/vehicle/VehicleEntity	getHurtTime()	getTimeSinceHit
+M	net/minecraft/world/entity/vehicle/VehicleEntity	getHurtDir()	getForwardDirection
+M	net/minecraft/world/entity/vehicle/VehicleEntity	getDamage()	getDamageTaken
+M	net/minecraft/world/entity/vehicle/Boat	getHurtTime()	getTimeSinceHit
+M	net/minecraft/world/entity/vehicle/Boat	getHurtDir()	getForwardDirection
+M	net/minecraft/world/entity/vehicle/Boat	getDamage()	getDamageTaken
+# the 1.21 mob categories 1.12.2 hasn't (fish and axolotls of the mods' biomes and spawn eggs): its water creatures
+F	net/minecraft/world/entity/MobCategory	WATER_AMBIENT	WATER_CREATURE
+F	net/minecraft/world/entity/MobCategory	UNDERGROUND_WATER_CREATURE	WATER_CREATURE
+F	net/minecraft/world/entity/MobCategory	AXOLOTLS	WATER_CREATURE

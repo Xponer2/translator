@@ -982,10 +982,13 @@ final class MethodGuard {
 			}
 			// a member of a facade reached through its 1.21 class (javac names Screen as the owner of a subclass's
 			// this.renderables): 1.12.2's class (GuiScreen) hasn't it, the facade has; the receiver is cast to it
+			// (a stand-in for the 1.12.2 class comes first: it takes any object of that class, a facade's or not, where the
+			// cast fails for the game's own objects: Blocks.AIR.defaultBlockState() in BOP's updateShape)
 			if (insn instanceof FieldInsnNode member && (member.getOpcode() == Opcodes.GETFIELD || member.getOpcode() == Opcodes.PUTFIELD)
 					&& !this.facades.isEmpty() && this.facades.containsKey(member.owner) && !this.hasMember(member.owner, member.name, member.desc, false)
 					&& this.hasMember(this.facades.get(member.owner), member.name, member.desc, false)
-					&& (member.getOpcode() == Opcodes.GETFIELD || Type.getType(member.desc).getSize() == 1)) {
+					&& (member.getOpcode() == Opcodes.GETFIELD || Type.getType(member.desc).getSize() == 1)
+					&& (member.getOpcode() != Opcodes.GETFIELD || this.findRedirect(member.owner, member.name, "()" + member.desc, false) == null)) {
 				String facade = this.facades.get(member.owner);
 				if (!this.extendsClass(currentClass, facade)) {
 					// reached from outside the facade's classes: the object may be another facade of the same 1.12.2 class
@@ -1031,7 +1034,8 @@ final class MethodGuard {
 			}
 			if (insn instanceof MethodInsnNode call && call.getOpcode() == Opcodes.INVOKEVIRTUAL && !this.facades.isEmpty()
 					&& this.facades.containsKey(call.owner) && !this.hasMember(call.owner, call.name, call.desc, true)
-					&& this.hasMember(this.facades.get(call.owner), call.name, call.desc, true)) {
+					&& this.hasMember(this.facades.get(call.owner), call.name, call.desc, true)
+					&& this.findRedirect(call.owner, call.name, call.desc, false) == null) {
 				// the same for a method only the facade has: the arguments into new locals, the receiver cast, back
 				String facade = this.facades.get(call.owner);
 				Type[] args = Type.getArgumentTypes(call.desc);
@@ -1186,7 +1190,11 @@ final class MethodGuard {
 				// class the Translator's facade extends (HumanoidModel.head, a ModelPart, is ModelBiped's ModelRenderer
 				// bipedHead): read it, cast it back; a write needs no cast
 				boolean facade = field.desc.startsWith("Lio/github/xponer2/translator/");
-				if (actual != null && this.isSubtype(field.desc, actual) && (facade || this.isTypeVariable(field.owner, field.name + " " + actual, false))) {
+				// or an instance field 1.21 declares with a narrower game type than 1.12.2 (Particle.level is a ClientLevel,
+				// 1.12.2's world a World): without this every particle tick that read it was left empty (BOP's leaves and
+				// drips never moved nor aged)
+				boolean narrowed = field.desc.startsWith("Lnet/minecraft/") && (field.getOpcode() == Opcodes.GETFIELD || field.getOpcode() == Opcodes.PUTFIELD);
+				if (actual != null && this.isSubtype(field.desc, actual) && (facade || narrowed || this.isTypeVariable(field.owner, field.name + " " + actual, false))) {
 					if (field.getOpcode() == Opcodes.PUTFIELD || field.getOpcode() == Opcodes.PUTSTATIC) {
 						field.desc = actual;
 						this.redirected.incrementAndGet();

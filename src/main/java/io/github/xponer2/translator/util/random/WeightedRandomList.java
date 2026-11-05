@@ -75,4 +75,13 @@ public final class WeightedRandomList<E extends WeightedEntry> {
 	public List<E> unwrap() {
 		return this.items;
 	}
+
+	/**
+	 * 1.21 {@code SimpleWeightedRandomList.getRandomValue(random)} (a simple list is this one of wrapped values): the
+	 * value of a weighted pick (the block of a feature's weighted state provider).
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> Optional<T> getRandomValue(Random random) {
+		return this.getRandom(random).map(entry -> entry instanceof WeightedEntry.Wrapper<?> wrapper ? (T) wrapper.data() : (T) entry);
+	}
 }

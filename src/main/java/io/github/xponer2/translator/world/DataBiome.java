@@ -77,6 +77,16 @@ final class DataBiome extends Biome {
 		}
 	}
 
+	/**
+	 * 1.12.2's decoration (the trees from the data, the vanilla plants of vanilla features), then the mod's own placed
+	 * features by the 1.21.1 code ({@link DataFeatures#decorate}: its flowers, grass, mushrooms, rocks).
+	 */
+	@Override
+	public void decorate(net.minecraft.world.World world, Random random, BlockPos pos) {
+		super.decorate(world, random, pos);
+		DataFeatures.decorate(this, world, random, pos);
+	}
+
 	/** The tree features of the biome, with how many of each grow in a chunk (DataBiomes reads them). */
 	void addTree(WorldGenAbstractTree tree, double weight) {
 		this.trees.add(tree);

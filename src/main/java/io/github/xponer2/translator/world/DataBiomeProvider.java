@@ -28,14 +28,27 @@ final class DataBiomeProvider extends BiomeProvider {
 
 	private final long seed;
 	private final Biome[] biomes;
+	/** The biome within {@link #innerRadius} of the centre (the End's main island), or null. */
+	@Nullable
+	private final Biome inner;
+	private final long innerRadius;
 
 	DataBiomeProvider(long seed, List<Biome> biomes) {
+		this(seed, biomes, null, 0);
+	}
+
+	DataBiomeProvider(long seed, List<Biome> biomes, @Nullable Biome inner, int innerRadius) {
 		this.seed = seed;
 		this.biomes = biomes.toArray(new Biome[0]);
+		this.inner = inner;
+		this.innerRadius = innerRadius;
 	}
 
 	/** The biome at a block: the one of the nearest cell centre. */
 	private Biome at(int x, int z) {
+		if (this.inner != null && (long) x * x + (long) z * z < this.innerRadius * this.innerRadius) {
+			return this.inner;
+		}
 		int cellX = Math.floorDiv(x, CELL);
 		int cellZ = Math.floorDiv(z, CELL);
 		long best = Long.MAX_VALUE;

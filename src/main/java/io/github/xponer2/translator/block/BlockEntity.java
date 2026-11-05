@@ -99,10 +99,16 @@ public class BlockEntity extends TileEntity implements ITickable {
 
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound tag) {
-		if (TileEntity.getKey(this.getClass()) == null && this.type != null) {
+		if (TileEntity.getKey(this.getClass()) == null) {
 			// a class its type didn't register (its sample was another class): 1.12.2 can't save it otherwise
-			var id = io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.BLOCK_ENTITY_TYPE)
-					.getKey(this.type);
+			var id = this.type == null ? null
+					: io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.BLOCK_ENTITY_TYPE)
+							.getKey(this.type);
+			if (id == null) {
+				// a type the registry doesn't name (registered through a mod's own helper: BOP's anomaly): its block's id
+				IBlockState state = this.getBlockState();
+				id = state == null ? null : state.getBlock().getRegistryName();
+			}
 			if (id != null) {
 				net.minecraftforge.fml.common.registry.GameRegistry.registerTileEntity(this.getClass(), id);
 			}
