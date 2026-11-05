@@ -325,6 +325,11 @@ public final class DataBiomes {
 		trees = Math.min(trees, 24);
 		decorator.treesPerChunk = anyTree ? (int) trees : -999;
 		decorator.extraTreeChance = anyTree ? (float) (trees - Math.floor(trees)) : 0.0F;
+		if (anyTree && biome.topBlock.getBlock() == Blocks.STONE) {
+			// a biome its name makes rocky (rocky shrubland, volcanic plains) whose data grows trees: grass under them,
+			// its rocks come from its features; on stone no tree could ever grow there
+			biome.topBlock = Blocks.GRASS.getDefaultState();
+		}
 	}
 
 	/** Whether a placed feature's name says trees (they grow from the data, {@link DataTree}, not by the 1.21 code). */

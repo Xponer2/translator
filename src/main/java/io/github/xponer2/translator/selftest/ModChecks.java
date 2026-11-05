@@ -403,7 +403,8 @@ final class ModChecks {
 		}
 		// leaves reached from any log around (trees side by side share their leaves): breadth first through leaves
 		var queue = new java.util.ArrayDeque<BlockPos>();
-		for (BlockPos pos : BlockPos.getAllInBox(base.add(-12, 0, -12), base.add(12, 40, 12))) {
+		// as high as a trunk is followed (BOP's redwoods are taller than 40: their top leaves had no distance, an NPE)
+		for (BlockPos pos : BlockPos.getAllInBox(base.add(-12, 0, -12), base.add(12, 66, 12))) {
 			net.minecraft.block.state.IBlockState state = world.getBlockState(pos);
 			if (isLeaves(world, pos, state)) {
 				for (net.minecraft.util.EnumFacing facing : net.minecraft.util.EnumFacing.values()) {
@@ -434,7 +435,8 @@ final class ModChecks {
 		}
 		int far = 0;
 		for (BlockPos leaf : all) {
-			if (distance.get(leaf) > 6) {
+			Integer d = distance.get(leaf);
+			if (d == null || d > 6) {
 				far++;
 			}
 		}

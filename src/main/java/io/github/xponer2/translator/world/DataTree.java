@@ -61,7 +61,10 @@ final class DataTree extends WorldGenAbstractTree {
 		}
 		BlockPos below = pos.down();
 		IBlockState ground = world.getBlockState(below);
-		if (!this.sapling && !ground.getBlock().canSustainPlant(ground, world, below, EnumFacing.UP, (net.minecraft.block.BlockSapling) Blocks.SAPLING)) {
+		// the ground a sapling takes, or sand (a desert's trees, the palms of Biomes O' Plenty's lush desert: their own
+		// sapling stands on sand)
+		if (!this.sapling && ground.getMaterial() != Material.SAND
+				&& !ground.getBlock().canSustainPlant(ground, world, below, EnumFacing.UP, (net.minecraft.block.BlockSapling) Blocks.SAPLING)) {
 			return false;
 		}
 		for (int y = 0; y < height; y++) {

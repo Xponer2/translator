@@ -1160,6 +1160,16 @@ public final class SelfTest {
 				break;
 			}
 		}
+		if (where.isEmpty()) {
+			// only the game's own code on the way (a 1.12.2 decorator, Forge): its first frame, else nothing says where
+			for (StackTraceElement frame : root.getStackTrace()) {
+				String c = frame.getClassName();
+				if (!c.startsWith("java.") && !c.startsWith("sun.")) {
+					where = " at " + c + "." + frame.getMethodName() + ":" + frame.getLineNumber();
+					break;
+				}
+			}
+		}
 		return root.getClass().getSimpleName() + ": " + root.getMessage() + where;
 	}
 }
