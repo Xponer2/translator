@@ -100,6 +100,8 @@ public final class Translator {
 		io.github.xponer2.translator.registry.RegistryCallbacks.bakeAll();
 		// the mods' living entity types get their attributes (their entities apply them when made)
 		io.github.xponer2.translator.entity.EntityAttributeCreationEvent.fire();
+		// and their natural spawns (NeoForge biome modifiers)
+		io.github.xponer2.translator.world.BiomeSpawns.apply();
 		io.github.xponer2.translator.runtime.neoforge.ConfigLoader.loadServerConfigs();
 		io.github.xponer2.translator.runtime.RuntimeMods.setup();
 	}
