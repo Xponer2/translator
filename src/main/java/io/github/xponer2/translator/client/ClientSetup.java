@@ -35,6 +35,8 @@ public final class ClientSetup {
 		MinecraftForge.EVENT_BUS.register(new SingleVariantModels());
 		MinecraftForge.EVENT_BUS.register(new CopperTextures());
 		MinecraftForge.EVENT_BUS.register(new PoseStack.FrameEnd());
+		// the signs of the 1.21.1 mods (their block entities): board, wood texture, text
+		SignRenderers.register();
 	}
 
 	// renderers and client extensions of the mods (subscribed in pre-init)

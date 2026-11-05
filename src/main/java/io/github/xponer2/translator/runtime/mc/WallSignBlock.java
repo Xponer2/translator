@@ -32,7 +32,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 /** Facade of the 1.21 {@code WallSignBlock} (and wall hanging signs): a sign on a wall. */
-public class WallSignBlock extends Block {
+public class WallSignBlock extends Block implements io.github.xponer2.translator.block.EntityBlock {
 	public static final net.minecraft.block.properties.PropertyDirection FACING = BlockStateProperties.HORIZONTAL_FACING;
 	private final Object type;
 
@@ -47,6 +47,12 @@ public class WallSignBlock extends Block {
 
 	public Object type() {
 		return this.type;
+	}
+
+	/** 1.21 SignBlock.newBlockEntity: the sign's text (a mod's sign makes its own, a subclass). */
+	@Override
+	public net.minecraft.tileentity.TileEntity newBlockEntity(BlockPos pos, IBlockState state) {
+		return new SignBlockEntity(pos, state);
 	}
 
 	@Override

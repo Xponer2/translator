@@ -446,3 +446,6 @@ M	net/minecraft/world/entity/vehicle/Boat	getDamage()	getDamageTaken
 F	net/minecraft/world/entity/MobCategory	WATER_AMBIENT	WATER_CREATURE
 F	net/minecraft/world/entity/MobCategory	UNDERGROUND_WATER_CREATURE	WATER_CREATURE
 F	net/minecraft/world/entity/MobCategory	AXOLOTLS	WATER_CREATURE
+# hanging signs of their own (they were standing and wall signs: placed flat on walls, drawn as those)
+C	net/minecraft/world/level/block/CeilingHangingSignBlock	io/github/xponer2/translator/runtime/mc/CeilingHangingSignBlock
+C	net/minecraft/world/level/block/WallHangingSignBlock	io/github/xponer2/translator/runtime/mc/WallHangingSignBlock

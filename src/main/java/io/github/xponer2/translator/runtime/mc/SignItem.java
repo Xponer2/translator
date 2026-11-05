@@ -76,12 +76,17 @@ public class SignItem extends BlockItem {
 				if (rotation.getAllowedValues().contains(angle)) {
 					state = state.withProperty(rotation, angle);
 				}
-			} else if (facing != this.attachment && property instanceof PropertyDirection direction && "facing".equals(property.getName())
-					&& direction.getAllowedValues().contains(facing)) {
+			} else if (facing != this.attachment && !(block instanceof WallHangingSignBlock) && property instanceof PropertyDirection direction
+					&& "facing".equals(property.getName()) && direction.getAllowedValues().contains(facing)) {
 				state = state.withProperty(direction, facing);
 			}
 		}
 		world.setBlockState(pos, state, 11);
+		// the text is written now, as 1.21's sign item opens the sign editor
+		net.minecraft.tileentity.TileEntity sign = world.getTileEntity(pos);
+		if (sign instanceof net.minecraft.tileentity.TileEntitySign text && !net.minecraft.item.ItemBlock.setTileEntityNBT(world, player, pos, stack)) {
+			player.openEditSign(text);
+		}
 		if (!player.capabilities.isCreativeMode) {
 			stack.shrink(1);
 		}
