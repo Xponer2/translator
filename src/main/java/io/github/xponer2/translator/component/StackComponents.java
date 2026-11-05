@@ -157,6 +157,14 @@ public final class StackComponents {
     /**
      * The item's defaults with the stack's values on top (1.21 {@code ItemStack#getComponents}).
      */
+    /**
+     * 1.21 {@code stack.components} (a field mods widen with an access transformer): the stack's components as a live
+     * map (1.12.2's ItemStack has no such field; reading it gave null).
+     */
+    public static PatchedDataComponentMap components(ItemStack stack) {
+        return PatchedDataComponentMap.of(stack);
+    }
+
     public static DataComponentMap getComponents(ItemStack stack) {
         var values = new LinkedHashMap<DataComponentType<?>, Object>(ItemProperties.defaults(stack.getItem()));
         values.putAll(getComponentsPatch(stack).values());

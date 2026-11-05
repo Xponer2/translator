@@ -413,3 +413,4 @@ C	net/neoforged/neoforge/event/entity/EntityAttributeCreationEvent	io/github/xpo
 C	net/neoforged/neoforge/event/entity/EntityAttributeModificationEvent	io/github/xponer2/translator/entity/EntityAttributeModificationEvent
 X	net/minecraft/client/renderer/block/model/BakedQuad	getVertexData	()[I	io/github/xponer2/translator/runtime/redirect/MiscBridges
 C	net/minecraft/world/level/block/state/properties/DoorHingeSide	net/minecraft/block/BlockDoor$EnumHingePosition
+C	net/minecraft/core/component/PatchedDataComponentMap	io/github/xponer2/translator/component/PatchedDataComponentMap

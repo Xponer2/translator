@@ -21,6 +21,49 @@ import net.minecraft.util.ResourceLocation;
 public final class RenderSystem {
     private RenderSystem() { }
 
+    // --- the render thread: 1.12.2 renders on the client thread, which also loads the mods -----------------------------
+    // Without these the 1.21 RenderSystem carried for the calls missing here checked its own render thread, which
+    // nothing sets on 1.12.2: "Rendersystem called from wrong thread" on every frame of JourneyMap's minimap.
+
+    public static boolean isOnRenderThread() {
+        return Minecraft.getMinecraft().isCallingFromMinecraftThread();
+    }
+
+    public static boolean isOnRenderThreadOrInit() {
+        return isOnRenderThread();
+    }
+
+    public static boolean isInInitPhase() {
+        return false;
+    }
+
+    public static void assertOnRenderThread() {
+        if (!isOnRenderThread()) {
+            throw new IllegalStateException("Rendersystem called from wrong thread");
+        }
+    }
+
+    public static void assertOnRenderThreadOrInit() {
+        assertOnRenderThread();
+    }
+
+    public static void initRenderThread() {
+    }
+
+    public static void initGameThread(boolean assertNotRenderThread) {
+    }
+
+    public static void beginInitialization() {
+    }
+
+    public static void finishInitialization() {
+    }
+
+    /** 1.21 {@code clear(mask, checkError)}: the buffers cleared (1.12.2's GL clear). */
+    public static void clear(int mask, boolean checkError) {
+        GlStateManager.clear(mask);
+    }
+
     public static void enableBlend() {
         GlStateManager.enableBlend();
     }

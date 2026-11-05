@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "127";
+	static final String VERSION = "128";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
