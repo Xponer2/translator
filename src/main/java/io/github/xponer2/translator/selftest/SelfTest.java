@@ -640,12 +640,15 @@ public final class SelfTest {
 		private void testBucket(io.github.xponer2.translator.runtime.mc.BucketItem bucket) {
 			float yaw = this.player.rotationYaw;
 			float pitch = this.player.rotationPitch;
+			double px = this.player.posX;
+			double py = this.player.posY;
+			double pz = this.player.posZ;
 			try {
-				double dx = this.cell.getX() + 0.5D - this.player.posX;
-				double dz = this.cell.getZ() + 0.5D - this.player.posZ;
-				double dy = this.cell.getY() - (this.player.posY + this.player.getEyeHeight());
-				this.player.rotationYaw = (float) (Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F;
-				this.player.rotationPitch = (float) -(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 180.0D / Math.PI);
+				// above the cell, looking straight down at its ground: the fluid goes into the cell
+				this.player.setPositionAndUpdate(this.cell.getX() + 0.5D, this.cell.getY() + 1.0D, this.cell.getZ() + 0.5D);
+				this.player.rotationYaw = 0.0F;
+				this.player.rotationPitch = 90.0F;
+				this.player.prevRotationPitch = 90.0F;
 				this.player.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(bucket));
 				net.minecraft.util.math.RayTraceResult look = this.player.rayTrace(5.0D, 1.0F);
 				Object[] used = new Object[1];
@@ -667,6 +670,7 @@ public final class SelfTest {
 					this.current.notes.add("bucket places and takes its fluid");
 				}
 			} finally {
+				this.player.setPositionAndUpdate(px, py, pz);
 				this.player.rotationYaw = yaw;
 				this.player.rotationPitch = pitch;
 				this.player.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY);

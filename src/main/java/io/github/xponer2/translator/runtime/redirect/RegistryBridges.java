@@ -39,4 +39,43 @@ public final class RegistryBridges {
 	public static Optional<Object> get(Registry registry, TagKey tag) {
 		return Optional.ofNullable(registry.getOrCreateTag(tag));
 	}
+
+	/**
+	 * 1.21 {@code HolderGetter.getOrThrow(tag)}: the tag's entries as a 1.21 named holder set (a carried class, bound by
+	 * its own {@code bind}); the vanilla tree features name block tags so (mangrove roots).
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static Object getOrThrow(io.github.xponer2.translator.registry.Registry registry, io.github.xponer2.translator.util.TagKey tag) {
+		var holders = new java.util.ArrayList<Object>();
+		for (Object value : (Iterable<Object>) registry) {
+			try {
+				boolean in = value instanceof net.minecraft.block.Block block ? io.github.xponer2.translator.tags.TagManager.is(block, tag)
+						: value instanceof net.minecraft.item.Item item && io.github.xponer2.translator.tags.TagManager.is(item, tag);
+				if (in) {
+					holders.add(io.github.xponer2.translator.registry.Holder.direct(value));
+				}
+			} catch (RuntimeException e) {
+				// not of a kind tags are kept for
+			}
+		}
+		try {
+			Class<?> named = Class.forName("net.minecraft.core.HolderSet$Named", true, net.minecraft.launchwrapper.Launch.classLoader);
+			for (java.lang.reflect.Constructor<?> constructor : named.getDeclaredConstructors()) {
+				if (constructor.getParameterCount() == 2) {
+					constructor.setAccessible(true);
+					Object set = constructor.newInstance(null, tag);
+					for (java.lang.reflect.Method method : named.getDeclaredMethods()) {
+						if ("bind".equals(method.getName()) && method.getParameterCount() == 1) {
+							method.setAccessible(true);
+							method.invoke(set, holders);
+						}
+					}
+					return set;
+				}
+			}
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("a holder set of the tag " + tag, e);
+		}
+		return null;
+	}
 }
