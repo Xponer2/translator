@@ -56,8 +56,10 @@ public class BlockItem extends ItemBlock implements TooltipContext.HoverText, io
 		net.minecraft.entity.player.EntityPlayer player = context.getPlayer();
 		ItemStack stack = context.getItemInHand();
 		net.minecraft.util.EnumFacing face = context.getClickedFace();
+		// into a block that takes it (a flower bed): 1.12.2's mayPlace would ask the block's material only
+		boolean into = !world.getBlockState(pos).getBlock().isReplaceable(world, pos);
 		if (stack.isEmpty() || !context.canPlace() || player != null && !player.canPlayerEdit(pos, face, stack)
-				|| !world.mayPlace(this.getBlock(), pos, false, face, player)) {
+				|| !into && !world.mayPlace(this.getBlock(), pos, false, face, player)) {
 			return net.minecraft.util.EnumActionResult.FAIL;
 		}
 		net.minecraft.block.state.IBlockState state = this.getPlacementState(context);
@@ -87,6 +89,31 @@ public class BlockItem extends ItemBlock implements TooltipContext.HoverText, io
 
 	public boolean canPlace(io.github.xponer2.translator.util.BlockPlaceContext context, net.minecraft.block.state.IBlockState state) {
 		return true;
+	}
+
+	/**
+	 * Placing on a block of a 1.21 mod that takes it (1.21 canBeReplaced: a flower bed takes up to four flowers of its
+	 * item, wildflowers and pink petals): placed into that block, not next to it. 1.12.2 asks only isReplaceable.
+	 */
+	@Override
+	public net.minecraft.util.EnumActionResult onItemUse(net.minecraft.entity.player.EntityPlayer player, World world, net.minecraft.util.math.BlockPos pos,
+			net.minecraft.util.EnumHand hand, net.minecraft.util.EnumFacing facing, float hitX, float hitY, float hitZ) {
+		net.minecraft.block.state.IBlockState clicked = world.getBlockState(pos);
+		if (clicked.getBlock() instanceof io.github.xponer2.translator.runtime.mc.Block modBlock && !clicked.getBlock().isReplaceable(world, pos)) {
+			io.github.xponer2.translator.util.BlockPlaceContext context;
+			boolean replace;
+			try {
+				context = io.github.xponer2.translator.util.BlockPlaceContext.of(world, pos, facing, hitX, hitY, hitZ, player, hand);
+				replace = modBlock.canBeReplaced(clicked, context);
+			} catch (RuntimeException e) {
+				context = null;
+				replace = false;
+			}
+			if (replace) {
+				return this.place(context);
+			}
+		}
+		return super.onItemUse(player, world, pos, hand, facing, hitX, hitY, hitZ);
 	}
 
 	/**

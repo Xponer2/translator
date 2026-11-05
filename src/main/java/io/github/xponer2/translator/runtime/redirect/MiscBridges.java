@@ -1693,6 +1693,24 @@ public final class MiscBridges {
 		return area >= 0.999D;
 	}
 
+	/**
+	 * 1.21 {@code block.getShapeForEachState(function)}: the shape of each state of the block (a multiface block makes
+	 * its shapes so in its constructor: barnacles, webbing, glow lichen of the mods had none and threw when looked at).
+	 */
+	public static com.google.common.collect.ImmutableMap<net.minecraft.block.state.IBlockState, io.github.xponer2.translator.shape.VoxelShape> getShapeForEachState(
+			net.minecraft.block.Block block, java.util.function.Function<net.minecraft.block.state.IBlockState, io.github.xponer2.translator.shape.VoxelShape> shape) {
+		var shapes = com.google.common.collect.ImmutableMap.<net.minecraft.block.state.IBlockState, io.github.xponer2.translator.shape.VoxelShape>builder();
+		for (net.minecraft.block.state.IBlockState state : block.getBlockState().getValidStates()) {
+			shapes.put(state, shape.apply(state));
+		}
+		return shapes.build();
+	}
+
+	/** 1.21 {@code Direction.Plane.stream()}: its directions. */
+	public static java.util.stream.Stream<net.minecraft.util.EnumFacing> stream(net.minecraft.util.EnumFacing.Plane plane) {
+		return java.util.Arrays.stream(plane.facings());
+	}
+
 	// --- text --------------------------------------------------------------------------------------------------------
 
 	/** A copy of the text without its siblings (1.21 plainCopy): its own content and style. */

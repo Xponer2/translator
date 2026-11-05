@@ -28,10 +28,34 @@ import net.minecraft.world.World;
  */
 public class BlockPlaceContext extends UseOnContext {
 	private final BlockPos placePos;
+	/** 1.21: the clicked block takes the placement itself (a flower bed one more flower, grass). */
+	private final boolean replaceClicked;
 
 	public BlockPlaceContext(World level, @Nullable EntityPlayer player, EnumHand hand, ItemStack itemStack, RayTraceResult hitResult) {
 		super(level, player, hand, itemStack, hitResult);
-		this.placePos = hitResult.getBlockPos().offset(hitResult.sideHit);
+		BlockPos clicked = hitResult.getBlockPos();
+		this.replaceClicked = replaces(level, clicked, this);
+		this.placePos = this.replaceClicked ? clicked : clicked.offset(hitResult.sideHit);
+	}
+
+	/** A placement where 1.12.2 already chose the position (Block#getStateForPlacement). */
+	private BlockPlaceContext(World level, @Nullable EntityPlayer player, EnumHand hand, ItemStack itemStack, RayTraceResult hitResult, BlockPos placePos) {
+		super(level, player, hand, itemStack, hitResult);
+		this.replaceClicked = false;
+		this.placePos = placePos;
+	}
+
+	/** 1.21 {@code state.canBeReplaced(context)}: a block 1.12.2 replaces, or a mod's block that says it takes this one. */
+	private static boolean replaces(World level, BlockPos pos, BlockPlaceContext context) {
+		net.minecraft.block.state.IBlockState state = level.getBlockState(pos);
+		if (state.getBlock().isReplaceable(level, pos)) {
+			return true;
+		}
+		try {
+			return state.getBlock() instanceof io.github.xponer2.translator.runtime.mc.Block block && block.canBeReplaced(state, context);
+		} catch (RuntimeException e) {
+			return false;
+		}
 	}
 
 	public BlockPlaceContext(UseOnContext context) {
@@ -46,7 +70,7 @@ public class BlockPlaceContext extends UseOnContext {
 		var hit = new RayTraceResult(new Vec3d(clicked.getX() + hitX, clicked.getY() + hitY, clicked.getZ() + hitZ), facing, clicked);
 		var player = placer instanceof EntityPlayer p ? p : null;
 		var stack = placer.getHeldItem(hand);
-		return new BlockPlaceContext(world, player, hand, stack, hit);
+		return new BlockPlaceContext(world, player, hand, stack, hit, pos);
 	}
 
 	@Override
@@ -55,11 +79,11 @@ public class BlockPlaceContext extends UseOnContext {
 	}
 
 	public boolean canPlace() {
-		return this.getLevel().getBlockState(this.placePos).getBlock().isReplaceable(this.getLevel(), this.placePos);
+		return this.replaceClicked || replaces(this.getLevel(), this.placePos, this);
 	}
 
 	public boolean replacingClickedOnBlock() {
-		return false;
+		return this.replaceClicked;
 	}
 
 	public EnumFacing getNearestLookingDirection() {

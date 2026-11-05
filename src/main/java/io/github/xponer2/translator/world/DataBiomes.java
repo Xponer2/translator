@@ -617,7 +617,8 @@ public final class DataBiomes {
 			try {
 				var field = io.github.xponer2.translator.runtime.redirect.FlattenedBlocks.class.getField(
 						name.substring("minecraft:".length()).toUpperCase(java.util.Locale.ROOT));
-				if (field.get(null) instanceof Block flattened && flattened != Blocks.AIR) {
+				if (field.get(null) instanceof Block flattened && flattened != Blocks.AIR
+						&& !(flattened instanceof io.github.xponer2.translator.runtime.redirect.AbsentBlock)) {
 					return flattened.getDefaultState();
 				}
 			} catch (ReflectiveOperationException | RuntimeException e) {

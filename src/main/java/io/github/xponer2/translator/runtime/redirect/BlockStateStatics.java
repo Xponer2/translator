@@ -107,7 +107,8 @@ public final class BlockStateStatics {
 				}
 			}
 			try {
-				if (FlattenedBlocks.class.getField(id.getPath().toUpperCase(java.util.Locale.ROOT)).get(null) instanceof Block block && block != Blocks.AIR) {
+				if (FlattenedBlocks.class.getField(id.getPath().toUpperCase(java.util.Locale.ROOT)).get(null) instanceof Block block && block != Blocks.AIR
+						&& !(block instanceof AbsentBlock)) {
 					return block.getDefaultState();
 				}
 			} catch (ReflectiveOperationException | RuntimeException e) {

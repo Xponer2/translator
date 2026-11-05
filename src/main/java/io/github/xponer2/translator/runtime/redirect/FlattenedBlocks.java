@@ -897,9 +897,9 @@ public final class FlattenedBlocks {
 	private FlattenedBlocks() {
 	}
 
-	/** The 1.12.2 block of that name, air when 1.12.2 has none (an item, or newer content). */
+	/** The 1.12.2 block of that name; one that stands for it when 1.12.2 has none (newer content, {@link AbsentBlock}). */
 	private static Block block(String name) {
 		Block block = Block.getBlockFromName(name);
-		return block == null ? Blocks.AIR : block;
+		return block == null ? new AbsentBlock(name) : block;
 	}
 }

@@ -129,6 +129,15 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 		return state;
 	}
 
+	/**
+	 * 1.21 {@code canBeReplaced(state, context)}: whether placing replaces this block (grass, or a flower bed taking one
+	 * more flower of its own item: the mod overrides it).
+	 */
+	public boolean canBeReplaced(IBlockState state, BlockPlaceContext context) {
+		ItemStack stack = context.getItemInHand();
+		return state.getMaterial().isReplaceable() && (stack.isEmpty() || stack.getItem() != net.minecraft.item.Item.getItemFromBlock(this));
+	}
+
 	/** 1.21 {@code canSurvive(state, level, pos)}: whether the block can stay there (plants on their ground). */
 	public boolean canSurvive(IBlockState state, World level, BlockPos pos) {
 		return true;

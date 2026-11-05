@@ -244,4 +244,15 @@ public final class CarriedBridges {
 			return null;
 		}
 	}
+
+	private static final Map<Object, java.util.Set<Object>> BUILT_KEYS = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+	/** {@code builder.put(key, value)} the first time a key comes (see CarriedPatches: 1.21 blocks that are one here). */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static com.google.common.collect.ImmutableMap.Builder putOnce(com.google.common.collect.ImmutableMap.Builder builder, Object key, Object value) {
+		if (BUILT_KEYS.computeIfAbsent(builder, b -> new java.util.HashSet<>()).add(key)) {
+			builder.put(key, value);
+		}
+		return builder;
+	}
 }

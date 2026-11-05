@@ -656,7 +656,7 @@ final class ApiCarry {
 						byte[] shadow;
 						var standIn = target.get(probe.map(name));
 						try (InputStream in = zip.getInputStream(entry)) {
-							shadow = shadow(ModJar.readAll(in), nested -> !probe.map(nested).equals(nested) || target.exists(nested), false,
+							shadow = shadow(CarriedPatches.apply(path, ModJar.readAll(in)), nested -> !probe.map(nested).equals(nested) || target.exists(nested), false,
 									call -> false, standIn != null && !standIn.isInterface());
 						}
 						var copy = new ZipEntry(SHADOW + path);

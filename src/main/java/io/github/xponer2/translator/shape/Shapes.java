@@ -154,11 +154,15 @@ public final class Shapes {
 
 	/** Selection box: the bounds of the shape (1.12.2 has one box), the full block for an empty shape. */
 	public static AxisAlignedBB selectionBox(VoxelShape shape) {
-		return shape.isEmpty() ? Block.FULL_BLOCK_AABB : shape.bounds();
+		// a mod's shape it couldn't make (null): the full block
+		return shape == null || shape.isEmpty() ? Block.FULL_BLOCK_AABB : shape.bounds();
 	}
 
 	/** Adds the boxes of the shape that intersect the entity box, like Block#addCollisionBoxToList. */
 	public static void addCollisionBoxes(VoxelShape shape, BlockPos pos, AxisAlignedBB entityBox, List<AxisAlignedBB> list) {
+		if (shape == null) {
+			shape = block();
+		}
 		for (var box : shape.toAabbs()) {
 			var moved = box.offset(pos);
 			if (entityBox.intersects(moved)) {
@@ -170,11 +174,11 @@ public final class Shapes {
 	/** Collision bounds for Block#getCollisionBoundingBox: null (no collision) for an empty shape. */
 	@Nullable
 	public static AxisAlignedBB collisionBox(VoxelShape shape) {
-		return shape.isEmpty() ? Block.NULL_AABB : shape.bounds();
+		return shape == null ? Block.FULL_BLOCK_AABB : shape.isEmpty() ? Block.NULL_AABB : shape.bounds();
 	}
 
 	public static boolean isFullBlock(IBlockState state, VoxelShape shape) {
-		return shape.toAabbs().size() == 1 && shape.toAabbs().get(0).equals(Block.FULL_BLOCK_AABB);
+		return shape != null && shape.toAabbs().size() == 1 && shape.toAabbs().get(0).equals(Block.FULL_BLOCK_AABB);
 	}
 
 	/**

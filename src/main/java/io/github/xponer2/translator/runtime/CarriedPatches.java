@@ -37,7 +37,43 @@ final class CarriedPatches {
 		if ("net/minecraft/world/level/block/grower/TreeGrower.class".equals(path)) {
 			return callInstead(bytes, "growTree", "io/github/xponer2/translator/world/TreeGrowing");
 		}
-		return bytes;
+		return putOnce(bytes);
+	}
+
+	private static final String MAP_BUILDER = "com/google/common/collect/ImmutableMap$Builder";
+
+	/**
+	 * The static maps of carried classes keyed by blocks or items ({@code AxeItem.STRIPPABLES}, the shovel's paths):
+	 * several 1.21 blocks are one 1.12.2 block (every log is "log"), and a second put of a key made the builder throw
+	 * in the class's static initializer. The first entry of a key stays. Biomes O' Plenty's setup stopped there: its
+	 * logs couldn't be stripped and its creative tab stayed empty.
+	 */
+	private static byte[] putOnce(byte[] bytes) {
+		if (!new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1).contains(MAP_BUILDER)) {
+			return bytes;
+		}
+		var node = new ClassNode();
+		new ClassReader(bytes).accept(node, 0);
+		boolean changed = false;
+		for (MethodNode method : node.methods) {
+			if (!"<clinit>".equals(method.name)) {
+				continue;
+			}
+			for (AbstractInsnNode insn : method.instructions.toArray()) {
+				if (insn instanceof MethodInsnNode call && call.getOpcode() == Opcodes.INVOKEVIRTUAL && MAP_BUILDER.equals(call.owner)
+						&& "put".equals(call.name) && ("(Ljava/lang/Object;Ljava/lang/Object;)L" + MAP_BUILDER + ";").equals(call.desc)) {
+					method.instructions.set(call, new MethodInsnNode(Opcodes.INVOKESTATIC, BRIDGES, "putOnce",
+							"(L" + MAP_BUILDER + ";Ljava/lang/Object;Ljava/lang/Object;)L" + MAP_BUILDER + ";", false));
+					changed = true;
+				}
+			}
+		}
+		if (!changed) {
+			return bytes;
+		}
+		var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+		node.accept(writer);
+		return writer.toByteArray();
 	}
 
 	/**
