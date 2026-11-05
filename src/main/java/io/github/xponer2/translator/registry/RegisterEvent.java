@@ -39,6 +39,9 @@ public class RegisterEvent extends Event implements IContextSetter {
 	@javax.annotation.Nullable
 	private final MappedRegistry<?> mapped;
 
+	/** The registries 1.12.2 has no event for whose event went before the blocks (the fluids), not posted again. */
+	private static final java.util.Set<MappedRegistry<?>> EARLY_MAPPED = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
 	public RegisterEvent(RegistryEvent.Register<?> forge) {
 		this.forge = forge;
 		this.mapped = null;
@@ -291,6 +294,17 @@ public class RegisterEvent extends Event implements IContextSetter {
 						org.apache.logging.log4j.LogManager.getLogger("Translator").warn("Early RegisterEvent for {} failed: {}", registry.getRegistrySuperType().getSimpleName(), e.toString());
 					}
 				}
+				// and the fluids (1.21 registers them before the blocks: a LiquidBlock and a BucketItem take their fluid;
+				// Biomes O' Plenty's blood was null in both, its bucket placed nothing)
+				if (BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.FLUID) instanceof MappedRegistry<?> fluids && EARLY_MAPPED.add(fluids)) {
+					try {
+						MinecraftForge.EVENT_BUS.post(new RegisterEvent(fluids));
+						// their Forge fluids (name, FluidRegistry) now: a fluid block keeps its fluid's name when made
+						fluids.runPendingCallbacks();
+					} catch (RuntimeException e) {
+						org.apache.logging.log4j.LogManager.getLogger("Translator").warn("Early RegisterEvent for fluids failed: {}", e.toString());
+					}
+				}
 			}
 			MinecraftForge.EVENT_BUS.post(new RegisterEvent(event));
 			if (event.getRegistry().getRegistrySuperType() == Item.class) {
@@ -307,6 +321,9 @@ public class RegisterEvent extends Event implements IContextSetter {
 					}
 				}
 				for (MappedRegistry<?> registry : BuiltInRegistries.mappedRegistries()) {
+					if (EARLY_MAPPED.contains(registry)) {
+						continue;
+					}
 					try {
 						MinecraftForge.EVENT_BUS.post(new RegisterEvent(registry));
 					} catch (RuntimeException e) {

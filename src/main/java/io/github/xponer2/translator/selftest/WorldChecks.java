@@ -82,6 +82,17 @@ final class WorldChecks {
 		var biomes = new LinkedHashSet<Biome>();
 		var overworld = new WorldInfo(new WorldSettings(testWorld.getSeed(), GameType.SURVIVAL, true, false, WorldType.DEFAULT), "biomes");
 		sample(new BiomeProvider(overworld), biomes);
+		// the Nether and the End (the mods' biomes of them are placed there): loaded when they were unloaded meanwhile
+		// (no player in them), else their biomes were counted as nowhere
+		for (int id : new int[] {-1, 1}) {
+			if (DimensionManager.isDimensionRegistered(id) && DimensionManager.getWorld(id) == null) {
+				try {
+					DimensionManager.initDimension(id);
+				} catch (RuntimeException e) {
+					// that dimension can't load here: its biomes stay unsampled
+				}
+			}
+		}
 		for (WorldServer world : DimensionManager.getWorlds()) {
 			if (world != testWorld && world.provider.getDimension() != 0) {
 				sample(world.getBiomeProvider(), biomes);
