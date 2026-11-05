@@ -1361,11 +1361,47 @@ public final class MiscBridges {
 		return quad.getFace().getIndex();
 	}
 
-	/** 1.21 {@code new BakedQuad(vertices, tint, face, sprite, shade)}: the 1.12.2 item vertex format. */
+	/**
+	 * 1.21 {@code new BakedQuad(vertices, tint, face, sprite, shade)}: 1.21's vertices (8 ints each: position, color,
+	 * uv, light, normal) in 1.12.2's item format (7 ints: position, color, uv, normal).
+	 */
 	public static net.minecraft.client.renderer.block.model.BakedQuad newBakedQuad(int[] vertices, int tint, EnumFacing face,
 			net.minecraft.client.renderer.texture.TextureAtlasSprite sprite, boolean shade) {
-		return new net.minecraft.client.renderer.block.model.BakedQuad(vertices, tint, face, sprite, shade,
+		return new net.minecraft.client.renderer.block.model.BakedQuad(itemVertices(vertices), tint, face, sprite, shade,
 				net.minecraft.client.renderer.vertex.DefaultVertexFormats.ITEM);
+	}
+
+	/** 1.21 vertex data (stride 8) as 1.12.2 item vertex data (stride 7); other lengths as they are. */
+	static int[] itemVertices(int[] vertices) {
+		if (vertices == null || vertices.length != 32) {
+			return vertices;
+		}
+		int[] out = new int[28];
+		for (int i = 0; i < 4; i++) {
+			System.arraycopy(vertices, i * 8, out, i * 7, 6);
+			out[i * 7 + 6] = vertices[i * 8 + 7];
+		}
+		return out;
+	}
+
+	/**
+	 * 1.21 {@code quad.getVertices()} (X row on getVertexData): the vertices in 1.21's layout (stride 8: light after the
+	 * uv, normal last), which the mods index by IQuadTransformer's STRIDE and offsets (25 sites of 9 mods).
+	 */
+	public static int[] getVertexData(net.minecraft.client.renderer.block.model.BakedQuad quad) {
+		int[] data = quad.getVertexData();
+		var format = quad.getFormat();
+		if (data == null || data.length != 28 || format == null || format.getIntegerSize() != 7) {
+			return data;
+		}
+		boolean normal = format.hasNormal();
+		int[] out = new int[32];
+		for (int i = 0; i < 4; i++) {
+			System.arraycopy(data, i * 7, out, i * 8, 6);
+			out[i * 8 + 6] = normal ? 0 : data[i * 7 + 6];
+			out[i * 8 + 7] = normal ? data[i * 7 + 6] : 0;
+		}
+		return out;
 	}
 
 	public static net.minecraft.client.renderer.block.model.BakedQuad newBakedQuad(int[] vertices, int tint, EnumFacing face,
