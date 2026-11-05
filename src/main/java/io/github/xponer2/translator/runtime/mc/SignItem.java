@@ -18,7 +18,6 @@ import net.minecraft.block.properties.PropertyDirection;
 import net.minecraft.block.properties.PropertyInteger;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemSign;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
@@ -29,9 +28,10 @@ import net.minecraft.world.World;
 
 /**
  * Facade of the 1.21 {@code SignItem} (and hanging signs): it places the mod's standing sign on top of a block and its
- * wall sign on a side, turned to the player.
+ * wall sign on a side, turned to the player. A block item, as in 1.21 (a mod's code that makes its block items in one
+ * method gives them as BlockItems: with signs among them that method didn't verify and the Aether had no block items).
  */
-public class SignItem extends ItemSign {
+public class SignItem extends BlockItem {
 	private final Block standing;
 	private final Block wall;
 	/** The face the standing sign hangs on: UP for signs (on top of a block), DOWN for hanging signs (under one). */
@@ -43,10 +43,10 @@ public class SignItem extends ItemSign {
 
 	/** 1.21 HangingSignItem's super call: the attachment face DOWN (the sign hangs under the block clicked). */
 	public SignItem(ItemProperties properties, Block standing, Block wall, EnumFacing attachment) {
+		super(standing != null ? standing : net.minecraft.init.Blocks.STANDING_SIGN, properties);
 		this.standing = standing;
 		this.wall = wall;
 		this.attachment = attachment;
-		properties.applyTo(this);
 	}
 
 	public SignItem(Block standing, Block wall, ItemProperties properties) {
