@@ -54,6 +54,25 @@ public final class ForgeBus implements IEventBus {
 	}
 
 	/**
+	 * A client event where listeners draw (the HUD, screens, the world, hands, tooltips, highlights): checked by name, so
+	 * the dedicated server never loads a client class. Their 1.21 listeners run inside the GL state guard.
+	 */
+	private static boolean isRenderEvent(Class<?> type) {
+		if (net.minecraftforge.fml.common.FMLCommonHandler.instance().getSide() != net.minecraftforge.fml.relauncher.Side.CLIENT) {
+			return false;
+		}
+		for (Class<?> c = type; c != null && c != Event.class; c = c.getSuperclass()) {
+			String name = c.getName();
+			boolean client = name.startsWith("net.minecraftforge.client.event.") || name.startsWith("io.github.xponer2.translator.client.");
+			if (client && (name.contains("Render") || name.contains("DrawScreen") || name.contains("DrawBlockHighlight")
+					|| name.contains("Tooltip"))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * The {@code @SubscribeEvent} methods of an object (or the static ones of a class), each as a guarded listener:
 	 * an original 1.21.1 mod's handler that fails is logged, not passed on to the game.
 	 */
@@ -179,10 +198,16 @@ public final class ForgeBus implements IEventBus {
 			constructor.setAccessible(true);
 			Event instance = constructor.newInstance();
 			boolean[] reported = new boolean[1];
+			boolean render = isRenderEvent(type);
 			IEventListener listener = event -> {
 				if (receiveCanceled || !event.isCancelable() || !event.isCanceled()) {
 					try {
-						consumer.accept(type.cast(event));
+						if (render) {
+							// a 1.21 mod's drawing leaves its GL state: put back after it (JourneyMap broke the HUD)
+							io.github.xponer2.translator.client.GlStateGuard.run(() -> consumer.accept(type.cast(event)));
+						} else {
+							consumer.accept(type.cast(event));
+						}
 					} catch (Throwable t) {
 						// a listener of an original 1.21.1 mod: logged once, the game goes on
 						if (!reported[0]) {

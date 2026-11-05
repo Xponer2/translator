@@ -458,3 +458,5 @@ X	com/mojang/serialization/Codec	dispatch	(Ljava/lang/String;Ljava/util/function
 X	com/mojang/serialization/Codec	dispatchStable	(Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/Codec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects
 X	com/mojang/serialization/Codec	partialDispatch	(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/Codec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects
 X	com/mojang/serialization/Codec	dispatchMap	(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/MapCodec;	io/github/xponer2/translator/runtime/redirect/DfuRedirects
+# the layers a library registers through NeoForge's ClientHooks (GlitchCore: BOP's boats): the Translator's layer set
+X	net/neoforged/neoforge/client/ClientHooks	registerLayerDefinition	(Lnet/minecraft/client/model/geom/ModelLayerLocation;Ljava/util/function/Supplier;)V	io/github/xponer2/translator/client/model/EntityModelSet	(Ljava/lang/Object;Ljava/util/function/Supplier;)V

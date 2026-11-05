@@ -33,6 +33,15 @@ public class EntityModelSet {
 		DEFINITIONS.put(location, definition);
 	}
 
+	/**
+	 * NeoForge's {@code ClientHooks.registerLayerDefinition(location, supplier)} (what a multiloader library registers
+	 * through: GlitchCore, so Biomes O' Plenty's boat layers): the same layers. They went to NeoForge's own map, which
+	 * nothing reads here, and the boats' renderers found no layer ("Can't find part left_paddle").
+	 */
+	public static void registerLayerDefinition(Object location, Supplier<?> definition) {
+		register(location, definition);
+	}
+
 	/** The model part of the layer: the definition's {@code bakeRoot()}, a part without cubes if there is none. */
 	public ModelPart bakeLayer(Object location) {
 		Supplier<?> supplier = DEFINITIONS.get(location);

@@ -99,13 +99,19 @@ public final class DataAdvancements {
 		}
 		var builders = new LinkedHashMap<ResourceLocation, Advancement.Builder>();
 		int failed = 0;
+		int unlocksNothing = 0;
 		String firstError = null;
 		for (var entry : files().entrySet()) {
 			if (server.getAdvancementManager().getAdvancement(entry.getKey()) != null) {
 				continue;
 			}
 			try {
-				builders.put(entry.getKey(), AdvancementManager.GSON.fromJson(convert(entry.getValue()), Advancement.Builder.class));
+				JsonObject converted = convert(entry.getValue());
+				if (converted == null) {
+					unlocksNothing++;
+					continue;
+				}
+				builders.put(entry.getKey(), AdvancementManager.GSON.fromJson(converted, Advancement.Builder.class));
 			} catch (RuntimeException e) {
 				failed++;
 				if (firstError == null) {
@@ -116,15 +122,20 @@ public final class DataAdvancements {
 		if (builders.isEmpty()) {
 			return;
 		}
+		// 1.12.2's list takes the builders it loaded out of the map: the ids kept first
+		var ids = new java.util.ArrayList<>(builders.keySet());
 		list.loadAdvancements(builders);
-		for (ResourceLocation id : builders.keySet()) {
+		int loaded = 0;
+		for (ResourceLocation id : ids) {
 			if (list.getAdvancement(id) != null) {
-				marker = id;
-				break;
+				loaded++;
+				if (marker == null) {
+					marker = id;
+				}
 			}
 		}
-		LOGGER.info("Advancements of the 1.21.1 mods: {} of {} read{}", builders.size(), builders.size() + failed,
-				firstError == null ? "" : " (first unreadable: " + firstError + ")");
+		LOGGER.info("Advancements of the 1.21.1 mods: {} of {} loaded ({} recipe unlocks of recipes 1.12.2 has no table for left out){}",
+				loaded, ids.size() + failed, unlocksNothing, firstError == null ? "" : " (first unreadable: " + firstError + ")");
 	}
 
 	@Nullable
@@ -165,7 +176,11 @@ public final class DataAdvancements {
 
 	// --- 1.21 format -> 1.12.2 format ------------------------------------------------------------------------------------
 
-	/** A 1.21 advancement as 1.12.2 reads one. */
+	/**
+	 * A 1.21 advancement as 1.12.2 reads one; null for one that only unlocks recipes 1.12.2's recipe book hasn't (smelting,
+	 * stonecutting: 1.12.2 checks every recipe it names against its crafting recipes).
+	 */
+	@Nullable
 	static JsonObject convert(JsonObject in) {
 		var out = new JsonObject();
 		if (in.has("parent")) {
@@ -174,8 +189,21 @@ public final class DataAdvancements {
 		if (in.has("display") && in.get("display").isJsonObject()) {
 			out.add("display", display(in.getAsJsonObject("display")));
 		}
-		if (in.has("rewards")) {
-			out.add("rewards", in.get("rewards"));
+		if (in.has("rewards") && in.get("rewards").isJsonObject()) {
+			JsonObject rewards = copy(in.getAsJsonObject("rewards"));
+			if (rewards.has("recipes") && rewards.get("recipes").isJsonArray()) {
+				var known = new JsonArray();
+				for (JsonElement recipe : rewards.getAsJsonArray("recipes")) {
+					if (knownRecipe(recipe.getAsString())) {
+						known.add(recipe);
+					}
+				}
+				if (known.size() == 0 && rewards.getAsJsonArray("recipes").size() > 0 && !in.has("display")) {
+					return null;
+				}
+				rewards.add("recipes", known);
+			}
+			out.add("rewards", rewards);
 		}
 		var criteria = new JsonObject();
 		// each 1.21 criterion: the names of the 1.12.2 ones it became (any of them counts)
@@ -342,7 +370,7 @@ public final class DataAdvancements {
 				out.add(trigger(trigger, c));
 			}
 			case "minecraft:recipe_unlocked" -> {
-				if (conditions.has("recipe")) {
+				if (conditions.has("recipe") && knownRecipe(conditions.get("recipe").getAsString())) {
 					var c = new JsonObject();
 					c.add("recipe", conditions.get("recipe"));
 					out.add(trigger(trigger, c));
@@ -381,6 +409,23 @@ public final class DataAdvancements {
 			default -> {
 				// a trigger 1.12.2 hasn't: impossible (by the caller)
 			}
+		}
+		return out;
+	}
+
+	/** A recipe 1.12.2's crafting recipes have (a recipe_unlocked condition or reward naming another one fails to load). */
+	private static boolean knownRecipe(String id) {
+		try {
+			return net.minecraft.item.crafting.CraftingManager.getRecipe(new ResourceLocation(id)) != null;
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
+
+	private static JsonObject copy(JsonObject in) {
+		var out = new JsonObject();
+		for (var entry : in.entrySet()) {
+			out.add(entry.getKey(), entry.getValue());
 		}
 		return out;
 	}
