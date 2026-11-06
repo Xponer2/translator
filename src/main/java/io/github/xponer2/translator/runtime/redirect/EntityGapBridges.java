@@ -530,4 +530,30 @@ public final class EntityGapBridges {
 		var dropped = io.github.xponer2.translator.util.ItemLike.item(item);
 		return dropped == net.minecraft.init.Items.AIR ? null : entity.entityDropItem(new ItemStack(dropped), offset);
 	}
+
+	/** 1.21 {@code spawnAtLocation(stack)}: the stack dropped where the entity is (a mob's drops in its tick: Aether's moa). */
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.item.EntityItem spawnAtLocation(Entity entity, ItemStack stack) {
+		return spawnAtLocation(entity, stack, 0.0F);
+	}
+
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.item.EntityItem spawnAtLocation(Entity entity, ItemStack stack, float offset) {
+		return stack == null || stack.isEmpty() ? null : entity.entityDropItem(stack, offset);
+	}
+
+	/**
+	 * 1.21 {@code remove(reason)}: the entity is removed (1.12.2's setDead; the reason only says why). The table's
+	 * setDead takes no reason, so the call stayed missing and the tick that made it was left out (Aether's cloud minion).
+	 */
+	public static void remove(Entity entity, Object reason) {
+		entity.setDead();
+	}
+
+	/** 1.21 {@code LivingEntity.checkSlowFallDistance()}: a slow fall keeps the fall distance at most 1. */
+	public static void checkSlowFallDistance(Entity entity) {
+		if (entity.motionY > -0.5D && entity.fallDistance > 1.0F) {
+			entity.fallDistance = 1.0F;
+		}
+	}
 }

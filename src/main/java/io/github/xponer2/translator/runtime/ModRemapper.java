@@ -228,6 +228,8 @@ final class ModRemapper extends Remapper {
 	private String member(String owner, String name, String desc, boolean method) {
 		var todo = new ArrayDeque<String>();
 		var seen = new HashSet<String>();
+		// the 1.21 classes reached through a 1.12.2 class's supertypes: the mod class doesn't extend their facades
+		var throughTarget = new HashSet<String>();
 		todo.add(owner);
 		String mappedDesc = method ? this.mapMethodDesc(desc) : this.mapDesc(desc);
 		while (!todo.isEmpty()) {
@@ -243,8 +245,11 @@ final class ModRemapper extends Remapper {
 				todo.addAll(modClass.supertypes());
 				continue;
 			}
-			// a facade the mod class extends keeps the 1.21 name (it bridges the 1.12.2 method to it)
-			String facade = this.table.supers.get(current);
+			// a facade the mod class extends keeps the 1.21 name (it bridges the 1.12.2 method to it); not the facade of a
+			// 1.21 class only reached through the 1.12.2 supertypes, which the mod class doesn't extend: a mob of
+			// PathfinderMob reached Entity's facade, kept tick() and addAdditionalSaveData() under their 1.21 names, and
+			// 1.12.2 never called them (and super.tick() was left empty): every mob of a mod stood still and saved nothing
+			String facade = throughTarget.contains(current) ? null : this.table.supers.get(current);
 			if (facade != null && (this.target.hasMember(facade, name, mappedDesc, method)
 					|| this.target.hasTranslatorMember(facade, name, mappedDesc, method))) {
 				return name;
@@ -289,7 +294,14 @@ final class ModRemapper extends Remapper {
 			// inherited from a 1.12.2 supertype (NeoForge SlotItemHandler inherits Slot.set): the table rows of its 1.21 names
 			ClassInfo targetClass = this.target.get(mappedOwner);
 			if (targetClass != null) {
-				this.targetSupertypes(targetClass, todo, new HashSet<>());
+				var reached = new ArrayDeque<String>();
+				this.targetSupertypes(targetClass, reached, new HashSet<>());
+				for (String supertype : reached) {
+					if (!seen.contains(supertype) && !todo.contains(supertype)) {
+						throughTarget.add(supertype);
+					}
+					todo.add(supertype);
+				}
 			}
 		}
 		return name;
