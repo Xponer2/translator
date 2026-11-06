@@ -346,8 +346,26 @@ public class RegisterEvent extends Event implements IContextSetter {
 						org.apache.logging.log4j.LogManager.getLogger("Translator").warn("RegisterEvent for {} failed: {}", registry.key().location(), e.toString());
 					}
 				}
+				logModEntries();
 				RegistryCallbacks.bakeAll();
 			}
+		}
+
+		/** How many entries the 1.21.1 mods put in each registry 1.12.2 has no event for (what a test reads to see a kind missing). */
+		private static void logModEntries() {
+			var counts = new StringBuilder();
+			for (MappedRegistry<?> registry : BuiltInRegistries.mappedRegistries()) {
+				int mine = 0;
+				for (ResourceLocation id : registry.keySet()) {
+					if (io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(id.getNamespace())) {
+						mine++;
+					}
+				}
+				if (mine > 0) {
+					counts.append(' ').append(registry.key().location().getPath()).append('=').append(mine);
+				}
+			}
+			org.apache.logging.log4j.LogManager.getLogger("Translator").info("Entries of the 1.21.1 mods by registry:{}", counts);
 		}
 
 		/** After the DeferredRegisters of those registries were filled (LOWEST): baked again with their entries. */

@@ -62,8 +62,25 @@ public class BucketItem extends ItemBucket {
 				return block;
 			}
 		}
+		if (!this.reported) {
+			// what the mod's fluid blocks hold instead (the bucket of a fluid whose block wasn't found places nothing)
+			this.reported = true;
+			var seen = new StringBuilder();
+			String namespace = this.getRegistryName() == null ? "" : this.getRegistryName().getNamespace();
+			for (Block block : net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS) {
+				if (block instanceof net.minecraftforge.fluids.IFluidBlock fluidBlock && block.getRegistryName() != null
+						&& namespace.equals(block.getRegistryName().getNamespace())) {
+					Fluid held = fluidBlock.getFluid();
+					seen.append(' ').append(block.getRegistryName()).append('=').append(held == null ? "null" : held.getName());
+				}
+			}
+			org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").warn("No block for the fluid {} of the bucket {} (fluid {}); the mod's fluid blocks:{}",
+					content.getName(), this.getRegistryName(), System.identityHashCode(content), seen);
+		}
 		return null;
 	}
+
+	private boolean reported;
 
 	/**
 	 * 1.21 BucketPickup: an empty bucket on the source of a mod's fluid gives that fluid's bucket (1.12.2's bucket
