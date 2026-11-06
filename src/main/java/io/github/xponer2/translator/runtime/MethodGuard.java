@@ -1101,7 +1101,11 @@ final class MethodGuard {
 					continue;
 				}
 			}
-			if (insn instanceof FieldInsnNode field && (field.getOpcode() == Opcodes.GETSTATIC || field.getOpcode() == Opcodes.GETFIELD)
+			// (and a write to an instance field the 1.12.2 class lacks: its setter helper, as a read goes to its getter; writes
+			// were never looked at and were dropped: Particle.friction set in the constructor of every 1.21 particle, BOP's
+			// leaves and the vanilla particles of the carried 1.21 code kept 1.12.2's)
+			if (insn instanceof FieldInsnNode field
+					&& (field.getOpcode() == Opcodes.GETSTATIC || field.getOpcode() == Opcodes.GETFIELD || field.getOpcode() == Opcodes.PUTFIELD)
 					&& !this.hasMember(field.owner, field.name, field.desc, false)) {
 				if (this.registryByKey(method, field)) {
 					changed = true;
@@ -1191,7 +1195,7 @@ final class MethodGuard {
 				}
 				// 1.12.2 declares the field with a narrower type (Blocks.WATER is a BlockStaticLiquid): read it as that
 				String actual = this.fieldDesc(field.owner, field.name);
-				if (actual != null && this.isSubtype(actual, field.desc)) {
+				if (actual != null && field.getOpcode() != Opcodes.PUTFIELD && this.isSubtype(actual, field.desc)) {
 					field.desc = actual;
 					this.redirected.incrementAndGet();
 					changed = true;

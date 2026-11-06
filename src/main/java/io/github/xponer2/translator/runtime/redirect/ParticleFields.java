@@ -36,6 +36,22 @@ public final class ParticleFields {
 
 	public static void friction(Particle particle, float friction) {
 		FRICTION.put(particle, friction);
+		any = true;
+	}
+
+	/** Whether any particle set its own friction (until then 1.12.2's particles skip the lookup). */
+	private static volatile boolean any;
+
+	/**
+	 * The share of its motion a particle keeps each tick: its 1.21 friction, 1.12.2's 0.98 when it set none
+	 * ({@code core.ParticleFriction} has 1.12.2's {@code Particle.onUpdate} ask here).
+	 */
+	public static double motionFactor(Object particle) {
+		if (!any) {
+			return 0.9800000190734863D;
+		}
+		Float friction = FRICTION.get(particle);
+		return friction == null ? 0.9800000190734863D : friction;
 	}
 
 	public static boolean speedUpWhenYMotionIsBlocked(Particle particle) {
