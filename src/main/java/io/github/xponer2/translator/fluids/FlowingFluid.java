@@ -27,4 +27,28 @@ public abstract class FlowingFluid extends FluidBase {
 	/** 1.21: the fluid's state properties; the Translator's fluid states don't keep them. */
 	protected void createFluidStateDefinition(Object builder) {
 	}
+
+	/** 1.21 {@code getSource()}: the still fluid of this one (a mod's fluid gives its own; this one when it gives none). */
+	public net.minecraftforge.fluids.Fluid getSource() {
+		return this;
+	}
+
+	/**
+	 * The still fluid of a fluid: a 1.21 flowing fluid's source, else the fluid. A 1.21 liquid block and bucket hold the
+	 * source (a mod may make its block with the flowing one: Biomes O' Plenty's blood; its bucket found no block then).
+	 */
+	@javax.annotation.Nullable
+	public static net.minecraftforge.fluids.Fluid sourceOf(@javax.annotation.Nullable net.minecraftforge.fluids.Fluid fluid) {
+		if (fluid instanceof FlowingFluid flowing) {
+			try {
+				net.minecraftforge.fluids.Fluid source = flowing.getSource();
+				if (source != null) {
+					return source;
+				}
+			} catch (RuntimeException | LinkageError e) {
+				// its source isn't made yet (a holder not bound): the fluid itself
+			}
+		}
+		return fluid;
+	}
 }

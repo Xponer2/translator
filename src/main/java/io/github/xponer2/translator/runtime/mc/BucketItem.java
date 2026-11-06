@@ -49,7 +49,8 @@ public class BucketItem extends ItemBucket {
 	/** The fluid's block: its own when set, else the mod's LiquidBlock of that fluid (registered after the bucket). */
 	@javax.annotation.Nullable
 	private Block fluidBlock() {
-		Fluid content = this.getFluid();
+		// the still fluid: a mod's liquid block may hold the flowing one (Biomes O' Plenty's blood)
+		Fluid content = io.github.xponer2.translator.fluids.FlowingFluid.sourceOf(this.getFluid());
 		if (content == null) {
 			return null;
 		}
@@ -58,7 +59,7 @@ public class BucketItem extends ItemBucket {
 		}
 		for (Block block : net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS) {
 			if (block instanceof net.minecraftforge.fluids.IFluidBlock fluidBlock && fluidBlock.getFluid() != null
-					&& content.getName().equals(fluidBlock.getFluid().getName())) {
+					&& content.getName().equals(io.github.xponer2.translator.fluids.FlowingFluid.sourceOf(fluidBlock.getFluid()).getName())) {
 				return block;
 			}
 		}
@@ -99,7 +100,7 @@ public class BucketItem extends ItemBucket {
 			if (!(state.getBlock() instanceof LiquidBlock liquid) || state.getValue(net.minecraftforge.fluids.BlockFluidBase.LEVEL) != 0) {
 				return;
 			}
-			Fluid fluid = liquid.getFluid();
+			Fluid fluid = io.github.xponer2.translator.fluids.FlowingFluid.sourceOf(liquid.getFluid());
 			BucketItem bucket = fluid == null ? null : BY_FLUID.get(fluid.getName());
 			if (bucket == null) {
 				return;

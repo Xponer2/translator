@@ -238,7 +238,22 @@ public class RegisterEvent extends Event implements IContextSetter {
 			"worldgen/tree_decorator_type", "worldgen/feature_size_type", "worldgen/biome_source", "worldgen/chunk_generator",
 			"worldgen/material_condition", "worldgen/material_rule", "worldgen/density_function_type", "worldgen/pool_alias_binding",
 			"block_predicate_type", "rule_test", "rule_block_entity_modifier", "pos_rule_test", "float_provider_type", "int_provider_type",
-			"height_provider_type"};
+			"height_provider_type",
+			// and the other 1.21 registries 1.12.2 has none of: one made only when first used had no event, and a mod
+			// registering through the events alone (GlitchCore's registrars: Biomes O' Plenty's creative tab and
+			// particles) got none and registered nothing there (346 of its 434 items were in no tab)
+			"creative_mode_tab", "particle_type", "block_entity_type", "menu", "recipe_type", "recipe_serializer", "data_component_type",
+			"attribute", "armor_material", "point_of_interest_type", "stat_type", "custom_stat", "game_event", "position_source_type",
+			"command_argument_type", "trigger_type", "loot_condition_type", "loot_function_type", "loot_pool_entry_type",
+			"loot_number_provider_type", "loot_nbt_provider_type", "loot_score_provider_type", "activity", "memory_module_type",
+			"sensor_type", "schedule", "villager_type", "cat_variant", "frog_variant", "instrument", "decorated_pot_pattern",
+			"number_format_type", "map_decoration_type", "entity_sub_predicate_type", "item_sub_predicate_type",
+			"enchantment_effect_component_type", "enchantment_entity_effect_type", "enchantment_level_based_value_type",
+			"enchantment_location_based_effect_type", "enchantment_provider_type", "enchantment_value_effect_type",
+			"neoforge:fluid_type", "neoforge:attachment_types", "neoforge:entity_data_serializers",
+			"neoforge:global_loot_modifier_serializers", "neoforge:biome_modifier_serializers",
+			"neoforge:structure_modifier_serializers", "neoforge:holder_set_type", "neoforge:condition_codecs",
+			"neoforge:ingredient_serializer"};
 
 	public static final class Forwarder {
 		/** The loading screen's bar of the registry event going on: a step per DeferredRegister (the mod's id). */

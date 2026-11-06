@@ -26,12 +26,17 @@ public class LiquidBlock extends BlockFluidClassic {
 	private boolean standIn;
 
 	public LiquidBlock(Fluid fluid, BlockProperties properties) {
-		super(fluid == null ? FluidRegistry.WATER : fluid, fluid != null && fluid.getTemperature() > 600 ? Material.LAVA : Material.WATER);
+		// the source of a flowing fluid, as 1.21's block holds (its bucket's fluid is the source)
+		super(fluid == null ? FluidRegistry.WATER : io.github.xponer2.translator.fluids.FlowingFluid.sourceOf(fluid),
+				fluid != null && fluid.getTemperature() > 600 ? Material.LAVA : Material.WATER);
 		this.standIn = fluid == null;
 		properties.applyTo(this, this::setSoundType);
-		// the fluid's block is this one (its bucket places it, Forge's fluid handlers find it)
-		if (fluid != null && fluid.getBlock() == null) {
-			fluid.setBlock(this);
+		// the fluid's block is this one (its bucket places it, Forge's fluid handlers find it), the flowing one's too
+		Fluid source = io.github.xponer2.translator.fluids.FlowingFluid.sourceOf(fluid);
+		for (Fluid held : new Fluid[] {source, fluid}) {
+			if (held != null && held.getBlock() == null) {
+				held.setBlock(this);
+			}
 		}
 	}
 
