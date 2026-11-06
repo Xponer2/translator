@@ -34,6 +34,7 @@ public final class ClientSetup {
 		MinecraftForge.EVENT_BUS.register(new AtlasTextures());
 		MinecraftForge.EVENT_BUS.register(new SingleVariantModels());
 		MinecraftForge.EVENT_BUS.register(new CopperTextures());
+		MinecraftForge.EVENT_BUS.register(new ExtensionsBeforeStitch());
 		MinecraftForge.EVENT_BUS.register(new PoseStack.FrameEnd());
 		// the signs of the 1.21.1 mods (their block entities): board, wood texture, text
 		SignRenderers.register();
@@ -45,7 +46,27 @@ public final class ClientSetup {
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.RegisterRenderers());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.CreateSkullModels());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.AddLayers());
-		MinecraftForge.EVENT_BUS.post(new RegisterClientExtensionsEvent());
+		postClientExtensions();
+	}
+
+	private static boolean extensionsPosted;
+
+	/**
+	 * The mods' client extensions, once: before the first atlas stitch (the textures of their fluids go into the atlas
+	 * and their fluid buckets bake with them; posted in init they came after both, and a fluid bucket showed water).
+	 */
+	static synchronized void postClientExtensions() {
+		if (!extensionsPosted) {
+			extensionsPosted = true;
+			MinecraftForge.EVENT_BUS.post(new RegisterClientExtensionsEvent());
+		}
+	}
+
+	public static final class ExtensionsBeforeStitch {
+		@net.minecraftforge.fml.common.eventhandler.SubscribeEvent(priority = net.minecraftforge.fml.common.eventhandler.EventPriority.HIGHEST)
+		public void onStitch(net.minecraftforge.client.event.TextureStitchEvent.Pre event) {
+			postClientExtensions();
+		}
 	}
 
 	// the mods subscribed to RegisterMenuScreensEvent in pre-init or init
