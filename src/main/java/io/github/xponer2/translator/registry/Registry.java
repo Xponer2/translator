@@ -90,7 +90,17 @@ public interface Registry<T> extends Iterable<T>, HolderLookup {
 
     boolean containsKey(ResourceLocation location);
 
+    /** 1.21 {@code containsKey(key)} (TerraBlender's biome layers resolved no biome without it: every id was 0). */
+    default boolean containsKey(@Nullable ResourceKey<T> key) {
+        return key != null && this.containsKey(key.location());
+    }
+
     Set<ResourceLocation> keySet();
+
+    /** 1.21 {@code size()}: how many entries it has. */
+    default int size() {
+        return this.keySet().size();
+    }
 
     Set<Map.Entry<ResourceKey<T>, T>> entrySet();
 

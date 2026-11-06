@@ -107,6 +107,11 @@ public class DeferredHolder<R, T extends R> implements Holder<R>, Supplier<T> {
         return this.get();
     }
 
+    /** NeoForge {@code getDelegate()}: the holder of the entry (this one holds it). */
+    public Holder<R> getDelegate() {
+        return this;
+    }
+
     @Override
     public boolean isBound() {
         if (this.value == null) {

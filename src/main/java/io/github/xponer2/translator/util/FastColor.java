@@ -53,6 +53,22 @@ public final class FastColor {
 			return color | 0xFF000000;
 		}
 
+		/** 1.21 {@code lerp(delta, from, to)}: each channel from one colour towards the other. */
+		public static int lerp(float delta, int from, int to) {
+			return color(lerpInt(delta, alpha(from), alpha(to)), lerpInt(delta, red(from), red(to)), lerpInt(delta, green(from), green(to)),
+					lerpInt(delta, blue(from), blue(to)));
+		}
+
+		/** 1.21 {@code colorFromFloat(alpha, red, green, blue)}: channels from 0 to 1. */
+		public static int colorFromFloat(float alpha, float red, float green, float blue) {
+			return color(net.minecraft.util.math.MathHelper.floor(alpha * 255.0F), net.minecraft.util.math.MathHelper.floor(red * 255.0F),
+					net.minecraft.util.math.MathHelper.floor(green * 255.0F), net.minecraft.util.math.MathHelper.floor(blue * 255.0F));
+		}
+
+		private static int lerpInt(float delta, int start, int end) {
+			return start + net.minecraft.util.math.MathHelper.floor(delta * (end - start));
+		}
+
 		public static int multiply(int first, int second) {
 			return color(alpha(first) * alpha(second) / 255, red(first) * red(second) / 255, green(first) * green(second) / 255,
 					blue(first) * blue(second) / 255);

@@ -303,6 +303,18 @@ public class RegistryFriendlyByteBuf extends PacketBuffer {
         return new net.minecraft.util.math.RayTraceResult(hit, face, pos);
     }
 
+    /** 1.21 {@code readVec3()}: three doubles. */
+    public net.minecraft.util.math.Vec3d readVec3() {
+        return new net.minecraft.util.math.Vec3d(this.readDouble(), this.readDouble(), this.readDouble());
+    }
+
+    /** 1.21 {@code writeVec3(vec)}. */
+    public void writeVec3(net.minecraft.util.math.Vec3d vec) {
+        this.writeDouble(vec.x);
+        this.writeDouble(vec.y);
+        this.writeDouble(vec.z);
+    }
+
     public void writeBlockHitResult(net.minecraft.util.math.RayTraceResult hit) {
         var pos = hit.getBlockPos();
         this.writeBlockPos(pos);

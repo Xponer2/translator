@@ -32,6 +32,11 @@ public interface Holder<T> {
         return this.unwrapKey().map(k -> k == key || k.equals(key)).orElse(false);
     }
 
+    /** 1.21 {@code is(predicate)}: whether its key passes (TerraBlender's namespaced surface rules ask by namespace). */
+    default boolean is(java.util.function.Predicate<ResourceKey<T>> predicate) {
+        return this.unwrapKey().map(predicate::test).orElse(false);
+    }
+
     /** In a tag of the mods' data: items, blocks, entity types. */
     @SuppressWarnings("unchecked")
     default boolean is(io.github.xponer2.translator.util.TagKey<?> tag) {
