@@ -62,6 +62,33 @@ public final class CommonGapBridges {
 		result.setRecipeUsed(recipe);
 	}
 
+	/**
+	 * 1.21 {@code RecipeCraftingHolder.setRecipeUsed(level, player, holder)}: whether the player may craft it (1.12.2's
+	 * limited crafting asks the recipe book), then kept as the used recipe.
+	 */
+	public static boolean setRecipeUsed(InventoryCraftResult result, World world, net.minecraft.entity.player.EntityPlayerMP player,
+			@Nullable io.github.xponer2.translator.recipe.RecipeHolder<?> holder) {
+		IRecipe recipe = holder == null ? null : ForgeRegistries.RECIPES.getValue(holder.id());
+		if (recipe != null && !recipe.isDynamic() && world.getGameRules().getBoolean("doLimitedCrafting")
+				&& !player.getRecipeBook().isUnlocked(recipe)) {
+			return false;
+		}
+		result.setRecipeUsed(recipe);
+		return true;
+	}
+
+	/** 1.21 {@code RecipeCraftingHolder.awardUsedRecipes(player, items)}: the used recipe unlocked in the player's book. */
+	public static void awardUsedRecipes(InventoryCraftResult result, net.minecraft.entity.player.EntityPlayer player, java.util.List<?> items) {
+		IRecipe recipe = result.getRecipeUsed();
+		if (recipe != null && !recipe.isDynamic()) {
+			player.unlockRecipes(java.util.Collections.singletonList(recipe));
+		}
+	}
+
+	/** 1.21 {@code serverPlayer.triggerRecipeCrafted(holder, items)}: 1.12.2 has no recipe-crafted trigger. */
+	public static void triggerRecipeCrafted(net.minecraft.entity.player.EntityPlayerMP player, @Nullable Object holder, java.util.List<?> items) {
+	}
+
 	/** NeoForge {@code FluidUtil.getFluidHandler(level, pos, side)}: the block's fluid handler, empty when it has none. */
 	public static Optional<net.minecraftforge.fluids.capability.IFluidHandler> getFluidHandler(World world, BlockPos pos,
 			@Nullable net.minecraft.util.EnumFacing side) {

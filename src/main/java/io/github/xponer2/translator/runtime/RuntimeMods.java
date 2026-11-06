@@ -149,6 +149,22 @@ public final class RuntimeMods {
 	 * files themselves: the mods join FML's mod list only after post-init, so a scan of FML's active mods before (the
 	 * biomes at their registry event, the spawns at setup) found none of them ("0 biomes registered").
 	 */
+	/** The jars of the 1.21.1 mods started at runtime (each once). */
+	public static List<java.io.File> jars() {
+		var jars = new java.util.LinkedHashSet<java.io.File>();
+		for (var mod : new ArrayList<>(MODS)) {
+			try {
+				java.io.File jar = mod.getModInfo().getOwningFile().getFile().getFilePath().toFile();
+				if (jar != null && jar.isFile()) {
+					jars.add(jar);
+				}
+			} catch (RuntimeException e) {
+				// a mod without a file of its own
+			}
+		}
+		return new ArrayList<>(jars);
+	}
+
 	public static void forEachData(java.util.function.BiConsumer<String, java.util.function.Supplier<byte[]>> consumer) {
 		var seen = new java.util.HashSet<java.io.File>();
 		for (var mod : new ArrayList<>(MODS)) {

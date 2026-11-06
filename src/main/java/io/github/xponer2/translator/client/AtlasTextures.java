@@ -41,6 +41,72 @@ public final class AtlasTextures {
 				}
 			}
 		}
+		// the original 1.21.1 mods started at runtime: the same, and the sources their atlases/blocks.json adds
+		// (Sophisticated Backpacks' backpack model takes its textures from block/: without them it was missing-texture)
+		int added = 0;
+		for (File jar : io.github.xponer2.translator.runtime.RuntimeMods.jars()) {
+			added += registerJar(event.getMap(), jar);
+		}
+		if (added > 0) {
+			Translator.LOGGER.info("Blocks atlas: {} textures of the 1.21.1 mods added, as 1.21 stitches them", added);
+		}
+	}
+
+	/** Every textures/block and textures/item png of the jar, and the directories and single textures of its atlas sources. */
+	private static int registerJar(TextureMap map, File jar) {
+		int added = 0;
+		try (var zip = new java.util.zip.ZipFile(jar)) {
+			var directories = new java.util.ArrayList<String[]>();
+			var entries = Collections.list(zip.entries());
+			for (var entry : entries) {
+				var name = entry.getName();
+				if (name.startsWith("assets/") && name.endsWith("/atlases/blocks.json")) {
+					try (var in = zip.getInputStream(entry); var reader = new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8)) {
+						var json = new com.google.gson.JsonParser().parse(reader).getAsJsonObject();
+						for (var source : json.getAsJsonArray("sources")) {
+							var object = source.getAsJsonObject();
+							String type = object.has("type") ? object.get("type").getAsString().replace("minecraft:", "") : "";
+							if ("directory".equals(type) && object.has("source")) {
+								directories.add(new String[] {object.get("source").getAsString(),
+										object.has("prefix") ? object.get("prefix").getAsString() : object.get("source").getAsString() + "/"});
+							} else if ("single".equals(type) && object.has("resource")) {
+								map.registerSprite(new ResourceLocation(object.get("resource").getAsString()));
+								added++;
+							}
+						}
+					} catch (RuntimeException e) {
+						Translator.LOGGER.warn("Couldn't read the atlas sources {} of {}", name, jar.getName(), e);
+					}
+				}
+			}
+			for (var entry : entries) {
+				var name = entry.getName();
+				if (!name.startsWith("assets/") || !name.endsWith(".png")) {
+					continue;
+				}
+				int slash = name.indexOf('/', "assets/".length());
+				if (slash < 0 || !name.startsWith("/textures/", slash)) {
+					continue;
+				}
+				String namespace = name.substring("assets/".length(), slash);
+				String path = name.substring(slash + "/textures/".length(), name.length() - 4);
+				if (path.startsWith("block/") || path.startsWith("item/")) {
+					map.registerSprite(new ResourceLocation(namespace, path));
+					added++;
+					continue;
+				}
+				for (String[] directory : directories) {
+					if (path.startsWith(directory[0] + "/")) {
+						map.registerSprite(new ResourceLocation(namespace, directory[1] + path.substring(directory[0].length() + 1)));
+						added++;
+						break;
+					}
+				}
+			}
+		} catch (IOException e) {
+			Translator.LOGGER.warn("Couldn't list the textures of {}", jar.getName(), e);
+		}
+		return added;
 	}
 
 	private static void register(TextureMap map, String namespace, String folder) {

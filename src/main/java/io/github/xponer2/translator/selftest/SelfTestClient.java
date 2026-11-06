@@ -67,6 +67,21 @@ final class SelfTestClient {
 		return screen == null ? null : screen.getClass().getSimpleName();
 	}
 
+	/** Whether any face of the model is drawn with the missing sprite (a texture that wasn't stitched into the atlas). */
+	static boolean usesMissingSprite(IBakedModel model, Minecraft mc) {
+		var missingSprite = mc.getTextureMapBlocks().getMissingSprite();
+		var sides = new java.util.ArrayList<net.minecraft.util.EnumFacing>(java.util.Arrays.asList(net.minecraft.util.EnumFacing.values()));
+		sides.add(null);
+		for (net.minecraft.util.EnumFacing side : sides) {
+			for (var quad : model.getQuads(null, side, 0L)) {
+				if (quad.getSprite() == missingSprite) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	/** On the client thread: items and blocks whose model is the missing one (the purple and black cube). */
 	static void checkModels(List<Block> blocks, List<Item> items) {
 		Minecraft mc = Minecraft.getMinecraft();
@@ -83,6 +98,8 @@ final class SelfTestClient {
 						run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: missing (purple and black)");
 					} else if (model.getQuads(null, null, 0L).isEmpty() && !model.isBuiltInRenderer() && emptyAllSides(model)) {
 						run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: no faces (invisible)");
+					} else if (usesMissingSprite(model, mc)) {
+						run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: faces with the missing texture (purple and black)");
 					}
 				} catch (Throwable t) {
 					run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: " + SelfTest.describe(t));
@@ -93,6 +110,8 @@ final class SelfTestClient {
 					IBakedModel model = mc.getBlockRendererDispatcher().getModelForState(block.getDefaultState());
 					if (model == missing) {
 						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "block model: missing (purple and black)");
+					} else if (usesMissingSprite(model, mc)) {
+						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "block model: faces with the missing texture (purple and black)");
 					}
 				} catch (Throwable t) {
 					run.addClientProblem("block", String.valueOf(block.getRegistryName()), "block model: " + SelfTest.describe(t));

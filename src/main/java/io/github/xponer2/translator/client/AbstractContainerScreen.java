@@ -30,6 +30,12 @@ import net.minecraft.util.text.ITextComponent;
  * the mouse from the 1.21 input methods.
  */
 public abstract class AbstractContainerScreen<T extends Container> extends GuiContainer implements ContainerEventHandler, Renderable {
+	/** 1.21 {@code Screen.getTooltipFromItem(minecraft, stack)} reached through a container screen (Sophisticated's). */
+	public static java.util.List<net.minecraft.util.text.ITextComponent> getTooltipFromItem(net.minecraft.client.Minecraft minecraft,
+			net.minecraft.item.ItemStack stack) {
+		return Screen.getTooltipFromItem(minecraft, stack);
+	}
+
 	/** 1.21 {@code removed()}: the screen closed (1.12.2's onGuiClosed calls it). */
 	public void removed() {
 	}
