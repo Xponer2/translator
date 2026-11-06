@@ -40,11 +40,16 @@ public class RegisterClientExtensionsEvent extends Event {
 		net.minecraft.util.ResourceLocation still = (net.minecraft.util.ResourceLocation) call(extensions, "getStillTexture");
 		net.minecraft.util.ResourceLocation flowing = (net.minecraft.util.ResourceLocation) call(extensions, "getFlowingTexture");
 		Object tint = call(extensions, "getTintColor");
+		int matched = 0;
 		for (var fluid : io.github.xponer2.translator.fluids.FluidBase.all()) {
-			if (wanted.contains(call(fluid, "getFluidType"))) {
+			Object type = call(fluid, "getFluidType");
+			if (type != null && wanted.contains(type)) {
 				fluid.setTextures(still, flowing, tint instanceof Integer color ? color : -1);
+				matched++;
 			}
 		}
+		org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").info("Fluid textures {} / {}: {} fluids of {} types", still, flowing,
+				matched, types.length);
 	}
 
 	@javax.annotation.Nullable

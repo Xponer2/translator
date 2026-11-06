@@ -26,6 +26,16 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public final class ClientRedirects {
 	// the HUD's heights (NeoForge Gui.leftHeight / rightHeight): Forge 1.12.2's GuiIngameForge.left_height / right_height,
 	// which mods raise for the bars they draw over the hotbar (AppleSkin, Farmer's Delight, Mekanism)
+	/** 1.21 {@code gui.getDebugOverlay()} (1.12.2 keeps it private): the overlay of the F3 screen. */
+	public static net.minecraft.client.gui.GuiOverlayDebug getDebugOverlay(net.minecraft.client.gui.GuiIngame gui) {
+		return ScreenBridges.getDebugOverlay(Minecraft.getMinecraft());
+	}
+
+	/** NeoForge {@code gui.getLayerCount()}: the HUD layers drawn so far; 1.12.2 draws its HUD in one. */
+	public static int getLayerCount(net.minecraft.client.gui.GuiIngame gui) {
+		return 0;
+	}
+
 	public static int leftHeight(net.minecraft.client.gui.GuiIngame gui) {
 		return net.minecraftforge.client.GuiIngameForge.left_height;
 	}

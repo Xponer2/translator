@@ -56,7 +56,8 @@ public final class VertexConsumer {
 	private int lightU = 240, lightV = 240;
 
 	VertexConsumer(RenderType type) {
-		this.type = type;
+		// a mod's render type that couldn't be made is null: drawn as a plain one rather than failing every frame
+		this.type = type != null ? type : RenderType.solid();
 		this.target = null;
 	}
 
@@ -197,7 +198,9 @@ public final class VertexConsumer {
 			// its vertices are gone, nothing to draw ("Not building!" crashed MA's tinkering table)
 			this.pending = false;
 			this.started = false;
-			this.type.clearRenderState();
+			if (this.type != null) {
+				this.type.clearRenderState();
+			}
 			return;
 		}
 		this.emit();
@@ -210,7 +213,9 @@ public final class VertexConsumer {
 		GL11.glLoadMatrix(this.beginBuffer);
 		Tessellator.getInstance().draw();
 		GlStateManager.popMatrix();
-		this.type.clearRenderState();
+		if (this.type != null) {
+			this.type.clearRenderState();
+		}
 	}
 
 	/** The last vertex of a mod's buffer written, its vertices drawn in the matrix they were added in. */
@@ -271,7 +276,7 @@ public final class VertexConsumer {
 	/** Back to no batch, the vertices dropped (an error in the middle of one). */
 	void abandon() {
 		this.pending = false;
-		if (this.started && this.target == null) {
+		if (this.started && this.target == null && this.type != null) {
 			this.type.clearRenderState();
 		}
 		this.started = false;
@@ -284,9 +289,10 @@ public final class VertexConsumer {
 		}
 		this.started = true;
 		if (this.target == null) {
-			this.type.setupRenderState();
+			// the texture first: a type whose shard binds its own (a map tile's) binds it in its setup after
 			var texture = this.type.texture();
 			Minecraft.getMinecraft().getTextureManager().bindTexture(texture != null ? texture : TextureMap.LOCATION_BLOCKS_TEXTURE);
+			this.type.setupRenderState();
 		}
 		this.begin.load(currentMatrix());
 		Matrix4f.invert(this.begin, this.beginInverse);
@@ -294,7 +300,9 @@ public final class VertexConsumer {
 		this.begin.store(this.beginBuffer);
 		this.beginBuffer.flip();
 		if (this.target == null) {
-			Tessellator.getInstance().getBuffer().begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+			// the type's primitive (lines of a mod's line type, triangles), quads for the Translator's own types
+			Tessellator.getInstance().getBuffer().begin(this.type.mode() != null ? Tesselation.glMode(this.type.mode()) : GL11.GL_QUADS,
+					DefaultVertexFormats.POSITION_TEX_COLOR);
 		}
 	}
 

@@ -105,7 +105,13 @@ public final class MappedRegistry<T> implements Registry<T> {
     @Nullable
     @Override
     public ResourceLocation getKey(T value) {
-        return this.byValue.get(value);
+        ResourceLocation key = this.byValue.get(value);
+        if (key == null && value instanceof net.minecraft.world.biome.Biome biome) {
+            // a 1.12.2 biome in the registry of the mods' data biomes (JourneyMap names the biome the player is in):
+            // its own Forge name, as 1.21's registry has every vanilla biome
+            return biome.getRegistryName();
+        }
+        return key;
     }
 
     @Nullable

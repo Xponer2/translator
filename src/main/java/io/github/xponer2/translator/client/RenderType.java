@@ -14,10 +14,7 @@ package io.github.xponer2.translator.client;
  * A render state of 1.21 ({@code RenderType}): here the GL state set up before drawing with it and reset after.
  * Client only.
  */
-public class RenderType {
-    private final String name;
-    private final Runnable setup;
-    private final Runnable clear;
+public class RenderType extends RenderStateShard {
 
     @javax.annotation.Nullable
     private net.minecraft.client.renderer.vertex.VertexFormat format;
@@ -28,9 +25,7 @@ public class RenderType {
     private boolean affectsCrumbling;
 
     public RenderType(String name, Runnable setup, Runnable clear) {
-        this.name = name;
-        this.setup = setup;
-        this.clear = clear;
+        super(name, setup, clear);
     }
 
     /** 1.21 {@code new RenderType(name, format, mode, bufferSize, crumbling, sortOnUpload, setup, clear)}. */
@@ -219,16 +214,179 @@ public class RenderType {
         return TRANSLUCENT;
     }
 
-    public void setupRenderState() {
-        this.setup.run();
+    /** Whether the type binds its texture itself (a mod's texture state): the consumer's binding comes first then. */
+    public boolean bindsOwnTexture() {
+        return false;
     }
 
-    public void clearRenderState() {
-        this.clear.run();
+    // --- 1.21 composite render types: RenderType.create(name, format, mode, size, ..., CompositeState) ------------------
+
+    /** 1.21 {@code RenderType.create(...)}: a type whose GL state is that of its shards, in the order 1.21 sets them. */
+    public static CompositeRenderType create(String name, net.minecraft.client.renderer.vertex.VertexFormat format, Object mode, int bufferSize,
+            boolean affectsCrumbling, boolean sortOnUpload, CompositeState state) {
+        return new CompositeRenderType(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, state);
     }
 
-    @Override
-    public String toString() {
-        return this.name;
+    public static CompositeRenderType create(String name, net.minecraft.client.renderer.vertex.VertexFormat format, Object mode, int bufferSize,
+            CompositeState state) {
+        return create(name, format, mode, bufferSize, false, false, state);
+    }
+
+    /** 1.21 {@code RenderType.OutlineProperty}. */
+    public enum OutlineProperty {
+        NONE,
+        IS_OUTLINE,
+        AFFECTS_OUTLINE
+    }
+
+    /** 1.21 {@code RenderType.CompositeState}: the shards of a type. */
+    public static final class CompositeState {
+        final RenderStateShard.EmptyTextureStateShard textureState;
+        final RenderStateShard.ShaderStateShard shaderState;
+        final java.util.List<RenderStateShard> states;
+        final OutlineProperty outlineProperty;
+
+        CompositeState(RenderStateShard.EmptyTextureStateShard texture, RenderStateShard.ShaderStateShard shader,
+                java.util.List<RenderStateShard> states, OutlineProperty outline) {
+            this.textureState = texture;
+            this.shaderState = shader;
+            this.states = states;
+            this.outlineProperty = outline;
+        }
+
+        public static CompositeStateBuilder builder() {
+            return new CompositeStateBuilder();
+        }
+
+        /** 1.21 {@code RenderType.CompositeState.CompositeStateBuilder}. */
+        public static final class CompositeStateBuilder {
+            private RenderStateShard.EmptyTextureStateShard textureState = RenderStateShard.NO_TEXTURE;
+            private RenderStateShard.ShaderStateShard shaderState = RenderStateShard.NO_SHADER;
+            private RenderStateShard.TransparencyStateShard transparencyState = RenderStateShard.NO_TRANSPARENCY;
+            private RenderStateShard.DepthTestStateShard depthTestState = RenderStateShard.LEQUAL_DEPTH_TEST;
+            private RenderStateShard.CullStateShard cullState = RenderStateShard.CULL;
+            private RenderStateShard.LightmapStateShard lightmapState = RenderStateShard.NO_LIGHTMAP;
+            private RenderStateShard.OverlayStateShard overlayState = RenderStateShard.NO_OVERLAY;
+            private RenderStateShard.LayeringStateShard layeringState = RenderStateShard.NO_LAYERING;
+            private RenderStateShard.OutputStateShard outputState = RenderStateShard.MAIN_TARGET;
+            private RenderStateShard.TexturingStateShard texturingState = RenderStateShard.DEFAULT_TEXTURING;
+            private RenderStateShard.WriteMaskStateShard writeMaskState = RenderStateShard.COLOR_DEPTH_WRITE;
+            private RenderStateShard.LineStateShard lineState = RenderStateShard.DEFAULT_LINE;
+            private RenderStateShard.ColorLogicStateShard colorLogicState = RenderStateShard.NO_COLOR_LOGIC;
+
+            CompositeStateBuilder() {
+            }
+
+            public CompositeStateBuilder setTextureState(RenderStateShard.EmptyTextureStateShard state) {
+                this.textureState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setShaderState(RenderStateShard.ShaderStateShard state) {
+                this.shaderState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setTransparencyState(RenderStateShard.TransparencyStateShard state) {
+                this.transparencyState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setDepthTestState(RenderStateShard.DepthTestStateShard state) {
+                this.depthTestState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setCullState(RenderStateShard.CullStateShard state) {
+                this.cullState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setLightmapState(RenderStateShard.LightmapStateShard state) {
+                this.lightmapState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setOverlayState(RenderStateShard.OverlayStateShard state) {
+                this.overlayState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setLayeringState(RenderStateShard.LayeringStateShard state) {
+                this.layeringState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setOutputState(RenderStateShard.OutputStateShard state) {
+                this.outputState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setTexturingState(RenderStateShard.TexturingStateShard state) {
+                this.texturingState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setWriteMaskState(RenderStateShard.WriteMaskStateShard state) {
+                this.writeMaskState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setLineState(RenderStateShard.LineStateShard state) {
+                this.lineState = state;
+                return this;
+            }
+
+            public CompositeStateBuilder setColorLogicState(RenderStateShard.ColorLogicStateShard state) {
+                this.colorLogicState = state;
+                return this;
+            }
+
+            public CompositeState createCompositeState(boolean outline) {
+                return this.createCompositeState(outline ? OutlineProperty.AFFECTS_OUTLINE : OutlineProperty.NONE);
+            }
+
+            public CompositeState createCompositeState(OutlineProperty outline) {
+                // the order 1.21 sets them in: texture, shader, transparency, depth test, cull, lightmap, overlay, layering,
+                // output, texturing, write mask, line, color logic
+                var states = java.util.Arrays.<RenderStateShard>asList(this.textureState, this.shaderState, this.transparencyState,
+                        this.depthTestState, this.cullState, this.lightmapState, this.overlayState, this.layeringState, this.outputState,
+                        this.texturingState, this.writeMaskState, this.lineState, this.colorLogicState);
+                return new CompositeState(this.textureState, this.shaderState, states, outline);
+            }
+        }
+    }
+
+    /** 1.21 {@code RenderType.CompositeRenderType}: a type made of a composite state. */
+    public static final class CompositeRenderType extends RenderType {
+        private final CompositeState state;
+        private final boolean ownTexture;
+
+        CompositeRenderType(String name, net.minecraft.client.renderer.vertex.VertexFormat format, Object mode, int bufferSize, boolean affectsCrumbling,
+                boolean sortOnUpload, CompositeState state) {
+            super(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, () -> state.states.forEach(RenderStateShard::setupRenderState),
+                    () -> state.states.forEach(RenderStateShard::clearRenderState));
+            this.state = state;
+            var location = state.textureState.location();
+            this.setTexture(location);
+            this.ownTexture = location == null && state.textureState != RenderStateShard.NO_TEXTURE;
+        }
+
+        public CompositeState state() {
+            return this.state;
+        }
+
+        public boolean isOutline() {
+            return this.state.outlineProperty == OutlineProperty.IS_OUTLINE;
+        }
+
+        @Override
+        public boolean bindsOwnTexture() {
+            return this.ownTexture;
+        }
+    }
+
+    void setTexture(@javax.annotation.Nullable net.minecraft.util.ResourceLocation texture) {
+        this.texture = texture;
     }
 }

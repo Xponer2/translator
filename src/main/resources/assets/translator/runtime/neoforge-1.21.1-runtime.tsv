@@ -470,3 +470,27 @@ C	net/neoforged/neoforge/event/entity/player/ItemEntityPickupEvent$Post	io/githu
 C	net/minecraft/client/renderer/entity/ItemEntityRenderer	io/github/xponer2/translator/client/entity/ItemEntityRenderer
 # the creation mode of a chunk's block entity read (immediate, queued, check): 1.12.2's enum of the same constants
 C	net/minecraft/world/level/chunk/LevelChunk$EntityCreationType	net/minecraft/world/chunk/Chunk$EnumCreateEntityType
+# the render state shards of 1.21 and composite render types (mods' own render types extend RenderType for them)
+C	net/minecraft/client/renderer/RenderStateShard	io/github/xponer2/translator/client/RenderStateShard
+C	net/minecraft/client/renderer/RenderStateShard$TransparencyStateShard	io/github/xponer2/translator/client/RenderStateShard$TransparencyStateShard
+C	net/minecraft/client/renderer/RenderStateShard$ShaderStateShard	io/github/xponer2/translator/client/RenderStateShard$ShaderStateShard
+C	net/minecraft/client/renderer/RenderStateShard$BooleanStateShard	io/github/xponer2/translator/client/RenderStateShard$BooleanStateShard
+C	net/minecraft/client/renderer/RenderStateShard$EmptyTextureStateShard	io/github/xponer2/translator/client/RenderStateShard$EmptyTextureStateShard
+C	net/minecraft/client/renderer/RenderStateShard$TextureStateShard	io/github/xponer2/translator/client/RenderStateShard$TextureStateShard
+C	net/minecraft/client/renderer/RenderStateShard$TexturingStateShard	io/github/xponer2/translator/client/RenderStateShard$TexturingStateShard
+C	net/minecraft/client/renderer/RenderStateShard$OffsetTexturingStateShard	io/github/xponer2/translator/client/RenderStateShard$OffsetTexturingStateShard
+C	net/minecraft/client/renderer/RenderStateShard$LightmapStateShard	io/github/xponer2/translator/client/RenderStateShard$LightmapStateShard
+C	net/minecraft/client/renderer/RenderStateShard$OverlayStateShard	io/github/xponer2/translator/client/RenderStateShard$OverlayStateShard
+C	net/minecraft/client/renderer/RenderStateShard$CullStateShard	io/github/xponer2/translator/client/RenderStateShard$CullStateShard
+C	net/minecraft/client/renderer/RenderStateShard$DepthTestStateShard	io/github/xponer2/translator/client/RenderStateShard$DepthTestStateShard
+C	net/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard	io/github/xponer2/translator/client/RenderStateShard$WriteMaskStateShard
+C	net/minecraft/client/renderer/RenderStateShard$LayeringStateShard	io/github/xponer2/translator/client/RenderStateShard$LayeringStateShard
+C	net/minecraft/client/renderer/RenderStateShard$OutputStateShard	io/github/xponer2/translator/client/RenderStateShard$OutputStateShard
+C	net/minecraft/client/renderer/RenderStateShard$LineStateShard	io/github/xponer2/translator/client/RenderStateShard$LineStateShard
+C	net/minecraft/client/renderer/RenderStateShard$ColorLogicStateShard	io/github/xponer2/translator/client/RenderStateShard$ColorLogicStateShard
+C	net/minecraft/client/renderer/RenderType$CompositeState	io/github/xponer2/translator/client/RenderType$CompositeState
+C	net/minecraft/client/renderer/RenderType$CompositeState$CompositeStateBuilder	io/github/xponer2/translator/client/RenderType$CompositeState$CompositeStateBuilder
+C	net/minecraft/client/renderer/RenderType$CompositeRenderType	io/github/xponer2/translator/client/RenderType$CompositeRenderType
+C	net/minecraft/client/renderer/RenderType$OutlineProperty	io/github/xponer2/translator/client/RenderType$OutlineProperty
+# the running server of NeoForge's lifecycle hooks: 1.12.2 Forge's (the carried field was never set)
+X	net/neoforged/neoforge/server/ServerLifecycleHooks	getCurrentServer	()Lnet/minecraft/server/MinecraftServer;	io/github/xponer2/translator/runtime/redirect/CommonGapBridges

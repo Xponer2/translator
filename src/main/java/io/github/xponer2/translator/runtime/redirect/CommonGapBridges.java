@@ -89,6 +89,16 @@ public final class CommonGapBridges {
 	public static void triggerRecipeCrafted(net.minecraft.entity.player.EntityPlayerMP player, @Nullable Object holder, java.util.List<?> items) {
 	}
 
+	/**
+	 * NeoForge {@code ServerLifecycleHooks.getCurrentServer()}: the running server (1.12.2's Forge knows it). The carried
+	 * class keeps it in a field NeoForge's server start sets, which never happens here: it was null for every mod
+	 * (JourneyMap's world id, data of mods that look the server up).
+	 */
+	@Nullable
+	public static net.minecraft.server.MinecraftServer getCurrentServer() {
+		return net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance();
+	}
+
 	/** NeoForge {@code FluidUtil.getFluidHandler(level, pos, side)}: the block's fluid handler, empty when it has none. */
 	public static Optional<net.minecraftforge.fluids.capability.IFluidHandler> getFluidHandler(World world, BlockPos pos,
 			@Nullable net.minecraft.util.EnumFacing side) {
