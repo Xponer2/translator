@@ -122,6 +122,16 @@ public final class CommonGapBridges {
 		return Optional.ofNullable(FluidUtil.getFluidContained(stack));
 	}
 
+	/** 1.21 {@code chunk.getOrCreateHeightmapUnprimed(type)}: the chunk's heights of that kind (1.12.2's height map). */
+	public static io.github.xponer2.translator.world.ChunkHeightmap getOrCreateHeightmapUnprimed(net.minecraft.world.chunk.Chunk chunk, Object type) {
+		return new io.github.xponer2.translator.world.ChunkHeightmap(chunk, type);
+	}
+
+	/** 1.21 {@code chunk.getHeightmap(type)}. */
+	public static io.github.xponer2.translator.world.ChunkHeightmap getHeightmap(net.minecraft.world.chunk.Chunk chunk, Object type) {
+		return new io.github.xponer2.translator.world.ChunkHeightmap(chunk, type);
+	}
+
 	// --- advancements: a 1.21 AdvancementHolder is (id, advancement); 1.12.2's Advancement carries both ---------------
 
 	/** 1.21 {@code server.getAdvancements().get(id)}: the advancement's holder, null when there is none. */

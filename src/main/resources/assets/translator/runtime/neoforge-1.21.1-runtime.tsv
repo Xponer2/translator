@@ -497,3 +497,5 @@ X	net/neoforged/neoforge/server/ServerLifecycleHooks	getCurrentServer	()Lnet/min
 # the client's resource packs (1.21 PackRepository and Pack)
 C	net/minecraft/server/packs/repository/PackRepository	io/github/xponer2/translator/client/resources/PackRepository
 C	net/minecraft/server/packs/repository/Pack	io/github/xponer2/translator/client/resources/Pack
+# 1.21 Heightmap: a chunk's heights of a kind, read from 1.12.2's height map (JourneyMap's chunk snapshots)
+C	net/minecraft/world/level/levelgen/Heightmap	io/github/xponer2/translator/world/ChunkHeightmap

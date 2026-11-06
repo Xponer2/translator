@@ -360,3 +360,4 @@ R	net/minecraft/client/renderer/vertex/DefaultVertexFormats	io/github/xponer2/tr
 R	net/minecraft/client/renderer/entity/Render	io/github/xponer2/translator/client/entity/RenderBridges
 # the client's resource packs as 1.21 lists them (JourneyMap starts mapping with their names)
 R	net/minecraft/client/Minecraft	io/github/xponer2/translator/client/resources/PackRepository
+R	net/minecraft/world/chunk/Chunk	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
