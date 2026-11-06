@@ -364,12 +364,20 @@ public class RenderType extends RenderStateShard {
 
         CompositeRenderType(String name, net.minecraft.client.renderer.vertex.VertexFormat format, Object mode, int bufferSize, boolean affectsCrumbling,
                 boolean sortOnUpload, CompositeState state) {
-            super(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, () -> state.states.forEach(RenderStateShard::setupRenderState),
-                    () -> state.states.forEach(RenderStateShard::clearRenderState));
+            super(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, () -> state.states.forEach(shard -> {
+                // a mod's shard constant that couldn't be made is null: left out rather than failing every frame
+                if (shard != null) {
+                    shard.setupRenderState();
+                }
+            }), () -> state.states.forEach(shard -> {
+                if (shard != null) {
+                    shard.clearRenderState();
+                }
+            }));
             this.state = state;
-            var location = state.textureState.location();
+            var location = state.textureState == null ? null : state.textureState.location();
             this.setTexture(location);
-            this.ownTexture = location == null && state.textureState != RenderStateShard.NO_TEXTURE;
+            this.ownTexture = location == null && state.textureState != null && state.textureState != RenderStateShard.NO_TEXTURE;
         }
 
         public CompositeState state() {

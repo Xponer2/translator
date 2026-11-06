@@ -494,3 +494,6 @@ C	net/minecraft/client/renderer/RenderType$CompositeRenderType	io/github/xponer2
 C	net/minecraft/client/renderer/RenderType$OutlineProperty	io/github/xponer2/translator/client/RenderType$OutlineProperty
 # the running server of NeoForge's lifecycle hooks: 1.12.2 Forge's (the carried field was never set)
 X	net/neoforged/neoforge/server/ServerLifecycleHooks	getCurrentServer	()Lnet/minecraft/server/MinecraftServer;	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
+# the client's resource packs (1.21 PackRepository and Pack)
+C	net/minecraft/server/packs/repository/PackRepository	io/github/xponer2/translator/client/resources/PackRepository
+C	net/minecraft/server/packs/repository/Pack	io/github/xponer2/translator/client/resources/Pack

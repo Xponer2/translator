@@ -356,3 +356,7 @@ R	net/minecraft/world/gen/NoiseGeneratorPerlin	io/github/xponer2/translator/runt
 R	net/minecraft/client/audio/ISound	io/github/xponer2/translator/client/SoundBridges
 R	net/minecraftforge/common/IShearable	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
 R	net/minecraft/entity/player/EntityPlayerMP	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
+R	net/minecraft/client/renderer/vertex/DefaultVertexFormats	io/github/xponer2/translator/client/VertexFormats
+R	net/minecraft/client/renderer/entity/Render	io/github/xponer2/translator/client/entity/RenderBridges
+# the client's resource packs as 1.21 lists them (JourneyMap starts mapping with their names)
+R	net/minecraft/client/Minecraft	io/github/xponer2/translator/client/resources/PackRepository
