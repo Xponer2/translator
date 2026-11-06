@@ -61,6 +61,16 @@ public final class MiscBridges {
 
 	// --- small 1.21 calls of the tested mods, each a 1.12.2 equivalent ----------------------------------------------
 
+	/** 1.21 {@code new LevelChunk(level, pos)}: an empty chunk there (JourneyMap fills a snapshot chunk so). */
+	public static net.minecraft.world.chunk.Chunk newChunk(net.minecraft.world.World world, net.minecraft.util.math.ChunkPos pos) {
+		return new net.minecraft.world.chunk.Chunk(world, pos.x, pos.z);
+	}
+
+	/** 1.21 {@code chunk.getNoiseBiome(x, y, z)} at quarter coordinates: the chunk's biome there. */
+	public static Holder<net.minecraft.world.biome.Biome> getNoiseBiome(net.minecraft.world.chunk.Chunk chunk, int x, int y, int z) {
+		return WorldBridges.getNoiseBiome(chunk.getWorld(), x, y, z);
+	}
+
 	/** 1.21 {@code chunkPos.getRegionX()}: the region file the chunk is in (32 chunks a side). */
 	public static int getRegionX(net.minecraft.util.math.ChunkPos chunk) {
 		return chunk.x >> 5;

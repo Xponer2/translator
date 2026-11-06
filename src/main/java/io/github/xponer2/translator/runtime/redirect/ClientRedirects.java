@@ -26,6 +26,38 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public final class ClientRedirects {
 	// the HUD's heights (NeoForge Gui.leftHeight / rightHeight): Forge 1.12.2's GuiIngameForge.left_height / right_height,
 	// which mods raise for the bars they draw over the hotbar (AppleSkin, Farmer's Delight, Mekanism)
+	/**
+	 * 1.21 {@code sprite.contents().byMipLevel}: the sprite's pixels per mip level (1.12.2's first frame, ARGB) as native
+	 * images (JourneyMap takes its map colors from them: with none every block was colorless and nothing was mapped).
+	 */
+	public static io.github.xponer2.translator.client.NativeImage[] byMipLevel(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+		int width = sprite.getIconWidth();
+		int height = sprite.getIconHeight();
+		if (sprite.getFrameCount() == 0 || width <= 0 || height <= 0) {
+			return new io.github.xponer2.translator.client.NativeImage[] {new io.github.xponer2.translator.client.NativeImage(1, 1, true)};
+		}
+		int[][] levels = sprite.getFrameTextureData(0);
+		var images = new io.github.xponer2.translator.client.NativeImage[Math.max(1, levels.length)];
+		for (int level = 0; level < images.length; level++) {
+			int w = Math.max(1, width >> level);
+			int h = Math.max(1, height >> level);
+			var image = new io.github.xponer2.translator.client.NativeImage(w, h, true);
+			int[] pixels = level < levels.length ? levels[level] : null;
+			if (pixels != null) {
+				for (int y = 0; y < h; y++) {
+					for (int x = 0; x < w && y * w + x < pixels.length; x++) {
+						int argb = pixels[y * w + x];
+						// NativeImage keeps ABGR
+						int abgr = (argb & 0xFF00FF00) | (argb & 0xFF) << 16 | (argb >> 16) & 0xFF;
+						image.setPixelRGBA(x, y, abgr);
+					}
+				}
+			}
+			images[level] = image;
+		}
+		return images;
+	}
+
 	/** 1.21 {@code gui.getDebugOverlay()} (1.12.2 keeps it private): the overlay of the F3 screen. */
 	public static net.minecraft.client.gui.GuiOverlayDebug getDebugOverlay(net.minecraft.client.gui.GuiIngame gui) {
 		return ScreenBridges.getDebugOverlay(Minecraft.getMinecraft());
