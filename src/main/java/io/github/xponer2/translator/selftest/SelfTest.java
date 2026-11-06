@@ -1069,6 +1069,23 @@ public final class SelfTest {
 				return;
 			}
 			if (FMLCommonHandler.instance().getSide().isClient()) {
+				// the client opens the screen when the open packet comes, a frame or a few later (a busy client: more):
+				// waited for up to two seconds before it counts as missing
+				Record record = this.current;
+				this.afterTicks(() -> SelfTestClient.currentScreen() != null || this.player.openContainer != menu, 40, seen -> {
+					this.current = record;
+					this.testMenu(menu);
+				});
+				return;
+			}
+			this.testMenu(menu);
+		}
+
+		private void testMenu(Container menu) {
+			if (this.player.openContainer != menu) {
+				return;
+			}
+			if (FMLCommonHandler.instance().getSide().isClient()) {
 				String screen = SelfTestClient.currentScreen();
 				if (screen == null) {
 					this.current.problems.add("menu: the server opened " + menu.getClass().getSimpleName() + ", no screen on the client");

@@ -211,7 +211,7 @@ public final class GeometryLoaders implements ICustomModelLoader {
 			}
 			if (json.has("loader")) {
 				ResourceLocation loader = new ResourceLocation(json.get("loader").getAsString());
-				if (!this.loaders.containsKey(loader) && !NeoForgeModels.handles(loader)) {
+				if (!this.loaders.containsKey(loader) && !NeoForgeModels.handles(loader) && !"neoforge:fluid_container".equals(loader.toString())) {
 					return null;
 				}
 				result.loader = loader;
