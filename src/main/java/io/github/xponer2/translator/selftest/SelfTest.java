@@ -783,6 +783,31 @@ public final class SelfTest {
 					grew[0] = sapling ? ModChecks.isLog(this.world.getBlockState(this.cell)) : this.region() != before;
 				}
 			});
+			if (!grew[0] && !sapling) {
+				// on the soils a plant may need to grow on (a huge mushroom grows on dirt or mycelium, as in 1.21, not on
+				// the stone the test first put under it)
+				IBlockState[] soils = {Blocks.GRASS.getDefaultState(), Blocks.DIRT.getDefaultState(), Blocks.MYCELIUM.getDefaultState(),
+						Blocks.DIRT.getDefaultState().withProperty(net.minecraft.block.BlockDirt.VARIANT, net.minecraft.block.BlockDirt.DirtType.PODZOL)};
+				for (IBlockState soil : soils) {
+					if (grew[0] || this.world.getBlockState(this.cell.down()) == soil) {
+						continue;
+					}
+					this.world.setBlockState(this.cell.down(), soil, 2 | 16);
+					this.world.setBlockState(this.cell, state, 2 | 16);
+					long onSoil = this.region();
+					this.attempt("bone meal", () -> {
+						for (int i = 0; i < 60 && !grew[0]; i++) {
+							meal.setCount(64);
+							net.minecraft.item.ItemDye.applyBonemeal(meal, this.world, this.cell, this.player, EnumHand.MAIN_HAND);
+							grew[0] = this.region() != onSoil;
+						}
+					});
+					if (grew[0]) {
+						this.current.notes.add("grows with bone meal on " + soil.getBlock().getRegistryName());
+						return;
+					}
+				}
+			}
 			if (!grew[0]) {
 				this.current.problems.add(sapling ? "sapling: no tree in 60 uses of bone meal" : "bone meal: nothing grew in 60 uses (canGrow said it can)");
 			} else if (sapling) {
@@ -1135,6 +1160,13 @@ public final class SelfTest {
 			this.clientProblems.computeIfAbsent(kind + " " + id, k -> java.util.Collections.synchronizedList(new ArrayList<>())).add(problem);
 		}
 
+		/** Notes the client made (a model that has nothing to draw in 1.21 either), added like its problems. */
+		final Map<String, List<String>> clientNotes = new java.util.concurrent.ConcurrentHashMap<>();
+
+		void addClientNote(String kind, String id, String note) {
+			this.clientNotes.computeIfAbsent(kind + " " + id, k -> java.util.Collections.synchronizedList(new ArrayList<>())).add(note);
+		}
+
 		private void finish() {
 			if (this.current != null && !this.current.kept) {
 				this.current.kept = true;
@@ -1142,6 +1174,16 @@ public final class SelfTest {
 			}
 			this.current = null;
 			for (Record record : this.records) {
+				List<String> notes = this.clientNotes.get(record.kind + " " + record.id);
+				if (notes != null) {
+					synchronized (notes) {
+						for (String note : notes) {
+							if (!record.notes.contains(note)) {
+								record.notes.add(note);
+							}
+						}
+					}
+				}
 				List<String> client = this.clientProblems.get(record.kind + " " + record.id);
 				if (client != null) {
 					synchronized (client) {

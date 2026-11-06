@@ -82,6 +82,38 @@ final class SelfTestClient {
 		return false;
 	}
 
+	/**
+	 * Whether the mod's own item model (its JSON and its parents in the mod's assets) has no elements and no item
+	 * texture: nothing is drawn in 1.21 either. False when that can't be told (a parent of another kind, no file).
+	 */
+	static boolean facelessIn121(@javax.annotation.Nullable net.minecraft.util.ResourceLocation id) {
+		if (id == null) {
+			return false;
+		}
+		net.minecraft.client.resources.IResourceManager resources = net.minecraft.client.Minecraft.getMinecraft().getResourceManager();
+		String model = id.getNamespace() + ":item/" + id.getPath();
+		for (int depth = 0; depth < 8 && model != null; depth++) {
+			String namespace = model.contains(":") ? model.substring(0, model.indexOf(':')) : "minecraft";
+			String path = model.contains(":") ? model.substring(model.indexOf(':') + 1) : model;
+			if ("minecraft".equals(namespace) || path.startsWith("builtin/")) {
+				return false;
+			}
+			com.google.gson.JsonObject json;
+			try (var resource = resources.getResource(new net.minecraft.util.ResourceLocation(namespace, "models/" + path + ".json"));
+					var reader = new java.io.InputStreamReader(resource.getInputStream(), java.nio.charset.StandardCharsets.UTF_8)) {
+				json = new com.google.gson.JsonParser().parse(reader).getAsJsonObject();
+			} catch (java.io.IOException | RuntimeException e) {
+				return false;
+			}
+			if (json.has("elements") || json.has("loader")
+					|| json.has("textures") && json.get("textures").isJsonObject() && json.getAsJsonObject("textures").has("layer0")) {
+				return false;
+			}
+			model = json.has("parent") ? json.get("parent").getAsString() : null;
+		}
+		return model == null;
+	}
+
 	/** On the client thread: items and blocks whose model is the missing one (the purple and black cube). */
 	static void checkModels(List<Block> blocks, List<Item> items) {
 		Minecraft mc = Minecraft.getMinecraft();
@@ -97,7 +129,12 @@ final class SelfTestClient {
 					if (model == missing) {
 						run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: missing (purple and black)");
 					} else if (model.getQuads(null, null, 0L).isEmpty() && !model.isBuiltInRenderer() && emptyAllSides(model)) {
-						run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: no faces (invisible)");
+						if (facelessIn121(item.getRegistryName())) {
+							// the mod's own model has nothing to draw (a fluid's item: Biomes O' Plenty's blood): so in 1.21 too
+							run.addClientNote("item", String.valueOf(item.getRegistryName()), "item model: no faces, as the mod's own model in 1.21");
+						} else {
+							run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: no faces (invisible)");
+						}
 					} else if (usesMissingSprite(model, mc)) {
 						run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: faces with the missing texture (purple and black)");
 					}
