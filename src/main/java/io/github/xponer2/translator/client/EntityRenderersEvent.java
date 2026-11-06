@@ -38,8 +38,26 @@ public class EntityRenderersEvent extends Event {
 			return java.util.Collections.emptySet();
 		}
 
+		/**
+		 * 1.21 {@code event.getRenderer(type)}: the renderer of an entity type, which mods add their layers to (armor
+		 * and items on mobs: Mekanism and 6 more mods); null when 1.12.2 has none for its class.
+		 */
 		@javax.annotation.Nullable
 		public Object getRenderer(Object type) {
+			if (!(type instanceof io.github.xponer2.translator.registry.EntityType<?> entityType)) {
+				return null;
+			}
+			Class<?> entityClass = entityType.getEntityClass();
+			if (entityClass == null || entityClass == net.minecraft.entity.Entity.class) {
+				return null;
+			}
+			var renderers = net.minecraft.client.Minecraft.getMinecraft().getRenderManager().entityRenderMap;
+			for (Class<?> c = entityClass; c != null && c != net.minecraft.entity.Entity.class; c = c.getSuperclass()) {
+				Object renderer = renderers.get(c);
+				if (renderer != null) {
+					return renderer;
+				}
+			}
 			return null;
 		}
 
