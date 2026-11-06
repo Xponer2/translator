@@ -123,12 +123,42 @@ public final class GeometryLoaders implements ICustomModelLoader {
 		ResourceLocation location = model(actual);
 		Resolved model = this.resolve(location);
 		if (!this.loaders.containsKey(model.loader)) {
+			if ("neoforge:fluid_container".equals(model.loader.toString())) {
+				IModel bucket = fluidContainer(model.json);
+				if (bucket != null) {
+					return bucket;
+				}
+			}
 			return new NeoForgeModels.Model(location, model.loader, model.json, model.textures, model.display);
 		}
 		Object loader = this.loaders.get(model.loader);
 		Method read = method(loader.getClass(), "read", 2);
 		Object geometry = read.invoke(loader, model.json, CONTEXT);
 		return new GeometryModel(location, model, geometry);
+	}
+
+	/**
+	 * NeoForge's {@code fluid_container} model (a mod's fluid bucket: its fluid drawn into the bucket) as 1.12.2 Forge's
+	 * dynamic bucket, with Forge's own bucket textures (base, fluid mask, cover) and the fluid's still texture; the
+	 * plain json model it was read as had no texture of its own (purple and black).
+	 */
+	@Nullable
+	private static IModel fluidContainer(JsonObject json) {
+		if (!json.has("fluid")) {
+			return null;
+		}
+		ResourceLocation id = new ResourceLocation(json.get("fluid").getAsString());
+		net.minecraftforge.fluids.Fluid fluid = io.github.xponer2.translator.fluids.FluidBase.byId(id);
+		if (fluid == null) {
+			fluid = net.minecraftforge.fluids.FluidRegistry.getFluid(id.getPath());
+		}
+		if (fluid == null) {
+			return null;
+		}
+		boolean flipGas = json.has("flip_gas") && json.get("flip_gas").getAsBoolean();
+		boolean tint = !json.has("apply_tint") || json.get("apply_tint").getAsBoolean();
+		return new net.minecraftforge.client.model.ModelDynBucket(new ResourceLocation("forge", "items/bucket_base"),
+				new ResourceLocation("forge", "items/bucket_fluid"), new ResourceLocation("forge", "items/bucket_cover"), fluid, flipGas, tint);
 	}
 
 	// --- the json, with its parents' textures and display ---------------------------------------------------------------

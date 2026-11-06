@@ -1408,6 +1408,48 @@ final class MethodGuard {
 				}
 			}
 		}
+		changed |= alignCapturedTypes(method);
+		return changed;
+	}
+
+	/**
+	 * Java 8's LambdaMetafactory wants each captured value's type to be the implementation's parameter type exactly
+	 * (later JDKs take a subtype): a bound method reference redirected to a static helper ({@code this::setChanged} to
+	 * MiscBridges.setChanged(TileEntity)) captured the mod's class and threw "Type mismatch in captured lambda parameter"
+	 * (a placed backpack's data packet failed). The call site then captures the helper's type (the value is one).
+	 */
+	private static boolean alignCapturedTypes(MethodNode method) {
+		boolean changed = false;
+		for (AbstractInsnNode insn : method.instructions) {
+			if (!(insn instanceof InvokeDynamicInsnNode indy) || !"java/lang/invoke/LambdaMetafactory".equals(indy.bsm.getOwner())
+					|| indy.bsmArgs.length < 2 || !(indy.bsmArgs[1] instanceof Handle impl)) {
+				continue;
+			}
+			Type[] captured = Type.getArgumentTypes(indy.desc);
+			if (captured.length == 0) {
+				continue;
+			}
+			var implTypes = new java.util.ArrayList<Type>();
+			if (impl.getTag() == Opcodes.H_INVOKEVIRTUAL || impl.getTag() == Opcodes.H_INVOKEINTERFACE || impl.getTag() == Opcodes.H_INVOKESPECIAL) {
+				implTypes.add(Type.getObjectType(impl.getOwner()));
+			}
+			if (impl.getTag() != Opcodes.H_NEWINVOKESPECIAL) {
+				implTypes.addAll(java.util.Arrays.asList(Type.getArgumentTypes(impl.getDesc())));
+			}
+			boolean differs = false;
+			for (int i = 0; i < captured.length && i < implTypes.size(); i++) {
+				Type want = implTypes.get(i);
+				if (captured[i].getSort() == Type.OBJECT && want.getSort() == Type.OBJECT && !captured[i].equals(want)
+						&& impl.getTag() == Opcodes.H_INVOKESTATIC) {
+					captured[i] = want;
+					differs = true;
+				}
+			}
+			if (differs) {
+				indy.desc = Type.getMethodDescriptor(Type.getReturnType(indy.desc), captured);
+				changed = true;
+			}
+		}
 		return changed;
 	}
 
