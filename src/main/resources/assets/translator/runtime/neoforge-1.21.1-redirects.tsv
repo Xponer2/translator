@@ -361,3 +361,12 @@ R	net/minecraft/client/renderer/entity/Render	io/github/xponer2/translator/clien
 # the client's resource packs as 1.21 lists them (JourneyMap starts mapping with their names)
 R	net/minecraft/client/Minecraft	io/github/xponer2/translator/client/resources/PackRepository
 R	net/minecraft/world/chunk/Chunk	io/github/xponer2/translator/runtime/redirect/CommonGapBridges
+# the 1.21 array tags are 1.12.2's (the generated carried table made them carried 1.21 classes, which aren't NBTBase:
+# a mod's save putting one in a compound didn't verify and was dropped, a tag read back was never one): read last, wins
+C	net/minecraft/nbt/ByteArrayTag	net/minecraft/nbt/NBTTagByteArray
+C	net/minecraft/nbt/IntArrayTag	net/minecraft/nbt/NBTTagIntArray
+C	net/minecraft/nbt/LongArrayTag	net/minecraft/nbt/NBTTagLongArray
+R	net/minecraft/nbt/NBTTagIntArray	io/github/xponer2/translator/runtime/redirect/NbtArrays
+R	net/minecraft/nbt/NBTTagByteArray	io/github/xponer2/translator/runtime/redirect/NbtArrays
+R	net/minecraft/nbt/NBTTagLongArray	io/github/xponer2/translator/runtime/redirect/NbtArrays
+R	net/minecraft/nbt/NBTUtil	io/github/xponer2/translator/runtime/redirect/NbtArrays
