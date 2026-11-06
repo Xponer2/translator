@@ -61,6 +61,23 @@ public final class MiscBridges {
 
 	// --- small 1.21 calls of the tested mods, each a 1.12.2 equivalent ----------------------------------------------
 
+	/** 1.21 {@code chunkPos.getRegionX()}: the region file the chunk is in (32 chunks a side). */
+	public static int getRegionX(net.minecraft.util.math.ChunkPos chunk) {
+		return chunk.x >> 5;
+	}
+
+	public static int getRegionZ(net.minecraft.util.math.ChunkPos chunk) {
+		return chunk.z >> 5;
+	}
+
+	public static int getRegionLocalX(net.minecraft.util.math.ChunkPos chunk) {
+		return chunk.x & 31;
+	}
+
+	public static int getRegionLocalZ(net.minecraft.util.math.ChunkPos chunk) {
+		return chunk.z & 31;
+	}
+
 	public static int getMiddleBlockX(net.minecraft.util.math.ChunkPos chunk) {
 		return (chunk.x << 4) + 8;
 	}
