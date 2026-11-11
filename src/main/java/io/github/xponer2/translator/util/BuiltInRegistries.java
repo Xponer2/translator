@@ -60,6 +60,22 @@ public final class BuiltInRegistries {
     public static final Registry<io.github.xponer2.translator.recipe.RecipeType<?>> RECIPE_TYPE = byKey(Registries.RECIPE_TYPE);
     /** Advancement trigger types: kept, 1.12.2 advancements don't use them. */
     public static final Registry<Object> TRIGGER_TYPES = byKey(ResourceKey.createRegistryKey(new ResourceLocation("trigger_type")));
+    /**
+     * 1.21's chat types (a data pack registry) as 1.12.2's one chat type: mods look them up by key (Moonlight's
+     * per-side caches key on minecraft:chat; it threw "Failed to find CHAT_TYPE registry" and Supplementaries' red merchant
+     * couldn't be saved).
+     */
+    public static final Registry<net.minecraft.util.text.ChatType> CHAT_TYPE = chatTypes();
+
+    private static Registry<net.minecraft.util.text.ChatType> chatTypes() {
+        MappedRegistry<net.minecraft.util.text.ChatType> registry = new MappedRegistry<>(ResourceKey.createRegistryKey(new ResourceLocation("chat_type")));
+        // 1.12.2 has three (a value can be registered once): chat, the server's own text, the action bar
+        registry.register(new ResourceLocation("chat"), net.minecraft.util.text.ChatType.CHAT);
+        registry.register(new ResourceLocation("say_command"), net.minecraft.util.text.ChatType.SYSTEM);
+        registry.register(new ResourceLocation("emote_command"), net.minecraft.util.text.ChatType.GAME_INFO);
+        REGISTRIES.put(new ResourceLocation("chat_type"), registry);
+        return registry;
+    }
 
     private BuiltInRegistries() { }
 

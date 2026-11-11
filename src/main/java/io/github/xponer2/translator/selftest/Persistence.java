@@ -215,18 +215,29 @@ public final class Persistence {
 		NBTTagList blocks = root.getTagList("blocks", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < blocks.tagCount(); i++) {
 			NBTTagCompound entry = blocks.getCompoundTagAt(i);
-			TileEntity tile = world.getTileEntity(BlockPos.fromLong(entry.getLong("pos")));
+			long where = entry.getLong("pos");
+			String placed = entry.getString("id");
+			BlockPos at = BlockPos.fromLong(where);
+			TileEntity tile = world.getTileEntity(at);
+			// what is there now: a block that turns into another by itself (a launcher's arm, a temporary block) is no
+			// save problem
+			String now = String.valueOf(world.getBlockState(at).getBlock().getRegistryName());
 			entry.removeTag("data");
 			entry.removeTag("class");
 			if (tile != null) {
 				entry.setString("class", tile.getClass().getName());
 				try {
-					entry.setTag("data", tile.writeToNBT(new NBTTagCompound()));
+					entry.setTag("data", tile.writeToNBT(new NBTTagCompound()).copy());
 					saved++;
 				} catch (RuntimeException | LinkageError e) {
 					entry.setString("error", "saving failed: " + e);
 				}
 			}
+			// what a block entity's saving did to the shared tags aside, the entry keeps where and what it is (two of
+			// Iron's Spells' lost them: the check looked at 0,0,0)
+			entry.setLong("pos", where);
+			entry.setString("id", placed);
+			entry.setString("now", now);
 		}
 		NBTTagList mobs = root.getTagList("mobs", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < mobs.tagCount(); i++) {
@@ -271,10 +282,17 @@ public final class Persistence {
 			if (entry.hasKey("error")) {
 				problems.add(entry.getString("error") + " (before leaving)");
 			}
-			if (!id.equals(String.valueOf(now))) {
-				problems.add("the block is " + now + " after the reload");
+			String saved = entry.hasKey("now") ? entry.getString("now") : id;
+			if (!saved.equals(id)) {
+				notes.add("it turned into " + saved + " by itself before leaving");
+			}
+			if (!saved.equals(String.valueOf(now))) {
+				problems.add("the block is " + now + " after the reload (was " + saved + ")");
+			} else if (!saved.equals(id)) {
+				// another block now: its block entity isn't this one's
 			} else if (tile == null) {
-				problems.add(entry.hasKey("class") ? "its block entity is gone after the reload" : "it had no block entity before leaving either");
+				problems.add(entry.hasKey("class") ? "its block entity is gone after the reload"
+						: "it never got its block entity (placed, but none was made: not a save problem)");
 			} else if (entry.hasKey("class") && !entry.getString("class").equals(tile.getClass().getName())) {
 				problems.add("its block entity is a " + tile.getClass().getName() + " after the reload (was " + entry.getString("class") + ")");
 			} else if (entry.hasKey("data")) {

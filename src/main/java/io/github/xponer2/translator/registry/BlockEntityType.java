@@ -42,6 +42,54 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
     private final Set<Block> validBlocks;
     private Class<? extends TileEntity> tileClass;
     private ResourceLocation id;
+    /** A vanilla 1.21 type of a block 1.12.2 hasn't: any block may hold one (the mods' own vaults, pots...). */
+    private boolean anyBlock;
+    /** Its carried 1.21 block entity class, registered for the saved ones before a world loads. */
+    @Nullable
+    private String carriedClass;
+
+    /** The vanilla 1.21 types whose block entities are carried 1.21 classes (their blocks are new in 1.21). */
+    private static final java.util.List<BlockEntityType<?>> CARRIED = new java.util.ArrayList<>();
+
+    // the vanilla 1.21 types of blocks 1.12.2 hasn't: the carried block entity classes name them. They were null, so
+    // such a block entity had no type and was saved under its block's id (Iron's Spells' bone vault, a VaultBlockEntity,
+    // was lost when the world was opened again)
+    public static final BlockEntityType<TileEntity> VAULT = carried("vault", "vault.VaultBlockEntity");
+    public static final BlockEntityType<TileEntity> TRIAL_SPAWNER = carried("trial_spawner", "TrialSpawnerBlockEntity");
+    public static final BlockEntityType<TileEntity> CRAFTER = carried("crafter", "CrafterBlockEntity");
+    public static final BlockEntityType<TileEntity> DECORATED_POT = carried("decorated_pot", "DecoratedPotBlockEntity");
+    public static final BlockEntityType<TileEntity> BRUSHABLE_BLOCK = carried("brushable_block", "BrushableBlockEntity");
+    public static final BlockEntityType<TileEntity> CHISELED_BOOKSHELF = carried("chiseled_bookshelf", "ChiseledBookShelfBlockEntity");
+    public static final BlockEntityType<TileEntity> SCULK_SENSOR = carried("sculk_sensor", "SculkSensorBlockEntity");
+    public static final BlockEntityType<TileEntity> CALIBRATED_SCULK_SENSOR = carried("calibrated_sculk_sensor", "CalibratedSculkSensorBlockEntity");
+    public static final BlockEntityType<TileEntity> SCULK_CATALYST = carried("sculk_catalyst", "SculkCatalystBlockEntity");
+    public static final BlockEntityType<TileEntity> SCULK_SHRIEKER = carried("sculk_shrieker", "SculkShriekerBlockEntity");
+    public static final BlockEntityType<TileEntity> CAMPFIRE = carried("campfire", "CampfireBlockEntity");
+    public static final BlockEntityType<TileEntity> BEEHIVE = carried("beehive", "BeehiveBlockEntity");
+    public static final BlockEntityType<TileEntity> LECTERN = carried("lectern", "LecternBlockEntity");
+    public static final BlockEntityType<TileEntity> BELL = carried("bell", "BellBlockEntity");
+    public static final BlockEntityType<TileEntity> BARREL = carried("barrel", "BarrelBlockEntity");
+    public static final BlockEntityType<TileEntity> SMOKER = carried("smoker", "SmokerBlockEntity");
+    public static final BlockEntityType<TileEntity> BLAST_FURNACE = carried("blast_furnace", "BlastFurnaceBlockEntity");
+    public static final BlockEntityType<TileEntity> CONDUIT = carried("conduit", "ConduitBlockEntity");
+    public static final BlockEntityType<TileEntity> JIGSAW = carried("jigsaw", "JigsawBlockEntity");
+
+    private static BlockEntityType<TileEntity> carried(String name, String className) {
+        var type = new BlockEntityType<TileEntity>((pos, state) -> {
+            throw new UnsupportedOperationException("Translator: a 1.21 " + name + " block entity is made by its block");
+        }, java.util.Collections.emptySet());
+        type.id = new ResourceLocation(name);
+        type.anyBlock = true;
+        type.carriedClass = "net.minecraft.world.level.block.entity." + className;
+        CARRIED.add(type);
+        return type;
+    }
+
+    /** The type's id (the one its block entities are saved under), null before it is registered. */
+    @Nullable
+    public ResourceLocation getId() {
+        return this.id;
+    }
 
     private BlockEntityType(BlockEntitySupplier<? extends T> factory, Set<Block> validBlocks) {
         this.factory = factory;
@@ -69,7 +117,7 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
     }
 
     public boolean isValid(IBlockState state) {
-        return this.validBlocks.contains(state.getBlock());
+        return this.anyBlock || this.validBlocks.contains(state.getBlock());
     }
 
     /** Whether the block entity is one of this type (1.21 {@code blockEntity.getType() == type}). */
@@ -140,6 +188,20 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
      * load, whose saved block entities need them).
      */
     public static void registerPending() {
+        // the carried vanilla ones first: a saved one is made by its class when its chunk loads
+        for (BlockEntityType<?> type : CARRIED) {
+            if (type.tileClass != null) {
+                continue;
+            }
+            try {
+                Class<?> found = Class.forName(type.carriedClass, true, net.minecraft.launchwrapper.Launch.classLoader);
+                if (TileEntity.class.isAssignableFrom(found)) {
+                    type.registerClass(found.asSubclass(TileEntity.class));
+                }
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+                // not carried (a mapped class, or no player's 1.21.1 to carry it from): nothing to register
+            }
+        }
         java.util.List<BlockEntityType<?>> pending;
         synchronized (PENDING) {
             pending = new java.util.ArrayList<>(PENDING);

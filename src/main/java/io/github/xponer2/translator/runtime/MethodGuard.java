@@ -609,6 +609,15 @@ final class MethodGuard {
 			if (reason != null) {
 				this.stub(node.name, node.superName, method, reason);
 				changed = true;
+			} else if (this.isTick(node, method) && !isMixin(node)) {
+				// a mod's entity or block entity whose tick throws crashed the server, and the world crashed again on every
+				// load (Iron's Spells' Dead King corpse): logged once, the tick ends there and the world goes on
+				MethodNode guarded = copy(method);
+				guardSoftened(node.name, guarded);
+				if (this.verify(node.name, guarded) == null) {
+					node.methods.set(index, guarded);
+					changed = true;
+				}
 			}
 		}
 		if (!changed) {
@@ -2463,6 +2472,15 @@ final class MethodGuard {
 			owner = info.superName;
 		}
 		return facade;
+	}
+
+	/** The tick the world calls on a mod's entity ({@code onUpdate}) or block entity ({@code update}). */
+	private boolean isTick(ClassNode node, MethodNode method) {
+		if (!"()V".equals(method.desc) || (method.access & (Opcodes.ACC_STATIC | Opcodes.ACC_ABSTRACT)) != 0 || !this.mod.containsKey(node.name)) {
+			return false;
+		}
+		return "onUpdate".equals(method.name) ? this.extendsClass(node.name, "net/minecraft/entity/Entity")
+				: "update".equals(method.name) && this.extendsClass(node.name, "net/minecraft/tileentity/TileEntity");
 	}
 
 	/** Whether the class is {@code wanted} or a subclass of it (the mod's classes first). */

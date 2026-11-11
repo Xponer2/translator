@@ -109,6 +109,10 @@ public class BlockEntity extends TileEntity implements ITickable {
 			var id = this.type == null ? null
 					: io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.BLOCK_ENTITY_TYPE)
 							.getKey(this.type);
+			if (id == null && this.type != null) {
+				// a vanilla 1.21 type the registry doesn't list (a carried vault): its own id
+				id = this.type.getId();
+			}
 			if (id == null) {
 				// a type the registry doesn't name (registered through a mod's own helper: BOP's anomaly): its block's id
 				IBlockState state = this.getBlockState();
