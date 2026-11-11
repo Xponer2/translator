@@ -10,7 +10,6 @@
  */
 package io.github.xponer2.translator.client.entity;
 
-import io.github.xponer2.translator.client.model.EntityModel;
 
 import net.minecraft.entity.EntityLiving;
 import net.minecraftforge.fml.relauncher.Side;
@@ -18,7 +17,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 /** 1.21 {@code MobRenderer}: a living renderer of a mob, its name shown when it has a custom one and is looked at. */
 @SideOnly(Side.CLIENT)
-public abstract class MobRenderer<T extends EntityLiving, M extends EntityModel<T>> extends LivingEntityRenderer<T, M> {
+public abstract class MobRenderer<T extends EntityLiving, M extends net.minecraft.client.model.ModelBase> extends LivingEntityRenderer<T, M> {
 	public MobRenderer(RendererContext context, M model, float shadowRadius) {
 		super(context, model, shadowRadius);
 	}

@@ -22,7 +22,6 @@ import io.github.xponer2.translator.client.OverlayTexture;
 import io.github.xponer2.translator.client.PoseStack;
 import io.github.xponer2.translator.client.RenderType;
 import io.github.xponer2.translator.client.VertexConsumer;
-import io.github.xponer2.translator.client.model.EntityModel;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
@@ -38,7 +37,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * texture, then its layers.
  */
 @SideOnly(Side.CLIENT)
-public abstract class LivingEntityRenderer<T extends EntityLivingBase, M extends EntityModel<T>> extends EntityRenderer<T>
+public abstract class LivingEntityRenderer<T extends EntityLivingBase, M extends net.minecraft.client.model.ModelBase> extends EntityRenderer<T>
 		implements RenderLayerParent<T, M> {
 	protected M model;
 	protected final List<RenderLayer<T, M>> layers = new ArrayList<>();
@@ -62,10 +61,10 @@ public abstract class LivingEntityRenderer<T extends EntityLivingBase, M extends
 	public void render(T entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource buffers, int light) {
 		poseStack.pushPose();
 		try {
-			this.model.attackTime = this.getAttackAnim(entity, partialTick);
+			this.model.swingProgress = this.getAttackAnim(entity, partialTick);
 			boolean sitting = entity.isRiding() && entity.getRidingEntity() != null && entity.getRidingEntity().shouldRiderSit();
-			this.model.riding = sitting;
-			this.model.young = entity.isChild();
+			this.model.isRiding = sitting;
+			this.model.isChild = entity.isChild();
 			float bodyYaw = rotLerp(partialTick, entity.prevRenderYawOffset, entity.renderYawOffset);
 			float headYaw = rotLerp(partialTick, entity.prevRotationYawHead, entity.rotationYawHead);
 			float netHeadYaw = MathHelper.wrapDegrees(headYaw - bodyYaw);
@@ -84,8 +83,8 @@ public abstract class LivingEntityRenderer<T extends EntityLivingBase, M extends
 					position *= 3.0F;
 				}
 			}
-			this.model.prepareMobModel(entity, position, speed, partialTick);
-			this.model.setupAnim(entity, position, speed, bob, netHeadYaw, headPitch);
+			io.github.xponer2.translator.runtime.redirect.ModelBridges.prepareMobModel(this.model, entity, position, speed, partialTick);
+			io.github.xponer2.translator.runtime.redirect.ModelBridges.setupAnim(this.model, entity, position, speed, bob, netHeadYaw, headPitch);
 			Minecraft minecraft = Minecraft.getMinecraft();
 			boolean visible = this.isBodyVisible(entity);
 			boolean translucent = !visible && minecraft.player != null && !entity.isInvisibleToPlayer(minecraft.player);
@@ -93,7 +92,7 @@ public abstract class LivingEntityRenderer<T extends EntityLivingBase, M extends
 			if (type != null) {
 				VertexConsumer buffer = buffers.getBuffer(type);
 				int overlay = getOverlayCoords(entity, this.getWhiteOverlayProgress(entity, partialTick));
-				this.model.renderToBuffer(poseStack, buffer, light, overlay, translucent ? 0x26FFFFFF : -1);
+				io.github.xponer2.translator.runtime.redirect.ModelBridges.renderToBuffer(this.model, poseStack, buffer, light, overlay, translucent ? 0x26FFFFFF : -1);
 				buffers.endBatch();
 			}
 			if (!(entity instanceof EntityPlayer player && player.isSpectator())) {
@@ -114,7 +113,7 @@ public abstract class LivingEntityRenderer<T extends EntityLivingBase, M extends
 		if (translucent) {
 			return RenderType.itemEntityTranslucentCull(texture);
 		}
-		return bodyVisible ? this.model.renderType(texture) : null;
+		return bodyVisible ? io.github.xponer2.translator.runtime.redirect.ModelBridges.renderType(this.model, texture) : null;
 	}
 
 	public static int getOverlayCoords(EntityLivingBase entity, float whiteOverlay) {

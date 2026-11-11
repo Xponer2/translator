@@ -460,3 +460,21 @@ R	net/minecraft/entity/item/EntityFallingBlock	io/github/xponer2/translator/runt
 R	net/minecraft/network/play/server/SPacketBlockChange	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 R	net/minecraftforge/event/entity/ProjectileImpactEvent	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 R	net/minecraft/world/chunk/EmptyChunk	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# 1.21 models are 1.12.2 ModelBase: a mod's model, a biped and the facades are one kind (calls through ModelBridges)
+C	net/minecraft/client/model/Model	net/minecraft/client/model/ModelBase
+C	net/minecraft/client/model/EntityModel	net/minecraft/client/model/ModelBase
+S	net/minecraft/client/model/Model	io/github/xponer2/translator/client/model/Model
+S	net/minecraft/client/model/EntityModel	io/github/xponer2/translator/client/model/EntityModel
+F	net/minecraft/client/model/EntityModel	attackTime	swingProgress
+F	net/minecraft/client/model/EntityModel	riding	isRiding
+F	net/minecraft/client/model/EntityModel	young	isChild
+R	net/minecraft/client/model/ModelBase	io/github/xponer2/translator/runtime/redirect/ModelBridges
+# the 1.21 arm poses 1.12.2 lacks: the nearest of its own (the crossbow ones are its bow pose)
+F	net/minecraft/client/model/HumanoidModel$ArmPose	THROW_SPEAR	ITEM
+F	net/minecraft/client/model/HumanoidModel$ArmPose	CROSSBOW_CHARGE	BOW_AND_ARROW
+F	net/minecraft/client/model/HumanoidModel$ArmPose	CROSSBOW_HOLD	BOW_AND_ARROW
+F	net/minecraft/client/model/HumanoidModel$ArmPose	SPYGLASS	ITEM
+F	net/minecraft/client/model/HumanoidModel$ArmPose	TOOT_HORN	ITEM
+F	net/minecraft/client/model/HumanoidModel$ArmPose	BRUSH	ITEM
+R	net/minecraft/client/model/ModelBiped$ArmPose	io/github/xponer2/translator/runtime/redirect/ModelBridges
+R	net/minecraft/client/renderer/entity/RenderLivingBase	io/github/xponer2/translator/runtime/redirect/ModelBridges

@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 
 import io.github.xponer2.translator.client.MultiBufferSource;
 import io.github.xponer2.translator.client.PoseStack;
-import io.github.xponer2.translator.client.model.EntityModel;
 
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderLivingBase;
@@ -34,18 +33,20 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * A 1.12.2 living entity renderer (the player's, a vanilla mob's) as the 1.21 {@code LivingEntityRenderer} mods add
  * their layers to ({@code EntityRenderersEvent.AddLayers}: Mekanism's jetpack, worn curios, wings and capes). The
  * layers are drawn by one 1.12.2 layer added to the renderer, in the model space 1.12.2 draws its own layers in (the
- * same as 1.21's). The 1.12.2 model is no 1.21 one: a layer that poses itself after it fails on its first frame and is
- * left out (logged once).
+ * same as 1.21's). The parent model is the 1.12.2 one, posed for this frame (a biped's head, body, arms and legs, as
+ * 1.21's humanoid parts); a layer that fails anyway is left out after its first failure (logged once).
  */
 @SideOnly(Side.CLIENT)
-public final class VanillaRendererView<T extends EntityLivingBase, M extends EntityModel<T>> extends LivingEntityRenderer<T, M> {
+public final class VanillaRendererView<T extends EntityLivingBase, M extends net.minecraft.client.model.ModelBase> extends LivingEntityRenderer<T, M> {
 	private static final Map<Render<?>, VanillaRendererView<?, ?>> VIEWS = Collections.synchronizedMap(new IdentityHashMap<>());
 
 	private final RenderLivingBase<T> vanilla;
 	private final Set<RenderLayer<T, M>> failed = Collections.newSetFromMap(new IdentityHashMap<>());
 
+	@SuppressWarnings("unchecked")
 	private VanillaRendererView(RenderLivingBase<T> vanilla) {
-		super(new RendererContext(), null, 0.0F);
+		// its model is the 1.12.2 one (a 1.21 model is a 1.12.2 ModelBase in the tables): layers pose theirs after it
+		super(new RendererContext(), (M) vanilla.getMainModel(), 0.0F);
 		this.vanilla = vanilla;
 		vanilla.addLayer(new Layers());
 	}

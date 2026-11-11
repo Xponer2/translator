@@ -305,36 +305,35 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 	 * their slots themselves call it: Sophisticated's backpacks, Tom's terminals); 1.12.2's drawSlot is private.
 	 */
 	protected void renderSlot(GuiGraphics gfx, net.minecraft.inventory.Slot slot) {
-		if (DRAW_SLOT == null) {
-			this.renderSlotContents(gfx, slot.getStack(), slot, null);
-			return;
-		}
 		net.minecraft.client.renderer.RenderHelper.enableGUIStandardItemLighting();
 		net.minecraft.client.renderer.GlStateManager.enableRescaleNormal();
-		try {
-			DRAW_SLOT.invoke(this, slot);
-		} catch (ReflectiveOperationException e) {
-			this.renderSlotContents(gfx, slot.getStack(), slot, null);
-		} finally {
-			net.minecraft.client.renderer.RenderHelper.disableStandardItemLighting();
-		}
+		SlotDrawing.drawVanilla(this, slot);
 	}
 
-	@Nullable
-	private static final java.lang.reflect.Method DRAW_SLOT = drawSlot();
+	/** Screen classes whose own renderSlot failed: drawn the 1.12.2 way from then on. */
+	private static final java.util.Set<Class<?>> FAILED_SLOTS = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
 
-	@Nullable
-	private static java.lang.reflect.Method drawSlot() {
-		for (String name : new String[] {"func_146977_a", "drawSlot"}) {
-			try {
-				var method = net.minecraft.client.gui.inventory.GuiContainer.class.getDeclaredMethod(name, net.minecraft.inventory.Slot.class);
-				method.setAccessible(true);
-				return method;
-			} catch (NoSuchMethodException | RuntimeException e) {
-				// the other name (the game's or the development one)
-			}
+	/**
+	 * A slot 1.12.2's drawScreen draws, drawn by the mod's own renderSlot (client.SlotDrawing); false if it failed (the
+	 * 1.12.2 way then, and for this screen class from then on).
+	 */
+	boolean renderSlotOfMod(net.minecraft.inventory.Slot slot) {
+		if (FAILED_SLOTS.contains(this.getClass())) {
+			return false;
 		}
-		return null;
+		int depth = PoseStack.depth();
+		try {
+			this.renderSlot(SlotDrawing.graphics(), slot);
+			return true;
+		} catch (RuntimeException | LinkageError e) {
+			FAILED_SLOTS.add(this.getClass());
+			PoseStack.restore(depth);
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".renderSlot", e);
+			return false;
+		} finally {
+			// the state 1.12.2's slot loop draws the next slot in
+			net.minecraft.client.renderer.RenderHelper.enableGUIStandardItemLighting();
+		}
 	}
 
 	/** 1.21 {@code renderSlotContents(gfx, stack, slot, count)}: the item of a slot with its count text. */

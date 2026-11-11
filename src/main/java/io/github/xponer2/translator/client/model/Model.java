@@ -20,9 +20,13 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-/** 1.21 {@code Model}: something drawn into a vertex consumer, with the render type of its texture. */
+/**
+ * 1.21 {@code Model}: something drawn into a vertex consumer, with the render type of its texture. It is a 1.12.2
+ * {@code ModelBase}, as the tables map 1.21 models there: a mod's model and a 1.12.2 biped are then one kind of model
+ * (a mod's humanoid mob renderer took a biped where 1.21 takes an EntityModel, and didn't verify).
+ */
 @SideOnly(Side.CLIENT)
-public abstract class Model {
+public abstract class Model extends net.minecraft.client.model.ModelBase {
 	protected final Function<ResourceLocation, RenderType> renderType;
 
 	public Model(Function<ResourceLocation, RenderType> renderType) {

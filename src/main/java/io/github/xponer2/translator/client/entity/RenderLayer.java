@@ -14,7 +14,6 @@ import io.github.xponer2.translator.client.MultiBufferSource;
 import io.github.xponer2.translator.client.OverlayTexture;
 import io.github.xponer2.translator.client.PoseStack;
 import io.github.xponer2.translator.client.RenderType;
-import io.github.xponer2.translator.client.model.EntityModel;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -24,27 +23,27 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 /** 1.21 {@code RenderLayer}: something a living renderer draws over its model (eyes, armor, held items, glow). */
 @SideOnly(Side.CLIENT)
-public abstract class RenderLayer<T extends Entity, M extends EntityModel<T>> {
+public abstract class RenderLayer<T extends Entity, M extends net.minecraft.client.model.ModelBase> {
 	private final RenderLayerParent<T, M> renderer;
 
 	public RenderLayer(RenderLayerParent<T, M> renderer) {
 		this.renderer = renderer;
 	}
 
-	protected static <T extends EntityLivingBase> void coloredCutoutModelCopyLayerRender(EntityModel<T> parent, EntityModel<T> model,
+	protected static <T extends EntityLivingBase> void coloredCutoutModelCopyLayerRender(net.minecraft.client.model.ModelBase parent, net.minecraft.client.model.ModelBase model,
 			ResourceLocation texture, PoseStack poseStack, MultiBufferSource buffers, int light, T entity, float limbSwing, float limbSwingAmount,
 			float ageInTicks, float netHeadYaw, float headPitch, float partialTick, int color) {
 		if (!entity.isInvisible()) {
-			parent.copyPropertiesTo(model);
-			model.prepareMobModel(entity, limbSwing, limbSwingAmount, partialTick);
-			model.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+			io.github.xponer2.translator.runtime.redirect.ModelBridges.copyPropertiesTo(parent, model);
+			io.github.xponer2.translator.runtime.redirect.ModelBridges.prepareMobModel(model, entity, limbSwing, limbSwingAmount, partialTick);
+			io.github.xponer2.translator.runtime.redirect.ModelBridges.setupAnim(model, entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
 			renderColoredCutoutModel(model, texture, poseStack, buffers, light, entity, color);
 		}
 	}
 
-	protected static <T extends EntityLivingBase> void renderColoredCutoutModel(EntityModel<T> model, ResourceLocation texture, PoseStack poseStack,
+	protected static <T extends EntityLivingBase> void renderColoredCutoutModel(net.minecraft.client.model.ModelBase model, ResourceLocation texture, PoseStack poseStack,
 			MultiBufferSource buffers, int light, T entity, int color) {
-		model.renderToBuffer(poseStack, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light,
+		io.github.xponer2.translator.runtime.redirect.ModelBridges.renderToBuffer(model, poseStack, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light,
 				LivingEntityRenderer.getOverlayCoords(entity, 0.0F), color);
 		buffers.endBatch();
 	}

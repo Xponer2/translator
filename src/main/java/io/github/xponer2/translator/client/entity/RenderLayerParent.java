@@ -10,13 +10,11 @@
  */
 package io.github.xponer2.translator.client.entity;
 
-import io.github.xponer2.translator.client.model.EntityModel;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
 
 /** 1.21 {@code RenderLayerParent}: the renderer a layer belongs to, its model and texture. */
-public interface RenderLayerParent<T extends Entity, M extends EntityModel<T>> {
+public interface RenderLayerParent<T extends Entity, M extends net.minecraft.client.model.ModelBase> {
 	M getModel();
 
 	ResourceLocation getTextureLocation(T entity);

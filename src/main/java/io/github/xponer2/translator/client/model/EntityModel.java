@@ -25,9 +25,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public abstract class EntityModel<T extends Entity> extends Model {
-	public float attackTime;
-	public boolean riding;
-	public boolean young = true;
+	// attackTime, riding and young are 1.12.2's swingProgress, isRiding and isChild (field rows of the tables)
 
 	protected EntityModel() {
 		this(RenderType::entityCutoutNoCull);
@@ -42,9 +40,7 @@ public abstract class EntityModel<T extends Entity> extends Model {
 	public void prepareMobModel(T entity, float limbSwing, float limbSwingAmount, float partialTick) {
 	}
 
-	public void copyPropertiesTo(EntityModel<T> other) {
-		other.attackTime = this.attackTime;
-		other.riding = this.riding;
-		other.young = this.young;
+	public void copyPropertiesTo(net.minecraft.client.model.ModelBase other) {
+		other.setModelAttributes(this);
 	}
 }
