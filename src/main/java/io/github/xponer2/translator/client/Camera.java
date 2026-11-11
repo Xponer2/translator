@@ -25,10 +25,11 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * view entity, ActiveRenderInfo's offset for the third-person views) at the frame's partial tick.
  */
 @SideOnly(Side.CLIENT)
-public final class Camera {
+public class Camera {
 	private static final Camera MAIN = new Camera();
 
-	private Camera() {
+	/** Public as 1.21's: a mod's own camera extends it (Moonlight's DummyCamera didn't load). */
+	public Camera() {
 	}
 
 	/** {@code GameRenderer.getMainCamera()}, {@code EntityRenderDispatcher.camera}, the render events' camera. */

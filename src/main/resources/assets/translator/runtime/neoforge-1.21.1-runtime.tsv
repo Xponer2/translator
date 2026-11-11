@@ -511,3 +511,6 @@ X	net/neoforged/fml/util/ObfuscationReflectionHelper	findMethod	(Ljava/lang/Clas
 X	io/github/xponer2/translator/registry/Registry	getOrThrow	(Lio/github/xponer2/translator/registry/ResourceKey;)Ljava/lang/Object;	io/github/xponer2/translator/registry/RegistryValues
 # ComponentUtils.updateForEntity of 1.21 resolves each part with 1.21's resolve, which 1.12.2's text hasn't (it gave null): the text as it is
 X	net/minecraft/network/chat/ComponentUtils	updateForEntity	(Lnet/minecraft/commands/CommandSourceStack;Lnet/minecraft/util/text/ITextComponent;Lnet/minecraft/entity/Entity;I)Lio/github/xponer2/translator/text/MutableComponent;	io/github/xponer2/translator/runtime/redirect/ApiBridges	(Ljava/lang/Object;Lnet/minecraft/util/text/ITextComponent;Lnet/minecraft/entity/Entity;I)Lio/github/xponer2/translator/text/MutableComponent;
+# RenderSystem.recordRenderCall: on the game's task queue (the carried queue is never replayed on 1.12.2)
+X	translator_api/com/mojang/blaze3d/systems/RenderSystem	recordRenderCall	(Lcom/mojang/blaze3d/pipeline/RenderCall;)V	io/github/xponer2/translator/client/RenderSystem	(Ljava/lang/Object;)V
+X	io/github/xponer2/translator/client/RenderSystem	recordRenderCall	(Lcom/mojang/blaze3d/pipeline/RenderCall;)V	io/github/xponer2/translator/client/RenderSystem	(Ljava/lang/Object;)V

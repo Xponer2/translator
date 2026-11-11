@@ -26,9 +26,10 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 /**
  * 1.21 widget tooltip ({@code Tooltip.create}, {@code widget.setTooltip}): shown while the mouse is over the widget,
  * after the whole screen is drawn (1.21 defers it too: later widgets mustn't draw over it), wrapped at 170 pixels like
- * 1.21. Client only.
+ * 1.21. Client only. Not final: a mod's own tooltip extends it (Mekanism's MultiLineTooltip didn't load, nor its
+ * tooltip helpers).
  */
-public final class Tooltip {
+public class Tooltip {
     private static final int MAX_WIDTH = 170;
     private static boolean listening;
     @Nullable
@@ -40,7 +41,8 @@ public final class Tooltip {
     @Nullable
     private final ITextComponent narration;
 
-    private Tooltip(ITextComponent message, @Nullable ITextComponent narration) {
+    /** Public as NeoForge's access transformer makes it: mods extend Tooltip (Mekanism's multi-line one). */
+    public Tooltip(ITextComponent message, @Nullable ITextComponent narration) {
         this.message = message;
         this.narration = narration;
     }

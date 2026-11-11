@@ -37,6 +37,30 @@ public final class RenderSystem {
         return false;
     }
 
+    @javax.annotation.Nullable
+    private static java.lang.reflect.Method execute;
+
+    /**
+     * 1.21 {@code recordRenderCall(call)}: run on the render thread, at once when this is it, else at the start of the
+     * next frame (the game's task queue). The carried one queued it where nothing on 1.12.2 replays: what mods' worker
+     * threads left for the render thread never ran (JourneyMap's freed map textures stayed on the card).
+     */
+    public static void recordRenderCall(Object call) {
+        Minecraft.getMinecraft().addScheduledTask(() -> {
+            try {
+                if (execute == null) {
+                    execute = Class.forName("com.mojang.blaze3d.pipeline.RenderCall", false, net.minecraft.launchwrapper.Launch.classLoader)
+                            .getMethod("execute");
+                }
+                execute.invoke(call);
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                io.github.xponer2.translator.runtime.RuntimeStubs.failed("RenderSystem.recordRenderCall " + call.getClass().getName(), e.getCause());
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+                io.github.xponer2.translator.runtime.RuntimeStubs.failed("RenderSystem.recordRenderCall", e);
+            }
+        });
+    }
+
     public static void assertOnRenderThread() {
         if (!isOnRenderThread()) {
             throw new IllegalStateException("Rendersystem called from wrong thread");
