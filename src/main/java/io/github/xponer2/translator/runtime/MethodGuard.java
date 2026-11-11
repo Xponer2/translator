@@ -512,10 +512,38 @@ final class MethodGuard {
 		return dropped;
 	}
 
+	/**
+	 * Two methods of one name and descriptor (the JVM refuses the class: ClassFormatError "Duplicate method name"): the
+	 * downgrade to Java 8 can make them, a Java 21 type that has no Java 8 counterpart becoming its supertype (Mekanism's
+	 * record accessor typedModules() returns a SequencedMap, its interface bridge a Map: both a Map now, and the class
+	 * that holds every module of a gear item didn't load). The bridge goes, the method itself stays; with no bridge, the
+	 * first one.
+	 */
+	private static boolean dropDuplicateMethods(ClassNode node) {
+		var byKey = new java.util.HashMap<String, MethodNode>();
+		var drop = new java.util.ArrayList<MethodNode>();
+		for (MethodNode method : node.methods) {
+			MethodNode seen = byKey.putIfAbsent(method.name + method.desc, method);
+			if (seen == null) {
+				continue;
+			}
+			boolean seenBridge = (seen.access & Opcodes.ACC_BRIDGE) != 0;
+			boolean thisBridge = (method.access & Opcodes.ACC_BRIDGE) != 0;
+			if (seenBridge && !thisBridge) {
+				drop.add(seen);
+				byKey.put(method.name + method.desc, method);
+			} else {
+				drop.add(method);
+			}
+		}
+		return node.methods.removeAll(drop);
+	}
+
 	private byte[] guardClass(byte[] bytes) {
 		var node = new ClassNode();
 		new ClassReader(bytes).accept(node, 0);
-		boolean changed = this.renameFinalOverrides(node);
+		boolean changed = dropDuplicateMethods(node);
+		changed |= this.renameFinalOverrides(node);
 		changed |= dropForgeModAnnotation(node);
 		changed |= publicSubscribers(node);
 		if (isMixin(node)) {

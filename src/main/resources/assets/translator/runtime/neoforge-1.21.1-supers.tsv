@@ -69,3 +69,5 @@ S	net/minecraft/world/entity/projectile/AbstractArrow	io/github/xponer2/translat
 E	net/minecraft/world/entity/ai/goal/target/NearestAttackableTargetGoal	io/github/xponer2/translator/runtime/mc/NearestAttackableTargetGoal
 E	net/minecraft/world/damagesource/DamageSource	io/github/xponer2/translator/runtime/mc/DamageSource
 S	net/minecraft/world/level/chunk/ChunkSource	io/github/xponer2/translator/world/ChunkSource
+# a mod's own block state property (1.21's abstract class; 1.12.2's IProperty is an interface a class can't extend)
+E	net/minecraft/world/level/block/state/properties/Property	io/github/xponer2/translator/runtime/mc/Property

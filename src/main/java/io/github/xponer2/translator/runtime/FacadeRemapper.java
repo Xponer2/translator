@@ -195,6 +195,12 @@ final class FacadeRemapper extends ClassRemapper {
 				// a bridge to a method whose types are the same now (BlockHitResult and HitResult are RayTraceResult)
 				return null;
 			}
+			if ("<init>".equals(name) || "<clinit>".equals(name)) {
+				// a constructor can't take another name ("<init>$1": ClassFormatError, the class didn't load at all: Jade's
+				// TextElement of a Component and of a FormattedText, both an ITextComponent). The first one stays: a call of
+				// either reaches it, with an object of the type they share now
+				return null;
+			}
 			// the other one keeps its 1.21 name (or a new one if that is taken too)
 			String own = mappedName.equals(name) || !this.written.add(name + mappedDesc) ? name + "$" + this.written.size() : name;
 			this.written.add(own + mappedDesc);

@@ -249,7 +249,11 @@ final class ModRemapper extends Remapper {
 			// 1.21 class only reached through the 1.12.2 supertypes, which the mod class doesn't extend: a mob of
 			// PathfinderMob reached Entity's facade, kept tick() and addAdditionalSaveData() under their 1.21 names, and
 			// 1.12.2 never called them (and super.tick() was left empty): every mob of a mod stood still and saved nothing
-			String facade = throughTarget.contains(current) ? null : this.table.supers.get(current);
+			// nor, for a facade only for the classes that extend it (an E line), a call on the 1.21 class itself: it reaches the
+			// game's own objects, which don't have the facade's 1.21 names (Property.getPossibleValues is 1.12.2's
+			// getAllowedValues on every block property; only a mod's own property extends the facade)
+			String facade = throughTarget.contains(current) || current.equals(owner) && this.table.extendsOnly.contains(current) ? null
+					: this.table.supers.get(current);
 			if (facade != null && (this.target.hasMember(facade, name, mappedDesc, method)
 					|| this.target.hasTranslatorMember(facade, name, mappedDesc, method))) {
 				return name;
