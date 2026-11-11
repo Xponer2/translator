@@ -141,6 +141,11 @@ public final class ClientRedirects {
 		return new io.github.xponer2.translator.runtime.neoforge.InputConstants.Key(io.github.xponer2.translator.runtime.neoforge.KeyMapping.toGlfw(key.getKeyCode()));
 	}
 
+	/** 1.21 {@code keyMapping.getDefaultKey()} (key binding screens reset to it: Controlling, Jade, Cloth Config). */
+	public static io.github.xponer2.translator.runtime.neoforge.InputConstants.Key getDefaultKey(KeyBinding key) {
+		return new io.github.xponer2.translator.runtime.neoforge.InputConstants.Key(io.github.xponer2.translator.runtime.neoforge.KeyMapping.toGlfw(key.getKeyCodeDefault()));
+	}
+
 	public static boolean isDown(KeyBinding key) {
 		return key.isKeyDown();
 	}
@@ -362,7 +367,9 @@ public final class ClientRedirects {
 	}
 
 	public static net.minecraft.util.ResourceLocation atlasLocation(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
-		return net.minecraft.client.renderer.texture.TextureMap.LOCATION_BLOCKS_TEXTURE;
+		// a GUI sprite is a texture of its own (GuiSpriteManager)
+		return sprite instanceof io.github.xponer2.translator.client.GuiSprite gui ? gui.texture()
+				: net.minecraft.client.renderer.texture.TextureMap.LOCATION_BLOCKS_TEXTURE;
 	}
 
 	public static int getX(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {

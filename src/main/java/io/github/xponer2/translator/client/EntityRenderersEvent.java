@@ -43,7 +43,9 @@ public class EntityRenderersEvent extends Event {
 		 * and items on mobs: Mekanism and 6 more mods); null when 1.12.2 has none for its class.
 		 */
 		@javax.annotation.Nullable
-		public Object getRenderer(Object type) {
+		public <R> R getRenderer(Object type) {
+			// a type variable result: the converter casts it to the renderer class the mod expects (an Object result
+			// wasn't linked, so the layers weren't added at all)
 			if (!(type instanceof io.github.xponer2.translator.registry.EntityType<?> entityType)) {
 				return null;
 			}
@@ -53,12 +55,17 @@ public class EntityRenderersEvent extends Event {
 			}
 			var renderers = net.minecraft.client.Minecraft.getMinecraft().getRenderManager().entityRenderMap;
 			for (Class<?> c = entityClass; c != null && c != net.minecraft.entity.Entity.class; c = c.getSuperclass()) {
-				Object renderer = renderers.get(c);
+				var renderer = renderers.get(c);
 				if (renderer != null) {
-					return renderer;
+					return io.github.xponer2.translator.client.entity.VanillaRendererView.of(renderer);
 				}
 			}
 			return null;
+		}
+
+		/** 1.21 {@code event.getContext()}: what renderers are made with (Mekanism builds its layers' models from it). */
+		public io.github.xponer2.translator.client.entity.RendererContext getContext() {
+			return new io.github.xponer2.translator.client.entity.RendererContext();
 		}
 
 		/**
@@ -66,9 +73,11 @@ public class EntityRenderersEvent extends Event {
 		 * which mods add their layers to (8 mods' capes, wings, armor parts).
 		 */
 		@javax.annotation.Nullable
-		public net.minecraft.client.renderer.entity.Render<?> getSkin(Object model) {
+		public <R> R getSkin(Object model) {
+			// the 1.12.2 player renderer as a 1.21 one: mods cast it to LivingEntityRenderer (a 1.12.2 one threw)
 			String name = model instanceof Enum<?> constant && "SLIM".equals(constant.name()) || "slim".equals(String.valueOf(model)) ? "slim" : "default";
-			return net.minecraft.client.Minecraft.getMinecraft().getRenderManager().getSkinMap().get(name);
+			return io.github.xponer2.translator.client.entity.VanillaRendererView.of(
+					net.minecraft.client.Minecraft.getMinecraft().getRenderManager().getSkinMap().get(name));
 		}
 
 		public io.github.xponer2.translator.client.model.EntityModelSet getEntityModels() {

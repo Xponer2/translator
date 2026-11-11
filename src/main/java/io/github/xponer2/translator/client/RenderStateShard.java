@@ -85,7 +85,15 @@ public abstract class RenderStateShard {
 		}
 
 		ShaderStateShard(String name, boolean textured) {
-			super(name, textured ? GlStateManager::enableTexture2D : GlStateManager::disableTexture2D, GlStateManager::enableTexture2D);
+			// the 1.21 shaders without a texture (gui, lines, position_color) drop no pixel by its alpha: 1.12.2's alpha
+			// test (0.1) left out the faint parts of slot highlights and gradients
+			super(name, textured ? GlStateManager::enableTexture2D : () -> {
+				GlStateManager.disableTexture2D();
+				GlStateManager.disableAlpha();
+			}, textured ? GlStateManager::enableTexture2D : () -> {
+				GlStateManager.enableTexture2D();
+				GlStateManager.enableAlpha();
+			});
 			this.textured = textured;
 		}
 
@@ -254,7 +262,9 @@ public abstract class RenderStateShard {
 
 	public static class LineStateShard extends RenderStateShard {
 		public LineStateShard(OptionalDouble width) {
-			super("line_width", () -> GlStateManager.glLineWidth((float) width.orElse(1.0D)), () -> GlStateManager.glLineWidth(1.0F));
+			// no width given: 1.21's own, 2.5 pixels at 1920 wide and more on wider windows (RenderType.lines, block outlines)
+			super("line_width", () -> GlStateManager.glLineWidth(width.isPresent() ? (float) width.getAsDouble()
+					: Math.max(2.5F, Minecraft.getMinecraft().displayWidth / 1920.0F * 2.5F)), () -> GlStateManager.glLineWidth(1.0F));
 		}
 	}
 
@@ -369,7 +379,15 @@ public abstract class RenderStateShard {
 	});
 	public static final LayeringStateShard VIEW_OFFSET_Z_LAYERING = new LayeringStateShard("view_offset_z_layering", () -> { }, () -> { });
 	public static final OutputStateShard MAIN_TARGET = new OutputStateShard("main_target", () -> { }, () -> { });
-	public static final OutputStateShard OUTLINE_TARGET = new OutputStateShard("outline_target", () -> { }, () -> { });
+	// 1.21 draws it into the glowing outline buffer; 1.12.2 builds that buffer itself, so nothing is drawn (an
+	// invisible glowing mob's model drawn into the world through walls instead)
+	public static final OutputStateShard OUTLINE_TARGET = new OutputStateShard("outline_target", () -> {
+		GlStateManager.colorMask(false, false, false, false);
+		GlStateManager.depthMask(false);
+	}, () -> {
+		GlStateManager.colorMask(true, true, true, true);
+		GlStateManager.depthMask(true);
+	});
 	public static final OutputStateShard TRANSLUCENT_TARGET = new OutputStateShard("translucent_target", () -> { }, () -> { });
 	public static final OutputStateShard PARTICLES_TARGET = new OutputStateShard("particles_target", () -> { }, () -> { });
 	public static final OutputStateShard WEATHER_TARGET = new OutputStateShard("weather_target", () -> { }, () -> { });

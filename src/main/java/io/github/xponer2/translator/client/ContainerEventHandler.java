@@ -88,6 +88,17 @@ public interface ContainerEventHandler extends GuiEventListener {
 		return this.getFocused() != null && this.getFocused().charTyped(codePoint, modifiers);
 	}
 
+	/** 1.21 Tab and arrow navigation between the children: not done here (see GuiEventListener.nextFocusPath). */
+	@Nullable
+	default <R> R handleTabNavigation(Object event) {
+		return null;
+	}
+
+	@Nullable
+	default <R> R handleArrowNavigation(Object event) {
+		return null;
+	}
+
 	@Override
 	default void setFocused(boolean focused) {
 	}

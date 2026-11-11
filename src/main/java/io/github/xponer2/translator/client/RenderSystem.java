@@ -102,8 +102,24 @@ public final class RenderSystem {
         GlStateManager.disableDepth();
     }
 
+    /** 1.21's shader color, kept apart from the GL color 1.12.2's text drawing changes (sprites are drawn in it). */
+    private static final float[] SHADER_COLOR = {1.0F, 1.0F, 1.0F, 1.0F};
+
     public static void setShaderColor(float r, float g, float b, float a) {
+        SHADER_COLOR[0] = r;
+        SHADER_COLOR[1] = g;
+        SHADER_COLOR[2] = b;
+        SHADER_COLOR[3] = a;
         GlStateManager.color(r, g, b, a);
+    }
+
+    public static float[] getShaderColor() {
+        return SHADER_COLOR;
+    }
+
+    /** The GL color set to the shader color again (after text drawing changed it). */
+    static void applyShaderColor() {
+        GlStateManager.color(SHADER_COLOR[0], SHADER_COLOR[1], SHADER_COLOR[2], SHADER_COLOR[3]);
     }
 
     public static void setShaderTexture(int unit, ResourceLocation texture) {

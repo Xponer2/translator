@@ -24,6 +24,8 @@ public class Button extends AbstractWidget {
 	public static final int SMALL_WIDTH = 120;
 	public static final int DEFAULT_WIDTH = 150;
 	public static final int DEFAULT_HEIGHT = 20;
+	public static final int BIG_WIDTH = 200;
+	public static final int DEFAULT_SPACING = 8;
 	public static final CreateNarration DEFAULT_NARRATION = Supplier::get;
 	protected static final WidgetSprites SPRITES = new WidgetSprites(new ResourceLocation("widget/button"),
 			new ResourceLocation("widget/button_disabled"), new ResourceLocation("widget/button_highlighted"));
@@ -58,6 +60,11 @@ public class Button extends AbstractWidget {
 	@Override
 	protected void renderWidget(GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
 		this.renderDefaultButton(Minecraft.getMinecraft(), mouseX, mouseY, partialTicks);
+	}
+
+	@Override
+	protected ITextComponent createNarrationMessage() {
+		return this.createNarration.createNarrationMessage(super::createNarrationMessage);
 	}
 
 	@FunctionalInterface

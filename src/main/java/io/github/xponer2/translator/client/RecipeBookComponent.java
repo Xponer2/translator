@@ -39,6 +39,19 @@ public class RecipeBookComponent extends GuiRecipeBook {
 	public void initVisuals() {
 	}
 
+	/** 1.21 filter button look (a subclass sets its own textures): the book stays closed, nothing to set. */
+	protected void initFilterButtonTextures() {
+	}
+
+	/** 1.21 {@code getFuelItems()} of a furnace book: none, the book is closed. */
+	protected java.util.Set<net.minecraft.item.Item> getFuelItems() {
+		return java.util.Collections.emptySet();
+	}
+
+	/** 1.21 {@code setupGhostRecipe(recipe, slots)}: the ghost items of a recipe; none in a closed book. */
+	public void setupGhostRecipe(Object recipe, java.util.List<?> slots) {
+	}
+
 	/** The left edge of the screen next to a closed book: centered. */
 	public int updateScreenPosition(int width, int imageWidth) {
 		return (width - imageWidth) / 2;

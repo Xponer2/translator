@@ -233,6 +233,41 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 		this.dragging = dragging;
 	}
 
+	// 1.21 Screen focus methods, for container screens (Curios, the Aether's accessories, Tom's crafting terminal focus
+	// their search box with setInitialFocus; the whole init was left out without it)
+
+	public void clearFocus() {
+		this.setFocused(null);
+	}
+
+	protected void setInitialFocus() {
+	}
+
+	protected void setInitialFocus(GuiEventListener listener) {
+		this.setFocused(listener);
+	}
+
+	protected void changeFocus(Object path) {
+		this.clearFocus();
+		ScreenRectangles.applyFocus(path, true);
+	}
+
+	protected void rebuildWidgets() {
+		this.clearWidgets();
+		this.clearFocus();
+		this.init();
+	}
+
+	protected void repositionElements() {
+		this.rebuildWidgets();
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <R> R getRectangle() {
+		return (R) ScreenRectangles.of(0, 0, this.width, this.height);
+	}
+
 	/** The white highlight of a hovered slot. */
 	public static void renderSlotHighlight(GuiGraphics gfx, int x, int y, int z) {
 		net.minecraft.client.renderer.GlStateManager.disableLighting();
@@ -256,9 +291,92 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 		net.minecraft.client.renderer.GlStateManager.enableDepth();
 	}
 
-	/** NeoForge {@code getSlotColor(index)}: the highlight color of a slot (the vanilla white). */
+	/** NeoForge {@code getSlotColor(index)}: the highlight color of a slot (the vanilla white unless the screen sets one). */
 	public int getSlotColor(int index) {
-		return 0x80FFFFFF;
+		return this.slotColor;
+	}
+
+	public static final int SLOT_ITEM_BLIT_OFFSET = 100;
+	/** NeoForge: the hovered slot's highlight color. */
+	protected int slotColor = 0x80FFFFFF;
+
+	/**
+	 * 1.21 {@code renderSlot(gfx, slot)}: a slot and its item drawn as the container draws its own (screens that draw
+	 * their slots themselves call it: Sophisticated's backpacks, Tom's terminals); 1.12.2's drawSlot is private.
+	 */
+	protected void renderSlot(GuiGraphics gfx, net.minecraft.inventory.Slot slot) {
+		if (DRAW_SLOT == null) {
+			this.renderSlotContents(gfx, slot.getStack(), slot, null);
+			return;
+		}
+		net.minecraft.client.renderer.RenderHelper.enableGUIStandardItemLighting();
+		net.minecraft.client.renderer.GlStateManager.enableRescaleNormal();
+		try {
+			DRAW_SLOT.invoke(this, slot);
+		} catch (ReflectiveOperationException e) {
+			this.renderSlotContents(gfx, slot.getStack(), slot, null);
+		} finally {
+			net.minecraft.client.renderer.RenderHelper.disableStandardItemLighting();
+		}
+	}
+
+	@Nullable
+	private static final java.lang.reflect.Method DRAW_SLOT = drawSlot();
+
+	@Nullable
+	private static java.lang.reflect.Method drawSlot() {
+		for (String name : new String[] {"func_146977_a", "drawSlot"}) {
+			try {
+				var method = net.minecraft.client.gui.inventory.GuiContainer.class.getDeclaredMethod(name, net.minecraft.inventory.Slot.class);
+				method.setAccessible(true);
+				return method;
+			} catch (NoSuchMethodException | RuntimeException e) {
+				// the other name (the game's or the development one)
+			}
+		}
+		return null;
+	}
+
+	/** 1.21 {@code renderSlotContents(gfx, stack, slot, count)}: the item of a slot with its count text. */
+	protected void renderSlotContents(GuiGraphics gfx, net.minecraft.item.ItemStack stack, net.minecraft.inventory.Slot slot, @Nullable String count) {
+		if (stack.isEmpty()) {
+			return;
+		}
+		gfx.renderItem(stack, slot.xPos, slot.yPos);
+		gfx.renderItemDecorations(this.fontRenderer, stack, slot.xPos, slot.yPos, count);
+	}
+
+	protected java.util.List<ITextComponent> getTooltipFromContainerItem(net.minecraft.item.ItemStack stack) {
+		return getTooltipFromItem(this.mc, stack);
+	}
+
+	/** 1.21 hotbar keys over a slot (1 to 9 swap the slot with the hotbar): the scan code is the 1.12.2 key code here. */
+	protected boolean checkHotbarKeyPressed(int keyCode, int scanCode) {
+		return this.checkHotbarKeys(scanCode);
+	}
+
+	/** 1.21 hotbar swaps bound to mouse buttons: 1.12.2 binds the hotbar to keys only. */
+	protected void checkHotbarMouseClicked(int button) {
+	}
+
+	public void clearDraggingState() {
+	}
+
+	/** 1.21 crafter slots toggled on and off: no such slots in 1.12.2. */
+	protected void handleSlotStateChanged(int slotId, int containerId, boolean enabled) {
+	}
+
+	public boolean isPauseScreen() {
+		return false;
+	}
+
+	/** 1.21 {@code onClose}: the container closed on the server too. */
+	public void onClose() {
+		if (this.mc.player != null) {
+			this.mc.player.closeScreen();
+		} else {
+			this.mc.displayGuiScreen(null);
+		}
 	}
 
 	/**
@@ -442,6 +560,11 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 			return;
 		}
 		if (typedChar >= ' ' && this.charTyped(typedChar, 0)) {
+			return;
+		}
+		if (keyCode == org.lwjgl.input.Keyboard.KEY_ESCAPE || this.mc.gameSettings.keyBindInventory.isActiveAndMatches(keyCode)) {
+			// closed through onClose, as 1.21 (a screen that saves its state there overrides it)
+			this.onClose();
 			return;
 		}
 		super.keyTyped(typedChar, keyCode);

@@ -59,6 +59,23 @@ public interface StringRepresentable extends IStringSerializable {
         private final Function<E, String> name;
         private final Codec<E> codec;
 
+        /**
+         * 1.21 {@code new EnumCodec(values, resolver)} (Mekanism makes its upgrade and transmission type codecs so; it was
+         * left empty and the codecs were null): the constants by their serialized names.
+         */
+        @SuppressWarnings("unchecked")
+        public EnumCodec(Enum<?>[] values, Function<String, E> resolver) {
+            this((Map<String, E>) (Map<?, ?>) namesOf(values), value -> value instanceof IStringSerializable named ? named.getName() : String.valueOf(value));
+        }
+
+        private static Map<String, Object> namesOf(Enum<?>[] values) {
+            var byName = new java.util.LinkedHashMap<String, Object>();
+            for (Enum<?> value : values) {
+                byName.put(value instanceof IStringSerializable named ? named.getName() : value.name(), value);
+            }
+            return byName;
+        }
+
         public EnumCodec(Map<String, E> byName, Function<E, String> name) {
             this.byName = byName;
             this.name = name;

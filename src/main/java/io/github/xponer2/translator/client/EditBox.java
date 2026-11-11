@@ -264,4 +264,36 @@ public class EditBox extends GuiTextField implements GuiEventListener, Renderabl
 	public ITextComponent createNarrationMessage() {
 		return new TextComponentString(this.getText());
 	}
+
+	public void updateWidgetNarration(NarrationElementOutput output) {
+	}
+
+	// --- the rest of the 1.21 text field API -------------------------------------------------------------------------
+
+	public static final int BACKWARDS = -1;
+	public static final int FORWARDS = 1;
+	public static final int DEFAULT_TEXT_COLOR = 14737632;
+	private boolean textShadow = true;
+
+	/** 1.21 {@code deleteCharsToPos(pos)}: the text between the cursor and pos removed (the selection first). */
+	public void deleteCharsToPos(int pos) {
+		this.deleteFromCursor(pos - this.getCursorPosition());
+	}
+
+	public boolean getTextShadow() {
+		return this.textShadow;
+	}
+
+	public void setTextShadow(boolean shadow) {
+		this.textShadow = shadow;
+	}
+
+	/** 1.21 {@code onClick(mouseX, mouseY)}: the cursor put where the field was clicked. */
+	public void onClick(double mouseX, double mouseY) {
+		this.mouseClicked((int) mouseX, (int) mouseY, 0);
+	}
+
+	/** A text field makes no click sound. */
+	public void playDownSound(net.minecraft.client.audio.SoundHandler sounds) {
+	}
 }

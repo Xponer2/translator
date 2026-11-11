@@ -862,6 +862,17 @@ public final class MiscBridges {
 		return stack != null && ItemBridges.is(stack.getFluid(), tag);
 	}
 
+	/** NeoForge {@code fluidStack.is(holder)} (Mekanism's canteen takes only its nutritional paste so). */
+	public static boolean is(@Nullable net.minecraftforge.fluids.FluidStack stack, @Nullable Holder<?> holder) {
+		return stack != null && holder != null && stack.getFluid() != null && stack.getFluid() == holder.value();
+	}
+
+	/** NeoForge {@code fluidStack.is(predicate)}: the predicate on the fluid's holder. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static boolean is(@Nullable net.minecraftforge.fluids.FluidStack stack, java.util.function.Predicate predicate) {
+		return stack != null && stack.getFluid() != null && predicate.test(getFluidHolder(stack));
+	}
+
 	public static Holder<net.minecraftforge.fluids.Fluid> getFluidHolder(net.minecraftforge.fluids.FluidStack stack) {
 		return VanillaRedirects.builtInRegistryHolder(stack.getFluid());
 	}

@@ -58,6 +58,14 @@ public final class ArmorMaterialData {
         return this.defense.getOrDefault(type, 0);
     }
 
+    /**
+     * 1.21 record accessor {@code defense()}: the defense by armor type. Mekanism's startup config reads it
+     * ({@code material.defense().get(type)}); without it the config failed and Mekanism didn't load at all.
+     */
+    public Map<ArmorType, Integer> defense() {
+        return this.defense;
+    }
+
     public int enchantmentValue() {
         return this.enchantmentValue;
     }
@@ -122,6 +130,12 @@ public final class ArmorMaterialData {
 
         public boolean dyeable() {
             return this.dyeable;
+        }
+
+        /** 1.21 {@code texture(innerModel)}: textures/models/armor/&lt;name&gt;_layer_1 (2 for the leggings) + suffix. */
+        public ResourceLocation texture(boolean innerModel) {
+            return new ResourceLocation(this.assetName.getNamespace(),
+                    "textures/models/armor/" + this.assetName.getPath() + "_layer_" + (innerModel ? 2 : 1) + this.suffix + ".png");
         }
     }
 }

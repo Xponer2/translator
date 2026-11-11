@@ -55,4 +55,14 @@ public final class MouseHandler {
     public void releaseMouse() {
         Minecraft.getMinecraft().mouseHelper.ungrabMouseCursor();
     }
+
+    /** 1.21: the next mouse move isn't turned into a look (JourneyMap after its fullscreen map); 1.12.2 reads deltas. */
+    public void setIgnoreFirstMove() {
+        Mouse.getDX();
+        Mouse.getDY();
+    }
+
+    /** 1.21 {@code cursorEntered()}: the cursor came back into the window. */
+    public void cursorEntered() {
+    }
 }

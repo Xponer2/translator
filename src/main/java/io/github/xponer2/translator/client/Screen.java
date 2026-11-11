@@ -49,23 +49,85 @@ public abstract class Screen extends GuiScreen implements ContainerEventHandler,
 
 	@Override
 	public void initGui() {
-		this.minecraft = this.mc;
-		this.font = this.fontRenderer;
-		this.clearWidgets();
-		this.init();
+		// 1.21 calls added() each time the screen is shown, then init(minecraft, width, height), which mods override
+		// (JourneyMap's screens set themselves up there): 1.12.2 inits a screen it shows, sized already
+		this.added();
+		this.init(this.mc, this.width, this.height);
 	}
 
 	/** 1.21 init: adds the widgets; runs again when the window is resized. */
 	protected void init() {
 	}
 
+	private boolean initialized;
+
+	/** 1.21 {@code init(minecraft, width, height)}: sized, the widgets made again, the first one focused the first time. */
+	public void init(Minecraft minecraft, int width, int height) {
+		this.mc = minecraft;
+		this.minecraft = minecraft;
+		this.fontRenderer = minecraft.fontRenderer;
+		this.font = this.fontRenderer;
+		this.itemRender = minecraft.getRenderItem();
+		this.width = width;
+		this.height = height;
+		this.clearWidgets();
+		this.init();
+		if (!this.initialized) {
+			this.initialized = true;
+			this.setInitialFocus();
+		}
+	}
+
 	@Override
 	public final void drawScreen(int mouseX, int mouseY, float partialTicks) {
+		this.mouseX = mouseX;
+		this.mouseY = mouseY;
 		try {
-			this.render(new GuiGraphics(this.mc), mouseX, mouseY, partialTicks);
+			this.renderWithTooltip(new GuiGraphics(this.mc), mouseX, mouseY, partialTicks);
 		} catch (RuntimeException | LinkageError e) {
 			ScreenFailures.closeBroken(this, e);
 		}
+	}
+
+	private int mouseX;
+	private int mouseY;
+	@Nullable
+	private Tooltip deferredTooltip;
+
+	/** 1.21 {@code renderWithTooltip}: the screen, then the tooltip a widget asked for during it. */
+	public void renderWithTooltip(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
+		this.render(gfx, mouseX, mouseY, partialTick);
+		if (this.deferredTooltip != null) {
+			Tooltip.show(this.deferredTooltip, mouseX, mouseY);
+			this.deferredTooltip = null;
+		}
+	}
+
+	/** 1.21 {@code setTooltipForNextRenderPass(text)} or {@code (lines)} (one method: they have one parameter each). */
+	public void setTooltipForNextRenderPass(Object textOrLines) {
+		if (textOrLines instanceof ITextComponent text) {
+			this.deferredTooltip = Tooltip.create(text);
+		} else if (textOrLines instanceof List<?> lines && !lines.isEmpty()) {
+			var joined = new net.minecraft.util.text.TextComponentString("");
+			for (int i = 0; i < lines.size(); i++) {
+				if (i > 0) {
+					joined.appendText("\n");
+				}
+				Object line = lines.get(i);
+				joined.appendSibling(line instanceof ITextComponent component ? component : new net.minecraft.util.text.TextComponentString(String.valueOf(line)));
+			}
+			this.deferredTooltip = Tooltip.create(joined);
+		}
+	}
+
+	public void setTooltipForNextRenderPass(Tooltip tooltip, Object positioner, boolean override) {
+		if (override || this.deferredTooltip == null) {
+			this.deferredTooltip = tooltip;
+		}
+	}
+
+	protected void clearTooltipForNextRenderPass() {
+		this.deferredTooltip = null;
 	}
 
 	@Override
@@ -332,6 +394,202 @@ public abstract class Screen extends GuiScreen implements ContainerEventHandler,
 		// Escape closes the screen in keyPressed (1.21), not in the 1.12.2 keyTyped
 		if (!this.keyPressed(KeyMapping.toGlfw(keyCode), keyCode, modifiers()) && typedChar >= ' ') {
 			this.charTyped(typedChar, modifiers());
+		}
+	}
+
+	// --- the rest of the 1.21 screen API ------------------------------------------------------------------------------
+
+	public static final net.minecraft.util.ResourceLocation MENU_BACKGROUND = new net.minecraft.util.ResourceLocation("textures/gui/menu_background.png");
+	public static final net.minecraft.util.ResourceLocation HEADER_SEPARATOR = new net.minecraft.util.ResourceLocation("textures/gui/header_separator.png");
+	public static final net.minecraft.util.ResourceLocation FOOTER_SEPARATOR = new net.minecraft.util.ResourceLocation("textures/gui/footer_separator.png");
+	public static final net.minecraft.util.ResourceLocation INWORLD_MENU_BACKGROUND = new net.minecraft.util.ResourceLocation(
+			"textures/gui/inworld_menu_background.png");
+	public static final net.minecraft.util.ResourceLocation INWORLD_HEADER_SEPARATOR = new net.minecraft.util.ResourceLocation(
+			"textures/gui/inworld_header_separator.png");
+	public static final net.minecraft.util.ResourceLocation INWORLD_FOOTER_SEPARATOR = new net.minecraft.util.ResourceLocation(
+			"textures/gui/inworld_footer_separator.png");
+
+	/** 1.21 {@code screenExecutor}: runs a task on the game thread while this screen is still shown. */
+	protected final java.util.concurrent.Executor screenExecutor = task -> Minecraft.getMinecraft().addScheduledTask(() -> {
+		if (Minecraft.getMinecraft().currentScreen == this) {
+			task.run();
+		}
+	});
+
+	/** Shown (1.21 setScreen calls it before init). */
+	public void added() {
+	}
+
+	/** 1.21 {@code resize}: the new size, the widgets placed again (repositionElements, which mods override). */
+	public void resize(Minecraft minecraft, int width, int height) {
+		this.width = width;
+		this.height = height;
+		this.repositionElements();
+	}
+
+	@Override
+	public void onResize(Minecraft minecraft, int width, int height) {
+		this.mc = minecraft;
+		this.resize(minecraft, width, height);
+	}
+
+	protected void repositionElements() {
+		this.rebuildWidgets();
+	}
+
+	protected void rebuildWidgets() {
+		this.clearWidgets();
+		this.clearFocus();
+		this.init();
+	}
+
+	public void clearFocus() {
+		this.setFocused(null);
+	}
+
+	/** 1.21 {@code changeFocus(path)}: the focus moved along a (carried) component path. */
+	protected void changeFocus(Object path) {
+		this.clearFocus();
+		ScreenRectangles.applyFocus(path, true);
+	}
+
+	/** 1.21 picks the first widget for keyboard users; 1.12.2 screens start with nothing focused. */
+	protected void setInitialFocus() {
+	}
+
+	/** 1.21 {@code setInitialFocus(listener)}: that listener focused (a search box takes the typing at once). */
+	protected void setInitialFocus(GuiEventListener listener) {
+		this.setFocused(listener);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <R> R getRectangle() {
+		return (R) ScreenRectangles.of(0, 0, this.width, this.height);
+	}
+
+	public ITextComponent getNarrationMessage() {
+		return this.getTitle();
+	}
+
+	protected ITextComponent getUsageNarration() {
+		return new net.minecraft.util.text.TextComponentString("");
+	}
+
+	/** 1.21 {@code handleComponentClicked(style)}: the click event of a chat style (open a link, run a command), as 1.12.2. */
+	public boolean handleComponentClicked(@Nullable net.minecraft.util.text.Style style) {
+		return style != null && this.handleComponentClick(new net.minecraft.util.text.TextComponentString("").setStyle(style));
+	}
+
+	protected void insertText(String text, boolean overwrite) {
+	}
+
+	public static boolean isCut(int keyCode) {
+		return keyCode == 88 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	}
+
+	public static boolean isPaste(int keyCode) {
+		return keyCode == 86 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	}
+
+	public static boolean isCopy(int keyCode) {
+		return keyCode == 67 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	}
+
+	public static boolean isSelectAll(int keyCode) {
+		return keyCode == 65 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	}
+
+	/** 1.21 {@code isValidCharacterForName}: the characters of a resource location (a world or pack name). */
+	protected boolean isValidCharacterForName(String text, char character, int cursor) {
+		int colon = text.indexOf(':');
+		int slash = text.indexOf('/');
+		if (character == ':') {
+			return (slash == -1 || cursor <= slash) && colon == -1;
+		}
+		if (character == '/') {
+			return cursor > colon;
+		}
+		return character == '_' || character == '-' || character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '.';
+	}
+
+	public void onFilesDrop(List<java.nio.file.Path> files) {
+	}
+
+	/** 1.12.2 has no blur behind screens. */
+	protected void renderBlurredBackground(float partialTick) {
+	}
+
+	/** 1.21 menu background: the 1.12.2 dirt in the menus, the dark gradient over a world. */
+	protected void renderMenuBackground(GuiGraphics gfx) {
+		this.renderMenuBackground(gfx, 0, 0, this.width, this.height);
+	}
+
+	protected void renderMenuBackground(GuiGraphics gfx, int x, int y, int width, int height) {
+		renderMenuBackgroundTexture(gfx, this.mc != null && this.mc.world != null ? INWORLD_MENU_BACKGROUND : MENU_BACKGROUND, x, y, 0.0F, 0.0F, width, height);
+	}
+
+	/**
+	 * 1.21 {@code renderMenuBackgroundTexture}: its menu textures are missing in 1.12.2, so the menu one is the darkened
+	 * dirt of 1.12.2 menus and the in-world one a dark see-through fill; a mod's own texture is tiled as asked.
+	 */
+	public static void renderMenuBackgroundTexture(GuiGraphics gfx, net.minecraft.util.ResourceLocation texture, int x, int y, float u, float v, int width,
+			int height) {
+		if (INWORLD_MENU_BACKGROUND.equals(texture)) {
+			gfx.fill(x, y, x + width, y + height, 0xA0101010);
+			return;
+		}
+		var drawn = MENU_BACKGROUND.equals(texture) ? OPTIONS_BACKGROUND : texture;
+		net.minecraft.client.renderer.GlStateManager.enableBlend();
+		Minecraft.getMinecraft().getTextureManager().bindTexture(drawn);
+		net.minecraft.client.renderer.GlStateManager.color(0.25F, 0.25F, 0.25F, 1.0F);
+		net.minecraft.client.gui.Gui.drawModalRectWithCustomSizedTexture(x, y, u, v, width, height, 32.0F, 32.0F);
+		net.minecraft.client.renderer.GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+	}
+
+	/** The title screen panorama of 1.21: the menu background here. */
+	protected void renderPanorama(GuiGraphics gfx, float partialTick) {
+		this.renderMenuBackground(gfx);
+	}
+
+	// narration: 1.12.2 has none for screens, the Translator never narrates
+
+	public void afterKeyboardAction() {
+	}
+
+	public void afterMouseAction() {
+	}
+
+	public void afterMouseMove() {
+	}
+
+	public void handleDelayedNarration() {
+	}
+
+	public void triggerImmediateNarration(boolean onlyChanged) {
+	}
+
+	public void updateNarratorStatus(boolean enabled) {
+	}
+
+	protected boolean shouldNarrateNavigation() {
+		return true;
+	}
+
+	protected void updateNarrationState(NarrationElementOutput output) {
+	}
+
+	protected void updateNarratedWidget(NarrationElementOutput output) {
+	}
+
+	/** 1.21 {@code wrapScreenError}: a failure in a screen's action reported as a crash naming the screen. */
+	public static void wrapScreenError(Runnable action, String description, String screenName) {
+		try {
+			action.run();
+		} catch (Throwable t) {
+			var report = net.minecraft.crash.CrashReport.makeCrashReport(t, description);
+			report.makeCategory("Affected screen").addCrashSection("Screen name", screenName);
+			throw new net.minecraft.util.ReportedException(report);
 		}
 	}
 }

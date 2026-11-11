@@ -210,13 +210,22 @@ public final class VertexConsumer {
 
 		this.started = false;
 		GlStateManager.pushMatrix();
-		GL11.glLoadMatrix(this.beginBuffer);
+		if (this.type != null && this.type.viewOffsetZ()) {
+			// 1.21 VIEW_OFFSET_Z_LAYERING: the view scaled a hair towards the camera, so an outline isn't hidden in the face
+			GlStateManager.loadIdentity();
+			GlStateManager.scale(VIEW_OFFSET_Z, VIEW_OFFSET_Z, VIEW_OFFSET_Z);
+			GlStateManager.multMatrix(this.beginBuffer);
+		} else {
+			GL11.glLoadMatrix(this.beginBuffer);
+		}
 		Tessellator.getInstance().draw();
 		GlStateManager.popMatrix();
 		if (this.type != null) {
 			this.type.clearRenderState();
 		}
 	}
+
+	private static final float VIEW_OFFSET_Z = 0.99975586F;
 
 	/** The last vertex of a mod's buffer written, its vertices drawn in the matrix they were added in. */
 	void drawTarget() {
@@ -289,9 +298,12 @@ public final class VertexConsumer {
 		}
 		this.started = true;
 		if (this.target == null) {
-			// the texture first: a type whose shard binds its own (a map tile's) binds it in its setup after
+			// the texture first: a type whose shard binds its own (a map tile's) binds it in its setup after; a type
+			// without a texture (gui, lines) leaves the screen's bound one alone
 			var texture = this.type.texture();
-			Minecraft.getMinecraft().getTextureManager().bindTexture(texture != null ? texture : TextureMap.LOCATION_BLOCKS_TEXTURE);
+			if (texture != null || this.type.textured()) {
+				Minecraft.getMinecraft().getTextureManager().bindTexture(texture != null ? texture : TextureMap.LOCATION_BLOCKS_TEXTURE);
+			}
 			this.type.setupRenderState();
 		}
 		this.begin.load(currentMatrix());
@@ -301,8 +313,7 @@ public final class VertexConsumer {
 		this.beginBuffer.flip();
 		if (this.target == null) {
 			// the type's primitive (lines of a mod's line type, triangles), quads for the Translator's own types
-			Tessellator.getInstance().getBuffer().begin(this.type.mode() != null ? Tesselation.glMode(this.type.mode()) : GL11.GL_QUADS,
-					DefaultVertexFormats.POSITION_TEX_COLOR);
+			Tessellator.getInstance().getBuffer().begin(this.type.glMode(), DefaultVertexFormats.POSITION_TEX_COLOR);
 		}
 	}
 

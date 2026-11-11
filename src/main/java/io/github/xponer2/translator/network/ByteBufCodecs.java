@@ -82,6 +82,8 @@ public final class ByteBufCodecs {
 
     public static final StreamCodec<ByteBuf, NBTTagCompound> COMPOUND_TAG = StreamCodec.of(
             (buffer, value) -> packet(buffer).writeCompoundTag(value), ByteBufCodecs::readCompoundTag);
+    /** 1.21: a compound with no size limit (Mekanism's block data); 1.12.2 reads compounds without one anyway. */
+    public static final StreamCodec<ByteBuf, NBTTagCompound> TRUSTED_COMPOUND_TAG = COMPOUND_TAG;
     public static final StreamCodec<ByteBuf, Optional<NBTTagCompound>> OPTIONAL_COMPOUND_TAG = StreamCodec.of(
             (buffer, value) -> packet(buffer).writeCompoundTag(value.orElse(null)),
             buffer -> Optional.ofNullable(readCompoundTag(buffer)));

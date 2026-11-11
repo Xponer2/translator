@@ -15,7 +15,26 @@ package io.github.xponer2.translator.client;
  * key events to it with 1.21 values: doubles for the mouse, GLFW key codes.
  */
 public interface GuiEventListener {
+	long DOUBLE_CLICK_THRESHOLD_MS = 250L;
+
 	default void mouseMoved(double mouseX, double mouseY) {
+	}
+
+	/** 1.21 bounds (a carried ScreenRectangle): empty for a listener that has none of its own. */
+	@SuppressWarnings("unchecked")
+	default <R> R getRectangle() {
+		return (R) ScreenRectangles.of(0, 0, 0, 0);
+	}
+
+	/** 1.21 keyboard focus navigation (Tab, arrows): 1.12.2 screens have none, so nothing is a step of it. */
+	@javax.annotation.Nullable
+	default <R> R nextFocusPath(Object event) {
+		return null;
+	}
+
+	@javax.annotation.Nullable
+	default <R> R getCurrentFocusPath() {
+		return null;
 	}
 
 	default boolean mouseClicked(double mouseX, double mouseY, int button) {

@@ -46,6 +46,8 @@ public final class Capabilities {
 	public static final class EnergyStorage {
 		public static final BlockCapability<IEnergyStorage, EnumFacing> BLOCK = new BlockCapability<>(() -> CapabilityEnergy.ENERGY);
 		public static final ItemCapability<IEnergyStorage, Void> ITEM = new ItemCapability<>(() -> CapabilityEnergy.ENERGY);
+		/** Energy of an entity (Mekanism's robit): the 1.12.2 entity capability. */
+		public static final EntityCapability<IEnergyStorage, EnumFacing> ENTITY = new EntityCapability<>(() -> CapabilityEnergy.ENERGY);
 
 		private EnergyStorage() {
 		}
@@ -54,6 +56,7 @@ public final class Capabilities {
 	public static final class FluidHandler {
 		public static final BlockCapability<IFluidHandler, EnumFacing> BLOCK = new BlockCapability<>(() -> CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY);
 		public static final ItemCapability<IFluidHandlerItem, Void> ITEM = new ItemCapability<>(() -> CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY);
+		public static final EntityCapability<IFluidHandler, EnumFacing> ENTITY = new EntityCapability<>(() -> CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY);
 
 		private FluidHandler() {
 		}

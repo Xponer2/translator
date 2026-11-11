@@ -22,6 +22,7 @@ import net.minecraft.util.text.ITextComponent;
 public abstract class AbstractSliderButton extends AbstractWidget {
 	protected static final int GLFW_KEY_RIGHT = 262;
 	protected static final int GLFW_KEY_LEFT = 263;
+	protected static final int TEXT_MARGIN = 2;
 
 	protected double value;
 
@@ -31,6 +32,20 @@ public abstract class AbstractSliderButton extends AbstractWidget {
 	}
 
 	protected abstract void updateMessage();
+
+	/** The 1.21 sprites of the track and the handle (drawn the 1.12.2 way, see renderWidget). */
+	protected net.minecraft.util.ResourceLocation getSprite() {
+		return new net.minecraft.util.ResourceLocation(this.isFocused() ? "widget/slider_highlighted" : "widget/slider");
+	}
+
+	protected net.minecraft.util.ResourceLocation getHandleSprite() {
+		return new net.minecraft.util.ResourceLocation(this.isHovered || this.isFocused() ? "widget/slider_handle_highlighted" : "widget/slider_handle");
+	}
+
+	@Override
+	protected ITextComponent createNarrationMessage() {
+		return new net.minecraft.util.text.TextComponentTranslation("gui.narrate.slider", this.getMessage());
+	}
 
 	protected abstract void applyValue();
 

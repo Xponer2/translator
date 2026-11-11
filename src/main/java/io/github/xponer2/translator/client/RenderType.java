@@ -50,7 +50,42 @@ public class RenderType extends RenderStateShard {
     /** The 1.21 vertex mode (VertexFormat.Mode, carried with the API), null for the Translator's own types (quads). */
     @javax.annotation.Nullable
     public Object mode() {
+        if (this.mode == null && this.modeName != null) {
+            // a Translator type of another primitive (lines): the carried enum constant, looked up when first asked
+            this.mode = carriedMode(this.modeName);
+        }
         return this.mode;
+    }
+
+    /** The 1.21 mode by name of the Translator's own types that aren't quads (the carried enum isn't there offline). */
+    @javax.annotation.Nullable
+    private String modeName;
+
+    /** The GL primitive the vertices are drawn as. */
+    int glMode() {
+        Object mode = this.mode != null ? this.mode : this.modeName;
+        return mode != null ? Tesselation.glMode(mode) : org.lwjgl.opengl.GL11.GL_QUADS;
+    }
+
+    @javax.annotation.Nullable
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Object carriedMode(String name) {
+        try {
+            return Enum.valueOf((Class) Class.forName("com.mojang.blaze3d.vertex.VertexFormat$Mode", true, net.minecraft.launchwrapper.Launch.classLoader),
+                    name);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            return null;
+        }
+    }
+
+    /** Whether the vertices are drawn with a texture (the immediate consumer binds one only then). */
+    boolean textured() {
+        return true;
+    }
+
+    /** Whether the vertices are pulled a little towards the camera (1.21 VIEW_OFFSET_Z_LAYERING: outlines over faces). */
+    boolean viewOffsetZ() {
+        return false;
     }
 
     public int bufferSize() {
@@ -212,6 +247,67 @@ public class RenderType extends RenderStateShard {
 
     public static RenderType translucent() {
         return TRANSLUCENT;
+    }
+
+    // --- the 1.21 GUI and line types, with the shards 1.21 gives them (14 mods fill slot highlights and overlays with
+    // guiOverlay, 11 draw block outlines with lines; without them the call was left empty and nothing drawn)
+
+    private static final RenderType GUI = create("gui", net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_COLOR, null, 786432,
+            CompositeState.builder().setShaderState(RENDERTYPE_GUI_SHADER).setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setDepthTestState(LEQUAL_DEPTH_TEST).createCompositeState(false));
+    private static final RenderType GUI_OVERLAY = create("gui_overlay", net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_COLOR, null,
+            1536, CompositeState.builder().setShaderState(RENDERTYPE_GUI_OVERLAY_SHADER).setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setDepthTestState(NO_DEPTH_TEST).setWriteMaskState(COLOR_WRITE).createCompositeState(false));
+    private static final RenderType GUI_TEXT_HIGHLIGHT = create("gui_text_highlight", net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_COLOR,
+            null, 1536, CompositeState.builder().setShaderState(RENDERTYPE_GUI_TEXT_HIGHLIGHT_SHADER).setTransparencyState(NO_TRANSPARENCY)
+                    .setDepthTestState(NO_DEPTH_TEST).setColorLogicState(OR_REVERSE_COLOR_LOGIC).createCompositeState(false));
+    private static final RenderType GUI_GHOST_RECIPE_OVERLAY = create("gui_ghost_recipe_overlay",
+            net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_COLOR, null, 1536, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_GUI_GHOST_RECIPE_OVERLAY_SHADER).setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setDepthTestState(GREATER_DEPTH_TEST).setWriteMaskState(COLOR_WRITE).createCompositeState(false));
+    private static final RenderType LINES = lineType("lines", "LINES");
+    private static final RenderType LINE_STRIP = lineType("line_strip", "LINE_STRIP");
+    private static final java.util.Map<net.minecraft.util.ResourceLocation, RenderType> OUTLINE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static RenderType lineType(String name, String mode) {
+        RenderType type = create(name, net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_COLOR, null, 1536, CompositeState.builder()
+                .setShaderState(RENDERTYPE_LINES_SHADER).setLineState(new LineStateShard(java.util.OptionalDouble.empty()))
+                .setLayeringState(VIEW_OFFSET_Z_LAYERING).setTransparencyState(TRANSLUCENT_TRANSPARENCY).setOutputState(ITEM_ENTITY_TARGET)
+                .setWriteMaskState(COLOR_DEPTH_WRITE).setCullState(NO_CULL).createCompositeState(false));
+        type.modeName = mode;
+        return type;
+    }
+
+    public static RenderType gui() {
+        return GUI;
+    }
+
+    public static RenderType guiOverlay() {
+        return GUI_OVERLAY;
+    }
+
+    public static RenderType guiTextHighlight() {
+        return GUI_TEXT_HIGHLIGHT;
+    }
+
+    public static RenderType guiGhostRecipeOverlay() {
+        return GUI_GHOST_RECIPE_OVERLAY;
+    }
+
+    public static RenderType lines() {
+        return LINES;
+    }
+
+    public static RenderType lineStrip() {
+        return LINE_STRIP;
+    }
+
+    /** 1.21 {@code outline(texture)}: the glowing outline of a model, which 1.12.2 draws itself (see OUTLINE_TARGET). */
+    public static RenderType outline(net.minecraft.util.ResourceLocation texture) {
+        return OUTLINE.computeIfAbsent(texture, location -> create("outline", net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_TEX_COLOR,
+                null, 1536, CompositeState.builder().setShaderState(RENDERTYPE_OUTLINE_SHADER).setTextureState(new TextureStateShard(location, false, false))
+                        .setCullState(NO_CULL).setDepthTestState(NO_DEPTH_TEST).setOutputState(OUTLINE_TARGET)
+                        .createCompositeState(OutlineProperty.IS_OUTLINE)));
     }
 
     /** Whether the type binds its texture itself (a mod's texture state): the consumer's binding comes first then. */
@@ -378,6 +474,21 @@ public class RenderType extends RenderStateShard {
             var location = state.textureState == null ? null : state.textureState.location();
             this.setTexture(location);
             this.ownTexture = location == null && state.textureState != null && state.textureState != RenderStateShard.NO_TEXTURE;
+            this.textured = state.shaderState == null || state.shaderState.textured() || location != null;
+            this.viewOffsetZ = state.states.contains(RenderStateShard.VIEW_OFFSET_Z_LAYERING);
+        }
+
+        private final boolean textured;
+        private final boolean viewOffsetZ;
+
+        @Override
+        boolean textured() {
+            return this.textured;
+        }
+
+        @Override
+        boolean viewOffsetZ() {
+            return this.viewOffsetZ;
         }
 
         public CompositeState state() {

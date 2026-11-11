@@ -266,6 +266,96 @@ public abstract class AbstractWidget extends GuiButton implements GuiEventListen
 		return this.message;
 	}
 
+	// --- the rest of the 1.21 widget API (JourneyMap's screens, layouts and scrolling labels use it)
+
+	public static final double PERIOD_PER_SCROLLED_PIXEL = 0.5D;
+	public static final double MIN_SCROLL_PERIOD = 3.0D;
+
+	/** 1.21 widget opacity (faded in title screens); the 1.12.2 drawing keeps the widget opaque. */
+	protected float alpha = 1.0F;
+	private int tabOrderGroup;
+
+	public void setAlpha(float alpha) {
+		this.alpha = alpha;
+	}
+
+	public int getRight() {
+		return this.x + this.width;
+	}
+
+	public int getBottom() {
+		return this.y + this.height;
+	}
+
+	/** 1.21 {@code setRectangle(width, height, x, y)}. */
+	public void setRectangle(int width, int height, int x, int y) {
+		this.setSize(width, height);
+		this.setPosition(x, y);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <R> R getRectangle() {
+		return (R) ScreenRectangles.of(this.x, this.y, this.width, this.height);
+	}
+
+	public int getTabOrderGroup() {
+		return this.tabOrderGroup;
+	}
+
+	public void setTabOrderGroup(int group) {
+		this.tabOrderGroup = group;
+	}
+
+	protected boolean isValidClickButton(int button) {
+		return button == 0;
+	}
+
+	public void visitWidgets(java.util.function.Consumer<AbstractWidget> visitor) {
+		visitor.accept(this);
+	}
+
+	protected ITextComponent createNarrationMessage() {
+		return wrapDefaultNarrationMessage(this.getMessage());
+	}
+
+	public static ITextComponent wrapDefaultNarrationMessage(ITextComponent message) {
+		return new net.minecraft.util.text.TextComponentTranslation("gui.narrate.button", message);
+	}
+
+	protected void defaultButtonNarrationText(NarrationElementOutput output) {
+	}
+
+	/** The message, scrolling back and forth when it is wider than the widget (1.21 long button labels). */
+	protected void renderScrollingString(GuiGraphics gfx, net.minecraft.client.gui.FontRenderer font, int margin, int color) {
+		renderScrollingString(gfx, font, this.getMessage(), this.x + margin, this.y, this.x + this.width - margin, this.y + this.height, color);
+	}
+
+	public static void renderScrollingString(GuiGraphics gfx, net.minecraft.client.gui.FontRenderer font, ITextComponent text, int minX, int minY,
+			int maxX, int maxY, int color) {
+		renderScrollingString(gfx, font, text, (minX + maxX) / 2, minX, minY, maxX, maxY, color);
+	}
+
+	public static void renderScrollingString(GuiGraphics gfx, net.minecraft.client.gui.FontRenderer font, ITextComponent text, int centerX, int minX,
+			int minY, int maxX, int maxY, int color) {
+		String string = text.getFormattedText();
+		int textWidth = font.getStringWidth(string);
+		int y = (minY + maxY - 9) / 2 + 1;
+		int room = maxX - minX;
+		if (textWidth > room) {
+			int overflow = textWidth - room;
+			double seconds = System.currentTimeMillis() / 1000.0D;
+			double period = Math.max(overflow * PERIOD_PER_SCROLLED_PIXEL, MIN_SCROLL_PERIOD);
+			double phase = Math.sin(Math.PI / 2 * Math.cos(Math.PI * 2 * seconds / period)) / 2.0D + 0.5D;
+			gfx.enableScissor(minX, minY, maxX, maxY);
+			gfx.drawString(font, string, minX - (int) (phase * overflow), y, color);
+			gfx.disableScissor();
+		} else {
+			int center = Math.max(minX + textWidth / 2, Math.min(centerX, maxX - textWidth / 2));
+			gfx.drawCenteredString(font, string, center, y, color);
+		}
+	}
+
 	public void setMessage(ITextComponent message) {
 		this.message = message;
 		this.displayString = message.getFormattedText();

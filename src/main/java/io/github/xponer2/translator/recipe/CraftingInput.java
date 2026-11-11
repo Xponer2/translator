@@ -123,6 +123,9 @@ public class CraftingInput implements RecipeInput {
     }
 
     public static final class Positioned {
+        /** 1.21 {@code CraftingInput.Positioned.EMPTY} (Mekanism's recipe formulas start from it). */
+        public static final Positioned EMPTY = new Positioned(CraftingInput.EMPTY, 0, 0);
+
         private final CraftingInput input;
         private final int left;
         private final int top;
