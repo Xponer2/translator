@@ -47,4 +47,52 @@ public final class GuavaBridges {
 			return ImmutableMap.builder();
 		}
 	}
+
+	/** Newer {@code ImmutableMap.Builder} methods. */
+	public static final class MapBuilders {
+		private static final java.lang.reflect.Field ENTRIES = field("entries");
+		private static final java.lang.reflect.Field SIZE = field("size");
+
+		private MapBuilders() {
+		}
+
+		@javax.annotation.Nullable
+		private static java.lang.reflect.Field field(String name) {
+			try {
+				java.lang.reflect.Field field = ImmutableMap.Builder.class.getDeclaredField(name);
+				field.setAccessible(true);
+				return field;
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				return null;
+			}
+		}
+
+		/**
+		 * Guava 31's {@code builder.buildKeepingLast()}: the map, a key put twice keeping its last value (Guava 21's
+		 * build() throws on it). Curios' entity slots were built so: its server data came out null.
+		 */
+		@SuppressWarnings("unchecked")
+		public static <K, V> ImmutableMap<K, V> buildKeepingLast(ImmutableMap.Builder<K, V> builder) {
+			if (ENTRIES == null || SIZE == null) {
+				return builder.build();
+			}
+			try {
+				Object[] entries = (Object[]) ENTRIES.get(builder);
+				int size = SIZE.getInt(builder);
+				java.util.Map<K, V> map = new java.util.LinkedHashMap<>();
+				for (int i = 0; i < size; i++) {
+					java.util.Map.Entry<K, V> entry = (java.util.Map.Entry<K, V>) entries[i];
+					map.put(entry.getKey(), entry.getValue());
+				}
+				return ImmutableMap.copyOf(map);
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				return builder.build();
+			}
+		}
+
+		/** Guava 31's {@code builder.buildOrThrow()}: Guava 21's build(). */
+		public static <K, V> ImmutableMap<K, V> buildOrThrow(ImmutableMap.Builder<K, V> builder) {
+			return builder.build();
+		}
+	}
 }

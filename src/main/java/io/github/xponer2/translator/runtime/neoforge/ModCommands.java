@@ -68,16 +68,19 @@ public final class ModCommands {
 			return;
 		}
 		java.util.Set<String> taken = server.getCommandManager().getCommands().keySet();
+		java.util.List<String> registered = new ArrayList<>();
 		for (Object node : roots) {
 			try {
 				String name = (String) call(node, "getName");
 				if (!taken.contains(name)) {
 					fml.registerServerCommand(new Bridge(dispatcher, node, name));
+					registered.add(name);
 				}
 			} catch (ReflectiveOperationException | RuntimeException e) {
 				RuntimeStubs.failed("RegisterCommandsEvent: a command of a mod", e);
 			}
 		}
+		org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").info("Commands of the 1.21.1 mods: {} {}", registered.size(), registered);
 	}
 
 	/** The public method of that name whose parameters take the arguments (brigadier has execute(String, S) and execute(StringReader, S)). */
@@ -171,7 +174,7 @@ public final class ModCommands {
 	}
 
 	/** The 1.21 CommandSourceStack of a 1.12.2 command sender. */
-	static Object source(MinecraftServer server, ICommandSender sender) throws ReflectiveOperationException {
+	public static Object source(MinecraftServer server, ICommandSender sender) throws ReflectiveOperationException {
 		Class<?> stackType = Class.forName("net.minecraft.commands.CommandSourceStack", true, Launch.classLoader);
 		Class<?> sourceType = Class.forName("net.minecraft.commands.CommandSource", true, Launch.classLoader);
 		Object output = Proxy.newProxyInstance(sourceType.getClassLoader(), new Class<?>[] {sourceType}, (proxy, method, args) -> {

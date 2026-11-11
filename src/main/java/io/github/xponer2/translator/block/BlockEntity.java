@@ -53,7 +53,14 @@ public class BlockEntity extends TileEntity implements ITickable {
 
 	public IBlockState getBlockState() {
 		if (this.world != null) {
-			return this.world.getBlockState(this.pos);
+			IBlockState here = this.world.getBlockState(this.pos);
+			if (this.blockState == null || here.getBlock() == this.blockState.getBlock()) {
+				this.blockState = here;
+				return here;
+			}
+			// the block was replaced already (1.12.2 sets the new state before breakBlock, so a mod's onRemove saw air:
+			// Iron's Spells' portal frames threw): the state it was for, as 1.21's block entity keeps it
+			return this.blockState;
 		}
 		if (this.blockState != null) {
 			return this.blockState;

@@ -787,6 +787,49 @@ public final class LevelGapBridges {
 		return 140;
 	}
 
+	/** Mobs a goal made aggressive (1.21 {@code mob.setAggressive}: synced data there; here what the goals read). */
+	private static final java.util.Map<Entity, Boolean> AGGRESSIVE = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+	/** 1.21 {@code mob.setAggressive(aggressive)} (Ars Nouveau's, Twilight Forest's, Iron's Spells' attack goals). */
+	public static void setAggressive(net.minecraft.entity.EntityLiving mob, boolean aggressive) {
+		if (aggressive) {
+			AGGRESSIVE.put(mob, Boolean.TRUE);
+		} else {
+			AGGRESSIVE.remove(mob);
+		}
+	}
+
+	/** 1.21 {@code mob.isAggressive()} (the Dead King's spells check it). */
+	public static boolean isAggressive(net.minecraft.entity.EntityLiving mob) {
+		return AGGRESSIVE.containsKey(mob);
+	}
+
+	/** 1.21 {@code player.createCommandSourceStack()}: the player's command source (Iron's Spells' lore books, AE2). */
+	@Nullable
+	public static Object createCommandSourceStack(net.minecraft.entity.player.EntityPlayer player) {
+		net.minecraft.server.MinecraftServer server = player.getServer();
+		if (server == null) {
+			return null;
+		}
+		try {
+			return io.github.xponer2.translator.runtime.neoforge.ModCommands.source(server, player);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("createCommandSourceStack", e);
+			return null;
+		}
+	}
+
+	/** 1.21 {@code new BlockHitResult(miss, location, direction, pos, inside)} (BlockHitResult.miss of the carried code). */
+	public static RayTraceResult newRayTraceResult(boolean miss, Vec3d location, net.minecraft.util.EnumFacing direction, BlockPos pos, boolean inside) {
+		return new RayTraceResult(miss ? RayTraceResult.Type.MISS : RayTraceResult.Type.BLOCK, location, direction, pos);
+	}
+
+	/** 1.21 {@code state.hasLargeCollisionShape()}: a collision taller than the block (fences, walls, gates). */
+	public static boolean hasLargeCollisionShape(IBlockState state) {
+		Block block = state.getBlock();
+		return block instanceof net.minecraft.block.BlockFence || block instanceof net.minecraft.block.BlockWall || block instanceof net.minecraft.block.BlockFenceGate;
+	}
+
 	/** 1.21 {@code entity.setTicksFrozen(ticks)}: 1.12.2 has no freezing (Iron's Spells' ice spells' slow stays theirs). */
 	public static void setTicksFrozen(Entity entity, int ticks) {
 	}

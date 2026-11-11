@@ -675,3 +675,6 @@ R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/
 R	io/github/xponer2/translator/runtime/mc/NearestAttackableTargetGoal	io/github/xponer2/translator/runtime/mc/NearestAttackableTargetGoal
 # 1.21 MoveControl.Operation is 1.12.2's EntityMoveHelper.Action (same constants): the operation field of mods' and carried move controls
 C	net/minecraft/world/entity/ai/control/MoveControl$Operation	net/minecraft/entity/ai/EntityMoveHelper$Action
+R	net/minecraft/entity/player/EntityPlayer	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# newer Guava calls (1.21.1 ships Guava 32, 1.12.2 Guava 21)
+R	com/google/common/collect/ImmutableMap$Builder	io/github/xponer2/translator/runtime/redirect/GuavaBridges$MapBuilders
