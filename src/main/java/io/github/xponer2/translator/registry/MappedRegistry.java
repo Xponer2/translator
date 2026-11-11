@@ -27,6 +27,8 @@ import java.util.Set;
  * data component types, ...). Filled by {@link DeferredRegister}, in registration order.
  */
 public final class MappedRegistry<T> implements Registry<T> {
+    private static final ResourceLocation ENTITY_DATA_SERIALIZERS = new ResourceLocation("neoforge", "entity_data_serializers");
+
     private final ResourceKey<? extends Registry<T>> key;
     private final Map<ResourceLocation, T> byLocation = new LinkedHashMap<>();
     private final Map<T, ResourceLocation> byValue = new IdentityHashMap<>();
@@ -56,6 +58,11 @@ public final class MappedRegistry<T> implements Registry<T> {
         }
         this.byLocation.put(location, value);
         this.byValue.put(value, location);
+        if (ENTITY_DATA_SERIALIZERS.equals(this.key.location())) {
+            // a mod's entity data serializer: 1.12.2 refuses data of one it doesn't know; numbered in registration order,
+            // the same on both sides
+            io.github.xponer2.translator.entity.DataSerializerDefaults.register(value);
+        }
         if (value instanceof RegistrationCallback callback) {
             this.pending.put(location, callback);
         }

@@ -359,6 +359,18 @@ public abstract class AbstractContainerMenu extends Container {
 	 * 1.21 {@code addDataSlot(slot)}: one synced int. DataSlot is the carried 1.21 class (its get() and set(int) are read
 	 * by name); Iron Furnaces syncs its furnace's progress with them.
 	 */
+	/** 1.21 {@code checkContainerSize(container, size)}: a container smaller than the menu needs is an error. */
+	protected static void checkContainerSize(net.minecraft.inventory.IInventory container, int size) {
+		if (container.getSizeInventory() < size) {
+			throw new IllegalArgumentException("Container size " + container.getSizeInventory() + " is smaller than expected " + size);
+		}
+	}
+
+	/** 1.21 {@code clearContainer(player, container)}: the items back to the player (1.12.2's takes the world too). */
+	protected void clearContainer(EntityPlayer player, net.minecraft.inventory.IInventory container) {
+		this.clearContainer(player, player.world, container);
+	}
+
 	protected <T> T addDataSlot(T slot) {
 		java.lang.reflect.Method get;
 		java.lang.reflect.Method set;

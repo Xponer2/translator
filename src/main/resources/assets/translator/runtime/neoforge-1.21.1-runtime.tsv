@@ -514,3 +514,5 @@ X	net/minecraft/network/chat/ComponentUtils	updateForEntity	(Lnet/minecraft/comm
 # RenderSystem.recordRenderCall: on the game's task queue (the carried queue is never replayed on 1.12.2)
 X	translator_api/com/mojang/blaze3d/systems/RenderSystem	recordRenderCall	(Lcom/mojang/blaze3d/pipeline/RenderCall;)V	io/github/xponer2/translator/client/RenderSystem	(Ljava/lang/Object;)V
 X	io/github/xponer2/translator/client/RenderSystem	recordRenderCall	(Lcom/mojang/blaze3d/pipeline/RenderCall;)V	io/github/xponer2/translator/client/RenderSystem	(Ljava/lang/Object;)V
+X	net/minecraft/world/World	spawnEntity	(Lnet/minecraft/entity/Entity;)Z	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+X	net/minecraft/world/WorldServer	spawnEntity	(Lnet/minecraft/entity/Entity;)Z	io/github/xponer2/translator/runtime/redirect/LevelGapBridges	(Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;)Z

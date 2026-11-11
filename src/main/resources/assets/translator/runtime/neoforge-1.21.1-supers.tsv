@@ -71,3 +71,13 @@ E	net/minecraft/world/damagesource/DamageSource	io/github/xponer2/translator/run
 S	net/minecraft/world/level/chunk/ChunkSource	io/github/xponer2/translator/world/ChunkSource
 # a mod's own block state property (1.21's abstract class; 1.12.2's IProperty is an interface a class can't extend)
 E	net/minecraft/world/level/block/state/properties/Property	io/github/xponer2/translator/runtime/mc/Property
+# a mod's own entity on a concrete vanilla one (1.12.2's takes the world only; the facade takes the EntityType)
+E	net/minecraft/world/entity/monster/Slime	io/github/xponer2/translator/runtime/mc/Slime
+E	net/minecraft/world/entity/animal/horse/AbstractHorse	io/github/xponer2/translator/runtime/mc/AbstractHorse
+E	net/minecraft/world/entity/animal/Wolf	io/github/xponer2/translator/runtime/mc/Wolf
+E	net/minecraft/world/entity/animal/Sheep	io/github/xponer2/translator/runtime/mc/Sheep
+E	net/minecraft/world/entity/item/FallingBlockEntity	io/github/xponer2/translator/runtime/mc/FallingBlockEntity
+E	net/minecraft/world/entity/item/PrimedTnt	io/github/xponer2/translator/runtime/mc/PrimedTnt
+E	net/minecraft/world/entity/projectile/EvokerFangs	io/github/xponer2/translator/runtime/mc/EvokerFangs
+E	net/minecraft/world/entity/LightningBolt	io/github/xponer2/translator/runtime/mc/LightningBolt
+E	net/minecraft/world/level/block/entity/SkullBlockEntity	io/github/xponer2/translator/runtime/mc/SkullBlockEntity

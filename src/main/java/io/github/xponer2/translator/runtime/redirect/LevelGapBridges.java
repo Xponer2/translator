@@ -437,7 +437,274 @@ public final class LevelGapBridges {
 		return projectile;
 	}
 
+	// --- explosions, lightning ------------------------------------------------------------------------------------------
+
+	/** Whether a 1.21 {@code Explosion.BlockInteraction} (a carried enum) breaks blocks: all but KEEP. */
+	private static boolean breaksBlocks(@Nullable Object interaction) {
+		return !(interaction instanceof Enum<?> && "KEEP".equals(((Enum<?>) interaction).name()));
+	}
+
+	/** 1.21 {@code new Explosion(level, source, x, y, z, radius, fire, blockInteraction)}: 1.12.2's explosion. */
+	public static net.minecraft.world.Explosion newExplosion(World world, @Nullable Entity source, double x, double y, double z, float radius, boolean fire,
+			@Nullable Object interaction) {
+		return new net.minecraft.world.Explosion(world, source, x, y, z, radius, fire, breaksBlocks(interaction));
+	}
+
+	/** The same with the blocks it blows up given. */
+	public static net.minecraft.world.Explosion newExplosion(World world, @Nullable Entity source, double x, double y, double z, float radius, boolean fire,
+			@Nullable Object interaction, List<BlockPos> toBlow) {
+		return new net.minecraft.world.Explosion(world, source, x, y, z, radius, fire, breaksBlocks(interaction), toBlow);
+	}
+
+	/**
+	 * 1.21's explosion with its damage source, damage calculator and effects: 1.12.2's explosion of that size (its own
+	 * damage and particles).
+	 */
+	public static net.minecraft.world.Explosion newExplosion(World world, @Nullable Entity source, @Nullable net.minecraft.util.DamageSource damage,
+			@Nullable Object calculator, double x, double y, double z, float radius, boolean fire, @Nullable Object interaction, @Nullable Object smallParticle,
+			@Nullable Object largeParticle, @Nullable Object sound) {
+		return new net.minecraft.world.Explosion(world, source, x, y, z, radius, fire, breaksBlocks(interaction));
+	}
+
+	/** NeoForge {@code state.canDropFromExplosion(level, pos, explosion)}: the block's. */
+	public static boolean canDropFromExplosion(IBlockState state, @Nullable IBlockAccess world, @Nullable BlockPos pos, net.minecraft.world.Explosion explosion) {
+		return state.getBlock().canDropFromExplosion(explosion);
+	}
+
+	/** NeoForge {@code state.onBlockExploded(level, pos, explosion)}: the block's (Forge's, removing it). */
+	public static void onBlockExploded(IBlockState state, World world, BlockPos pos, net.minecraft.world.Explosion explosion) {
+		state.getBlock().onBlockExploded(world, pos, explosion);
+	}
+
+	/**
+	 * 1.21 {@code new LightningBolt(type, level)}: 1.12.2's bolt, which the mod then moves where it strikes. Made below
+	 * the world: 1.12.2's constructor sets fire around where it's made (here: around the origin), and nothing is loaded
+	 * there; it sets fire where it is on its updates, as 1.21's.
+	 */
+	public static net.minecraft.entity.effect.EntityLightningBolt newEntityLightningBolt(@Nullable io.github.xponer2.translator.registry.EntityType<?> type,
+			World world) {
+		return new net.minecraft.entity.effect.EntityLightningBolt(world, 0.0D, -100.0D, 0.0D, false);
+	}
+
+	/** 1.21 {@code new Slime(type, level)} and the like for vanilla entities: 1.12.2's, made with the world. */
+	public static net.minecraft.entity.monster.EntitySlime newEntitySlime(@Nullable io.github.xponer2.translator.registry.EntityType<?> type, World world) {
+		return new net.minecraft.entity.monster.EntitySlime(world);
+	}
+
+	public static net.minecraft.entity.passive.EntityWolf newEntityWolf(@Nullable io.github.xponer2.translator.registry.EntityType<?> type, World world) {
+		return new net.minecraft.entity.passive.EntityWolf(world);
+	}
+
+	public static net.minecraft.entity.passive.EntitySheep newEntitySheep(@Nullable io.github.xponer2.translator.registry.EntityType<?> type, World world) {
+		return new net.minecraft.entity.passive.EntitySheep(world);
+	}
+
+	public static net.minecraft.entity.item.EntityTNTPrimed newEntityTNTPrimed(@Nullable io.github.xponer2.translator.registry.EntityType<?> type, World world) {
+		return new net.minecraft.entity.item.EntityTNTPrimed(world);
+	}
+
+	public static net.minecraft.entity.projectile.EntityEvokerFangs newEntityEvokerFangs(@Nullable io.github.xponer2.translator.registry.EntityType<?> type, World world) {
+		return new net.minecraft.entity.projectile.EntityEvokerFangs(world);
+	}
+
+	/** 1.21 {@code new FallingBlockEntity(type, level)}: 1.12.2's, falling as sand until the mod sets its block. */
+	public static net.minecraft.entity.item.EntityFallingBlock newEntityFallingBlock(@Nullable io.github.xponer2.translator.registry.EntityType<?> type,
+			World world) {
+		net.minecraft.entity.item.EntityFallingBlock entity = new net.minecraft.entity.item.EntityFallingBlock(world);
+		io.github.xponer2.translator.runtime.mc.FallingBlockEntity.withDefaultBlock(entity);
+		return entity;
+	}
+
+	/**
+	 * {@code level.addFreshEntity(entity)} of the mods (1.12.2's spawnEntity, forced here): a lightning bolt is a weather
+	 * effect in 1.12.2, which only addWeatherEffect sends to the clients (spawned as an entity it struck unseen).
+	 */
+	public static boolean spawnEntity(World world, Entity entity) {
+		if (entity instanceof net.minecraft.entity.effect.EntityLightningBolt) {
+			return world.addWeatherEffect(entity);
+		}
+		return world.spawnEntity(entity);
+	}
+
+	// --- entities ------------------------------------------------------------------------------------------------------
+
+	/** An entity class's 1.21 {@code getDefaultGravity()} (a carried projectile's, a mod's), null when it has none. */
+	private static final ClassValue<java.lang.reflect.Method> DEFAULT_GRAVITY = new ClassValue<java.lang.reflect.Method>() {
+		@Override
+		protected java.lang.reflect.Method computeValue(Class<?> type) {
+			for (Class<?> current = type; current != null && current != Entity.class; current = current.getSuperclass()) {
+				try {
+					java.lang.reflect.Method method = current.getDeclaredMethod("getDefaultGravity");
+					if (method.getReturnType() == double.class) {
+						method.setAccessible(true);
+						return method;
+					}
+				} catch (NoSuchMethodException | SecurityException e) {
+					// the superclass's
+				}
+			}
+			return null;
+		}
+	};
+
+	/** 1.21 {@code entity.getGravity()}: none without gravity, else the class's default (1.21's Entity has 0). */
+	public static double getGravity(Entity entity) {
+		if (entity.hasNoGravity()) {
+			return 0.0D;
+		}
+		java.lang.reflect.Method method = DEFAULT_GRAVITY.get(entity.getClass());
+		if (method == null) {
+			return 0.0D;
+		}
+		try {
+			return (Double) method.invoke(entity);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return 0.0D;
+		}
+	}
+
+	/**
+	 * 1.21 {@code entity.applyGravity()}: falls by its gravity (the carried ThrowableProjectile's tick calls it: Supplementaries'
+	 * thrown bombs and slimeballs hung in the air).
+	 */
+	public static void applyGravity(Entity entity) {
+		double gravity = getGravity(entity);
+		if (gravity != 0.0D) {
+			entity.motionY -= gravity;
+		}
+	}
+
+	/** 1.21 {@code entity.updateInWaterStateAndDoFluidPushing()}: 1.12.2's water check (pushed by the flow, in water or not). */
+	public static boolean updateInWaterStateAndDoFluidPushing(Entity entity) {
+		return entity.handleWaterMovement();
+	}
+
+	/** 1.21 {@code entity.getY(scale)}: the height of that share of the entity above its feet. */
+	public static double getY(Entity entity, double scale) {
+		return entity.posY + entity.height * scale;
+	}
+
+	/** 1.21 {@code entity.canUsePortal(allowPassengers)}: alive, not riding unless passengers may, and no boss. */
+	public static boolean canUsePortal(Entity entity, boolean allowPassengers) {
+		return !entity.isDead && (allowPassengers || !entity.isRiding()) && entity.isNonBoss();
+	}
+
+	/** 1.21 {@code entity.interact(player, hand)}: 1.12.2's interaction of a player with the entity. */
+	public static net.minecraft.util.EnumActionResult interact(Entity entity, net.minecraft.entity.player.EntityPlayer player, net.minecraft.util.EnumHand hand) {
+		return entity.processInitialInteract(player, hand) ? net.minecraft.util.EnumActionResult.SUCCESS : net.minecraft.util.EnumActionResult.PASS;
+	}
+
+	/** 1.21 {@code entity.teleportTo(x, y, z)}: there, the clients told (a player's connection too). */
+	public static void teleportTo(Entity entity, double x, double y, double z) {
+		entity.setPositionAndUpdate(x, y, z);
+	}
+
+	/**
+	 * 1.21 {@code entity.teleportTo(level, x, y, z, relative, yaw, pitch)}: to that place of that level (another
+	 * dimension through Forge's teleporter hook); the relative axes are taken as absolute.
+	 */
+	public static boolean teleportTo(Entity entity, WorldServer level, double x, double y, double z, @Nullable java.util.Set<?> relative, float yaw, float pitch) {
+		if (entity.world.isRemote || level == null) {
+			return false;
+		}
+		Vec3d pos = new Vec3d(x, y, z);
+		if (level == entity.world) {
+			place(entity, pos, yaw, pitch);
+			return true;
+		}
+		Entity moved = entity.changeDimension(level.provider.getDimension(), (world, mover, entityYaw) -> place(mover, pos, yaw, pitch));
+		if (moved != null) {
+			place(moved, pos, yaw, pitch);
+		}
+		return moved != null;
+	}
+
+	/** 1.21 {@code serverLevel.getPoiManager()}: 1.12.2 keeps no points of interest (a manager that finds none). */
+	public static io.github.xponer2.translator.world.PoiManager getPoiManager(World world) {
+		return io.github.xponer2.translator.world.PoiManager.NONE;
+	}
+
+	/** 1.21 {@code level.getBiomeManager()}: over the world's biomes (a mod level's own manager when it has one). */
+	public static io.github.xponer2.translator.world.BiomeManager getBiomeManager(World world) {
+		return io.github.xponer2.translator.world.BiomeManager.of(world);
+	}
+
+	/** 1.21 {@code level.getNearestPlayer(conditions, entity)}: the nearest player to the entity (the conditions aren't read). */
+	@Nullable
+	public static net.minecraft.entity.player.EntityPlayer getNearestPlayer(World world, @Nullable Object conditions, Entity entity) {
+		return world.getClosestPlayerToEntity(entity, -1.0D);
+	}
+
+	/** The same near a place. */
+	@Nullable
+	public static net.minecraft.entity.player.EntityPlayer getNearestPlayer(World world, @Nullable Object conditions, double x, double y, double z) {
+		return world.getClosestPlayer(x, y, z, -1.0D, false);
+	}
+
+	// --- blocks and chunks ---------------------------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code state.isFaceSturdy(level, pos, face, supportType)} (a carried enum): FULL and RIGID need a solid face,
+	 * CENTER a post's middle too (1.12.2's centre and pole face shapes). Block.canSupportCenter (candle holders, sconces
+	 * and cranks of Supplementaries, Create's) asks it.
+	 */
+	public static boolean isFaceSturdy(IBlockState state, IBlockAccess world, BlockPos pos, net.minecraft.util.EnumFacing face, @Nullable Object supportType) {
+		net.minecraft.block.state.BlockFaceShape shape = state.getBlockFaceShape(world, pos, face);
+		if (shape == net.minecraft.block.state.BlockFaceShape.SOLID) {
+			return true;
+		}
+		return supportType instanceof Enum<?> && "CENTER".equals(((Enum<?>) supportType).name())
+				&& (shape == net.minecraft.block.state.BlockFaceShape.CENTER || shape == net.minecraft.block.state.BlockFaceShape.CENTER_BIG
+						|| shape == net.minecraft.block.state.BlockFaceShape.MIDDLE_POLE || shape == net.minecraft.block.state.BlockFaceShape.MIDDLE_POLE_THICK);
+	}
+
+	/** NeoForge {@code state.rotate(level, pos, rotation)}: 1.12.2's rotated state. */
+	public static IBlockState rotate(IBlockState state, @Nullable World world, @Nullable BlockPos pos, net.minecraft.util.Rotation rotation) {
+		return state.withRotation(rotation);
+	}
+
+	/** 1.21 {@code level.getBrightness(layer, pos)}: the light of that layer (a world's or chunk cache's; else full sky, no block light). */
+	public static int getBrightness(IBlockAccess world, net.minecraft.world.EnumSkyBlock layer, BlockPos pos) {
+		if (world instanceof World) {
+			return ((World) world).getLightFor(layer, pos);
+		}
+		if (world instanceof net.minecraft.world.ChunkCache) {
+			return ((net.minecraft.world.ChunkCache) world).getLightFor(layer, pos);
+		}
+		return layer == net.minecraft.world.EnumSkyBlock.SKY ? 15 : 0;
+	}
+
+	/** 1.21 {@code chunk.getFluidState(pos)}: of the block there. */
+	public static io.github.xponer2.translator.util.FluidState getFluidState(Chunk chunk, BlockPos pos) {
+		return io.github.xponer2.translator.util.FluidState.of(chunk.getBlockState(pos));
+	}
+
+	public static io.github.xponer2.translator.util.FluidState getFluidState(Chunk chunk, int x, int y, int z) {
+		return io.github.xponer2.translator.util.FluidState.of(chunk.getBlockState(x, y, z));
+	}
+
+	/** 1.21 {@code box.move(dx, dy, dz)}: the box itself moved (1.12.2's offset). */
+	public static net.minecraft.world.gen.structure.StructureBoundingBox move(net.minecraft.world.gen.structure.StructureBoundingBox box, int dx, int dy, int dz) {
+		box.offset(dx, dy, dz);
+		return box;
+	}
+
+	public static net.minecraft.world.gen.structure.StructureBoundingBox move(net.minecraft.world.gen.structure.StructureBoundingBox box, Vec3i by) {
+		return move(box, by.getX(), by.getY(), by.getZ());
+	}
+
 	// --- packets -------------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code new ClientboundUpdateMobEffectPacket(entityId, effect, blend)}: 1.12.2's effect packet. */
+	public static net.minecraft.network.play.server.SPacketEntityEffect newSPacketEntityEffect(int entityId, net.minecraft.potion.PotionEffect effect, boolean blend) {
+		return new net.minecraft.network.play.server.SPacketEntityEffect(entityId, effect);
+	}
+
+	/** 1.21 {@code new ClientboundExplodePacket(x, y, z, power, blocks, knockback, interaction, particles, sound)}: 1.12.2's. */
+	public static net.minecraft.network.play.server.SPacketExplosion newSPacketExplosion(double x, double y, double z, float power, List<BlockPos> blocks,
+			@Nullable Vec3d knockback, @Nullable Object interaction, @Nullable Object smallParticle, @Nullable Object largeParticle, @Nullable Object sound) {
+		return new net.minecraft.network.play.server.SPacketExplosion(x, y, z, power, blocks == null ? Collections.emptyList() : blocks, knockback);
+	}
 
 	/** 1.21 {@code new ClientboundBlockUpdatePacket(pos, state)}: 1.12.2's block change packet of that state. */
 	public static net.minecraft.network.play.server.SPacketBlockChange newSPacketBlockChange(BlockPos pos, IBlockState state) {

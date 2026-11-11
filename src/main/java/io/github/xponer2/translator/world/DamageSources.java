@@ -162,6 +162,16 @@ public final class DamageSources {
 				: new DamageSource("explosion").setDifficultyScaled().setExplosion();
 	}
 
+	/** 1.21 {@code explosion(explosion)}: 1.12.2's damage of that explosion (by who set it off). */
+	public DamageSource explosion(@Nullable net.minecraft.world.Explosion explosion) {
+		return DamageSource.causeExplosionDamage(explosion);
+	}
+
+	/** 1.21 {@code campfire()}: fire damage named "campfire" (1.12.2 has no campfire). */
+	public DamageSource campfire() {
+		return new DamageSource("campfire").setFireDamage();
+	}
+
 	public DamageSource sonicBoom(Entity attacker) {
 		return DamageSource.causeIndirectMagicDamage(attacker, attacker);
 	}

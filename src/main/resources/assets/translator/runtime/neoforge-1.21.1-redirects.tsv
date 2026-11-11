@@ -501,3 +501,24 @@ C	net/minecraft/client/renderer/LightTexture	io/github/xponer2/translator/client
 R	net/minecraft/client/renderer/EntityRenderer	io/github/xponer2/translator/runtime/redirect/GuiBridges
 # 1.21 vertex buffers (meshes drawn every frame: skies, scenes) as kept client arrays
 R	net/minecraft/client/renderer/vertex/VertexBuffer	io/github/xponer2/translator/client/VertexBuffers
+R	net/minecraft/world/Explosion	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/effect/EntityLightningBolt	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/world/IBlockAccess	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/world/chunk/Chunk	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/world/gen/structure/StructureBoundingBox	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/network/play/server/SPacketEntityEffect	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/network/play/server/SPacketExplosion	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/monster/EntitySlime	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/passive/EntityWolf	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/passive/EntitySheep	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/item/EntityTNTPrimed	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/projectile/EntityEvokerFangs	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+C	net/minecraft/world/entity/ai/village/poi/PoiManager	io/github/xponer2/translator/world/PoiManager
+R	io/github/xponer2/translator/world/PoiManager	io/github/xponer2/translator/world/PoiManager
+C	net/minecraft/world/level/biome/BiomeManager	io/github/xponer2/translator/world/BiomeManager
+R	io/github/xponer2/translator/world/BiomeManager	io/github/xponer2/translator/world/BiomeManager
+R	net/minecraft/tileentity/TileEntitySkull	io/github/xponer2/translator/runtime/mc/SkullBlockEntity
+# 1.21 boss bar colours and overlays are 1.12.2's (same constants): new ServerBossEvent(name, colour, overlay) of the mods' bosses
+C	net/minecraft/world/BossEvent$BossBarColor	net/minecraft/world/BossInfo$Color
+C	net/minecraft/world/BossEvent$BossBarOverlay	net/minecraft/world/BossInfo$Overlay
+R	net/minecraft/network/datasync/DataSerializers	io/github/xponer2/translator/entity/ExtraDataSerializers

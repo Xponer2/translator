@@ -58,6 +58,8 @@ public final class Translator {
 		ModList.setScanData(event.getAsmData());
 		// more than 4096 blocks: before any registry event
 		io.github.xponer2.translator.world.BlockIds.raiseLimit();
+		// the 1.21 entity data serializers 1.12.2 lacks: numbered before any mod's, the same on both sides
+		io.github.xponer2.translator.entity.ExtraDataSerializers.register();
 		if (!net.minecraftforge.fml.common.Loader.isModLoaded("jeid") && !net.minecraftforge.fml.common.Loader.isModLoaded("reid")) {
 			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.BlockIds.Saving());
 		}

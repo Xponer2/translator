@@ -59,6 +59,17 @@ public final class AccessWidener implements IClassTransformer {
 					interfaces[interfaces.length - 1] = "io/github/xponer2/translator/registry/IdMap";
 					changed[0] = true;
 				}
+				if (NAMED_ENUMS.contains(transformedName)) {
+					// 1.21 StringRepresentable, not 1.12.2 IStringSerializable: PropertyEnum.create threw (VanillaEnumNames)
+					interfaces = java.util.Arrays.copyOf(interfaces, interfaces.length + 1);
+					interfaces[interfaces.length - 1] = "net/minecraft/util/IStringSerializable";
+					changed[0] = true;
+				}
+				if (SERIALIZER.equals(transformedName) && (version & 0xFFFF) < Opcodes.V1_8) {
+					// its default methods (below) need a Java 8 interface; it has no code of its own (no frames to add)
+					version = Opcodes.V1_8;
+					changed[0] = true;
+				}
 				super.visit(version, widen(access, changed), name, signature, superName, interfaces);
 			}
 
@@ -75,6 +86,26 @@ public final class AccessWidener implements IClassTransformer {
 				// an IllegalAccessError in Jade's config codec)
 				if ("<init>".equals(name) || (access & Opcodes.ACC_PUBLIC) == 0 && !"<clinit>".equals(name)) {
 					access = widen((access & Opcodes.ACC_PRIVATE) != 0 ? access & ~Opcodes.ACC_FINAL : access, changed);
+				}
+				String serializerDefault = SERIALIZER.equals(transformedName) && (access & Opcodes.ACC_ABSTRACT) != 0 ? serializerDefault(descriptor) : null;
+				if (serializerDefault != null) {
+					// a default body: a 1.21 mod's serializer has only codec() (DataSerializerDefaults)
+					changed[0] = true;
+					MethodVisitor body = super.visitMethod(access & ~Opcodes.ACC_ABSTRACT, name, descriptor, signature, exceptions);
+					body.visitCode();
+					body.visitVarInsn(Opcodes.ALOAD, 0);
+					int slot = 1;
+					for (var argument : xyz.wagyourtail.jvmdg.shade.asm.Type.getArgumentTypes(descriptor)) {
+						body.visitVarInsn(argument.getOpcode(Opcodes.ILOAD), slot);
+						slot += argument.getSize();
+					}
+					var returned = xyz.wagyourtail.jvmdg.shade.asm.Type.getReturnType(descriptor);
+					body.visitMethodInsn(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/entity/DataSerializerDefaults", serializerDefault,
+							"(L" + this.self + ";" + descriptor.substring(1), false);
+					body.visitInsn(returned.getOpcode(Opcodes.IRETURN));
+					body.visitMaxs(slot, slot);
+					body.visitEnd();
+					return null;
 				}
 				return super.visitMethod(access, name, descriptor, signature, exceptions);
 			}
@@ -93,6 +124,23 @@ public final class AccessWidener implements IClassTransformer {
 				}
 				return super.visitField(holder ? access : widen(access, changed), name, descriptor, signature, value);
 			}
+
+			@Override
+			public void visitEnd() {
+				if (NAMED_ENUMS.contains(transformedName)) {
+					// IStringSerializable.getName() under its development and SRG names
+					for (String method : new String[] {"getName", "func_176610_l"}) {
+						MethodVisitor body = super.visitMethod(Opcodes.ACC_PUBLIC, method, "()Ljava/lang/String;", null, null);
+						body.visitCode();
+						body.visitVarInsn(Opcodes.ALOAD, 0);
+						body.visitMethodInsn(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/util/VanillaEnumNames", "name", "(Ljava/lang/Enum;)Ljava/lang/String;", false);
+						body.visitInsn(Opcodes.ARETURN);
+						body.visitMaxs(1, 1);
+						body.visitEnd();
+					}
+				}
+				super.visitEnd();
+			}
 		}, 0);
 		return changed[0] ? writer.toByteArray() : basicClass;
 	}
@@ -104,6 +152,31 @@ public final class AccessWidener implements IClassTransformer {
 	 */
 	private static final java.util.Set<String> ASSIGNED = new java.util.HashSet<>(java.util.Arrays.asList(
 			"net.minecraft.entity.EntityLiving.lookHelper", "net.minecraft.entity.EntityLiving.field_70749_g"));
+
+	private static final String SERIALIZER = "net.minecraft.network.datasync.DataSerializer";
+
+	/** 1.12.2 enums 1.21 has as StringRepresentable (block state property values of the mods). */
+	private static final java.util.Set<String> NAMED_ENUMS = new java.util.HashSet<>(java.util.Arrays.asList("net.minecraft.util.Rotation", "net.minecraft.util.Mirror"));
+
+	/**
+	 * The DataSerializerDefaults method of an abstract DataSerializer method, by its descriptor (development and SRG
+	 * names differ, the descriptors don't): write, read, createKey, copyValue.
+	 */
+	@javax.annotation.Nullable
+	private static String serializerDefault(String descriptor) {
+		switch (descriptor) {
+			case "(Lnet/minecraft/network/PacketBuffer;Ljava/lang/Object;)V":
+				return "write";
+			case "(Lnet/minecraft/network/PacketBuffer;)Ljava/lang/Object;":
+				return "read";
+			case "(I)Lnet/minecraft/network/datasync/DataParameter;":
+				return "createKey";
+			case "(Ljava/lang/Object;)Ljava/lang/Object;":
+				return "copyValue";
+			default:
+				return null;
+		}
+	}
 
 	private static int widen(int access, boolean[] changed) {
 		if ((access & Opcodes.ACC_PUBLIC) != 0) {
