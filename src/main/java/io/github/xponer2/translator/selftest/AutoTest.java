@@ -46,6 +46,8 @@ public final class AutoTest {
 	private int ticks;
 	private long started;
 	private ScreenTour tour;
+	/** The server of the world left for the save-and-reload check, until it has stopped (and saved). */
+	private net.minecraft.server.MinecraftServer leaving;
 	private volatile long lastTick;
 	private volatile Thread client;
 
@@ -88,7 +90,7 @@ public final class AutoTest {
 				return;
 			}
 			long last = this.lastTick;
-			if ((this.state == 2 || this.state == 4) && last != 0 && System.currentTimeMillis() - last > STUCK_MS) {
+			if ((this.state == 2 || this.state >= 4) && this.state != 5 && last != 0 && System.currentTimeMillis() - last > STUCK_MS) {
 				var stuck = new StringBuilder();
 				Thread thread = this.client;
 				if (thread != null) {
@@ -152,9 +154,10 @@ public final class AutoTest {
 					// the first copy (or the only one) also tours the screens of the mods that change the interface
 					String shard = System.getProperty("translator.autotest.shard");
 					if (shard == null || shard.startsWith("1/")) {
-						LOGGER.info("Self-test finished, touring the screens");
-						this.tour = new ScreenTour(mc);
-						this.state = 4;
+						// then what the mods keep across leaving the world and coming back, then the screens
+						LOGGER.info("Self-test finished, placing block entities and mobs for the save-and-reload check");
+						mc.player.sendChatMessage("/translatorpersist place");
+						this.state = 6;
 					} else {
 						LOGGER.info("Self-test finished, quitting");
 						this.state = 3;
@@ -186,6 +189,63 @@ public final class AutoTest {
 				if (this.tour.tick()) {
 					LOGGER.info("Self-test finished, quitting");
 					this.state = 3;
+					this.ticks = 0;
+				}
+			}
+			case 6 -> {
+				// the placed blocks tick a little, then what they save is noted
+				if (this.ticks > 60) {
+					mc.player.sendChatMessage("/translatorpersist snapshot");
+					this.state = 7;
+					this.ticks = 0;
+				}
+			}
+			case 7 -> {
+				// save and quit to the title, as the pause menu's button does
+				if (this.ticks > 20) {
+					LOGGER.info("Leaving the world for the save-and-reload check");
+					this.leaving = mc.getIntegratedServer();
+					mc.world.sendQuittingDisconnectingPacket();
+					mc.loadWorld(null);
+					mc.displayGuiScreen(new GuiMainMenu());
+					this.state = 8;
+					this.ticks = 0;
+				}
+			}
+			case 8 -> {
+				// the world opens again once its server has stopped (it saves while stopping)
+				boolean stopped = this.leaving == null || this.leaving.isServerStopped();
+				if (this.ticks > 40 && (stopped || this.ticks > 20 * 60)) {
+					if (!stopped) {
+						LOGGER.error("Automatic self-test: the left world's server didn't stop in a minute, opening it anyway");
+					}
+					this.leaving = null;
+					LOGGER.info("Opening world '{}' again", this.folder);
+					mc.launchIntegratedServer(this.folder, this.folder, null);
+					this.state = 9;
+					this.ticks = 0;
+				}
+			}
+			case 9 -> {
+				// back in the world: the chunks around the player 5 seconds, then the comparison
+				if (mc.player != null && mc.world != null && mc.currentScreen == null) {
+					if (this.ticks > 100) {
+						mc.player.sendChatMessage("/translatorpersist check");
+						this.state = 10;
+						this.ticks = 0;
+					}
+				} else if (mc.currentScreen instanceof GuiMainMenu && this.ticks > 20 * 60) {
+					LOGGER.error("Automatic self-test: the world didn't open again, quitting");
+					mc.shutdown();
+				} else if (!(mc.currentScreen instanceof GuiMainMenu)) {
+					this.ticks = 0;
+				}
+			}
+			case 10 -> {
+				if (this.ticks > 40) {
+					LOGGER.info("Save-and-reload check done, touring the screens");
+					this.tour = new ScreenTour(mc);
+					this.state = 4;
 					this.ticks = 0;
 				}
 			}

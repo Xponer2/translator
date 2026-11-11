@@ -133,6 +133,7 @@ public final class Translator {
 	@Mod.EventHandler
 	public void serverStarting(net.minecraftforge.fml.common.event.FMLServerStartingEvent event) {
 		event.registerServerCommand(new io.github.xponer2.translator.selftest.SelfTest.Command());
+		event.registerServerCommand(new io.github.xponer2.translator.selftest.Persistence.Command());
 		ServerEvents.post(new ServerEvents.ServerStartingEvent(event.getServer()));
 	}
 
