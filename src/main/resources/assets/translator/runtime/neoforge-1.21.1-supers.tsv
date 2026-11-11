@@ -68,3 +68,4 @@ S	net/minecraft/world/entity/projectile/AbstractArrow	io/github/xponer2/translat
 # facades only for the mod classes that extend these (new of the class itself stays 1.12.2's, by its constructor helpers)
 E	net/minecraft/world/entity/ai/goal/target/NearestAttackableTargetGoal	io/github/xponer2/translator/runtime/mc/NearestAttackableTargetGoal
 E	net/minecraft/world/damagesource/DamageSource	io/github/xponer2/translator/runtime/mc/DamageSource
+S	net/minecraft/world/level/chunk/ChunkSource	io/github/xponer2/translator/world/ChunkSource

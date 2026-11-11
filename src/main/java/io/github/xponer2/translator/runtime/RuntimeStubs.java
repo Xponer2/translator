@@ -24,6 +24,22 @@ public final class RuntimeStubs {
 	/** Told about every call (the self-test attributes them to what it tests); null when nothing listens. */
 	public static volatile java.util.function.Consumer<String> listener;
 
+	/** What failed since the game started ("failed in where: error"), for the self-test's record of each mod. */
+	private static final Set<String> FAILED = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+	/** Every call reported since the game started: the missing ones as logged, the failed ones as "failed in ...". */
+	public static Set<String> reported() {
+		var all = new java.util.TreeSet<String>();
+		for (String entry : REPORTED) {
+			// a failure's key is its place only: its text with the error is in FAILED
+			if (entry.indexOf(' ') > 0 && entry.indexOf('(') > 0) {
+				all.add(entry);
+			}
+		}
+		all.addAll(FAILED);
+		return all;
+	}
+
 	public static void missing(String what) {
 		var current = listener;
 		if (current != null) {
@@ -44,6 +60,9 @@ public final class RuntimeStubs {
 			current.accept("failed in " + where + ": " + error);
 		}
 		if (REPORTED.add(where)) {
+			String text = String.valueOf(error);
+			int line = text.indexOf(10);
+			FAILED.add("failed in " + where + ": " + (line < 0 ? text : text.substring(0, line)));
 			RuntimeMods.LOGGER.error("A 1.21.1 mod failed in {} (further errors there are not logged)", where, error);
 		}
 	}

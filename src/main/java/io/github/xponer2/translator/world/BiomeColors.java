@@ -34,19 +34,79 @@ public final class BiomeColors {
 	private BiomeColors() {
 	}
 
+	/** A biome that isn't there (a mod's that failed to be made) is asked as plains. */
+	private static Biome known(@Nullable Biome biome) {
+		return biome != null ? biome : net.minecraft.init.Biomes.PLAINS;
+	}
+
+	/**
+	 * 1.21 {@code new Biome(climate, effects, generation, spawns)} (what 1.21's {@code Biome.BiomeBuilder.build()}
+	 * does): a 1.12.2 biome of that climate and water color, not registered, whose 1.21 effects are the mod's own. It
+	 * was null: JourneyMap's "void" biome, made in its class initializer, failed the whole class and no biome was mapped.
+	 * The parameters are carried 1.21 classes, read by their 1.21 accessors.
+	 */
+	public static Biome newBiome(@Nullable Object climate, @Nullable Object effects, @Nullable Object generation, @Nullable Object spawns) {
+		float temperature = number(climate, "temperature", 0.5F);
+		if (temperature > 0.1F && temperature < 0.2F) {
+			// 1.12.2 refuses these (snow would flicker there)
+			temperature = 0.2F;
+		}
+		var properties = new Biome.BiomeProperties("Made by a 1.21.1 mod").setTemperature(temperature).setRainfall(number(climate, "downfall", 0.5F));
+		if (Boolean.FALSE.equals(value(climate, "hasPrecipitation"))) {
+			properties.setRainDisabled();
+		}
+		if (value(effects, "getWaterColor") instanceof Integer water) {
+			properties.setWaterColor(water);
+		}
+		Biome biome = new MadeBiome(properties);
+		EFFECTS.put(biome, effects);
+		return biome;
+	}
+
+	private static float number(@Nullable Object of, String accessor, float otherwise) {
+		return value(of, accessor) instanceof Float number ? number : otherwise;
+	}
+
+	@Nullable
+	private static Object value(@Nullable Object of, String accessor) {
+		if (of == null) {
+			return null;
+		}
+		try {
+			Method method = of.getClass().getMethod(accessor);
+			method.setAccessible(true);
+			return method.invoke(of);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	/** A biome a 1.21.1 mod made itself (1.12.2's constructor is protected to its subclasses). */
+	private static final class MadeBiome extends Biome {
+		MadeBiome(Biome.BiomeProperties properties) {
+			super(properties);
+		}
+	}
+
 	/** 1.21 {@code biome.getFoliageColor()}. */
-	public static int getFoliageColor(Biome biome) {
-		return biome.getFoliageColorAtPos(SEA_LEVEL);
+	public static int getFoliageColor(@Nullable Biome biome) {
+		return known(biome).getFoliageColorAtPos(SEA_LEVEL);
 	}
 
 	/** 1.21 {@code biome.getGrassColor(x, z)}. */
-	public static int getGrassColor(Biome biome, double x, double z) {
-		return biome.getGrassColorAtPos(new BlockPos(x, 64, z));
+	public static int getGrassColor(@Nullable Biome biome, double x, double z) {
+		return known(biome).getGrassColorAtPos(new BlockPos(x, 64, z));
 	}
 
 	/** 1.21 {@code biome.getSkyColor()}. */
-	public static int getSkyColor(Biome biome) {
-		return biome.getSkyColorByTemp(biome.getDefaultTemperature());
+	public static int getSkyColor(@Nullable Biome biome) {
+		Biome known = known(biome);
+		return known.getSkyColorByTemp(known.getDefaultTemperature());
+	}
+
+	/** 1.21 {@code biome.getWaterColor()} (1.12.2's is final, on a biome that may be null here). */
+	public static int getWaterColor(@Nullable Biome biome) {
+		return known(biome).getWaterColor();
 	}
 
 	/** 1.21 {@code biome.getFogColor()}: 1.12.2's fog is the world's (the overworld's day fog). */
@@ -64,7 +124,8 @@ public final class BiomeColors {
 	 * Null only when the 1.21 class can't be made.
 	 */
 	@Nullable
-	public static Object getSpecialEffects(Biome biome) {
+	public static Object getSpecialEffects(@Nullable Biome given) {
+		Biome biome = known(given);
 		Object effects = EFFECTS.get(biome);
 		if (effects == null && !EFFECTS.containsKey(biome)) {
 			effects = make(biome);

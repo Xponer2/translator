@@ -60,6 +60,139 @@ final class SelfTestClient {
 	private SelfTestClient() {
 	}
 
+	/**
+	 * The keys of a mod (those whose name or category has its id), each pressed as a player would: the key binding is
+	 * ticked and NeoForge's key event posted. What screen a key opens is noted with a picture of it (screens folder,
+	 * {@code key-<mod>-<n>.png}); a key that opens none is pressed again (a toggle goes back). Failures while a key is
+	 * handled are the mod's problems.
+	 */
+	static AtomicBoolean pressKeys(SelfTest.Run run, String modId) {
+		AtomicBoolean done = new AtomicBoolean();
+		Minecraft mc = Minecraft.getMinecraft();
+		mc.addScheduledTask(() -> {
+			try {
+				var keys = new ArrayList<net.minecraft.client.settings.KeyBinding>();
+				String needle = modId.toLowerCase(java.util.Locale.ROOT);
+				for (net.minecraft.client.settings.KeyBinding key : mc.gameSettings.keyBindings) {
+					String text = (key.getKeyDescription() + " " + key.getKeyCategory()).toLowerCase(java.util.Locale.ROOT);
+					if (text.contains(needle)) {
+						keys.add(key);
+					}
+				}
+				if (keys.isEmpty()) {
+					run.addClientNote("mod", modId + ":mod", "no keys of its own");
+					done.set(true);
+					return;
+				}
+				net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(new KeyPresser(run, modId, keys, done));
+			} catch (Throwable t) {
+				run.addClientProblem("mod", modId + ":mod", "keys: " + SelfTest.describe(t));
+				done.set(true);
+			}
+		});
+		return done;
+	}
+
+	/** One key after another, on the client's ticks. */
+	public static final class KeyPresser {
+		private static final int SHOWN = 25;
+		private final SelfTest.Run run;
+		private final String modId;
+		private final List<net.minecraft.client.settings.KeyBinding> keys;
+		private final AtomicBoolean done;
+		private final java.io.File folder;
+		private int index;
+		private int ticks;
+		private boolean again;
+		private int screens;
+
+		KeyPresser(SelfTest.Run run, String modId, List<net.minecraft.client.settings.KeyBinding> keys, AtomicBoolean done) {
+			this.run = run;
+			this.modId = modId;
+			this.keys = keys;
+			this.done = done;
+			this.folder = new java.io.File(Minecraft.getMinecraft().gameDir, "translator/selftest/screens");
+		}
+
+		@net.minecraftforge.fml.common.eventhandler.SubscribeEvent
+		public void onTick(net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent event) {
+			if (event.phase != net.minecraftforge.fml.common.gameevent.TickEvent.Phase.END) {
+				return;
+			}
+			Minecraft mc = Minecraft.getMinecraft();
+			String id = this.modId + ":mod";
+			if (this.index >= this.keys.size() || mc.player == null) {
+				net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(this);
+				this.run.addClientNote("mod", id, this.keys.size() + " keys pressed, " + this.screens + " opened a screen");
+				this.done.set(true);
+				return;
+			}
+			net.minecraft.client.settings.KeyBinding key = this.keys.get(this.index);
+			String name = key.getKeyDescription();
+			int code = key.getKeyCode();
+			try {
+				if (this.ticks == 0) {
+					if (code == 0) {
+						this.run.addClientNote("mod", id, "key " + name + ": not bound");
+						this.next();
+						return;
+					}
+					if (mc.currentScreen != null) {
+						mc.displayGuiScreen(null);
+					}
+					this.press(code, true);
+				} else if (this.ticks == 2) {
+					this.press(code, false);
+				} else if (this.ticks == SHOWN) {
+					GuiScreen screen = mc.currentScreen;
+					if (screen != null) {
+						this.screens++;
+						String picture = "key-" + this.modId + "-" + (this.index + 1);
+						ScreenTour.picture(mc, this.folder, picture);
+						this.run.addClientNote("mod", id, "key " + name + " opens " + screen.getClass().getSimpleName() + " (" + picture + ".png)");
+						mc.displayGuiScreen(null);
+					} else if (!this.again) {
+						// nothing to see: a toggle (the minimap, a zoom): once more, so it is as it was
+						this.again = true;
+						this.ticks = -1;
+					} else {
+						this.run.addClientNote("mod", id, "key " + name + ": no screen");
+					}
+				} else if (this.ticks >= SHOWN + 6) {
+					this.next();
+					return;
+				}
+			} catch (Throwable t) {
+				this.run.addClientProblem("mod", id, "key " + name + ": " + SelfTest.describe(t));
+				if (mc.currentScreen != null) {
+					mc.displayGuiScreen(null);
+				}
+				this.next();
+				return;
+			}
+			this.ticks++;
+		}
+
+		private void next() {
+			this.index++;
+			this.ticks = 0;
+			this.again = false;
+		}
+
+		/** The key down or up: 1.12.2's binding state, a click of it, and NeoForge's key event (GLFW code). */
+		private void press(int code, boolean down) {
+			net.minecraft.client.settings.KeyBinding.setKeyBindState(code, down);
+			if (down) {
+				net.minecraft.client.settings.KeyBinding.onTick(code);
+			}
+			if (code > 0) {
+				int glfw = io.github.xponer2.translator.runtime.neoforge.KeyMapping.toGlfw(code);
+				net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+						new io.github.xponer2.translator.runtime.neoforge.ClientEvents.Key(glfw, down ? 1 : 0));
+			}
+		}
+	}
+
 	/** The class of the screen the client shows now (the server opened a menu a tick ago), null for none. */
 	@Nullable
 	static String currentScreen() {

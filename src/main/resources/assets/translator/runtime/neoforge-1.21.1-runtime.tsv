@@ -507,3 +507,5 @@ X	net/minecraft/world/level/chunk/storage/ChunkSerializer	makeBiomeCodec	(Lio/gi
 X	net/neoforged/neoforge/client/model/data/ModelDataManager	getAt	(Lnet/minecraft/util/math/BlockPos;)Lio/github/xponer2/translator/client/ModelData;	io/github/xponer2/translator/client/TextureBridges	(Ljava/lang/Object;Lnet/minecraft/util/math/BlockPos;)Lio/github/xponer2/translator/client/ModelData;
 # NeoForge's reflective method lookup, lenient about parameter types on the Translator's classes (ReflectionBridges)
 X	net/neoforged/fml/util/ObfuscationReflectionHelper	findMethod	(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;	io/github/xponer2/translator/runtime/redirect/ReflectionBridges
+# Registry.getOrThrow(key) of 1.21 gives the value (the holder one is HolderGetter's): a mod's call of it, by its descriptor
+X	io/github/xponer2/translator/registry/Registry	getOrThrow	(Lio/github/xponer2/translator/registry/ResourceKey;)Ljava/lang/Object;	io/github/xponer2/translator/registry/RegistryValues

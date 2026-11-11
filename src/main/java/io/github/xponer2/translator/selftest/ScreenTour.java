@@ -99,8 +99,14 @@ final class ScreenTour {
 
 	/** The last frame as a PNG (what the player sees now). */
 	private void picture(String name) {
+		picture(this.mc, this.folder, name);
+	}
+
+	/** The last frame as a PNG in that folder. */
+	static void picture(Minecraft mc, File folder, String name) {
 		try {
-			Framebuffer buffer = this.mc.getFramebuffer();
+			folder.mkdirs();
+			Framebuffer buffer = mc.getFramebuffer();
 			int width = buffer.framebufferTextureWidth;
 			int height = buffer.framebufferTextureHeight;
 			java.nio.IntBuffer pixels = org.lwjgl.BufferUtils.createIntBuffer(width * height);
@@ -114,7 +120,7 @@ final class ScreenTour {
 			TextureUtil.processPixelValues(data, width, height);
 			var image = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
 			image.setRGB(0, 0, width, height, data, 0, width);
-			javax.imageio.ImageIO.write(image, "png", new File(this.folder, name + ".png"));
+			javax.imageio.ImageIO.write(image, "png", new File(folder, name + ".png"));
 			LOGGER.info("Screen tour: {} saved", name);
 		} catch (Throwable t) {
 			LOGGER.error("Screen tour: no picture of {}", name, t);

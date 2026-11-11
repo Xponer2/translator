@@ -78,6 +78,50 @@ final class ModChecks {
 	 * The mod's recipe files against what 1.12.2 has: crafting ones in the recipe registry under their id (with a
 	 * result and ingredients that match something), smelting ones in the furnace; the kinds 1.12.2 has no block for.
 	 */
+	/**
+	 * The roots of a mod's own packages (the first two parts of each: "journeymap.client."), read from its jar: what
+	 * tells a reported call of its code from the game's and other mods'.
+	 */
+	static java.util.Set<String> packagesOf(String modId) {
+		var roots = new java.util.TreeSet<String>();
+		try {
+			var mod = io.github.xponer2.translator.runtime.neoforge.ModContainer.byId(modId);
+			java.io.File jar = mod == null ? null : mod.getModInfo().getOwningFile().getFile().getFilePath().toFile();
+			if (jar == null || !jar.isFile()) {
+				return roots;
+			}
+			try (var zip = new java.util.zip.ZipFile(jar)) {
+				for (var entry : java.util.Collections.list(zip.entries())) {
+					String path = entry.getName();
+					if (!path.endsWith(".class") || path.startsWith("META-INF/")) {
+						continue;
+					}
+					String[] parts = path.split("/");
+					if (parts.length < 2) {
+						continue;
+					}
+					String root = parts.length == 2 ? parts[0] + "." : parts[0] + "." + parts[1] + ".";
+					if (!root.startsWith("net.minecraft") && !root.startsWith("net.neoforged") && !root.startsWith("com.mojang") && !root.startsWith("java")) {
+						roots.add(root);
+					}
+				}
+			}
+		} catch (java.io.IOException | RuntimeException e) {
+			// no jar to read: nothing is its own
+		}
+		return roots;
+	}
+
+	/** Whether a reported call names a class of those packages. */
+	static boolean isOf(java.util.Set<String> packages, String entry) {
+		for (String root : packages) {
+			if (entry.contains(root)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	static void recipes(String namespace, List<String> problems, List<String> notes) {
 		var missing = new ArrayList<String>();
 		var broken = new ArrayList<String>();

@@ -263,8 +263,47 @@ public final class SelfTest {
 						this.planMod(namespace);
 					}
 				}
+				// and each mod as a whole (also one without a block or an item: a map, a HUD, a library): what it failed
+				// at since the game started, its keys and the screens they open
+				for (var mod : RuntimeMods.mods()) {
+					if (wanted(filter, mod.getModId()) && !done.contains("mod " + mod.getModId() + ":mod")) {
+						this.planModRun(mod.getModId());
+					}
+				}
 			}
 			this.steps.add(this::finish);
+		}
+
+		/**
+		 * A mod as a whole: the calls of its own code the Translator couldn't run or that failed since the game started
+		 * (startup, every frame, its events: nothing a block or an item test would meet), and on the client each of its
+		 * keys pressed, with the screen it opens and a picture of it.
+		 */
+		private void planModRun(String modId) {
+			this.steps.add(() -> {
+				this.begin(modId + ":mod", "mod");
+				Record record = this.current;
+				Set<String> packages = ModChecks.packagesOf(modId);
+				int unbridged = 0;
+				for (String entry : RuntimeStubs.reported()) {
+					if (!ModChecks.isOf(packages, entry)) {
+						continue;
+					}
+					if (entry.startsWith("failed in ")) {
+						record.problems.add(entry);
+					} else if (unbridged++ < 15) {
+						record.stubs.add(entry);
+					}
+				}
+				if (unbridged > 15) {
+					record.stubs.add("... and " + (unbridged - 15) + " more calls of its code not bridged (the log lists them)");
+				}
+				record.notes.add(packages.isEmpty() ? "no classes of its own found" : "its code: " + String.join(", ", packages));
+				if (FMLCommonHandler.instance().getSide().isClient()) {
+					this.closeMenu();
+					this.waitFor(SelfTestClient.pressKeys(this, modId)::get, 20 * 90);
+				}
+			});
 		}
 
 		/** A mod's content besides its blocks and items, each against its data ({@link ModChecks}). */
@@ -1173,6 +1212,30 @@ public final class SelfTest {
 				this.keep(this.current);
 			}
 			this.current = null;
+			// what ran on the client while the test went on (every frame, the mod's HUD and events) and names a mod's own
+			// code is that mod's: counted in its record, not only listed as background
+			for (Record record : this.records) {
+				if (!"mod".equals(record.kind)) {
+					continue;
+				}
+				Set<String> packages = ModChecks.packagesOf(record.mod);
+				int more = 0;
+				for (String entry : new java.util.TreeSet<>(this.background.keySet())) {
+					if (!ModChecks.isOf(packages, entry) || record.stubs.contains(entry) || record.problems.contains(entry)) {
+						continue;
+					}
+					if (entry.startsWith("failed in ")) {
+						record.problems.add(entry);
+					} else if (record.stubs.size() < 20) {
+						record.stubs.add(entry);
+					} else {
+						more++;
+					}
+				}
+				if (more > 0) {
+					record.stubs.add("... and " + more + " more calls of its code not bridged while the test ran");
+				}
+			}
 			for (Record record : this.records) {
 				List<String> notes = this.clientNotes.get(record.kind + " " + record.id);
 				if (notes != null) {
