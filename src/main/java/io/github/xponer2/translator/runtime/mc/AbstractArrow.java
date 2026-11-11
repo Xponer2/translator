@@ -112,6 +112,55 @@ public abstract class AbstractArrow extends EntityArrow {
 		return this.firedFromWeapon;
 	}
 
+	/** 1.21 {@code getOwner()}: who shot it (1.12.2's shooting entity). */
+	@Nullable
+	public net.minecraft.entity.Entity getOwner() {
+		return this.shootingEntity;
+	}
+
+	/** 1.21 {@code setOwner(owner)}: who shot it; a player's arrow may be picked up, as 1.12.2's shooter-constructor sets. */
+	public void setOwner(@Nullable net.minecraft.entity.Entity owner) {
+		this.shootingEntity = owner;
+		if (owner instanceof net.minecraft.entity.player.EntityPlayer) {
+			this.pickupStatus = PickupStatus.ALLOWED;
+		}
+	}
+
+	/** 1.21 {@code canHitEntity(target)}: a living, collidable entity other than its shooter in its first ticks. */
+	protected boolean canHitEntity(net.minecraft.entity.Entity target) {
+		if (target == null || !target.canBeCollidedWith() || target.isDead) {
+			return false;
+		}
+		return target != this.shootingEntity || this.ticksExisted >= 5;
+	}
+
+	/** 1.21 {@code isNoPhysics()}: it flies through blocks (1.12.2's noClip). */
+	public boolean isNoPhysics() {
+		return this.noClip;
+	}
+
+	/** 1.21 {@code setNoPhysics(noPhysics)}. */
+	public void setNoPhysics(boolean noPhysics) {
+		this.noClip = noPhysics;
+	}
+
+	/** 1.21 {@code shootFromRotation(shooter, pitch, yaw, roll, velocity, inaccuracy)}: 1.12.2's shoot from a shooter's look. */
+	public void shootFromRotation(net.minecraft.entity.Entity shooter, float pitch, float yaw, float roll, float velocity, float inaccuracy) {
+		this.shoot(shooter, pitch, yaw, roll, velocity, inaccuracy);
+	}
+
+	/** 1.21 {@code getDefaultHitGroundSoundEvent()}: the sound of an arrow sticking in a block. */
+	protected net.minecraft.util.SoundEvent getDefaultHitGroundSoundEvent() {
+		return net.minecraft.init.SoundEvents.ENTITY_ARROW_HIT;
+	}
+
+	/**
+	 * 1.21 {@code doKnockback(target, source)}: the knockback of the weapon's enchantment; 1.12.2's arrow applies its own
+	 * (its knockback strength) in its hit, a mod's arrow has none to add here.
+	 */
+	protected void doKnockback(net.minecraft.entity.EntityLivingBase target, net.minecraft.util.DamageSource source) {
+	}
+
 	/** 1.21 {@code findHitEntity(from, to)}: the entity hit between the two points, as a hit result. */
 	@Nullable
 	protected RayTraceResult findHitEntity(net.minecraft.util.math.Vec3d from, net.minecraft.util.math.Vec3d to) {

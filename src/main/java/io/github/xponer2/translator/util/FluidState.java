@@ -112,6 +112,11 @@ public final class FluidState {
 		return false;
 	}
 
+	/** 1.21 {@code getTags()}: the fluid tags it is in (a filter by fluid tags: Mekanism's). */
+	public java.util.stream.Stream<io.github.xponer2.translator.util.TagKey<Object>> getTags() {
+		return this.isEmpty() ? java.util.stream.Stream.empty() : io.github.xponer2.translator.tags.TagManager.getTags(this);
+	}
+
 	public boolean isSourceOfType(Fluid fluid) {
 		return this.source && this.fluid == fluid;
 	}

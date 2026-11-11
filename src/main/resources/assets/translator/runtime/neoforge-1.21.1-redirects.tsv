@@ -455,3 +455,8 @@ C	net/minecraft/world/level/chunk/ChunkSource	net/minecraft/world/chunk/IChunkPr
 R	net/minecraft/world/chunk/IChunkProvider	io/github/xponer2/translator/world/ChunkSources
 # the empty chunk of an unloaded place
 C	net/minecraft/world/level/chunk/EmptyLevelChunk	net/minecraft/world/chunk/EmptyChunk
+R	net/minecraft/entity/passive/EntityLlama	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/item/EntityFallingBlock	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/network/play/server/SPacketBlockChange	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraftforge/event/entity/ProjectileImpactEvent	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/world/chunk/EmptyChunk	io/github/xponer2/translator/runtime/redirect/LevelGapBridges

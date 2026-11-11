@@ -167,6 +167,13 @@ public final class TagManager {
         return ids.stream().map(id -> TagKey.create(Registries.BLOCK, id)).filter(tag -> is(state, tag));
     }
 
+    /** The fluid tags of the mods' data (and the game's 1.21 data) the fluid state is in. */
+    public static synchronized java.util.stream.Stream<TagKey<Object>> getTags(io.github.xponer2.translator.util.FluidState state) {
+        readFiles();
+        var ids = new ArrayList<>(FILES.getOrDefault("fluid", Collections.emptyMap()).keySet());
+        return ids.stream().map(id -> TagKey.create(Registries.FLUID, id)).filter(state::is);
+    }
+
     public static synchronized List<BlockEntry> blockTag(ResourceLocation tag) {
         readFiles();
         var cached = BLOCK_TAGS.get(tag);

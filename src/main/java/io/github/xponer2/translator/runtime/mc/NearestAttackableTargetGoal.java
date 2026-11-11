@@ -86,6 +86,15 @@ public class NearestAttackableTargetGoal<T extends EntityLivingBase> extends Ent
 		return super.getTargetDistance();
 	}
 
+	/**
+	 * 1.21 {@code findTarget()}: the nearest target of its type, kept as the target {@link #start} takes (1.12.2's search,
+	 * without its random interval).
+	 */
+	protected void findTarget() {
+		this.targetEntity = null;
+		super.shouldExecute();
+	}
+
 	/** 1.21 {@code setTarget(target)}: the target {@link #start} takes. */
 	@SuppressWarnings("unchecked")
 	public void setTarget(@Nullable EntityLivingBase target) {

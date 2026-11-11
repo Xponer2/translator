@@ -143,6 +143,16 @@ public final class DamageSources {
 		return DamageSource.causeThrownDamage(projectile, thrower);
 	}
 
+	/** 1.21 {@code arrow(arrow, shooter)}: 1.12.2's arrow damage. */
+	public DamageSource arrow(net.minecraft.entity.projectile.EntityArrow arrow, @Nullable Entity shooter) {
+		return DamageSource.causeArrowDamage(arrow, shooter);
+	}
+
+	/** 1.21 {@code trident(trident, thrower)}: thrown damage named "trident" (1.12.2 has no trident). */
+	public DamageSource trident(Entity trident, @Nullable Entity thrower) {
+		return new net.minecraft.util.EntityDamageSourceIndirect("trident", trident, thrower == null ? trident : thrower).setProjectile();
+	}
+
 	public DamageSource mobProjectile(Entity projectile, @Nullable EntityLivingBase thrower) {
 		return DamageSource.causeThrownDamage(projectile, thrower);
 	}

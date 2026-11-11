@@ -169,6 +169,61 @@ public final class LevelGapBridges {
 		look.setLookPosition(pos.x, pos.y, pos.z, 10.0F, 40.0F);
 	}
 
+	/** 1.21 {@code isSaddled()} (Saddleable): a saddled pig or horse. */
+	public static boolean isSaddled(Entity entity) {
+		if (entity instanceof net.minecraft.entity.passive.EntityPig) {
+			return ((net.minecraft.entity.passive.EntityPig) entity).getSaddled();
+		}
+		return entity instanceof net.minecraft.entity.passive.AbstractHorse && ((net.minecraft.entity.passive.AbstractHorse) entity).isHorseSaddled();
+	}
+
+	/** 1.21 {@code fallingBlock.getBlockState()}: the falling block (1.12.2's getBlock). */
+	@Nullable
+	public static IBlockState getBlockState(net.minecraft.entity.item.EntityFallingBlock falling) {
+		return falling.getBlock();
+	}
+
+	/** 1.21 {@code moveRelative(speed, input)}: the input turned by the entity's yaw, added to its motion (1.12.2's). */
+	public static void moveRelative(Entity entity, float speed, Vec3d input) {
+		entity.moveRelative((float) input.x, (float) input.y, (float) input.z, speed);
+	}
+
+	/**
+	 * 1.21 {@code getControllingPassenger()}: the living rider that steers (1.12.2's returns any entity; the mods' riding
+	 * code asked for a LivingEntity and was left without one).
+	 */
+	@Nullable
+	public static net.minecraft.entity.EntityLivingBase getControllingPassenger(Entity entity) {
+		Entity rider = entity.getControllingPassenger();
+		return rider instanceof net.minecraft.entity.EntityLivingBase ? (net.minecraft.entity.EntityLivingBase) rider : null;
+	}
+
+	/** 1.21 {@code isLeashed()} (Leashable): a mob on a lead. */
+	public static boolean isLeashed(Entity entity) {
+		return entity instanceof net.minecraft.entity.EntityLiving && ((net.minecraft.entity.EntityLiving) entity).getLeashed();
+	}
+
+	/** 1.21 {@code setOldPosAndRot()}: the previous position and rotation are the current ones (no interpolation). */
+	public static void setOldPosAndRot(Entity entity) {
+		entity.prevPosX = entity.lastTickPosX = entity.posX;
+		entity.prevPosY = entity.lastTickPosY = entity.posY;
+		entity.prevPosZ = entity.lastTickPosZ = entity.posZ;
+		entity.prevRotationYaw = entity.rotationYaw;
+		entity.prevRotationPitch = entity.rotationPitch;
+	}
+
+	/** 1.21 {@code isTraderLlama()}: 1.12.2 has no wandering traders' llamas. */
+	public static boolean isTraderLlama(net.minecraft.entity.passive.EntityLlama llama) {
+		return false;
+	}
+
+	/** 1.21 {@code entity.gameEvent(event[, cause])}: game events (sculk) don't exist on 1.12.2, nothing listens. */
+	public static void gameEvent(Entity entity, Object event) {
+	}
+
+	public static void gameEvent(Entity entity, Object event, @Nullable Entity cause) {
+	}
+
 	/** 1.21 {@code creeper.isPowered()}: a charged creeper. */
 	public static boolean isPowered(net.minecraft.entity.monster.EntityCreeper creeper) {
 		return creeper.getPowered();
@@ -177,6 +232,15 @@ public final class LevelGapBridges {
 	/** 1.21 {@code wither.isPowered()}: the wither's armor at half health. */
 	public static boolean isPowered(net.minecraft.entity.boss.EntityWither wither) {
 		return wither.isArmored();
+	}
+
+	/**
+	 * 1.21 {@code new EmptyLevelChunk(level, pos, biome)}: 1.12.2's empty chunk at that position (it has no biome of its
+	 * own; Mekanism made one for the places that aren't loaded).
+	 */
+	public static net.minecraft.world.chunk.EmptyChunk newEmptyChunk(World world, net.minecraft.util.math.ChunkPos pos,
+			@Nullable io.github.xponer2.translator.registry.Holder<?> biome) {
+		return new net.minecraft.world.chunk.EmptyChunk(world, pos.x, pos.z);
 	}
 
 	/** 1.21 {@code navigation.createPath(target, accuracy)}: 1.12.2's path to it (it has no accuracy to give). */
@@ -242,6 +306,71 @@ public final class LevelGapBridges {
 	public static net.minecraft.item.EnumDyeColor dyeColor(ItemStack stack) {
 		net.minecraft.item.EnumDyeColor color = stack == null || stack.isEmpty() ? null : MiscBridges.getColor(stack);
 		return color != null ? color : net.minecraft.item.EnumDyeColor.WHITE;
+	}
+
+	// --- projectiles ---------------------------------------------------------------------------------------------------
+
+	/**
+	 * NeoForge {@code ProjectileImpactEvent.getProjectile()}: the projectile when it is a 1.21 one (the mods' projectiles
+	 * extend the carried 1.21 Projectile), null for 1.12.2's own (an arrow of the game isn't a 1.21 Projectile here). It
+	 * was always null: the mods' reactions to their own projectiles hitting (the Aether's darts, Iron's spells, Twilight
+	 * Forest's throwables) never ran.
+	 */
+	@Nullable
+	public static Object getProjectile(net.minecraftforge.event.entity.ProjectileImpactEvent event) {
+		Entity entity = event.getEntity();
+		Class<?> projectile = projectileClass();
+		return entity != null && projectile != null && projectile.isInstance(entity) ? entity : null;
+	}
+
+	private static volatile Class<?> projectile;
+	private static volatile boolean projectileLooked;
+
+	@Nullable
+	private static Class<?> projectileClass() {
+		if (!projectileLooked) {
+			try {
+				projectile = Class.forName("net.minecraft.world.entity.projectile.Projectile", false, net.minecraft.launchwrapper.Launch.classLoader);
+			} catch (ClassNotFoundException | LinkageError | RuntimeException e) {
+				projectile = null;
+			}
+			projectileLooked = true;
+		}
+		return projectile;
+	}
+
+	// --- packets -------------------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code new ClientboundBlockUpdatePacket(pos, state)}: 1.12.2's block change packet of that state. */
+	public static net.minecraft.network.play.server.SPacketBlockChange newSPacketBlockChange(BlockPos pos, IBlockState state) {
+		var packet = new net.minecraft.network.play.server.SPacketBlockChange();
+		packet.blockState = state;
+		if (BLOCK_CHANGE_POS != null) {
+			try {
+				BLOCK_CHANGE_POS.set(packet, pos);
+			} catch (IllegalAccessException e) {
+				// the packet keeps no position: the client ignores it
+			}
+		}
+		return packet;
+	}
+
+	/** 1.21 {@code new ClientboundBlockUpdatePacket(level, pos)}: the state there now. */
+	public static net.minecraft.network.play.server.SPacketBlockChange newSPacketBlockChange(IBlockAccess world, BlockPos pos) {
+		return world instanceof World ? new net.minecraft.network.play.server.SPacketBlockChange((World) world, pos)
+				: newSPacketBlockChange(pos, world.getBlockState(pos));
+	}
+
+	private static final java.lang.reflect.Field BLOCK_CHANGE_POS = blockChangePos();
+
+	private static java.lang.reflect.Field blockChangePos() {
+		for (java.lang.reflect.Field field : net.minecraft.network.play.server.SPacketBlockChange.class.getDeclaredFields()) {
+			if (field.getType() == BlockPos.class) {
+				field.setAccessible(true);
+				return field;
+			}
+		}
+		return null;
 	}
 
 	// --- players -------------------------------------------------------------------------------------------------------
