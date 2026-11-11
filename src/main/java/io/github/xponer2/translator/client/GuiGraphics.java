@@ -46,6 +46,15 @@ public class GuiGraphics {
         this(minecraft);
     }
 
+    /** 1.21's private {@code new GuiGraphics(minecraft, pose, bufferSource)} (a mod's own GuiGraphics, Storage Drawers'). */
+    public GuiGraphics(Minecraft minecraft, PoseStack pose, MultiBufferSource bufferSource) {
+        this(minecraft);
+    }
+
+    /** 1.21's fields (mods read them through access wideners): the GL matrix and the Translator's buffers. */
+    public final PoseStack pose = PoseStack.INSTANCE;
+    public final MultiBufferSource bufferSource = MultiBufferSource.INSTANCE;
+
     /** A sprite of the blocks atlas stretched to width x height (1.21 blit(x, y, z, width, height, sprite)). */
     public void blit(int x, int y, int z, int width, int height, net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
         if (sprite instanceof GuiSprite) {
@@ -585,6 +594,27 @@ public class GuiGraphics {
 
     public void disableScissor() {
         org.lwjgl.opengl.GL11.glDisable(org.lwjgl.opengl.GL11.GL_SCISSOR_TEST);
+    }
+
+    /**
+     * 1.21's {@code applyScissor(rectangle)} (a mod's own GuiGraphics calls it: GuideMe's scaled one): clip to the
+     * rectangle (a 1.21 ScreenRectangle, read by its record accessors), none when null.
+     */
+    protected void applyScissor(@javax.annotation.Nullable Object rectangle) {
+        this.flushOpen();
+        if (rectangle == null) {
+            this.disableScissor();
+            return;
+        }
+        try {
+            int left = (Integer) rectangle.getClass().getMethod("left").invoke(rectangle);
+            int top = (Integer) rectangle.getClass().getMethod("top").invoke(rectangle);
+            int width = (Integer) rectangle.getClass().getMethod("width").invoke(rectangle);
+            int height = (Integer) rectangle.getClass().getMethod("height").invoke(rectangle);
+            this.enableScissor(left, top, left + width, top + height);
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            this.disableScissor();
+        }
     }
 
     // text

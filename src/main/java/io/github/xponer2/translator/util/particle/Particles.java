@@ -35,6 +35,9 @@ public final class Particles {
 	public static void addParticle(World level, ParticleOptions particle, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
 		if (particle instanceof VanillaParticle legacy) {
 			level.spawnParticle(legacy.legacyType(), x, y, z, xSpeed, ySpeed, zSpeed, legacy.legacyArguments());
+		} else if (particle != null && level.isRemote) {
+			// a mod's own particle: made by its provider on the client (a server world draws none, as 1.21's)
+			io.github.xponer2.translator.client.particle.ParticleProviders.addFromCommon(level, particle, x, y, z, xSpeed, ySpeed, zSpeed);
 		}
 	}
 }

@@ -70,6 +70,28 @@ public class RegisterClientExtensionsEvent extends Event {
 	public void registerBlock(Object extensions, net.minecraft.block.Block... blocks) {
 	}
 
+	/** NeoForge {@code registerBlock(extensions, holders...)} (Mekanism's): as the blocks. */
+	public void registerBlock(Object extensions, io.github.xponer2.translator.registry.Holder<?>... blocks) {
+	}
+
+	/**
+	 * NeoForge {@code registerItem(extensions, holders...)} (Mekanism's and Iron's Spells' armor and tools by their
+	 * registered holders): the items of the holders, as {@link #registerItem(IClientItemExtensions, Item...)}.
+	 */
+	public void registerItem(IClientItemExtensions extensions, io.github.xponer2.translator.registry.Holder<?>... holders) {
+		var items = new java.util.ArrayList<Item>();
+		for (var holder : holders) {
+			try {
+				if (holder != null && holder.value() instanceof Item item) {
+					items.add(item);
+				}
+			} catch (RuntimeException e) {
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed("the client extensions of a holder", e);
+			}
+		}
+		this.registerItem(extensions, items.toArray(new Item[0]));
+	}
+
 	/** NeoForge {@code registerMobEffect(extensions, effects...)}: the 1.12.2 effects draw their own icons. */
 	public void registerMobEffect(Object extensions, Object... effects) {
 	}
@@ -77,15 +99,46 @@ public class RegisterClientExtensionsEvent extends Event {
 	public void registerItem(IClientItemExtensions extensions, Item... items) {
 		for (var item : items) {
 			ITEMS.put(item, extensions);
-			// the item's own renderer of its built-in model (a "builtin/entity" model): 1.12.2 asks the item for it
-			try {
-				var renderer = extensions.getCustomRenderer();
-				if (renderer != null && renderer != net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer.instance) {
-					item.setTileEntityItemStackRenderer(renderer);
+			// the item's own renderer of its built-in model (a "builtin/entity" model): 1.12.2 asks the item for it. The
+			// mod makes it when first drawn: now (before the first atlas) the game has no item renderer yet, and a
+			// renderer keeping it had none (Iron's Spells' affinity rings failed on every frame)
+			item.setTileEntityItemStackRenderer(new LazyItemRenderer(extensions, item));
+		}
+	}
+
+	/** The mod's item renderer, asked for when the item is first drawn. */
+	private static final class LazyItemRenderer extends net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer {
+		private final IClientItemExtensions extensions;
+		private final Item item;
+		@javax.annotation.Nullable
+		private net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer resolved;
+
+		LazyItemRenderer(IClientItemExtensions extensions, Item item) {
+			this.extensions = extensions;
+			this.item = item;
+		}
+
+		private net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer resolve() {
+			if (this.resolved == null) {
+				net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer renderer = null;
+				try {
+					renderer = this.extensions.getCustomRenderer();
+				} catch (RuntimeException | LinkageError e) {
+					io.github.xponer2.translator.runtime.RuntimeStubs.failed("the item renderer of " + this.item.getRegistryName(), e);
 				}
-			} catch (RuntimeException | LinkageError e) {
-				io.github.xponer2.translator.runtime.RuntimeStubs.failed("the item renderer of " + item.getRegistryName(), e);
+				this.resolved = renderer != null && renderer != this ? renderer : net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer.instance;
 			}
+			return this.resolved;
+		}
+
+		@Override
+		public void renderByItem(net.minecraft.item.ItemStack stack) {
+			this.resolve().renderByItem(stack);
+		}
+
+		@Override
+		public void renderByItem(net.minecraft.item.ItemStack stack, float partialTicks) {
+			this.resolve().renderByItem(stack, partialTicks);
 		}
 	}
 

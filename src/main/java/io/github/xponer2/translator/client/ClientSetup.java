@@ -35,6 +35,8 @@ public final class ClientSetup {
 		MinecraftForge.EVENT_BUS.register(new SingleVariantModels());
 		MinecraftForge.EVENT_BUS.register(new CopperTextures());
 		MinecraftForge.EVENT_BUS.register(new ExtensionsBeforeStitch());
+		// the mods' particle providers and the sprites of their particles (into the blocks atlas)
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.client.particle.ParticleProviders());
 		MinecraftForge.EVENT_BUS.register(new PoseStack.FrameEnd());
 		// the signs of the 1.21.1 mods (their block entities): board, wood texture, text
 		SignRenderers.register();
@@ -44,6 +46,8 @@ public final class ClientSetup {
 	public static void init() {
 		// the mods' client resource listeners first: run once as they are added (GeckoLib's models, the books' data)
 		MinecraftForge.EVENT_BUS.post(new RegisterClientReloadListenersEvent());
+		// the dimensions' skies, clouds and fog (RegisterDimensionSpecialEffectsEvent): what clientLevel.effects() gives
+		io.github.xponer2.translator.runtime.redirect.ClientWorldBridges.initDimensionEffects();
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.RegisterLayerDefinitions());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.RegisterRenderers());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.CreateSkullModels());

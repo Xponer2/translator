@@ -273,6 +273,21 @@ public final class RuntimeMods {
 					LOGGER.warn("Can't read the vanilla 1.21.1 models: {}", t.toString());
 				}
 			}
+			if (FMLEnvironment.dist == Side.CLIENT) {
+				// every mod's assets before any mod starts: a library started first runs its resource listener at once
+				// (1.12.2 runs one as it is added) and found none of the mods after it (GeckoLib's model cache had none
+				// of Iron's Spells' models: "Unable to find model", its mobs invisible)
+				for (ModJar jar : result.mods) {
+					File file = result.converted.get(jar);
+					if (file != null) {
+						try {
+							io.github.xponer2.translator.runtime.client.RuntimeResourcePack.add(file, jar.displayName());
+						} catch (Throwable t) {
+							LOGGER.warn("Can't add the assets of the 1.21.1 mod {}", jar.file.getName(), t);
+						}
+					}
+				}
+			}
 			for (ModJar jar : result.mods) {
 				bar.step(jar.displayName());
 				File file = result.converted.get(jar);
@@ -283,9 +298,6 @@ public final class RuntimeMods {
 					continue;
 				}
 				try {
-					if (FMLEnvironment.dist == Side.CLIENT) {
-						io.github.xponer2.translator.runtime.client.RuntimeResourcePack.add(file, jar.displayName());
-					}
 					start(jar);
 				} catch (Throwable t) {
 					LOGGER.error("Can't load the 1.21.1 mod {}", jar.file.getName(), t);

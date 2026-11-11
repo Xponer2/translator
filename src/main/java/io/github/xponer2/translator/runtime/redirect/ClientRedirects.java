@@ -138,12 +138,12 @@ public final class ClientRedirects {
 	}
 
 	public static io.github.xponer2.translator.runtime.neoforge.InputConstants.Key getKey(KeyBinding key) {
-		return new io.github.xponer2.translator.runtime.neoforge.InputConstants.Key(io.github.xponer2.translator.runtime.neoforge.KeyMapping.toGlfw(key.getKeyCode()));
+		return io.github.xponer2.translator.runtime.neoforge.InputConstants.fromLwjgl(key.getKeyCode());
 	}
 
 	/** 1.21 {@code keyMapping.getDefaultKey()} (key binding screens reset to it: Controlling, Jade, Cloth Config). */
 	public static io.github.xponer2.translator.runtime.neoforge.InputConstants.Key getDefaultKey(KeyBinding key) {
-		return new io.github.xponer2.translator.runtime.neoforge.InputConstants.Key(io.github.xponer2.translator.runtime.neoforge.KeyMapping.toGlfw(key.getKeyCodeDefault()));
+		return io.github.xponer2.translator.runtime.neoforge.InputConstants.fromLwjgl(key.getKeyCodeDefault());
 	}
 
 	public static boolean isDown(KeyBinding key) {

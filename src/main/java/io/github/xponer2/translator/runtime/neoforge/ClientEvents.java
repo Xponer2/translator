@@ -37,7 +37,20 @@ public final class ClientEvents {
 	public static void setup() {
 		MinecraftForge.EVENT_BUS.post(new RegisterKeyMappingsEvent());
 		KeyMapping.registerLeftovers();
-		MinecraftForge.EVENT_BUS.post(new RegisterParticleProvidersEvent());
+		postParticleProviders();
+	}
+
+	private static boolean particleProvidersPosted;
+
+	/**
+	 * The mods' particle providers, once: before the first atlas stitch (their sprite sets' textures go into the blocks
+	 * atlas) or at setup, whichever comes first.
+	 */
+	public static synchronized void postParticleProviders() {
+		if (!particleProvidersPosted) {
+			particleProvidersPosted = true;
+			MinecraftForge.EVENT_BUS.post(new RegisterParticleProvidersEvent());
+		}
 	}
 
 	public static final class Forwarder {
@@ -63,17 +76,21 @@ public final class ClientEvents {
 		}
 	}
 
+	/** NeoForge's particle providers of the mods' particle types (drawn by {@link io.github.xponer2.translator.client.particle.ParticleProviders}). */
 	public static class RegisterParticleProvidersEvent extends Event {
-		public void registerSpriteSet(Object type, Object provider) {
-			ForgeBus.LOGGER.debug("Particle provider for {} not used (mod particles are not drawn yet)", type);
+		/** A provider made with the type's sprite set (a SpriteParticleRegistration). */
+		public void registerSpriteSet(Object type, Object registration) {
+			io.github.xponer2.translator.client.particle.ParticleProviders.registerSpriteSet(type, registration);
 		}
 
+		/** A provider of particles without sprites (or with their own). */
 		public void registerSpecial(Object type, Object provider) {
-			this.registerSpriteSet(type, provider);
+			io.github.xponer2.translator.client.particle.ParticleProviders.registerSpecial(type, provider);
 		}
 
+		/** A provider of one-sprite particles: the sprite picked from the type's set. */
 		public void registerSprite(Object type, Object provider) {
-			this.registerSpriteSet(type, provider);
+			io.github.xponer2.translator.client.particle.ParticleProviders.registerSprite(type, provider);
 		}
 	}
 

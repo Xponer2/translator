@@ -44,7 +44,9 @@ public class EntityModelSet {
 
 	/** The model part of the layer: the definition's {@code bakeRoot()}, a part without cubes if there is none. */
 	public ModelPart bakeLayer(Object location) {
-		Supplier<?> supplier = DEFINITIONS.get(location);
+		Supplier<?> registered = DEFINITIONS.get(location);
+		Object vanillaLayer = registered == null ? vanillaDefinition(location) : null;
+		Supplier<?> supplier = registered != null ? registered : vanillaLayer != null ? () -> vanillaLayer : null;
 		if (supplier == null) {
 			io.github.xponer2.translator.runtime.RuntimeStubs.missing("EntityModelSet.bakeLayer: no layer definition " + location);
 			return new ModelPart(java.util.Collections.emptyList(), java.util.Collections.emptyMap());
@@ -56,6 +58,37 @@ public class EntityModelSet {
 			io.github.xponer2.translator.runtime.RuntimeStubs.failed("the model layer " + location, e);
 			return new ModelPart(java.util.Collections.emptyList(), java.util.Collections.emptyMap());
 		}
+	}
+
+	@javax.annotation.Nullable
+	private static volatile Map<?, ?> vanilla;
+	private static volatile boolean vanillaTried;
+
+	/**
+	 * A vanilla layer (ModelLayers.ZOMBIE, the armor layers, ...) from 1.21's own {@code LayerDefinitions.createRoots()}
+	 * (carried), made once: mod renderers built on vanilla models (zombies, illagers, humanoid armor) found no layer.
+	 */
+	@javax.annotation.Nullable
+	private static Object vanillaDefinition(Object location) {
+		if (!vanillaTried) {
+			synchronized (EntityModelSet.class) {
+				if (!vanillaTried) {
+					vanillaTried = true;
+					try {
+						Object roots = Class.forName("net.minecraft.client.model.geom.LayerDefinitions", true, EntityModelSet.class.getClassLoader())
+								.getMethod("createRoots").invoke(null);
+						if (roots instanceof Map<?, ?> map) {
+							vanilla = map;
+						}
+					} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+						io.github.xponer2.translator.runtime.RuntimeStubs.failed("the vanilla model layers",
+								e instanceof java.lang.reflect.InvocationTargetException ite ? ite.getCause() : e);
+					}
+				}
+			}
+		}
+		Map<?, ?> map = vanilla;
+		return map != null ? map.get(location) : null;
 	}
 
 	public void onResourceManagerReload(Object resourceManager) {

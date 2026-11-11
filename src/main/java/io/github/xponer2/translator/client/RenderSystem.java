@@ -148,6 +148,36 @@ public final class RenderSystem {
 
     public static void setShaderTexture(int unit, ResourceLocation texture) {
         Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+        if (unit >= 0 && unit < SHADER_TEXTURES.length) {
+            var bound = Minecraft.getMinecraft().getTextureManager().getTexture(texture);
+            SHADER_TEXTURES[unit] = bound != null ? bound.getGlTextureId() : 0;
+        }
+    }
+
+    /** The textures given to the 1.21 shader's samplers (0: the drawn one, 1: overlay, 2: light map). */
+    private static final int[] SHADER_TEXTURES = new int[12];
+
+    /**
+     * 1.21 {@code setShaderTexture(unit, id)}: a texture by its GL id for the next draw. Sampler 0 is the texture
+     * 1.12.2 draws with: bound now, through 1.12.2's state (the carried 1.21 one kept only the id, and JourneyMap's map
+     * tiles were drawn with whatever texture was bound). The overlay and light map units are 1.12.2's own.
+     */
+    public static void setShaderTexture(int unit, int id) {
+        if (unit >= 0 && unit < SHADER_TEXTURES.length) {
+            SHADER_TEXTURES[unit] = id;
+        }
+        if (unit == 0) {
+            GlStateManager.bindTexture(id);
+        }
+    }
+
+    public static int getShaderTexture(int unit) {
+        return unit >= 0 && unit < SHADER_TEXTURES.length ? SHADER_TEXTURES[unit] : 0;
+    }
+
+    /** 1.21 {@code bindTexture(id)}: through 1.12.2's state, which skips a texture it thinks bound. */
+    public static void bindTexture(int id) {
+        GlStateManager.bindTexture(id);
     }
 
     /**

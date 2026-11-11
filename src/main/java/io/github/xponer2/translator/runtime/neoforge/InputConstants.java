@@ -30,6 +30,14 @@ public final class InputConstants {
 		return io.github.xponer2.translator.runtime.redirect.GlfwBridges.glfwGetKey(window, key) == 1;
 	}
 
+	/** The key of a 1.12.2 key code (a binding's): a mouse button below 0, else the keyboard key by its GLFW code. */
+	public static Key fromLwjgl(int code) {
+		if (code < 0) {
+			return Type.MOUSE.getOrCreate(code + 100);
+		}
+		return code == 0 ? UNKNOWN : new Key(KeyMapping.toGlfw(code));
+	}
+
 	public static final class Key {
 		private final int value;
 		private final Type type;
@@ -63,7 +71,7 @@ public final class InputConstants {
 		}
 
 		/** The 1.12.2 key code: LWJGL 2 keys, mouse buttons as button - 100. */
-		int lwjgl() {
+		public int lwjgl() {
 			return this.type == Type.MOUSE ? this.value - 100 : this.type == Type.SCANCODE ? this.value : KeyMapping.toLwjgl(this.value);
 		}
 	}

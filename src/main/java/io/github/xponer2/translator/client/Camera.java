@@ -32,6 +32,13 @@ public class Camera {
 	public Camera() {
 	}
 
+	/** A camera at a place, turned as the game's (1.12.2 draws particles relative to the view entity's position). */
+	public static Camera at(double x, double y, double z) {
+		Camera camera = new Camera();
+		camera.ownPosition = new Vec3d(x, y, z);
+		return camera;
+	}
+
 	/** {@code GameRenderer.getMainCamera()}, {@code EntityRenderDispatcher.camera}, the render events' camera. */
 	public static Camera main() {
 		return MAIN;
@@ -52,6 +59,9 @@ public class Camera {
 	}
 
 	public Vec3d getPosition() {
+		if (this.ownPosition != null) {
+			return this.ownPosition;
+		}
 		Entity entity = this.getEntity();
 		return entity == null ? Vec3d.ZERO : ActiveRenderInfo.projectViewFromEntity(entity, Minecraft.getMinecraft().getRenderPartialTicks());
 	}
@@ -61,6 +71,9 @@ public class Camera {
 	}
 
 	public float getYRot() {
+		if (this.ownRotation != null) {
+			return this.ownRotation[0];
+		}
 		Entity entity = this.getEntity();
 		if (entity == null) {
 			return 0;
@@ -71,6 +84,9 @@ public class Camera {
 	}
 
 	public float getXRot() {
+		if (this.ownRotation != null) {
+			return this.ownRotation[1];
+		}
 		Entity entity = this.getEntity();
 		if (entity == null) {
 			return 0;
@@ -82,6 +98,69 @@ public class Camera {
 
 	public float getPartialTickTime() {
 		return Minecraft.getMinecraft().getRenderPartialTicks();
+	}
+
+	// --- a mod's own camera (Moonlight's dummy camera, Supplementaries' cannon view): what it sets, it reads ---------
+
+	@Nullable
+	private Vec3d ownPosition;
+	@Nullable
+	private float[] ownRotation;
+
+	/** 1.21 {@code setPosition(position)}: this camera's own place from now on (the game's camera keeps following the view). */
+	protected void setPosition(Vec3d position) {
+		this.ownPosition = position;
+	}
+
+	protected void setPosition(double x, double y, double z) {
+		this.setPosition(new Vec3d(x, y, z));
+	}
+
+	/** 1.21 {@code setRotation(yRot, xRot)}: this camera's own turn from now on. */
+	protected void setRotation(float yRot, float xRot) {
+		this.ownRotation = new float[] {yRot, xRot};
+	}
+
+	/** NeoForge's {@code setRotation(yRot, xRot, roll)}: the roll isn't kept. */
+	public void setRotation(float yRot, float xRot, float roll) {
+		this.setRotation(yRot, xRot);
+	}
+
+	/** 1.21 {@code move(forwards, up, left)}: along this camera's look, up and left vectors. */
+	protected void move(float forwards, float up, float left) {
+		org.joml.Vector3f look = this.getLookVector();
+		org.joml.Vector3f upVector = this.getUpVector();
+		org.joml.Vector3f leftVector = this.getLeftVector();
+		Vec3d position = this.getPosition();
+		this.setPosition(position.x + look.x * forwards + upVector.x * up + leftVector.x * left,
+				position.y + look.y * forwards + upVector.y * up + leftVector.y * left,
+				position.z + look.z * forwards + upVector.z * up + leftVector.z * left);
+	}
+
+	/** 1.21 {@code getMaxZoom(distance)}: the distance the view can back off before a block; 1.12.2's clip is its renderer's. */
+	protected float getMaxZoom(float distance) {
+		return distance;
+	}
+
+	/**
+	 * 1.21 {@code getFluidInCamera()}: the FogType (carried, by name) of the block at the eyes: lava, water or none
+	 * (the Aether's and the mods' fog handlers ask for it).
+	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public <R> R getFluidInCamera() {
+		String type = "NONE";
+		Entity entity = this.getEntity();
+		if (entity != null && entity.world != null) {
+			net.minecraft.block.material.Material material = ActiveRenderInfo.getBlockStateAtEntityViewpoint(entity.world, entity,
+					Minecraft.getMinecraft().getRenderPartialTicks()).getMaterial();
+			type = material == net.minecraft.block.material.Material.LAVA ? "LAVA" : material == net.minecraft.block.material.Material.WATER ? "WATER" : "NONE";
+		}
+		try {
+			Class enumClass = Class.forName("net.minecraft.world.level.material.FogType", true, Camera.class.getClassLoader());
+			return (R) Enum.valueOf(enumClass, type);
+		} catch (ClassNotFoundException | RuntimeException e) {
+			return null;
+		}
 	}
 
 	/** As 1.21 sets it: yaw about Y (south is 0), then pitch about X. */

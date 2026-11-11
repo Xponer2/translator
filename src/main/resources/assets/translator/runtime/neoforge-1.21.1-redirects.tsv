@@ -582,3 +582,91 @@ R	net/minecraft/potion/PotionEffect	io/github/xponer2/translator/runtime/redirec
 R	net/minecraftforge/fluids/FluidStack	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 C	net/minecraft/server/ReloadableServerResources	io/github/xponer2/translator/runtime/neoforge/ServerResources
 R	net/minecraft/world/storage/MapData	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# the v191 client gaps: the dimension's effects, the narrator, the overlay, leaving a world, the level renderer's fields
+R	net/minecraft/client/multiplayer/WorldClient	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraft/client/Minecraft	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraft/client/renderer/RenderGlobal	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraft/client/gui/chat/NarratorChatListener	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+# 1.21 Vec2 math, the vertex format elements' constants and record members
+R	net/minecraft/util/math/Vec2f	io/github/xponer2/translator/runtime/redirect/Vec2Bridges
+R	net/minecraft/client/renderer/vertex/VertexFormatElement	io/github/xponer2/translator/runtime/redirect/VertexElementStatics
+# NeoForge's tooltip colors: 1.12.2's tooltip has one background color (start and end are it)
+R	net/minecraftforge/client/event/RenderTooltipEvent$Color	io/github/xponer2/translator/runtime/redirect/GuiBridges
+M	net/neoforged/neoforge/client/event/RenderTooltipEvent$Color	getBackgroundStart()	getBackground
+M	net/neoforged/neoforge/client/event/RenderTooltipEvent$Color	getBackgroundEnd()	getBackground
+M	net/neoforged/neoforge/client/event/RenderTooltipEvent$Color	setBackgroundStart(int)	setBackground
+M	net/neoforged/neoforge/client/event/RenderTooltipEvent$Color	getOriginalBackgroundStart()	getOriginalBackground
+M	net/neoforged/neoforge/client/event/RenderTooltipEvent$Color	getOriginalBackgroundEnd()	getOriginalBackground
+# 1.21 PackMetadataSection is a record
+R	net/minecraft/client/resources/data/PackMetadataSection	io/github/xponer2/translator/runtime/redirect/GuiBridges
+M	net/minecraft/server/packs/metadata/pack/PackMetadataSection	description()	getPackDescription
+M	net/minecraft/server/packs/metadata/pack/PackMetadataSection	packFormat()	getPackFormat
+# 1.21 GlStateManager's own state (its texture, blend, depth caches) is 1.12.2's: one cache, so neither skips a change
+# the other made (JourneyMap's map tiles were drawn with the texture 1.12.2 had bound; the carried RenderSystem calls these too)
+M	com/mojang/blaze3d/platform/GlStateManager	_bindTexture(int)	bindTexture
+M	com/mojang/blaze3d/platform/GlStateManager	_activeTexture(int)	setActiveTexture
+M	com/mojang/blaze3d/platform/GlStateManager	_enableBlend()	enableBlend
+M	com/mojang/blaze3d/platform/GlStateManager	_disableBlend()	disableBlend
+M	com/mojang/blaze3d/platform/GlStateManager	_blendFunc(int,int)	blendFunc
+M	com/mojang/blaze3d/platform/GlStateManager	_blendFuncSeparate(int,int,int,int)	tryBlendFuncSeparate
+M	com/mojang/blaze3d/platform/GlStateManager	_enableDepthTest()	enableDepth
+M	com/mojang/blaze3d/platform/GlStateManager	_disableDepthTest()	disableDepth
+M	com/mojang/blaze3d/platform/GlStateManager	_depthFunc(int)	depthFunc
+M	com/mojang/blaze3d/platform/GlStateManager	_depthMask(boolean)	depthMask
+M	com/mojang/blaze3d/platform/GlStateManager	_colorMask(boolean,boolean,boolean,boolean)	colorMask
+M	com/mojang/blaze3d/platform/GlStateManager	_enableCull()	enableCull
+M	com/mojang/blaze3d/platform/GlStateManager	_disableCull()	disableCull
+M	com/mojang/blaze3d/platform/GlStateManager	_enablePolygonOffset()	enablePolygonOffset
+M	com/mojang/blaze3d/platform/GlStateManager	_disablePolygonOffset()	disablePolygonOffset
+M	com/mojang/blaze3d/platform/GlStateManager	_polygonOffset(float,float)	doPolygonOffset
+M	com/mojang/blaze3d/platform/GlStateManager	_enableColorLogicOp()	enableColorLogic
+M	com/mojang/blaze3d/platform/GlStateManager	_disableColorLogicOp()	disableColorLogic
+M	com/mojang/blaze3d/platform/GlStateManager	_logicOp(int)	colorLogicOp
+M	com/mojang/blaze3d/platform/GlStateManager	_deleteTexture(int)	deleteTexture
+M	com/mojang/blaze3d/platform/GlStateManager	_genTexture()	generateTexture
+M	com/mojang/blaze3d/platform/GlStateManager	_texParameter(int,int,int)	glTexParameteri
+M	com/mojang/blaze3d/platform/GlStateManager	_texParameter(int,int,float)	glTexParameterf
+M	com/mojang/blaze3d/platform/GlStateManager	_getTexLevelParameter(int,int,int)	glGetTexLevelParameteri
+M	com/mojang/blaze3d/platform/GlStateManager	_texImage2D(int,int,int,int,int,int,int,int,java.nio.IntBuffer)	glTexImage2D
+M	com/mojang/blaze3d/platform/GlStateManager	_viewport(int,int,int,int)	viewport
+M	com/mojang/blaze3d/platform/GlStateManager	_clearColor(float,float,float,float)	clearColor
+M	com/mojang/blaze3d/platform/GlStateManager	_clearDepth(double)	clearDepth
+M	com/mojang/blaze3d/platform/GlStateManager	_getInteger(int)	glGetInteger
+M	com/mojang/blaze3d/platform/GlStateManager	_getError()	glGetError
+M	com/mojang/blaze3d/platform/GlStateManager	_pixelStore(int,int)	glPixelStorei
+M	com/mojang/blaze3d/platform/GlStateManager	_getString(int)	glGetString
+# the 1.21 unbaked block model on 1.12.2's: bake(baker, sprites, state) with 1.12.2's face baker, NeoForge's customData,
+# and the element's face and rotation records as 1.12.2's (the carried face record didn't match its 1.12.2 deserializer)
+C	net/minecraft/client/renderer/block/model/BlockElementFace	net/minecraft/client/renderer/block/model/BlockPartFace
+C	net/minecraft/client/renderer/block/model/BlockElementRotation	net/minecraft/client/renderer/block/model/BlockPartRotation
+R	net/minecraft/client/renderer/block/model/ModelBlock	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
+R	net/minecraft/client/renderer/block/model/BlockPart	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
+R	net/minecraft/client/renderer/block/model/BlockPartFace	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
+R	net/minecraft/client/renderer/block/model/BlockPartRotation	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
+# the 1.21 particles (the carried vanilla ones and the mods' own) draw themselves with render(consumer, camera, tick):
+# their parent calls it from 1.12.2's renderParticle, their sprites in the blocks atlas
+S	net/minecraft/client/particle/Particle	io/github/xponer2/translator/client/particle/TranslatedParticle
+# the first person arms of a player renderer (Create's and Mining Gadgets' held tools)
+R	net/minecraft/client/renderer/entity/RenderPlayer	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
+# 1.21 Boat.Type.isRaft (vanilla's layer definitions ask it for every boat): no 1.12.2 boat is a raft
+R	net/minecraft/entity/item/EntityBoat$Type	io/github/xponer2/translator/runtime/redirect/BoatTypeBridges
+# LWJGL 3's core-profile GL classes (GL11C, GL30C, ...) are LWJGL 2's GL11, GL30, ... (JourneyMap's texture checks, mipmaps)
+C	org/lwjgl/opengl/GL11C	org/lwjgl/opengl/GL11
+C	org/lwjgl/opengl/GL12C	org/lwjgl/opengl/GL12
+C	org/lwjgl/opengl/GL13C	org/lwjgl/opengl/GL13
+C	org/lwjgl/opengl/GL14C	org/lwjgl/opengl/GL14
+C	org/lwjgl/opengl/GL15C	org/lwjgl/opengl/GL15
+C	org/lwjgl/opengl/GL20C	org/lwjgl/opengl/GL20
+C	org/lwjgl/opengl/GL21C	org/lwjgl/opengl/GL21
+C	org/lwjgl/opengl/GL30C	org/lwjgl/opengl/GL30
+C	org/lwjgl/opengl/GL31C	org/lwjgl/opengl/GL31
+C	org/lwjgl/opengl/GL32C	org/lwjgl/opengl/GL32
+C	org/lwjgl/opengl/GL33C	org/lwjgl/opengl/GL33
+C	org/lwjgl/opengl/GL40C	org/lwjgl/opengl/GL40
+C	org/lwjgl/opengl/GL41C	org/lwjgl/opengl/GL41
+C	org/lwjgl/opengl/GL42C	org/lwjgl/opengl/GL42
+C	org/lwjgl/opengl/GL43C	org/lwjgl/opengl/GL43
+C	org/lwjgl/opengl/GL44C	org/lwjgl/opengl/GL44
+C	org/lwjgl/opengl/GL45C	org/lwjgl/opengl/GL45
+M	org/lwjgl/opengl/GL11C	glGetIntegerv(int,java.nio.IntBuffer)	glGetInteger
+M	org/lwjgl/opengl/GL11	glGetIntegerv(int,java.nio.IntBuffer)	glGetInteger

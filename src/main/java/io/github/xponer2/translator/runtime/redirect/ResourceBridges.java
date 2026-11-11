@@ -92,10 +92,40 @@ public final class ResourceBridges {
 		});
 		java.util.concurrent.Executor now = Runnable::run;
 		Object profiler = profiler(params[2]);
+		long start = System.nanoTime();
 		Object future = reload.invoke(listener, barrier, ResourceManager.client(), profiler, profiler, now, now);
 		if (future instanceof java.util.concurrent.CompletableFuture<?> stages) {
 			stages.join();
 		}
+		LOGGER.info("Resource listener {} ran in {} ms{}", listener.getClass().getName(), (System.nanoTime() - start) / 1_000_000, loaded(listener));
+	}
+
+	private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger("Translator Runtime");
+
+	/**
+	 * What a model cache loaded, for the log: the sizes its class gives by getBakedModels / getBakedAnimations
+	 * (GeckoLib's: "N models"), nothing for the others.
+	 */
+	private static String loaded(Object listener) {
+		String name = listener.getClass().getName();
+		int lambda = name.indexOf("$$Lambda");
+		var text = new StringBuilder();
+		try {
+			Class<?> owner = lambda > 0 ? Class.forName(name.substring(0, lambda), false, listener.getClass().getClassLoader()) : listener.getClass();
+			for (String getter : new String[] {"getBakedModels", "getBakedAnimations"}) {
+				try {
+					Object value = owner.getMethod(getter).invoke(null);
+					if (value instanceof java.util.Map<?, ?> map) {
+						text.append(", ").append(map.size()).append(getter.equals("getBakedModels") ? " models" : " animations");
+					}
+				} catch (ReflectiveOperationException | RuntimeException e) {
+					// not a model cache
+				}
+			}
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			// no owner class
+		}
+		return text.toString();
 	}
 
 	/** A profiler of the type the listener takes: 1.12.2's (the tables' ProfilerFiller), else one that records nothing. */

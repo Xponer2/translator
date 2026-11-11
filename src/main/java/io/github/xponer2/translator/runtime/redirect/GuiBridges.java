@@ -58,6 +58,50 @@ public final class GuiBridges {
 				|| context == net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType.FIRST_PERSON_RIGHT_HAND;
 	}
 
+	/**
+	 * 1.21 {@code itemDisplayContext.getSerializedName()}: the JSON key of the transform ({@code thirdperson_lefthand},
+	 * {@code gui}, ...), what the mods' model loaders read and write.
+	 */
+	public static String getSerializedName(net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType context) {
+		return context.name().toLowerCase(java.util.Locale.ROOT).replace("_person_", "person_").replace("_hand", "hand");
+	}
+
+	/** 1.21 {@code itemDisplayContext.getId()}: 1.21's ids are 1.12.2's order. */
+	public static byte getId(net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType context) {
+		return (byte) context.ordinal();
+	}
+
+	/** NeoForge {@code isModded()}: a context a mod added; 1.12.2 has only vanilla's. */
+	public static boolean isModded(net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType context) {
+		return false;
+	}
+
+	/**
+	 * NeoForge {@code new RenderTooltipEvent.Color(stack, graphics, x, y, font, background, borderStart, borderEnd,
+	 * components)}: Create and Ars Nouveau ask the mods for the colors of their own tooltips with it.
+	 */
+	public static net.minecraftforge.client.event.RenderTooltipEvent.Color newRenderTooltipEvent_Color(net.minecraft.item.ItemStack stack,
+			@javax.annotation.Nullable Object graphics, int x, int y, net.minecraft.client.gui.FontRenderer font, int background, int borderStart,
+			int borderEnd, @javax.annotation.Nullable java.util.List<?> components) {
+		return new net.minecraftforge.client.event.RenderTooltipEvent.Color(stack, java.util.Collections.emptyList(), x, y, font, background, borderStart,
+				borderEnd);
+	}
+
+	/** NeoForge {@code setBackgroundEnd(color)}: 1.12.2's tooltip has one background color; the start one is it. */
+	public static void setBackgroundEnd(net.minecraftforge.client.event.RenderTooltipEvent.Color event, int color) {
+	}
+
+	/** 1.21 {@code new PackMetadataSection(description, format, supportedFormats)}: 1.12.2's has no range of formats. */
+	public static net.minecraft.client.resources.data.PackMetadataSection newPackMetadataSection(net.minecraft.util.text.ITextComponent description,
+			int format, @javax.annotation.Nullable java.util.Optional<?> supportedFormats) {
+		return new net.minecraft.client.resources.data.PackMetadataSection(description, format);
+	}
+
+	/** 1.21 {@code supportedFormats()}: none. */
+	public static java.util.Optional<?> supportedFormats(net.minecraft.client.resources.data.PackMetadataSection section) {
+		return java.util.Optional.empty();
+	}
+
 	/** 1.21 {@code options.mainHand()}: the main hand option over 1.12.2's field. */
 	public static io.github.xponer2.translator.client.OptionInstance<net.minecraft.util.EnumHandSide> mainHand(net.minecraft.client.settings.GameSettings options) {
 		return new io.github.xponer2.translator.client.OptionInstance<>(() -> options.mainHand, value -> options.mainHand = value);

@@ -383,6 +383,25 @@ public final class ScreenBridges {
 		return colors.colorMultiplier(state, world, pos, tint);
 	}
 
+	// --- TextureMap (1.21 TextureAtlas) ------------------------------------------------------------------------------
+
+	/** 1.21 {@code atlas.getWidth()} / {@code getHeight()}: the size of its GL texture (AE2's blitter maps its sprites' UVs with it). */
+	public static int getWidth(net.minecraft.client.renderer.texture.TextureMap atlas) {
+		return atlasLevelParameter(atlas, org.lwjgl.opengl.GL11.GL_TEXTURE_WIDTH);
+	}
+
+	public static int getHeight(net.minecraft.client.renderer.texture.TextureMap atlas) {
+		return atlasLevelParameter(atlas, org.lwjgl.opengl.GL11.GL_TEXTURE_HEIGHT);
+	}
+
+	private static int atlasLevelParameter(net.minecraft.client.renderer.texture.TextureMap atlas, int parameter) {
+		int bound = org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D);
+		net.minecraft.client.renderer.GlStateManager.bindTexture(atlas.getGlTextureId());
+		int value = net.minecraft.client.renderer.GlStateManager.glGetTexLevelParameteri(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 0, parameter);
+		net.minecraft.client.renderer.GlStateManager.bindTexture(bound);
+		return value;
+	}
+
 	// --- KeyBinding --------------------------------------------------------------------------------------------------
 
 	public static ITextComponent getTranslatedKeyMessage(KeyBinding key) {
@@ -409,6 +428,58 @@ public final class ScreenBridges {
 
 	public static boolean isConflictContextAndModifierActive(KeyBinding key) {
 		return key.getKeyConflictContext().isActive() && key.getKeyModifier().isActive(key.getKeyConflictContext());
+	}
+
+	/**
+	 * 1.21 {@code keyMapping.key}: the bound key (1.12.2 keeps a key code; the key binding screens of Controlling,
+	 * Cloth Config and Jade read it). Both names: the table maps the field to 1.12.2's keyCode.
+	 */
+	public static io.github.xponer2.translator.runtime.neoforge.InputConstants.Key key(KeyBinding key) {
+		return io.github.xponer2.translator.runtime.neoforge.InputConstants.fromLwjgl(key.getKeyCode());
+	}
+
+	public static io.github.xponer2.translator.runtime.neoforge.InputConstants.Key keyCode(KeyBinding key) {
+		return key(key);
+	}
+
+	/** 1.21 {@code keyMapping.key = input}. */
+	public static void key(KeyBinding key, io.github.xponer2.translator.runtime.neoforge.InputConstants.Key input) {
+		key.setKeyCode(input.lwjgl());
+	}
+
+	public static void keyCode(KeyBinding key, io.github.xponer2.translator.runtime.neoforge.InputConstants.Key input) {
+		key(key, input);
+	}
+
+	/** 1.21 {@code setKey(input)}: bound to that key (the screens then reset the bindings' map and save). */
+	public static void setKey(KeyBinding key, io.github.xponer2.translator.runtime.neoforge.InputConstants.Key input) {
+		key.setKeyCode(input.lwjgl());
+	}
+
+	/** NeoForge {@code setKeyModifierAndCode(modifier, input)}. */
+	public static void setKeyModifierAndCode(KeyBinding key, net.minecraftforge.client.settings.KeyModifier modifier,
+			io.github.xponer2.translator.runtime.neoforge.InputConstants.Key input) {
+		key.setKeyModifierAndCode(modifier, input.lwjgl());
+	}
+
+	/** 1.21 {@code isDefault()}: bound to its default key (and modifier). */
+	public static boolean isDefault(KeyBinding key) {
+		return key.isSetToDefaultValue();
+	}
+
+	/** 1.21 {@code same(other)}: bound to the same key. */
+	public static boolean same(KeyBinding key, KeyBinding other) {
+		return key.getKeyCode() == other.getKeyCode();
+	}
+
+	/** NeoForge {@code hasKeyModifierConflict(other)}. */
+	public static boolean hasKeyModifierConflict(KeyBinding key, KeyBinding other) {
+		return key.hasKeyCodeModifierConflict(other);
+	}
+
+	/** NeoForge {@code getDisplayName()}: the key with its modifier, as a component (1.12.2's gives the text). */
+	public static ITextComponent getDisplayName(KeyBinding key) {
+		return new TextComponentString(key.getDisplayName());
 	}
 
 	// --- NetHandlerPlayClient (ClientPacketListener) -----------------------------------------------------------------

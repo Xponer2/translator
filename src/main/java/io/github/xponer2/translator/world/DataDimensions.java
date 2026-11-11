@@ -69,6 +69,8 @@ public final class DataDimensions {
 		final boolean beds;
 		@Nullable
 		final Long fixedTime;
+		/** The type's {@code effects}: the client's sky, clouds and fog of the dimension (its DimensionSpecialEffects). */
+		final ResourceLocation effects;
 
 		Data(ResourceLocation id, Terrain terrain, List<Biome> biomes, @Nullable IBlockState stone, JsonObject type) {
 			this.id = id;
@@ -80,6 +82,7 @@ public final class DataDimensions {
 			this.ultrawarm = type.has("ultrawarm") && type.get("ultrawarm").getAsBoolean();
 			this.beds = !type.has("bed_works") || type.get("bed_works").getAsBoolean();
 			this.fixedTime = type.has("fixed_time") ? type.get("fixed_time").getAsLong() : null;
+			this.effects = new ResourceLocation(type.has("effects") ? type.get("effects").getAsString() : "minecraft:overworld");
 		}
 	}
 
@@ -89,6 +92,13 @@ public final class DataDimensions {
 	@Nullable
 	static Data data(int dimension) {
 		return BY_ID.get(dimension);
+	}
+
+	/** The effects of a mod's dimension (its type's {@code effects}), null for the others. */
+	@Nullable
+	public static ResourceLocation effects(int dimension) {
+		Data data = BY_ID.get(dimension);
+		return data != null ? data.effects : null;
 	}
 
 	/** Registers the mods' dimensions (init: the biomes are registered by then). */

@@ -59,11 +59,34 @@ public final class VertexConsumer {
 		// a mod's render type that couldn't be made is null: drawn as a plain one rather than failing every frame
 		this.type = type != null ? type : RenderType.solid();
 		this.target = null;
+		this.raw = false;
 	}
 
 	private VertexConsumer(BufferBuilder target) {
+		this(target, false);
+	}
+
+	private VertexConsumer(BufferBuilder target, boolean raw) {
 		this.type = null;
 		this.target = target;
+		this.raw = raw;
+	}
+
+	/** Positions as given, no matrix: the vertices of a batch 1.12.2 began and draws itself (its particles'). */
+	private final boolean raw;
+	private static final Map<BufferBuilder, VertexConsumer> RAW_TARGETS = new WeakHashMap<>();
+
+	/** The consumer writing positions as they are into a buffer 1.12.2 began (one per buffer). */
+	public static VertexConsumer raw(BufferBuilder buffer) {
+		synchronized (RAW_TARGETS) {
+			return RAW_TARGETS.computeIfAbsent(buffer, key -> new VertexConsumer(key, true));
+		}
+	}
+
+	/** The last vertex written (the buffer is drawn by its owner). */
+	public void endVertices() {
+		this.emit();
+		this.started = false;
 	}
 
 	/** The consumer writing into a buffer the mod began (one per buffer). */
@@ -83,6 +106,13 @@ public final class VertexConsumer {
 
 	public VertexConsumer addVertex(float x, float y, float z) {
 		this.emit();
+		if (this.raw) {
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.pending = true;
+			return this;
+		}
 		if (!this.started) {
 			this.start();
 		}

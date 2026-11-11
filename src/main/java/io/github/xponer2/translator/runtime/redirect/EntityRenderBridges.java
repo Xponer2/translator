@@ -48,4 +48,28 @@ public final class EntityRenderBridges {
 			Object layer) {
 		return new net.minecraft.client.renderer.entity.RenderMinecart<>(context.getEntityRenderDispatcher());
 	}
+
+	/**
+	 * 1.21 {@code playerRenderer.renderRightHand(pose, buffers, light, player)}: the first person arm in the current
+	 * pose (Create's and Mining Gadgets' held tools), 1.12.2's arm drawing with the player's skin.
+	 */
+	public static void renderRightHand(net.minecraft.client.renderer.entity.RenderPlayer renderer, Object pose, Object buffers, int light,
+			net.minecraft.client.entity.AbstractClientPlayer player) {
+		io.github.xponer2.translator.client.MultiBufferSource.INSTANCE.endBatch();
+		net.minecraft.client.Minecraft.getMinecraft().getTextureManager().bindTexture(player.getLocationSkin());
+		renderer.renderRightArm(player);
+	}
+
+	public static void renderLeftHand(net.minecraft.client.renderer.entity.RenderPlayer renderer, Object pose, Object buffers, int light,
+			net.minecraft.client.entity.AbstractClientPlayer player) {
+		io.github.xponer2.translator.client.MultiBufferSource.INSTANCE.endBatch();
+		net.minecraft.client.Minecraft.getMinecraft().getTextureManager().bindTexture(player.getLocationSkin());
+		renderer.renderLeftArm(player);
+	}
+
+	/** 1.21 {@code playerRenderer.getRenderOffset(player, partialTick)}: a crouching player is drawn a little lower. */
+	public static net.minecraft.util.math.Vec3d getRenderOffset(net.minecraft.client.renderer.entity.RenderPlayer renderer,
+			net.minecraft.client.entity.AbstractClientPlayer player, float partialTick) {
+		return player.isSneaking() ? new net.minecraft.util.math.Vec3d(0.0, -0.125, 0.0) : net.minecraft.util.math.Vec3d.ZERO;
+	}
 }

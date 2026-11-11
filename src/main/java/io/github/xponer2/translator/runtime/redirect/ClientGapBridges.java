@@ -538,13 +538,44 @@ public final class ClientGapBridges {
 		}
 	}
 
-	/** 1.21 {@code particleEngine.createParticle(options, ...)}: a vanilla particle made and added; others aren't drawn yet. */
+	/** 1.21 {@code particleEngine.createParticle(options, ...)}: the particle made and added (a mod's by its provider). */
 	@Nullable
 	public static Particle createParticle(ParticleManager engine, ParticleOptions options, double x, double y, double z, double xSpeed,
 			double ySpeed, double zSpeed) {
 		if (options instanceof VanillaParticle vanilla) {
 			return engine.spawnEffectParticle(vanilla.legacyType().getParticleID(), x, y, z, xSpeed, ySpeed, zSpeed, vanilla.legacyArguments());
 		}
-		return null;
+		net.minecraft.client.multiplayer.WorldClient world = net.minecraft.client.Minecraft.getMinecraft().world;
+		if (options == null || world == null) {
+			return null;
+		}
+		Particle particle = io.github.xponer2.translator.client.particle.ParticleProviders.create(world, options, x, y, z, xSpeed, ySpeed, zSpeed);
+		if (particle != null) {
+			engine.addEffect(particle);
+		}
+		return particle;
+	}
+
+	/** 1.21 {@code particleEngine.createTrackingEmitter(entity, options)}: a vanilla particle's emitter around the entity. */
+	public static void createTrackingEmitter(ParticleManager engine, net.minecraft.entity.Entity entity, ParticleOptions options) {
+		if (options instanceof VanillaParticle vanilla) {
+			engine.emitParticleAtEntity(entity, vanilla.legacyType());
+		}
+	}
+
+	public static void createTrackingEmitter(ParticleManager engine, net.minecraft.entity.Entity entity, ParticleOptions options, int lifetime) {
+		if (options instanceof VanillaParticle vanilla) {
+			engine.emitParticleAtEntity(entity, vanilla.legacyType(), lifetime);
+		}
+	}
+
+	/** 1.21 {@code particleEngine.textureAtlas}: the particles' sprites are in the blocks atlas here. */
+	public static net.minecraft.client.renderer.texture.TextureMap textureAtlas(ParticleManager engine) {
+		return net.minecraft.client.Minecraft.getMinecraft().getTextureMapBlocks();
+	}
+
+	/** 1.21 {@code particleEngine.spriteSets}: the sprite sets of the particle types, by id (Ars Nouveau reads them). */
+	public static java.util.Map<net.minecraft.util.ResourceLocation, Object> spriteSets(ParticleManager engine) {
+		return io.github.xponer2.translator.client.particle.ParticleProviders.SPRITE_SETS;
 	}
 }
