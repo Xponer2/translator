@@ -33,6 +33,14 @@ public class ItemOverrides extends ItemOverrideList {
 		super(Collections.emptyList());
 	}
 
+	/**
+	 * 1.21 {@code new ItemOverrides(baker, model, overrides)} (Iron's Spells' NBT-chosen item models extend it): the
+	 * mod's resolve chooses the model; the JSON overrides of 1.21 are left to it.
+	 */
+	public ItemOverrides(@Nullable Object baker, @Nullable Object model, @Nullable java.util.List<?> overrides) {
+		this();
+	}
+
 	/** 1.21 {@code resolve(model, stack, level, entity, seed)}: the model itself (a mod's override chooses). */
 	@Nullable
 	public IBakedModel resolve(IBakedModel model, ItemStack stack, @Nullable WorldClient level, @Nullable EntityLivingBase entity, int seed) {

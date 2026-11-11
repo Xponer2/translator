@@ -42,6 +42,8 @@ public final class ClientSetup {
 
 	// renderers and client extensions of the mods (subscribed in pre-init)
 	public static void init() {
+		// the mods' client resource listeners first: run once as they are added (GeckoLib's models, the books' data)
+		MinecraftForge.EVENT_BUS.post(new RegisterClientReloadListenersEvent());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.RegisterLayerDefinitions());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.RegisterRenderers());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.CreateSkullModels());

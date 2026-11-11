@@ -526,3 +526,15 @@ R	net/minecraft/network/datasync/DataSerializers	io/github/xponer2/translator/en
 M	net/minecraft/client/renderer/texture/AbstractTexture	setFilter(boolean,boolean)	setFilter
 R	net/minecraft/client/renderer/texture/AbstractTexture	io/github/xponer2/translator/runtime/redirect/GuiBridges
 m	setFilter	setFilter
+# the client resource listeners of the mods (posted in init; preparable listeners run through their stages at once)
+C	net/neoforged/neoforge/client/event/RegisterClientReloadListenersEvent	io/github/xponer2/translator/client/RegisterClientReloadListenersEvent
+R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
+# the mods' arrow renderers on 1.12.2's, and the vanilla renderers they register built from the 1.21 context
+S	net/minecraft/client/renderer/entity/ArrowRenderer	io/github/xponer2/translator/client/entity/ArrowRenderer
+R	net/minecraft/client/renderer/entity/RenderFallingBlock	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
+R	net/minecraft/client/renderer/entity/RenderTippedArrow	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
+R	net/minecraft/client/renderer/entity/RenderLightningBolt	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
+R	net/minecraft/client/renderer/entity/RenderEvokerFangs	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
+R	net/minecraft/client/renderer/entity/RenderMinecart	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
+# a clamped item model property gives unclampedCall; its call (clamped) is the default of its own facade
+C	net/minecraft/client/renderer/item/ClampedItemPropertyFunction	io/github/xponer2/translator/item/ClampedItemPropertyFunction

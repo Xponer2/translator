@@ -278,6 +278,22 @@ public class RenderType extends RenderStateShard {
         return type;
     }
 
+    /**
+     * 1.21's end portal and gateway (a shader of moving star layers): 1.12.2's end portal texture, drawn plain. The
+     * shadow's endPortal() read this field (Iron's Spells' portals, 237 calls in a test).
+     */
+    public static final RenderType END_PORTAL = entity("end_portal", new net.minecraft.util.ResourceLocation("textures/entity/end_portal.png"), false,
+            false);
+    public static final RenderType END_GATEWAY = END_PORTAL;
+
+    public static RenderType endPortal() {
+        return END_PORTAL;
+    }
+
+    public static RenderType endGateway() {
+        return END_GATEWAY;
+    }
+
     public static RenderType gui() {
         return GUI;
     }
