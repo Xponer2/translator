@@ -86,11 +86,24 @@ public final class AccessWidener implements IClassTransformer {
 				// EntityBoat.BOAT_TYPE, 1.21 Boat.DATA_ID_TYPE)
 				boolean holder = (access & Opcodes.ACC_STATIC) != 0 && (access & Opcodes.ACC_FINAL) != 0
 						&& transformedName.startsWith("net.minecraft.init.");
+				if ((access & Opcodes.ACC_FINAL) != 0 && ASSIGNED.contains(transformedName + "." + name)) {
+					// final on 1.12.2, assigned by 1.21.1 mods (Java 8 refuses the write: IllegalAccessError)
+					access &= ~Opcodes.ACC_FINAL;
+					changed[0] = true;
+				}
 				return super.visitField(holder ? access : widen(access, changed), name, descriptor, signature, value);
 			}
 		}, 0);
 		return changed[0] ? writer.toByteArray() : basicClass;
 	}
+
+	/**
+	 * Instance fields final on 1.12.2 that 1.21 has assignable, which mods set: Mob.lookControl is EntityLiving's final
+	 * lookHelper (Iron's Spells' casting mobs set their own in the constructor: every one spawned crashed the server).
+	 * Development and SRG names.
+	 */
+	private static final java.util.Set<String> ASSIGNED = new java.util.HashSet<>(java.util.Arrays.asList(
+			"net.minecraft.entity.EntityLiving.lookHelper", "net.minecraft.entity.EntityLiving.field_70749_g"));
 
 	private static int widen(int access, boolean[] changed) {
 		if ((access & Opcodes.ACC_PUBLIC) != 0) {

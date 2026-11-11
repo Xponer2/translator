@@ -271,7 +271,7 @@ public final class EntityType<T extends Entity> {
             EntityType<Entity> self = (EntityType) type;
             entry = net.minecraftforge.fml.common.registry.EntityEntryBuilder.create()
                     .entity(entityClass)
-                    .factory(world -> self.factory.create(self, world))
+                    .factory(world -> make(self, world))
                     .id(id, NETWORK_IDS.getAndIncrement())
                     .name(id.getNamespace() + "." + id.getPath())
                     .tracker(Math.max(1, type.trackingRange) * 16, Math.max(1, type.updateInterval), type.velocityUpdates)
@@ -284,6 +284,32 @@ public final class EntityType<T extends Entity> {
         TYPES.put(entry, type);
         return entry;
     }
+
+    /**
+     * A mod's entity made by its 1.21 factory. One whose constructor fails (a linkage error is no Exception: the
+     * natural spawning of 1.12.2 let it through and the server crashed — Iron's Spells' necromancer) is logged once and
+     * taken out of the natural spawning of every biome; the call gets an exception the spawner and the commands catch.
+     */
+    private static Entity make(EntityType<Entity> type, net.minecraft.world.World world) {
+        try {
+            return type.factory.create(type, world);
+        } catch (RuntimeException | LinkageError e) {
+            if (BROKEN.add(type)) {
+                io.github.xponer2.translator.runtime.RuntimeStubs.failed("making entity " + type.id, e);
+                Class<? extends Entity> entityClass = type.entry == null ? null : type.entry.getEntityClass();
+                if (entityClass != null) {
+                    for (net.minecraft.world.biome.Biome biome : net.minecraftforge.fml.common.registry.ForgeRegistries.BIOMES) {
+                        for (net.minecraft.entity.EnumCreatureType kind : net.minecraft.entity.EnumCreatureType.values()) {
+                            biome.getSpawnableList(kind).removeIf(spawn -> spawn.entityClass == entityClass);
+                        }
+                    }
+                }
+            }
+            throw new IllegalStateException("Entity " + type.id + " can't be made: " + e, e);
+        }
+    }
+
+    private static final java.util.Set<EntityType<?>> BROKEN = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
 
     /**
      * The class of a mod type's entities: the entity class the factory names ({@code Moa::new} is a class whose constant
