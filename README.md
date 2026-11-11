@@ -119,6 +119,91 @@ Tested with converter v138, 2026-11-05. 90 mods: 2 work, 60 partly work, 7 don't
 
 <!-- mods:end -->
 
+## What is left to bridge
+
+<!-- stubs:start -->
+
+Converter v197, 2026-11-11: **4134 stubs left in 68 mods**, 2544 distinct API methods, fields and classes still missing (98.9% of the mods' API references are bridged).
+
+An *API reference* is a place in a mod's code that names a Minecraft 1.21.1 or NeoForge class, method or field. The converter maps each one to 1.12.2 or to the Translator. When it finds nothing to map it to, it leaves a *stub*: the call does nothing, or the method throws when it runs. The mod still loads, but that part of it doesn't work. The stubs are the work that is left. The counts come from converting the mods outside the game, not from playing: a bridged call can still behave differently from 1.21.1, so the in-game state is the table above.
+
+<details><summary>Stubs by mod (most first)</summary>
+
+| Mod | Stubs left | Missing API parts | API references | Bridged |
+|---|---|---|---|---|
+| The Twilight Forest | 608 | 426 | 45747 | 98.7% |
+| Supplementaries | 435 | 350 | 27527 | 98.4% |
+| Ars Nouveau | 366 | 271 | 30409 | 98.8% |
+| Iron's Spells 'n Spellbooks | 288 | 227 | 24400 | 98.8% |
+| The Aether | 272 | 203 | 17839 | 98.5% |
+| Create | 270 | 209 | 47810 | 99.4% |
+| Mekanism | 264 | 178 | 19406 | 98.6% |
+| Applied Energistics 2 | 138 | 102 | 14883 | 99.1% |
+| Moonlight Lib | 137 | 111 | 8300 | 98.3% |
+| GuideME | 130 | 106 | 2835 | 95.4% |
+| oωo | 110 | 84 | 2827 | 96.1% |
+| Just Enough Items | 88 | 64 | 4148 | 97.9% |
+| MrCrayfish's Furniture Mod: Refurbished | 79 | 64 | 7355 | 98.9% |
+| Fusion | 77 | 52 | 1921 | 96.0% |
+| Journeymap | 50 | 44 | 7522 | 99.3% |
+| Sophisticated Storage | 50 | 37 | 5669 | 99.1% |
+| Jade | 48 | 44 | 3226 | 98.5% |
+| Farmer's Delight | 47 | 37 | 6768 | 99.3% |
+| Refined Storage | 45 | 28 | 6088 | 99.3% |
+| SuperMartijn642's Core Lib | 44 | 38 | 1857 | 97.6% |
+| Sophisticated Core | 41 | 24 | 6351 | 99.4% |
+| Tom's Simple Storage Mod | 40 | 22 | 3652 | 98.9% |
+| Artifacts | 39 | 30 | 3443 | 98.9% |
+| GeckoLib 4 | 32 | 19 | 1702 | 98.1% |
+| Xaero's Minimap | 31 | 15 | 3547 | 99.1% |
+| Xaero's World Map | 29 | 14 | 2290 | 98.7% |
+| Iron's Lib | 27 | 22 | 1858 | 98.5% |
+| Resourceful Lib | 27 | 23 | 1093 | 97.5% |
+| Mystical Agriculture | 25 | 15 | 4644 | 99.5% |
+| Comforts | 24 | 22 | 859 | 97.2% |
+| Curios API | 23 | 20 | 1928 | 98.8% |
+| Cloth Config v15 API | 19 | 19 | 1471 | 98.7% |
+| Powah | 19 | 11 | 3446 | 99.4% |
+| What Are They Up To | 18 | 15 | 793 | 97.7% |
+| Modular Routers | 16 | 13 | 4316 | 99.6% |
+| Pipez | 15 | 13 | 2240 | 99.3% |
+| Sophisticated Backpacks | 15 | 11 | 4428 | 99.7% |
+| Patchouli | 14 | 12 | 2058 | 99.3% |
+| Controlling | 12 | 11 | 300 | 96.0% |
+| Rechiseled | 11 | 5 | 1108 | 99.0% |
+| Configured | 10 | 9 | 1038 | 99.0% |
+| Handcrafted | 10 | 10 | 1735 | 99.4% |
+| Storage Drawers | 10 | 9 | 2720 | 99.6% |
+| Framework | 9 | 7 | 1074 | 99.2% |
+| Nature's Compass | 8 | 8 | 629 | 98.7% |
+| Cucumber Library | 7 | 6 | 1603 | 99.6% |
+| GlitchCore | 6 | 3 | 265 | 97.7% |
+| AppleSkin | 5 | 2 | 404 | 98.8% |
+| Biomes O' Plenty | 5 | 4 | 7541 | 99.9% |
+| CosmeticArmorReworked | 5 | 5 | 579 | 99.1% |
+| Iron Jetpacks | 4 | 2 | 779 | 99.5% |
+| Player Animator | 4 | 1 | 184 | 97.8% |
+| Chat Heads | 3 | 3 | 213 | 98.6% |
+| CoroUtil | 3 | 3 | 210 | 98.6% |
+| Iron Furnaces | 3 | 3 | 1798 | 99.8% |
+| Mining Gadgets | 3 | 3 | 2177 | 99.9% |
+| TerraBlender | 3 | 3 | 439 | 99.3% |
+| Another Furniture | 2 | 2 | 1835 | 99.9% |
+| Macaw's Windows | 2 | 2 | 781 | 99.7% |
+| Common Networking | 1 | 1 | 114 | 99.1% |
+| Cristel Lib | 1 | 1 | 270 | 99.6% |
+| Macaw's Doors | 1 | 1 | 290 | 99.7% |
+| Macaw's Fences and Walls | 1 | 1 | 401 | 99.8% |
+| Macaw's Furniture | 1 | 1 | 1081 | 99.9% |
+| Macaw's Roofs | 1 | 1 | 797 | 99.9% |
+| Mouse Tweaks | 1 | 0 | 123 | 99.2% |
+| Searchables | 1 | 1 | 45 | 97.8% |
+| Torchmaster | 1 | 1 | 779 | 99.9% |
+
+</details>
+
+<!-- stubs:end -->
+
 ## How it works
 
 At startup each 1.21.1 jar is converted for 1.12.2, then loaded like any mod:
