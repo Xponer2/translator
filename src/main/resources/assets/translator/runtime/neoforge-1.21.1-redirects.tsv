@@ -736,3 +736,10 @@ R	net/minecraftforge/client/event/RenderPlayerEvent	io/github/xponer2/translator
 C	net/minecraft/client/multiplayer/chat/ChatListener	io/github/xponer2/translator/client/ChatListener
 # 1.21 Camera.NearPlane: the facade camera's own (Twilight Forest scepter beams)
 C	net/minecraft/client/Camera$NearPlane	io/github/xponer2/translator/client/Camera$NearPlane
+# NeoForge SimpleModelState (a model rotation the mods make) is 1.21's own class, carried: Forge 1.12.2's of the same name has other constructors
+C	net/neoforged/neoforge/client/model/SimpleModelState	net/neoforged/neoforge/client/model/SimpleModelState
+# 1.21 value classes the mods make themselves, carried as they are (their 1.12.2 namesakes are other things: the AI
+# behavior's entity tracker isn't the network one; the noises take 1.21's random source)
+C	net/minecraft/world/entity/ai/behavior/EntityTracker	net/minecraft/world/entity/ai/behavior/EntityTracker
+C	net/minecraft/world/level/levelgen/synth/SimplexNoise	net/minecraft/world/level/levelgen/synth/SimplexNoise
+C	net/minecraft/world/level/levelgen/synth/PerlinSimplexNoise	net/minecraft/world/level/levelgen/synth/PerlinSimplexNoise
