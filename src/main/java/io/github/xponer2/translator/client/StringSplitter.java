@@ -71,6 +71,81 @@ public class StringSplitter {
 		return this.splitLines(new TextComponentString(text).setStyle(style.createShallowCopy()), width, style);
 	}
 
+	/**
+	 * 1.21 {@code splitLines(text, width, style, withEndSpace, linePos)}: the lines of an edited text as positions, each
+	 * told to the (carried) {@code LinePosConsumer} as {@code accept(style, start, end)}: broken at new lines, and at the
+	 * last space before the width (or inside a word too long for it). Create's clipboard and Supplementaries' notes
+	 * lay out their text with it.
+	 */
+	public void splitLines(String text, int width, Style style, boolean withEndSpace, Object linePos) {
+		java.lang.reflect.Method accept = linePosAccept(linePos);
+		if (accept == null) {
+			return;
+		}
+		int length = text.length();
+		int lineStart = 0;
+		int lastSpace = -1;
+		int lineWidth = 0;
+		int i = 0;
+		while (i < length) {
+			char c = text.charAt(i);
+			if (c == '\n') {
+				acceptLine(accept, linePos, style, lineStart, i);
+				lineStart = ++i;
+				lastSpace = -1;
+				lineWidth = 0;
+				continue;
+			}
+			if (c == '§' && i + 1 < length) {
+				i += 2;
+				continue;
+			}
+			int charWidth = Math.max(0, this.font.getCharWidth(c));
+			if (lineWidth + charWidth > width && i > lineStart) {
+				if (lastSpace >= lineStart) {
+					acceptLine(accept, linePos, style, lineStart, withEndSpace ? lastSpace + 1 : lastSpace);
+					lineStart = lastSpace + 1;
+				} else {
+					acceptLine(accept, linePos, style, lineStart, i);
+					lineStart = i;
+				}
+				i = lineStart;
+				lastSpace = -1;
+				lineWidth = 0;
+				continue;
+			}
+			if (c == ' ') {
+				lastSpace = i;
+			}
+			lineWidth += charWidth;
+			i++;
+		}
+		acceptLine(accept, linePos, style, lineStart, length);
+	}
+
+	@Nullable
+	private static java.lang.reflect.Method linePosAccept(@Nullable Object linePos) {
+		if (linePos == null) {
+			return null;
+		}
+		for (Class<?> type : linePos.getClass().getInterfaces()) {
+			for (java.lang.reflect.Method method : type.getMethods()) {
+				if ("accept".equals(method.getName()) && method.getParameterCount() == 3 && !method.isDefault()) {
+					return method;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static void acceptLine(java.lang.reflect.Method accept, Object linePos, Style style, int start, int end) {
+		try {
+			accept.invoke(linePos, style, start, end);
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	/** The style of the text at that width (what a click there hits), null past its end. */
 	@Nullable
 	public Style componentStyleAtWidth(@Nullable ITextComponent text, int width) {

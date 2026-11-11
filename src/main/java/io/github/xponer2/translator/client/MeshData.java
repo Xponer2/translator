@@ -29,6 +29,22 @@ public final class MeshData implements AutoCloseable {
 		this.consumer = consumer;
 	}
 
+	/** The finished buffer of the mesh for VertexBuffer.upload (its last vertex written), null if it was drawn or closed. */
+	@javax.annotation.Nullable
+	BufferBuilder finishForUpload() {
+		if (this.done) {
+			return null;
+		}
+		this.done = true;
+		this.consumer.finishTarget();
+		try {
+			this.buffer.finishDrawing();
+		} catch (IllegalStateException notBuilding) {
+			return null;
+		}
+		return this.buffer;
+	}
+
 	void draw() {
 		if (!this.done) {
 			this.done = true;

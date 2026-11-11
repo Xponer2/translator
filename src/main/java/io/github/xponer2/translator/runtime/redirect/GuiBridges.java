@@ -47,6 +47,37 @@ public final class GuiBridges {
 		return io.github.xponer2.translator.client.entity.VanillaRendererView.of(event.getRenderer());
 	}
 
+	/** 1.21 {@code modelResourceLocation.id()}: the model's location without its variant (Mekanism's and the Aether's model bakes). */
+	public static net.minecraft.util.ResourceLocation id(net.minecraft.client.renderer.block.model.ModelResourceLocation location) {
+		return new net.minecraft.util.ResourceLocation(location.getNamespace(), location.getPath());
+	}
+
+	/** 1.21 {@code itemDisplayContext.firstPerson()}: one of the first person hands. */
+	public static boolean firstPerson(net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType context) {
+		return context == net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType.FIRST_PERSON_LEFT_HAND
+				|| context == net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType.FIRST_PERSON_RIGHT_HAND;
+	}
+
+	/** 1.21 {@code options.mainHand()}: the main hand option over 1.12.2's field. */
+	public static io.github.xponer2.translator.client.OptionInstance<net.minecraft.util.EnumHandSide> mainHand(net.minecraft.client.settings.GameSettings options) {
+		return new io.github.xponer2.translator.client.OptionInstance<>(() -> options.mainHand, value -> options.mainHand = value);
+	}
+
+	/** NeoForge {@code renderTooltipEvent.getGraphics()}: the drawing of the tooltip (JEI, Patchouli, Ars Nouveau draw into it). */
+	public static io.github.xponer2.translator.client.GuiGraphics getGraphics(net.minecraftforge.client.event.RenderTooltipEvent event) {
+		return new io.github.xponer2.translator.client.GuiGraphics(Minecraft.getMinecraft());
+	}
+
+	/** 1.21 {@code gameRenderer.lightTexture()}: the light map 1.12.2's entity renderer keeps. */
+	public static io.github.xponer2.translator.client.LightTexture lightTexture(net.minecraft.client.renderer.EntityRenderer renderer) {
+		return io.github.xponer2.translator.client.LightTexture.INSTANCE;
+	}
+
+	/** 1.21 {@code frustum.isVisible(box)}: 1.12.2's frustum test (Create and the Aether cull their renders with it). */
+	public static boolean isVisible(net.minecraft.client.renderer.culling.ICamera frustum, net.minecraft.util.math.AxisAlignedBB box) {
+		return frustum.isBoundingBoxInFrustum(box);
+	}
+
 	/** 1.21 {@code spriteContents.metadata()} (the contents are the sprite here): the "gui" section of a GUI sprite. */
 	@javax.annotation.Nullable
 	public static Object metadata(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {

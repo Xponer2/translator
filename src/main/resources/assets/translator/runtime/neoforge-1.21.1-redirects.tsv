@@ -488,3 +488,16 @@ R	net/minecraft/tileentity/TileEntityShulkerBox	io/github/xponer2/translator/run
 # 1.21 IdMap is the Translator's interface: its registries extend it and 1.12.2's ObjectIntIdentityMap gets it (AccessWidener),
 # so a registry passed as an id map verifies (it was the ObjectIntIdentityMap class: resourcefullib's byte codecs didn't load)
 C	net/minecraft/core/IdMap	io/github/xponer2/translator/registry/IdMap
+# 1.21 client calls on 1.12.2 classes: model locations, display contexts, the main hand option, tooltip drawing, frustum, skins
+R	net/minecraft/client/renderer/block/model/ModelResourceLocation	io/github/xponer2/translator/runtime/redirect/GuiBridges
+R	net/minecraft/client/renderer/block/model/ItemCameraTransforms$TransformType	io/github/xponer2/translator/runtime/redirect/GuiBridges
+R	net/minecraft/client/settings/GameSettings	io/github/xponer2/translator/runtime/redirect/GuiBridges
+R	net/minecraftforge/client/event/RenderTooltipEvent	io/github/xponer2/translator/runtime/redirect/GuiBridges
+R	net/minecraft/client/renderer/culling/ICamera	io/github/xponer2/translator/runtime/redirect/GuiBridges
+R	net/minecraft/client/resources/DefaultPlayerSkin	io/github/xponer2/translator/runtime/redirect/SkinBridges
+R	net/minecraft/client/resources/SkinManager	io/github/xponer2/translator/runtime/redirect/SkinBridges
+# the 1.21 light map: the facade over 1.12.2's entity renderer light map (gameRenderer.lightTexture())
+C	net/minecraft/client/renderer/LightTexture	io/github/xponer2/translator/client/LightTexture
+R	net/minecraft/client/renderer/EntityRenderer	io/github/xponer2/translator/runtime/redirect/GuiBridges
+# 1.21 vertex buffers (meshes drawn every frame: skies, scenes) as kept client arrays
+R	net/minecraft/client/renderer/vertex/VertexBuffer	io/github/xponer2/translator/client/VertexBuffers
