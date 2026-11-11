@@ -522,3 +522,7 @@ R	net/minecraft/tileentity/TileEntitySkull	io/github/xponer2/translator/runtime/
 C	net/minecraft/world/BossEvent$BossBarColor	net/minecraft/world/BossInfo$Color
 C	net/minecraft/world/BossEvent$BossBarOverlay	net/minecraft/world/BossInfo$Overlay
 R	net/minecraft/network/datasync/DataSerializers	io/github/xponer2/translator/entity/ExtraDataSerializers
+# texture.setFilter binds its texture first (1.12.2's setBlurMipmapDirect set the texture bound now: the title logo blurred)
+M	net/minecraft/client/renderer/texture/AbstractTexture	setFilter(boolean,boolean)	setFilter
+R	net/minecraft/client/renderer/texture/AbstractTexture	io/github/xponer2/translator/runtime/redirect/GuiBridges
+m	setFilter	setFilter

@@ -57,7 +57,12 @@ public class DynamicTexture extends net.minecraft.client.renderer.texture.Dynami
         GlStateManager.bindTexture(this.getGlTextureId());
     }
 
+    /**
+     * 1.21 {@code setFilter(blur, mipmap)}: of this texture, bound first as 1.21 does (1.12.2's setBlurMipmapDirect sets
+     * the texture bound now: the title screen's logo got the blur of a mod's texture).
+     */
     public void setFilter(boolean blur, boolean mipmap) {
+        GlStateManager.bindTexture(this.getGlTextureId());
         this.setBlurMipmapDirect(blur, mipmap);
     }
 

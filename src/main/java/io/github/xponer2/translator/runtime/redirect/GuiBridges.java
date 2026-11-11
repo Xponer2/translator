@@ -68,6 +68,16 @@ public final class GuiBridges {
 		return new io.github.xponer2.translator.client.GuiGraphics(Minecraft.getMinecraft());
 	}
 
+	/**
+	 * 1.21 {@code texture.setFilter(blur, mipmap)}: the filter of that texture, bound first as 1.21 does. The tables
+	 * named it 1.12.2's setBlurMipmapDirect, which sets the texture bound now: a mod's blurred texture blurred the title
+	 * screen's logo, drawn just before.
+	 */
+	public static void setFilter(net.minecraft.client.renderer.texture.AbstractTexture texture, boolean blur, boolean mipmap) {
+		net.minecraft.client.renderer.GlStateManager.bindTexture(texture.getGlTextureId());
+		texture.setBlurMipmapDirect(blur, mipmap);
+	}
+
 	/** 1.21 {@code gameRenderer.lightTexture()}: the light map 1.12.2's entity renderer keeps. */
 	public static io.github.xponer2.translator.client.LightTexture lightTexture(net.minecraft.client.renderer.EntityRenderer renderer) {
 		return io.github.xponer2.translator.client.LightTexture.INSTANCE;
