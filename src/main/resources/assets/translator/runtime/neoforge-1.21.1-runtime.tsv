@@ -499,3 +499,9 @@ C	net/minecraft/server/packs/repository/PackRepository	io/github/xponer2/transla
 C	net/minecraft/server/packs/repository/Pack	io/github/xponer2/translator/client/resources/Pack
 # 1.21 Heightmap: a chunk's heights of a kind, read from 1.12.2's height map (JourneyMap's chunk snapshots)
 C	net/minecraft/world/level/levelgen/Heightmap	io/github/xponer2/translator/world/ChunkHeightmap
+# chunk.getSections(): the sections remember their chunk (a section's biomes are its chunk's)
+X	net/minecraft/world/chunk/Chunk	getBlockStorageArray	()[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;	io/github/xponer2/translator/world/ChunkSections
+# the biome codec of a chunk section: the Translator's (1.21's builds a PalettedContainer 1.12.2 hasn't)
+X	net/minecraft/world/level/chunk/storage/ChunkSerializer	makeBiomeCodec	(Lio/github/xponer2/translator/registry/Registry;)Lcom/mojang/serialization/Codec;	io/github/xponer2/translator/world/ChunkSections
+# NeoForge's model data of a block: the block entity's (1.12.2 has no model data manager)
+X	net/neoforged/neoforge/client/model/data/ModelDataManager	getAt	(Lnet/minecraft/util/math/BlockPos;)Lio/github/xponer2/translator/client/ModelData;	io/github/xponer2/translator/client/TextureBridges	(Ljava/lang/Object;Lnet/minecraft/util/math/BlockPos;)Lio/github/xponer2/translator/client/ModelData;

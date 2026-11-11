@@ -47,6 +47,13 @@ public final class BuiltInRegistries {
     public static final Registry<Enchantment> ENCHANTMENT = forge(Registries.ENCHANTMENT, ForgeRegistries.ENCHANTMENTS);
     public static final Registry<SoundEvent> SOUND_EVENT = forge(Registries.SOUND_EVENT, ForgeRegistries.SOUND_EVENTS);
     public static final Registry<Potion> MOB_EFFECT = forge(Registries.MOB_EFFECT, ForgeRegistries.POTIONS);
+    /**
+     * The biomes (1.21 {@code Registries.BIOME}, there a data registry): 1.12.2's Forge registry, which has the game's
+     * biomes and the data biomes of the 1.21.1 mods. It was an empty registry made on first use: no biome had a key or
+     * a holder in it (JourneyMap's chunk snapshots asked it for plains and failed).
+     */
+    public static final Registry<net.minecraft.world.biome.Biome> BIOME = forge(
+            ResourceKey.createRegistryKey(new ResourceLocation("worldgen/biome")), ForgeRegistries.BIOMES);
     public static final Registry<EntityType<?>> ENTITY_TYPE = put(Registries.ENTITY_TYPE, new EntityTypeRegistry());
     public static final Registry<io.github.xponer2.translator.menu.MenuType<?>> MENU = byKey(Registries.MENU);
     public static final Registry<io.github.xponer2.translator.recipe.RecipeSerializer<?>> RECIPE_SERIALIZER = byKey(Registries.RECIPE_SERIALIZER);

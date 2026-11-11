@@ -32,6 +32,13 @@ public final class LevelLightEngine {
 		return this.world.getLightFromNeighbors(pos);
 	}
 
+	/**
+	 * 1.21 {@code getLayerListener(layer)}: the light of one kind (block or sky) at a block, 1.12.2's saved light there.
+	 */
+	public LayerLightListener getLayerListener(net.minecraft.world.EnumSkyBlock layer) {
+		return pos -> this.world.isBlockLoaded(pos) ? this.world.getLightFor(layer, pos) : 0;
+	}
+
 	public boolean hasLightWork() {
 		return false;
 	}

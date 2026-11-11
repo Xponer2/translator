@@ -265,6 +265,23 @@ public final class NbtOps implements DynamicOps<NBTBase> {
         return new NBTTagIntArray(input.toArray());
     }
 
+    /**
+     * Long lists are long array tags, as in 1.21's NbtOps (the default made a list of long tags: a mod reading its
+     * codec's output with {@code getLongArray}, JourneyMap's saved biomes of a chunk section, found none).
+     */
+    @Override
+    public DataResult<java.util.stream.LongStream> getLongStream(NBTBase input) {
+        return input instanceof net.minecraft.nbt.NBTTagLongArray
+                ? DataResult.success(java.util.stream.LongStream.of(
+                        io.github.xponer2.translator.runtime.redirect.NbtArrays.getAsLongArray((net.minecraft.nbt.NBTTagLongArray) input)))
+                : DynamicOps.super.getLongStream(input);
+    }
+
+    @Override
+    public NBTBase createLongList(java.util.stream.LongStream input) {
+        return new net.minecraft.nbt.NBTTagLongArray(input.toArray());
+    }
+
     @Override
     public NBTBase remove(NBTBase input, String key) {
         if (input instanceof NBTTagCompound) {

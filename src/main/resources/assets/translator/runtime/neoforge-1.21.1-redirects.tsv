@@ -370,3 +370,16 @@ R	net/minecraft/nbt/NBTTagIntArray	io/github/xponer2/translator/runtime/redirect
 R	net/minecraft/nbt/NBTTagByteArray	io/github/xponer2/translator/runtime/redirect/NbtArrays
 R	net/minecraft/nbt/NBTTagLongArray	io/github/xponer2/translator/runtime/redirect/NbtArrays
 R	net/minecraft/nbt/NBTUtil	io/github/xponer2/translator/runtime/redirect/NbtArrays
+# 1.21 chunk sections, paletted containers and bit storage on 1.12.2's (a mod's own copies of chunks: JourneyMap)
+R	net/minecraft/world/chunk/storage/ExtendedBlockStorage	io/github/xponer2/translator/world/ChunkSections
+R	net/minecraft/world/chunk/BlockStateContainer	io/github/xponer2/translator/world/ChunkSections
+R	net/minecraft/util/BitArray	io/github/xponer2/translator/world/ChunkSections
+R	net/minecraft/util/ObjectIntIdentityMap	io/github/xponer2/translator/world/ChunkSections
+R	io/github/xponer2/translator/registry/Registry	io/github/xponer2/translator/world/ChunkSections
+R	net/minecraft/world/DimensionType	io/github/xponer2/translator/world/ChunkSections
+# 1.21 biome colors without a position, and a biome's special effects
+R	net/minecraft/world/biome/Biome	io/github/xponer2/translator/world/BiomeColors
+# texture.bind() of a mod's own texture
+R	net/minecraft/client/renderer/texture/AbstractTexture	io/github/xponer2/translator/client/TextureBridges
+# the light of one layer at a block (LevelLightEngine.getLayerListener)
+C	net/minecraft/world/level/lighting/LayerLightEventListener	io/github/xponer2/translator/world/LayerLightListener
