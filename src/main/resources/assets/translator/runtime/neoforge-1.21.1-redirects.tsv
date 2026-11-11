@@ -672,3 +672,6 @@ M	org/lwjgl/opengl/GL11C	glGetIntegerv(int,java.nio.IntBuffer)	glGetInteger
 M	org/lwjgl/opengl/GL11	glGetIntegerv(int,java.nio.IntBuffer)	glGetInteger
 R	net/minecraft/entity/EntityLivingBase	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	io/github/xponer2/translator/runtime/mc/NearestAttackableTargetGoal	io/github/xponer2/translator/runtime/mc/NearestAttackableTargetGoal
+# 1.21 MoveControl.Operation is 1.12.2's EntityMoveHelper.Action (same constants): the operation field of mods' and carried move controls
+C	net/minecraft/world/entity/ai/control/MoveControl$Operation	net/minecraft/entity/ai/EntityMoveHelper$Action

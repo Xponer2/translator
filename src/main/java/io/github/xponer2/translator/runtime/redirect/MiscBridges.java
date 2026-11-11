@@ -2366,4 +2366,9 @@ public final class MiscBridges {
 	public static double getValue(net.minecraft.world.gen.NoiseGeneratorPerlin noise, double x, double z, boolean useOrigin) {
 		return noise.getValue(x, z);
 	}
+
+	/** 1.21 {@code level.getProfilerSupplier()}: the world's profiler. */
+	public static java.util.function.Supplier<net.minecraft.profiler.Profiler> getProfilerSupplier(net.minecraft.world.World world) {
+		return () -> world.profiler;
+	}
 }

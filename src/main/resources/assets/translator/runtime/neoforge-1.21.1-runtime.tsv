@@ -516,3 +516,10 @@ X	translator_api/com/mojang/blaze3d/systems/RenderSystem	recordRenderCall	(Lcom/
 X	io/github/xponer2/translator/client/RenderSystem	recordRenderCall	(Lcom/mojang/blaze3d/pipeline/RenderCall;)V	io/github/xponer2/translator/client/RenderSystem	(Ljava/lang/Object;)V
 X	net/minecraft/world/World	spawnEntity	(Lnet/minecraft/entity/Entity;)Z	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 X	net/minecraft/world/WorldServer	spawnEntity	(Lnet/minecraft/entity/Entity;)Z	io/github/xponer2/translator/runtime/redirect/LevelGapBridges	(Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;)Z
+# the boss bar packets of 1.21 (their carried factories used a constructor 1.12.2 hasn't and gave null): 1.12.2's packet
+X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createAddPacket	(Lnet/minecraft/world/BossInfo;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets
+X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createUpdateProgressPacket	(Lnet/minecraft/world/BossInfo;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets
+X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createUpdateNamePacket	(Lnet/minecraft/world/BossInfo;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets
+X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createUpdateStylePacket	(Lnet/minecraft/world/BossInfo;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets
+X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createUpdatePropertiesPacket	(Lnet/minecraft/world/BossInfo;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets
+X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createRemovePacket	(Ljava/util/UUID;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets

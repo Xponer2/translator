@@ -2486,12 +2486,18 @@ final class MethodGuard {
 		return facade;
 	}
 
+	/** The 1.12.2 names of an entity's tick methods a mod's entity overrides (see isTick). */
+	private static final java.util.Set<String> TICKS = com.google.common.collect.ImmutableSet.of("onUpdate", "onLivingUpdate", "updateAITasks",
+			"onEntityUpdate");
+
 	/** The tick the world calls on a mod's entity ({@code onUpdate}) or block entity ({@code update}). */
 	private boolean isTick(ClassNode node, MethodNode method) {
 		if (!"()V".equals(method.desc) || (method.access & (Opcodes.ACC_STATIC | Opcodes.ACC_ABSTRACT)) != 0 || !this.mod.containsKey(node.name)) {
 			return false;
 		}
-		return "onUpdate".equals(method.name) ? this.extendsClass(node.name, "net/minecraft/entity/Entity")
+		// an entity's tick and the parts of it a mob overrides on their own (1.21 aiStep, customServerAiStep, baseTick:
+		// Iron's Spells' priest threw in its AI step, which no onUpdate of the mod wraps, and the server crashed)
+		return TICKS.contains(method.name) ? this.extendsClass(node.name, "net/minecraft/entity/Entity")
 				: "update".equals(method.name) && this.extendsClass(node.name, "net/minecraft/tileentity/TileEntity");
 	}
 

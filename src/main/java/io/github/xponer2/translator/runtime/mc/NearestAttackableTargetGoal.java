@@ -95,6 +95,33 @@ public class NearestAttackableTargetGoal<T extends EntityLivingBase> extends Ent
 		super.shouldExecute();
 	}
 
+	/** 1.21 {@code targetConditions} (a carried TargetingConditions): what a target must pass, set by a mod's goal. */
+	@Nullable
+	private Object targetConditionsValue;
+
+	/** The field read (its type is carried: the converter reads it through this). */
+	@Nullable
+	public static Object targetConditions(NearestAttackableTargetGoal<?> goal) {
+		return goal.targetConditionsValue;
+	}
+
+	/** The field written (Iron's Spells' FindSupportableTargetGoal sets its own). */
+	public static void targetConditions(NearestAttackableTargetGoal<?> goal, @Nullable Object conditions) {
+		goal.targetConditionsValue = conditions;
+	}
+
+	/** 1.12.2's search, then the mod's conditions on the target it found. */
+	@Override
+	public boolean shouldExecute() {
+		boolean found = super.shouldExecute();
+		if (found && this.targetConditionsValue != null
+				&& !io.github.xponer2.translator.runtime.redirect.LevelGapBridges.matches(this.targetConditionsValue, this.taskOwner, this.targetEntity)) {
+			this.targetEntity = null;
+			return false;
+		}
+		return found;
+	}
+
 	/** 1.21 {@code setTarget(target)}: the target {@link #start} takes. */
 	@SuppressWarnings("unchecked")
 	public void setTarget(@Nullable EntityLivingBase target) {

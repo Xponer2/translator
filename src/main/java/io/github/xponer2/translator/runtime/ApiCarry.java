@@ -386,6 +386,39 @@ final class ApiCarry {
 				}
 			}
 		}
+		// a private instance method the static part makes a method reference to (fastutil 8 ObjectOpenHashSet::combine in
+		// its set collector): the game's class (fastutil 7) hasn't it, so the reference was left null, the initializer
+		// failed and every class using the set with it (GeckoLib's model cache: no GeckoLib model of any mod was found).
+		// It comes along as a static method taking the receiver first, as the defaults above
+		var referenced = new java.util.HashSet<String>();
+		for (var m : node.methods) {
+			if ((m.access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_STATIC) == 0) {
+				continue;
+			}
+			for (var insn : m.instructions) {
+				if (insn instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.InvokeDynamicInsnNode indy) {
+					for (Object arg : indy.bsmArgs) {
+						if (arg instanceof xyz.wagyourtail.jvmdg.shade.asm.Handle handle && original.equals(handle.getOwner())
+								&& (handle.getTag() == xyz.wagyourtail.jvmdg.shade.asm.Opcodes.H_INVOKEVIRTUAL
+										|| handle.getTag() == xyz.wagyourtail.jvmdg.shade.asm.Opcodes.H_INVOKESPECIAL)) {
+							referenced.add(handle.getName() + handle.getDesc());
+						}
+					}
+				}
+			}
+		}
+		var promoted = new java.util.HashMap<String, String>();
+		for (var m : node.methods) {
+			if ((m.access & (xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_STATIC | xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_ABSTRACT)) == 0
+					&& (m.access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_PRIVATE) != 0 && !m.name.startsWith("<")
+					&& referenced.contains(m.name + m.desc) && !usesSuperCall(m) && !unreachable.contains(m)) {
+				String desc = "(L" + original + ";" + m.desc.substring(1);
+				promoted.put(m.name + m.desc, desc);
+				m.access |= xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_STATIC;
+				m.desc = desc;
+				m.signature = null;
+			}
+		}
 		var privateStatics = new java.util.HashSet<String>();
 		var staticFields = new java.util.HashSet<String>();
 		node.methods.removeIf(m -> (m.access & PUBLIC_STATIC_MASK) == 0 || "<clinit>".equals(m.name) && !pure || unreachable.contains(m)
@@ -425,6 +458,10 @@ final class ApiCarry {
 								&& handle.getTag() == xyz.wagyourtail.jvmdg.shade.asm.Opcodes.H_INVOKESTATIC
 								&& privateStatics.contains(handle.getName() + handle.getDesc())) {
 							indy.bsmArgs[i] = new xyz.wagyourtail.jvmdg.shade.asm.Handle(handle.getTag(), shadow, handle.getName(), handle.getDesc(), false);
+						} else if (indy.bsmArgs[i] instanceof xyz.wagyourtail.jvmdg.shade.asm.Handle handle && original.equals(handle.getOwner())
+								&& promoted.containsKey(handle.getName() + handle.getDesc())) {
+							indy.bsmArgs[i] = new xyz.wagyourtail.jvmdg.shade.asm.Handle(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.H_INVOKESTATIC, shadow,
+									handle.getName(), promoted.get(handle.getName() + handle.getDesc()), false);
 						}
 					}
 				}

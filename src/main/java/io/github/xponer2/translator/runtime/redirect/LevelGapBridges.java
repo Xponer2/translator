@@ -846,7 +846,7 @@ public final class LevelGapBridges {
 	 * spectator nor creative player; within the range; seen when they ask for sight; their selector's.
 	 */
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	static boolean matches(@Nullable Object conditions, @Nullable net.minecraft.entity.EntityLivingBase source, @Nullable net.minecraft.entity.EntityLivingBase target) {
+	public static boolean matches(@Nullable Object conditions, @Nullable net.minecraft.entity.EntityLivingBase source, @Nullable net.minecraft.entity.EntityLivingBase target) {
 		if (target == null || target.isDead || target == source || target.getHealth() <= 0.0F) {
 			return false;
 		}

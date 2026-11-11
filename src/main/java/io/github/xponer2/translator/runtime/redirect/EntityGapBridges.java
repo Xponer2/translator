@@ -400,10 +400,21 @@ public final class EntityGapBridges {
 		if (goal == null) {
 			return;
 		}
+		// a goal that is a 1.12.2 task already (the vanilla goals the tables map, a mod's goal on a Translator facade)
+		// runs as it is: wrapped as a carried Goal, every call of it failed with a ClassCastException and Iron's
+		// Spells' mobs had no AI at all
+		if (goal instanceof net.minecraft.entity.ai.EntityAIBase task) {
+			tasks.addTask(priority, task);
+			return;
+		}
 		tasks.addTask(priority, GOALS.computeIfAbsent(goal, CarriedGoal::new));
 	}
 
 	public static void removeGoal(net.minecraft.entity.ai.EntityAITasks tasks, Object goal) {
+		if (goal instanceof net.minecraft.entity.ai.EntityAIBase task) {
+			tasks.removeTask(task);
+			return;
+		}
 		var adapter = GOALS.get(goal);
 		if (adapter != null) {
 			tasks.removeTask(adapter);
@@ -414,8 +425,8 @@ public final class EntityGapBridges {
 	@SuppressWarnings("unchecked")
 	public static void removeAllGoals(net.minecraft.entity.ai.EntityAITasks tasks, Object filter) {
 		for (var entry : new java.util.ArrayList<>(tasks.taskEntries)) {
-			if (entry.action instanceof CarriedGoal carried
-					&& (!(filter instanceof java.util.function.Predicate<?> test) || ((java.util.function.Predicate<Object>) test).test(carried.goal))) {
+			Object goal = entry.action instanceof CarriedGoal carried ? carried.goal : entry.action;
+			if (!(filter instanceof java.util.function.Predicate<?> test) || ((java.util.function.Predicate<Object>) test).test(goal)) {
 				tasks.removeTask(entry.action);
 			}
 		}
@@ -555,5 +566,14 @@ public final class EntityGapBridges {
 		if (entity.motionY > -0.5D && entity.fallDistance > 1.0F) {
 			entity.fallDistance = 1.0F;
 		}
+	}
+
+	/**
+	 * 1.21 {@code new GoalSelector(level.getProfilerSupplier())}: 1.12.2's task list takes the profiler itself (Iron's
+	 * Spells' priest makes its own; without it no goal was added and the next tick crashed the server).
+	 */
+	public static net.minecraft.entity.ai.EntityAITasks newEntityAITasks(java.util.function.Supplier<?> profiler) {
+		Object value = profiler == null ? null : profiler.get();
+		return new net.minecraft.entity.ai.EntityAITasks(value instanceof net.minecraft.profiler.Profiler p ? p : new net.minecraft.profiler.Profiler());
 	}
 }
