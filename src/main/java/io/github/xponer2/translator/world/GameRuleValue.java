@@ -30,6 +30,10 @@ public class GameRuleValue {
 
 	/** The value of the rule as its kind: a boolean rule ("true"/"false") or a number. */
 	public static GameRuleValue of(GameRules rules, GameRuleKey key) {
+		if (!rules.hasRule(key.getId()) && key.defaultValue() != null) {
+			// a 1.21 rule 1.12.2 hasn't: the world gets it with its 1.21 default (and /gamerule can change it)
+			rules.setOrCreateGameRule(key.getId(), key.defaultValue());
+		}
 		String value = rules.getString(key.getId());
 		return "true".equals(value) || "false".equals(value) ? new BooleanValue(rules, key.getId()) : new IntegerValue(rules, key.getId());
 	}

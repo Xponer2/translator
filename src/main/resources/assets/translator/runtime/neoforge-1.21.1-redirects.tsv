@@ -670,3 +670,5 @@ C	org/lwjgl/opengl/GL44C	org/lwjgl/opengl/GL44
 C	org/lwjgl/opengl/GL45C	org/lwjgl/opengl/GL45
 M	org/lwjgl/opengl/GL11C	glGetIntegerv(int,java.nio.IntBuffer)	glGetInteger
 M	org/lwjgl/opengl/GL11	glGetIntegerv(int,java.nio.IntBuffer)	glGetInteger
+R	net/minecraft/entity/EntityLivingBase	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/LevelGapBridges

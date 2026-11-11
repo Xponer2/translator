@@ -25,4 +25,14 @@ public enum DoubleBlockHalf implements IStringSerializable {
 	public String getSerializedName() {
 		return this.getName();
 	}
+
+	/** 1.21 {@code getDirectionToOther()}: where the other half is (Iron's Spells' portal frame). */
+	public net.minecraft.util.EnumFacing getDirectionToOther() {
+		return this == UPPER ? net.minecraft.util.EnumFacing.DOWN : net.minecraft.util.EnumFacing.UP;
+	}
+
+	/** 1.21 {@code getOtherHalf()}. */
+	public DoubleBlockHalf getOtherHalf() {
+		return this == UPPER ? LOWER : UPPER;
+	}
 }

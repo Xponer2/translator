@@ -41,16 +41,60 @@ public final class GameRuleKey {
 	public static final GameRuleKey RULE_ANNOUNCE_ADVANCEMENTS = new GameRuleKey("announceAdvancements");
 	public static final GameRuleKey RULE_MAX_COMMAND_CHAIN_LENGTH = new GameRuleKey("maxCommandChainLength");
 	public static final GameRuleKey RULE_LIMITED_CRAFTING = new GameRuleKey("doLimitedCrafting");
-	public static final GameRuleKey RULE_DO_IMMEDIATE_RESPAWN = new GameRuleKey("doImmediateRespawn");
-	public static final GameRuleKey RULE_DROWNING_DAMAGE = new GameRuleKey("drowningDamage");
-	public static final GameRuleKey RULE_FALL_DAMAGE = new GameRuleKey("fallDamage");
-	public static final GameRuleKey RULE_FIRE_DAMAGE = new GameRuleKey("fireDamage");
-	public static final GameRuleKey RULE_DOINSOMNIA = new GameRuleKey("doInsomnia");
+	public static final GameRuleKey RULE_DO_IMMEDIATE_RESPAWN = new GameRuleKey("doImmediateRespawn", false, 0);
+	public static final GameRuleKey RULE_DROWNING_DAMAGE = new GameRuleKey("drowningDamage", true, 0);
+	public static final GameRuleKey RULE_FALL_DAMAGE = new GameRuleKey("fallDamage", true, 0);
+	public static final GameRuleKey RULE_FIRE_DAMAGE = new GameRuleKey("fireDamage", true, 0);
+	public static final GameRuleKey RULE_DOINSOMNIA = new GameRuleKey("doInsomnia", true, 0);
+	// 1.21's rules 1.12.2 hasn't: read as their 1.21 defaults (Iron's Spells' anger reset read universalAnger as true)
+	public static final GameRuleKey RULE_UNIVERSAL_ANGER = new GameRuleKey("universalAnger", false, 0);
+	public static final GameRuleKey RULE_FORGIVE_DEAD_PLAYERS = new GameRuleKey("forgiveDeadPlayers", true, 0);
+	public static final GameRuleKey RULE_FREEZE_DAMAGE = new GameRuleKey("freezeDamage", true, 0);
+	public static final GameRuleKey RULE_DO_PATROL_SPAWNING = new GameRuleKey("doPatrolSpawning", true, 0);
+	public static final GameRuleKey RULE_DO_TRADER_SPAWNING = new GameRuleKey("doTraderSpawning", true, 0);
+	public static final GameRuleKey RULE_DO_WARDEN_SPAWNING = new GameRuleKey("doWardenSpawning", true, 0);
+	public static final GameRuleKey RULE_DISABLE_RAIDS = new GameRuleKey("disableRaids", false, 0);
+	public static final GameRuleKey RULE_BLOCK_EXPLOSION_DROP_DECAY = new GameRuleKey("blockExplosionDropDecay", true, 0);
+	public static final GameRuleKey RULE_MOB_EXPLOSION_DROP_DECAY = new GameRuleKey("mobExplosionDropDecay", true, 0);
+	public static final GameRuleKey RULE_TNT_EXPLOSION_DROP_DECAY = new GameRuleKey("tntExplosionDropDecay", false, 0);
+	public static final GameRuleKey RULE_WATER_SOURCE_CONVERSION = new GameRuleKey("waterSourceConversion", true, 0);
+	public static final GameRuleKey RULE_LAVA_SOURCE_CONVERSION = new GameRuleKey("lavaSourceConversion", false, 0);
+	public static final GameRuleKey RULE_GLOBAL_SOUND_EVENTS = new GameRuleKey("globalSoundEvents", true, 0);
+	public static final GameRuleKey RULE_DO_VINES_SPREAD = new GameRuleKey("doVinesSpread", true, 0);
+	public static final GameRuleKey RULE_ENDER_PEARLS_VANISH_ON_DEATH = new GameRuleKey("enderPearlsVanishOnDeath", true, 0);
+	public static final GameRuleKey RULE_SNOW_ACCUMULATION_HEIGHT = new GameRuleKey("snowAccumulationHeight", true, 1);
+	public static final GameRuleKey RULE_PLAYERS_SLEEPING_PERCENTAGE = new GameRuleKey("playersSleepingPercentage", true, 100);
+	public static final GameRuleKey RULE_SPAWN_CHUNK_RADIUS = new GameRuleKey("spawnChunkRadius", true, 2);
+	public static final GameRuleKey RULE_MAX_COMMAND_FORK_COUNT = new GameRuleKey("maxCommandForkCount", true, 65536);
+	public static final GameRuleKey RULE_COMMAND_MODIFICATION_BLOCK_LIMIT = new GameRuleKey("commandModificationBlockLimit", true, 32768);
+	public static final GameRuleKey RULE_PLAYERS_NETHER_PORTAL_DEFAULT_DELAY = new GameRuleKey("playersNetherPortalDefaultDelay", true, 80);
+	public static final GameRuleKey RULE_PLAYERS_NETHER_PORTAL_CREATIVE_DELAY = new GameRuleKey("playersNetherPortalCreativeDelay", true, 1);
 
 	private final String id;
+	/** The value of a rule the world doesn't have (1.21's default; true for the switches of mods' own rules). */
+	private final boolean defaultBoolean;
+	private final int defaultInt;
+	/** Whether the defaults are 1.21's own (its vanilla rules); a mod's rule's aren't known. */
+	private final boolean known;
 
 	public GameRuleKey(String id) {
 		this.id = id;
+		this.defaultBoolean = true;
+		this.defaultInt = 0;
+		this.known = false;
+	}
+
+	private GameRuleKey(String id, boolean defaultBoolean, int defaultInt) {
+		this.id = id;
+		this.defaultBoolean = defaultBoolean;
+		this.defaultInt = defaultInt;
+		this.known = true;
+	}
+
+	/** The 1.21 default of a vanilla rule 1.12.2 hasn't, as the world keeps it (a number rule's has a number); null if unknown. */
+	@javax.annotation.Nullable
+	String defaultValue() {
+		return !this.known ? null : this.defaultInt != 0 ? String.valueOf(this.defaultInt) : String.valueOf(this.defaultBoolean);
 	}
 
 	/** A mod's rule (1.21 {@code new GameRules.Key(name, category)}): read by name like the vanilla ones. */
@@ -86,10 +130,10 @@ public final class GameRuleKey {
 	}
 
 	public static boolean getBoolean(GameRules rules, GameRuleKey key) {
-		return rules.hasRule(key.id) ? rules.getBoolean(key.id) : true;
+		return rules.hasRule(key.id) ? rules.getBoolean(key.id) : key.defaultBoolean;
 	}
 
 	public static int getInt(GameRules rules, GameRuleKey key) {
-		return rules.hasRule(key.id) ? rules.getInt(key.id) : 0;
+		return rules.hasRule(key.id) ? rules.getInt(key.id) : key.defaultInt;
 	}
 }

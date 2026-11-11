@@ -894,6 +894,7 @@ final class MethodGuard {
 	}
 
 	private static final String TILE_ENTITY_INIT ="(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;)V";
+	private static final String TILE_ENTITY_TYPED_INIT = "(Lio/github/xponer2/translator/registry/BlockEntityType;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;)V";
 
 	/**
 	 * 1.12.2 creates a saved tile entity with its no-arg constructor (TileEntity.create, newInstance): a 1.21 block
@@ -906,23 +907,34 @@ final class MethodGuard {
 			return false;
 		}
 		boolean withState = false;
+		boolean withType = false;
 		for (MethodNode method : node.methods) {
 			if ("<init>".equals(method.name) && "()V".equals(method.desc)) {
 				return false;
 			}
 			withState |= "<init>".equals(method.name) && TILE_ENTITY_INIT.equals(method.desc);
+			withType |= "<init>".equals(method.name) && TILE_ENTITY_TYPED_INIT.equals(method.desc);
 		}
-		if (!withState) {
+		if (!withState && !withType) {
 			return false;
 		}
+		// the state (and type) of its registered type (BlockEntityDefaults): not null, which a block entity reading its
+		// state when made threw on (Iron's Spells' portal frame); a block entity made with its type only got none at all
+		// (Iron's Spells' statues)
+		var defaults = "io/github/xponer2/translator/registry/BlockEntityDefaults";
 		var init = new MethodNode(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
 		init.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		if (!withState) {
+			init.instructions.add(new LdcInsnNode(Type.getObjectType(node.name)));
+			init.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, defaults, "type", "(Ljava/lang/Class;)Lio/github/xponer2/translator/registry/BlockEntityType;", false));
+		}
 		init.instructions.add(new FieldInsnNode(Opcodes.GETSTATIC, "net/minecraft/util/math/BlockPos", "ORIGIN", "Lnet/minecraft/util/math/BlockPos;"));
-		init.instructions.add(new InsnNode(Opcodes.ACONST_NULL));
-		init.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, node.name, "<init>", TILE_ENTITY_INIT, false));
+		init.instructions.add(new LdcInsnNode(Type.getObjectType(node.name)));
+		init.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, defaults, "state", "(Ljava/lang/Class;)Lnet/minecraft/block/state/IBlockState;", false));
+		init.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, node.name, "<init>", withState ? TILE_ENTITY_INIT : TILE_ENTITY_TYPED_INIT, false));
 		init.instructions.add(new InsnNode(Opcodes.RETURN));
 		init.maxLocals = 1;
-		init.maxStack = 3;
+		init.maxStack = 4;
 		node.methods.add(init);
 		return true;
 	}

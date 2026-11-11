@@ -675,16 +675,340 @@ public final class LevelGapBridges {
 		return io.github.xponer2.translator.world.BiomeManager.of(world);
 	}
 
+	// --- block states: 1.21/NeoForge methods with a 1.12.2 counterpart ----------------------------------------------------
+
+	/** 1.21 {@code state.attack(level, pos, player)}: the block is left-clicked. */
+	public static void attack(IBlockState state, World world, BlockPos pos, net.minecraft.entity.player.EntityPlayer player) {
+		state.getBlock().onBlockClicked(world, pos, player);
+	}
+
+	/** NeoForge {@code state.getWeakChanges(level, pos)}: Forge's. */
+	public static boolean getWeakChanges(IBlockState state, IBlockAccess world, BlockPos pos) {
+		return state.getBlock().getWeakChanges(world, pos);
+	}
+
+	/** NeoForge {@code state.isFireSource(level, pos, side)}: Forge's (netherrack's eternal fire). */
+	public static boolean isFireSource(IBlockState state, World world, BlockPos pos, net.minecraft.util.EnumFacing side) {
+		return state.getBlock().isFireSource(world, pos, side);
+	}
+
+	/** 1.21 {@code state.isRandomlyTicking()}. */
+	public static boolean isRandomlyTicking(IBlockState state) {
+		return state.getBlock().getTickRandomly();
+	}
+
+	/** 1.21 {@code state.isSuffocating(level, pos)}. */
+	public static boolean isSuffocating(IBlockState state, @Nullable IBlockAccess world, @Nullable BlockPos pos) {
+		return state.causesSuffocation();
+	}
+
+	/** 1.21 {@code state.propagatesSkylightDown(level, pos)}: light passes it untouched. */
+	public static boolean propagatesSkylightDown(IBlockState state, IBlockAccess world, BlockPos pos) {
+		return state.getLightOpacity(world, pos) == 0;
+	}
+
+	/** 1.21 {@code state.tick(level, pos, random)}: its scheduled update. */
+	public static void tick(IBlockState state, WorldServer world, BlockPos pos, java.util.Random random) {
+		state.getBlock().updateTick(world, pos, state, random);
+	}
+
+	/** NeoForge {@code state.canStickTo(other)}: slime and honey stick to other blocks (1.12.2 has slime only). */
+	public static boolean canStickTo(IBlockState state, IBlockState other) {
+		return true;
+	}
+
+	/** 1.21 {@code state.hidesNeighborFace(level, pos, neighbor, direction)}: 1.12.2 culls by its own rules. */
+	public static boolean hidesNeighborFace(IBlockState state, IBlockAccess world, BlockPos pos, IBlockState neighbor, net.minecraft.util.EnumFacing direction) {
+		return false;
+	}
+
+	/** 1.21 {@code state.supportsExternalFaceHiding()}. */
+	public static boolean supportsExternalFaceHiding(IBlockState state) {
+		return true;
+	}
+
+	// --- entities: 1.21 methods with a 1.12.2 counterpart --------------------------------------------------------------
+
+	/** 1.21 {@code living.addEffect(effect, source)}: 1.12.2's potion effect (the source isn't kept). */
+	public static boolean addEffect(net.minecraft.entity.EntityLivingBase living, net.minecraft.potion.PotionEffect effect, @Nullable Entity source) {
+		if (!living.isPotionApplicable(effect)) {
+			return false;
+		}
+		living.addPotionEffect(effect);
+		return true;
+	}
+
+	/** 1.21 {@code entity.isCrouching()}: sneaking. */
+	public static boolean isCrouching(Entity entity) {
+		return entity.isSneaking();
+	}
+
+	/** 1.21 {@code entity.isDiscrete()}: sneaking (the name tag hidden). */
+	public static boolean isDiscrete(Entity entity) {
+		return entity.isSneaking();
+	}
+
+	/** 1.21 {@code living.hasInfiniteMaterials()}: a creative player. */
+	public static boolean hasInfiniteMaterials(net.minecraft.entity.EntityLivingBase living) {
+		return living instanceof net.minecraft.entity.player.EntityPlayer player && player.capabilities.isCreativeMode;
+	}
+
+	/** NeoForge {@code living.removeEffectsCuredBy(cure)}: the effects milk cures (1.12.2 Forge's cure item). */
+	public static boolean removeEffectsCuredBy(net.minecraft.entity.EntityLivingBase living, @Nullable Object cure) {
+		boolean had = !living.getActivePotionEffects().isEmpty();
+		living.curePotionEffects(new ItemStack(net.minecraft.init.Items.MILK_BUCKET));
+		return had && living.getActivePotionEffects().isEmpty();
+	}
+
+	/** 1.21 {@code living.eat(level, stack[, food])}: one eaten (a player's hunger filled by a food item), the rest returned. */
+	public static ItemStack eat(net.minecraft.entity.EntityLivingBase living, World world, ItemStack stack) {
+		if (living instanceof net.minecraft.entity.player.EntityPlayer player && stack.getItem() instanceof net.minecraft.item.ItemFood food) {
+			player.getFoodStats().addStats(food, stack);
+		}
+		world.playSound(null, living.posX, living.posY, living.posZ, net.minecraft.init.SoundEvents.ENTITY_PLAYER_BURP, net.minecraft.util.SoundCategory.PLAYERS,
+				0.5F, world.rand.nextFloat() * 0.1F + 0.9F);
+		if (!(living instanceof net.minecraft.entity.player.EntityPlayer player && player.capabilities.isCreativeMode)) {
+			stack.shrink(1);
+		}
+		return stack;
+	}
+
+	public static ItemStack eat(net.minecraft.entity.EntityLivingBase living, World world, ItemStack stack, @Nullable Object food) {
+		return eat(living, world, stack);
+	}
+
+	/** 1.21 {@code entity.getTicksFrozen()}: 1.12.2 has no freezing. */
+	public static int getTicksFrozen(Entity entity) {
+		return 0;
+	}
+
+	/** 1.21 {@code entity.getTicksRequiredToFreeze()}: 140, as 1.21. */
+	public static int getTicksRequiredToFreeze(Entity entity) {
+		return 140;
+	}
+
+	/** 1.21 {@code entity.setTicksFrozen(ticks)}: 1.12.2 has no freezing (Iron's Spells' ice spells' slow stays theirs). */
+	public static void setTicksFrozen(Entity entity, int ticks) {
+	}
+
+	/** 1.21 {@code block.handlePrecipitation(state, level, pos, precipitation)}: Forge's rain filling (cauldrons). */
+	public static void handlePrecipitation(Block block, IBlockState state, World world, BlockPos pos, @Nullable Object precipitation) {
+		block.fillWithRain(world, pos);
+	}
+
+	/** 1.21 {@code entity.isFullyFrozen()}. */
+	public static boolean isFullyFrozen(Entity entity) {
+		return false;
+	}
+
+	/** 1.21 {@code entity.hasPassenger(other)}. */
+	public static boolean hasPassenger(Entity entity, Entity other) {
+		return entity.isPassenger(other);
+	}
+
+	/** 1.21 {@code entity.hasControllingPassenger()}. */
+	public static boolean hasControllingPassenger(Entity entity) {
+		return entity.getControllingPassenger() != null;
+	}
+
+	/** 1.21 {@code entity.absMoveTo(x, y, z, yaw, pitch)}: there, turned so. */
+	public static void absMoveTo(Entity entity, double x, double y, double z, float yaw, float pitch) {
+		entity.setPositionAndRotation(x, y, z, yaw, pitch);
+	}
+
+	/** 1.21 {@code entity.ignoreExplosion(explosion)}: 1.12.2 explosions hit every entity. */
+	public static boolean ignoreExplosion(Entity entity, @Nullable net.minecraft.world.Explosion explosion) {
+		return false;
+	}
+
+	// --- targeting (1.21 TargetingConditions, a carried class: its fields read, its code needs what 1.12.2 lacks) ----------
+
+	/** The fields of the carried TargetingConditions (isCombat, range, checkLineOfSight, selector), found once. */
+	private static final ClassValue<java.lang.reflect.Field[]> CONDITIONS = new ClassValue<java.lang.reflect.Field[]>() {
+		@Override
+		protected java.lang.reflect.Field[] computeValue(Class<?> type) {
+			java.lang.reflect.Field[] fields = new java.lang.reflect.Field[4];
+			String[] names = {"isCombat", "range", "checkLineOfSight", "selector"};
+			for (int i = 0; i < names.length; i++) {
+				try {
+					fields[i] = type.getDeclaredField(names[i]);
+					fields[i].setAccessible(true);
+				} catch (NoSuchFieldException | SecurityException e) {
+					// a field of another name: that test isn't made
+				}
+			}
+			return fields;
+		}
+	};
+
+	/**
+	 * Whether the target passes 1.21 targeting conditions for the source: alive and not itself; a combat target no
+	 * spectator nor creative player; within the range; seen when they ask for sight; their selector's.
+	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	static boolean matches(@Nullable Object conditions, @Nullable net.minecraft.entity.EntityLivingBase source, @Nullable net.minecraft.entity.EntityLivingBase target) {
+		if (target == null || target.isDead || target == source || target.getHealth() <= 0.0F) {
+			return false;
+		}
+		if (conditions == null) {
+			return true;
+		}
+		java.lang.reflect.Field[] fields = CONDITIONS.get(conditions.getClass());
+		try {
+			boolean combat = fields[0] != null && fields[0].getBoolean(conditions);
+			if (combat && target instanceof net.minecraft.entity.player.EntityPlayer player && (player.isSpectator() || player.isCreative())) {
+				return false;
+			}
+			double range = fields[1] == null ? -1.0D : fields[1].getDouble(conditions);
+			if (range > 0.0D && source != null && source.getDistanceSq(target) > range * range) {
+				return false;
+			}
+			Object selector = fields[3] == null ? null : fields[3].get(conditions);
+			if (selector instanceof java.util.function.Predicate && !((java.util.function.Predicate) selector).test(target)) {
+				return false;
+			}
+			boolean sight = fields[2] != null && fields[2].getBoolean(conditions);
+			if (sight && source instanceof net.minecraft.entity.EntityLiving mob && !mob.getEntitySenses().canSee(target)) {
+				return false;
+			}
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return true;
+		}
+		return true;
+	}
+
+	/** 1.21 {@code level.getNearbyEntities(type, conditions, source, box)}: Iron's Spells' and Supplementaries' target searches. */
+	public static <T extends net.minecraft.entity.EntityLivingBase> List<T> getNearbyEntities(World world, Class<T> type, @Nullable Object conditions,
+			@Nullable net.minecraft.entity.EntityLivingBase source, AxisAlignedBB box) {
+		List<T> found = new java.util.ArrayList<>();
+		for (T entity : world.getEntitiesWithinAABB(type, box)) {
+			if (matches(conditions, source, entity)) {
+				found.add(entity);
+			}
+		}
+		return found;
+	}
+
+	/** 1.21 {@code level.getNearbyPlayers(conditions, source, box)}. */
+	public static List<net.minecraft.entity.player.EntityPlayer> getNearbyPlayers(World world, @Nullable Object conditions,
+			@Nullable net.minecraft.entity.EntityLivingBase source, AxisAlignedBB box) {
+		List<net.minecraft.entity.player.EntityPlayer> found = new java.util.ArrayList<>();
+		for (net.minecraft.entity.player.EntityPlayer player : world.playerEntities) {
+			if (box.contains(player.getPositionVector()) && matches(conditions, source, player)) {
+				found.add(player);
+			}
+		}
+		return found;
+	}
+
+	/** 1.21 {@code level.getNearestEntity(type, conditions, source, x, y, z, box)}. */
+	@Nullable
+	public static <T extends net.minecraft.entity.EntityLivingBase> T getNearestEntity(World world, Class<T> type, @Nullable Object conditions,
+			@Nullable net.minecraft.entity.EntityLivingBase source, double x, double y, double z, AxisAlignedBB box) {
+		return getNearestEntity(world, world.getEntitiesWithinAABB(type, box), conditions, source, x, y, z);
+	}
+
+	/** 1.21 {@code level.getNearestEntity(entities, conditions, source, x, y, z)}. */
+	@Nullable
+	public static <T extends net.minecraft.entity.EntityLivingBase> T getNearestEntity(World world, List<? extends T> entities, @Nullable Object conditions,
+			@Nullable net.minecraft.entity.EntityLivingBase source, double x, double y, double z) {
+		T nearest = null;
+		double best = Double.MAX_VALUE;
+		for (T entity : entities) {
+			if (matches(conditions, source, entity)) {
+				double distance = entity.getDistanceSq(x, y, z);
+				if (distance < best) {
+					best = distance;
+					nearest = entity;
+				}
+			}
+		}
+		return nearest;
+	}
+
+	/** 1.21 {@code level.getNearestPlayer(conditions, source, x, y, z)}. */
+	@Nullable
+	public static net.minecraft.entity.player.EntityPlayer getNearestPlayer(World world, @Nullable Object conditions, @Nullable net.minecraft.entity.EntityLivingBase source,
+			double x, double y, double z) {
+		return getNearestEntity(world, world.playerEntities, conditions, source, x, y, z);
+	}
+
+	/** 1.21 {@code serverLevel.getPlayers(predicate)}. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static List<net.minecraft.entity.player.EntityPlayerMP> getPlayers(WorldServer world, java.util.function.Predicate filter) {
+		return world.getPlayers(net.minecraft.entity.player.EntityPlayerMP.class, player -> filter.test(player));
+	}
+
+	// --- blocks of a world ---------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code level.neighborChanged(state, pos, block, fromPos, moved)}: the state's own update. */
+	public static void neighborChanged(World world, IBlockState state, BlockPos pos, Block block, BlockPos from, boolean moved) {
+		state.neighborChanged(world, pos, block, from);
+	}
+
+	/** 1.21 {@code level.hasChunksAt(fromX, fromZ, toX, toZ)} (block coordinates). */
+	public static boolean hasChunksAt(World world, int fromX, int fromZ, int toX, int toZ) {
+		return world.isAreaLoaded(new BlockPos(fromX, 0, fromZ), new BlockPos(toX, 0, toZ));
+	}
+
+	public static boolean hasChunksAt(World world, int fromX, int fromY, int fromZ, int toX, int toY, int toZ) {
+		return world.isAreaLoaded(new BlockPos(fromX, fromY, fromZ), new BlockPos(toX, toY, toZ));
+	}
+
+	public static boolean hasChunksAt(World world, BlockPos from, BlockPos to) {
+		return world.isAreaLoaded(from, to);
+	}
+
+	/** 1.21 {@code level.hasSignal(pos, direction)}. */
+	public static boolean hasSignal(World world, BlockPos pos, net.minecraft.util.EnumFacing direction) {
+		return world.getRedstonePower(pos, direction) > 0;
+	}
+
+	/** 1.21 {@code level.noBlockCollision(entity, box)}: nothing solid there. */
+	public static boolean noBlockCollision(World world, @Nullable Entity entity, AxisAlignedBB box) {
+		return world.getCollisionBoxes(entity, box).isEmpty();
+	}
+
+	/** 1.21 {@code level.getBlockStates(box)}: the states of the blocks the box covers. */
+	public static java.util.stream.Stream<IBlockState> getBlockStates(World world, AxisAlignedBB box) {
+		BlockPos from = new BlockPos(Math.floor(box.minX), Math.floor(box.minY), Math.floor(box.minZ));
+		BlockPos to = new BlockPos(Math.floor(box.maxX), Math.floor(box.maxY), Math.floor(box.maxZ));
+		java.util.List<IBlockState> states = new java.util.ArrayList<>();
+		for (BlockPos pos : BlockPos.getAllInBoxMutable(from, to)) {
+			states.add(world.getBlockState(pos));
+		}
+		return states.stream();
+	}
+
+	/** 1.21 {@code level.setBlock(pos, state, flags, recursionLeft)}: 1.12.2's setBlockState. */
+	public static boolean setBlock(World world, BlockPos pos, IBlockState state, int flags, int recursionLeft) {
+		return world.setBlockState(pos, state, flags);
+	}
+
+	/** 1.21 {@code level.explode(...)} with its particles and sound: 1.12.2's explosion. */
+	public static net.minecraft.world.Explosion explode(World world, @Nullable Entity source, @Nullable Object damageSource, @Nullable Object calculator, double x,
+			double y, double z, float radius, boolean fire, @Nullable Object interaction, @Nullable Object smallParticle, @Nullable Object largeParticle,
+			@Nullable Object sound) {
+		return ApiBridges.explode(world, source, x, y, z, radius, fire, interaction);
+	}
+
+	/** 1.21 {@code level.explode(source, damage, calculator, pos, radius, fire, interaction)}. */
+	public static net.minecraft.world.Explosion explode(World world, @Nullable Entity source, @Nullable Object damageSource, @Nullable Object calculator, Vec3d pos,
+			float radius, boolean fire, @Nullable Object interaction) {
+		return ApiBridges.explode(world, source, pos.x, pos.y, pos.z, radius, fire, interaction);
+	}
+
 	/** 1.21 {@code level.getNearestPlayer(conditions, entity)}: the nearest player to the entity (the conditions aren't read). */
 	@Nullable
 	public static net.minecraft.entity.player.EntityPlayer getNearestPlayer(World world, @Nullable Object conditions, Entity entity) {
-		return world.getClosestPlayerToEntity(entity, -1.0D);
+		net.minecraft.entity.EntityLivingBase source = entity instanceof net.minecraft.entity.EntityLivingBase living ? living : null;
+		return getNearestEntity(world, world.playerEntities, conditions, source, entity.posX, entity.posY, entity.posZ);
 	}
 
 	/** The same near a place. */
 	@Nullable
 	public static net.minecraft.entity.player.EntityPlayer getNearestPlayer(World world, @Nullable Object conditions, double x, double y, double z) {
-		return world.getClosestPlayer(x, y, z, -1.0D, false);
+		return getNearestEntity(world, world.playerEntities, conditions, null, x, y, z);
 	}
 
 	// --- blocks and chunks ---------------------------------------------------------------------------------------------
@@ -833,6 +1157,90 @@ public final class LevelGapBridges {
 			data.colors[index] = color;
 			data.updateMapData(x, z);
 		}
+	}
+
+	/** 1.21 {@code entity.setPos(vec)}: there (Iron's Spells' spell projectiles and areas). */
+	public static void setPos(Entity entity, Vec3d pos) {
+		entity.setPosition(pos.x, pos.y, pos.z);
+	}
+
+	/** The same under the table's general name. */
+	public static void setPosition(Entity entity, Vec3d pos) {
+		entity.setPosition(pos.x, pos.y, pos.z);
+	}
+
+	/** A mod entity class's 1.21 {@code getDimensions(pose)} (its own size by pose or state), null when it has none. */
+	private static final ClassValue<java.lang.reflect.Method> OWN_DIMENSIONS = new ClassValue<java.lang.reflect.Method>() {
+		@Override
+		protected java.lang.reflect.Method computeValue(Class<?> type) {
+			for (Class<?> current = type; current != null && !current.getName().startsWith("net.minecraft.")
+					&& !current.getName().startsWith("io.github.xponer2.translator."); current = current.getSuperclass()) {
+				for (java.lang.reflect.Method method : current.getDeclaredMethods()) {
+					if ("getDimensions".equals(method.getName()) && method.getParameterCount() == 1 && method.getParameterTypes()[0].isEnum()) {
+						method.setAccessible(true);
+						return method;
+					}
+				}
+			}
+			return null;
+		}
+	};
+
+	/**
+	 * 1.21 {@code entity.refreshDimensions()}: its size again from its {@code getDimensions(pose)} (a mod's own: Iron's
+	 * Spells' areas grow, its ice spider's parts), applied as 1.12.2's setSize does; a mod entity without one keeps its
+	 * type's size.
+	 */
+	public static void refreshDimensions(Entity entity) {
+		java.lang.reflect.Method own = OWN_DIMENSIONS.get(entity.getClass());
+		float width;
+		float height;
+		try {
+			if (own != null) {
+				Object pose = Enum.valueOf((Class) own.getParameterTypes()[0], "STANDING");
+				Object dimensions = own.invoke(entity, pose);
+				if (dimensions == null) {
+					return;
+				}
+				width = ((Number) dimensions.getClass().getMethod("width").invoke(dimensions)).floatValue();
+				height = ((Number) dimensions.getClass().getMethod("height").invoke(dimensions)).floatValue();
+			} else {
+				return;
+			}
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(entity.getClass().getName() + ".refreshDimensions", e);
+			return;
+		}
+		if (width != entity.width || height != entity.height) {
+			entity.width = width;
+			entity.height = height;
+			AxisAlignedBB box = entity.getEntityBoundingBox();
+			entity.setEntityBoundingBox(new AxisAlignedBB(box.minX, box.minY, box.minZ, box.minX + width, box.minY + height, box.minZ + width));
+		}
+	}
+
+	/**
+	 * 1.21 {@code state.onProjectileHit(level, state, hit, projectile)}: the block's own (a mod block's 1.21 method; a
+	 * 1.12.2 block has none).
+	 */
+	public static void onProjectileHit(IBlockState state, World world, IBlockState hitState, RayTraceResult hit, Entity projectile) {
+		Block block = state.getBlock();
+		for (java.lang.reflect.Method method : block.getClass().getMethods()) {
+			if ("onProjectileHit".equals(method.getName()) && method.getParameterCount() == 4) {
+				try {
+					method.invoke(block, world, hitState, hit, projectile);
+				} catch (ReflectiveOperationException | RuntimeException e) {
+					io.github.xponer2.translator.runtime.RuntimeStubs.failed(block.getClass().getName() + ".onProjectileHit", e);
+				}
+				return;
+			}
+		}
+	}
+
+	/** 1.21 {@code level.getChunkForCollisions(x, z)}: the world where that chunk is loaded (collisions read blocks from it), else null. */
+	@Nullable
+	public static IBlockAccess getChunkForCollisions(World world, int chunkX, int chunkZ) {
+		return world.isBlockLoaded(new BlockPos(chunkX << 4, 0, chunkZ << 4)) ? world : null;
 	}
 
 	/** 1.21 {@code savedData.setDirty()}: saved with the world (Twilight Forest's magic and maze maps). */

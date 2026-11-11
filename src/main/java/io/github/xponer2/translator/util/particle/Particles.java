@@ -32,6 +32,16 @@ public final class Particles {
 		return 0;
 	}
 
+	/** 1.21 {@code serverLevel.sendParticles(player, particle, longDistance, x, y, z, count, dx, dy, dz, speed)}: to that player only. */
+	public static boolean sendParticles(World level, net.minecraft.entity.player.EntityPlayerMP player, ParticleOptions particle, boolean longDistance, double x,
+			double y, double z, int count, double xOffset, double yOffset, double zOffset, double speed) {
+		if (level instanceof WorldServer server && particle instanceof VanillaParticle legacy) {
+			server.spawnParticle(player, legacy.legacyType(), longDistance, x, y, z, count, xOffset, yOffset, zOffset, speed, legacy.legacyArguments());
+			return true;
+		}
+		return false;
+	}
+
 	public static void addParticle(World level, ParticleOptions particle, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
 		if (particle instanceof VanillaParticle legacy) {
 			level.spawnParticle(legacy.legacyType(), x, y, z, xSpeed, ySpeed, zSpeed, legacy.legacyArguments());
