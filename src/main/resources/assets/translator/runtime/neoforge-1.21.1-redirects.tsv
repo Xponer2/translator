@@ -480,3 +480,8 @@ R	net/minecraft/client/model/ModelBiped$ArmPose	io/github/xponer2/translator/run
 R	net/minecraft/client/renderer/entity/RenderLivingBase	io/github/xponer2/translator/runtime/redirect/ModelBridges
 # fastutil 8's Int2IntMap.computeIfAbsent asks the function containsKey, which a lambda for fastutil 7's interface lacks
 R	it/unimi/dsi/fastutil/ints/Int2IntMap	io/github/xponer2/translator/runtime/redirect/MiscBridges
+# the game's mobs and boxes as 1.12.2's own (v181): their 1.21 constructors and calls
+R	net/minecraft/entity/monster/EntityEnderman	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/passive/EntityRabbit	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/EntityLiving	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/tileentity/TileEntityShulkerBox	io/github/xponer2/translator/runtime/redirect/LevelGapBridges

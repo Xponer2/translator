@@ -212,6 +212,104 @@ public final class LevelGapBridges {
 		entity.prevRotationPitch = entity.rotationPitch;
 	}
 
+	// the game's mobs as 1.12.2's own since v181: what the mods call on them (their checks were never true before)
+
+	/** 1.21 {@code new EnderMan(type, level)}: 1.12.2's enderman. */
+	public static net.minecraft.entity.monster.EntityEnderman newEntityEnderman(@Nullable io.github.xponer2.translator.registry.EntityType<?> type, World world) {
+		return new net.minecraft.entity.monster.EntityEnderman(world);
+	}
+
+	/** 1.21 {@code enderman.getCarriedBlock()}. */
+	@Nullable
+	public static IBlockState getCarriedBlock(net.minecraft.entity.monster.EntityEnderman enderman) {
+		return enderman.getHeldBlockState();
+	}
+
+	/** 1.21 {@code enderman.setCarriedBlock(state)}. */
+	public static void setCarriedBlock(net.minecraft.entity.monster.EntityEnderman enderman, @Nullable IBlockState state) {
+		enderman.setHeldBlockState(state);
+	}
+
+	/** 1.21 {@code rabbit.getVariant()}: the carried 1.21 variant of 1.12.2's rabbit type (the same ids, 99 the killer bunny). */
+	@Nullable
+	public static Object getVariant(net.minecraft.entity.passive.EntityRabbit rabbit) {
+		try {
+			Class<?> variant = Class.forName("net.minecraft.world.entity.animal.Rabbit$Variant", true, net.minecraft.launchwrapper.Launch.classLoader);
+			return variant.getMethod("byId", int.class).invoke(null, rabbit.getRabbitType());
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	/** 1.21 {@code rabbit.setVariant(variant)}: by the variant's id. */
+	public static void setVariant(net.minecraft.entity.passive.EntityRabbit rabbit, @Nullable Object variant) {
+		if (variant == null) {
+			return;
+		}
+		try {
+			rabbit.setRabbitType((Integer) variant.getClass().getMethod("id").invoke(variant));
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			// not a rabbit variant: the rabbit stays as it is
+		}
+	}
+
+	/**
+	 * 1.21 {@code mob.mobInteract(player, hand)}: 1.12.2's interaction of a player with the mob (its leash, then its own:
+	 * curing a zombie villager with a golden apple from Create's deployer).
+	 */
+	public static net.minecraft.util.EnumActionResult mobInteract(net.minecraft.entity.EntityLiving mob, net.minecraft.entity.player.EntityPlayer player,
+			net.minecraft.util.EnumHand hand) {
+		return mob.processInitialInteract(player, hand) ? net.minecraft.util.EnumActionResult.SUCCESS : net.minecraft.util.EnumActionResult.PASS;
+	}
+
+	/**
+	 * 1.21 {@code mob.convertTo(type, keepEquipment)}: a mob of the type in this one's place (its position, name, lack of AI,
+	 * persistence, equipment when asked), this one removed; null on the client or when the type makes no mob.
+	 */
+	@Nullable
+	public static net.minecraft.entity.EntityLiving convertTo(net.minecraft.entity.EntityLiving mob, io.github.xponer2.translator.registry.EntityType<?> type,
+			boolean keepEquipment) {
+		if (mob.isDead || mob.world.isRemote || type == null) {
+			return null;
+		}
+		Object made = type.create(mob.world);
+		if (!(made instanceof net.minecraft.entity.EntityLiving)) {
+			return null;
+		}
+		net.minecraft.entity.EntityLiving next = (net.minecraft.entity.EntityLiving) made;
+		next.copyLocationAndAnglesFrom(mob);
+		next.setNoAI(mob.isAIDisabled());
+		if (mob.hasCustomName()) {
+			next.setCustomNameTag(mob.getCustomNameTag());
+			next.setAlwaysRenderNameTag(mob.getAlwaysRenderNameTag());
+		}
+		if (mob.isNoDespawnRequired()) {
+			next.enablePersistence();
+		}
+		next.setInvisible(mob.isInvisible());
+		if (keepEquipment) {
+			for (net.minecraft.inventory.EntityEquipmentSlot slot : net.minecraft.inventory.EntityEquipmentSlot.values()) {
+				ItemStack stack = mob.getItemStackFromSlot(slot);
+				if (!stack.isEmpty()) {
+					next.setItemStackToSlot(slot, stack.copy());
+				}
+			}
+		}
+		mob.world.spawnEntity(next);
+		mob.setDead();
+		return next;
+	}
+
+	/** 1.21 {@code new ShulkerBoxBlockEntity(pos, state)}: 1.12.2's of the box's colour, at the position. */
+	public static net.minecraft.tileentity.TileEntityShulkerBox newTileEntityShulkerBox(BlockPos pos, @Nullable IBlockState state) {
+		net.minecraft.item.EnumDyeColor color = state != null && state.getBlock() instanceof net.minecraft.block.BlockShulkerBox
+				? ((net.minecraft.block.BlockShulkerBox) state.getBlock()).getColor() : null;
+		net.minecraft.tileentity.TileEntityShulkerBox box = color != null ? new net.minecraft.tileentity.TileEntityShulkerBox(color)
+				: new net.minecraft.tileentity.TileEntityShulkerBox();
+		box.setPos(pos);
+		return box;
+	}
+
 	/** 1.21 {@code isTraderLlama()}: 1.12.2 has no wandering traders' llamas. */
 	public static boolean isTraderLlama(net.minecraft.entity.passive.EntityLlama llama) {
 		return false;
