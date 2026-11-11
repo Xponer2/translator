@@ -157,7 +157,7 @@ public abstract class TranslatedParticle extends Particle {
 			target = Tessellator.getInstance().getBuffer();
 			target.begin(7, DefaultVertexFormats.PARTICLE_POSITION_TEX_COLOR_LMAP);
 		}
-		VertexConsumer consumer = VertexConsumer.raw(target);
+		io.github.xponer2.translator.client.BufferVertexConsumer consumer = VertexConsumer.raw(target);
 		try {
 			render.invokeExact(this, consumer, camera, partialTicks);
 		} catch (Throwable e) {

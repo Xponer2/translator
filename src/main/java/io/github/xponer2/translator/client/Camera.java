@@ -163,6 +163,56 @@ public class Camera {
 		}
 	}
 
+	/**
+	 * 1.21 {@code getNearPlane()}: the view's near plane, 0.05 ahead, as wide and high as the field of view there
+	 * (Twilight Forest finds the hand of the first person view on it for its scepters' beams).
+	 */
+	public NearPlane getNearPlane() {
+		Minecraft minecraft = Minecraft.getMinecraft();
+		double aspect = (double) minecraft.displayWidth / Math.max(1, minecraft.displayHeight);
+		double halfHeight = Math.tan(minecraft.gameSettings.fovSetting * (Math.PI / 180.0) / 2.0) * 0.05F;
+		double halfWidth = halfHeight * aspect;
+		org.joml.Vector3f look = this.getLookVector();
+		org.joml.Vector3f left = this.getLeftVector();
+		org.joml.Vector3f up = this.getUpVector();
+		return new NearPlane(new Vec3d(look.x, look.y, look.z).scale(0.05F), new Vec3d(left.x, left.y, left.z).scale(halfWidth),
+				new Vec3d(up.x, up.y, up.z).scale(halfHeight));
+	}
+
+	/** 1.21 {@code Camera.NearPlane}: the near plane by its center, half width (left) and half height (up). */
+	public static class NearPlane {
+		private final Vec3d forward;
+		private final Vec3d left;
+		private final Vec3d up;
+
+		NearPlane(Vec3d forward, Vec3d left, Vec3d up) {
+			this.forward = forward;
+			this.left = left;
+			this.up = up;
+		}
+
+		public Vec3d getTopLeft() {
+			return this.forward.add(this.up).add(this.left);
+		}
+
+		public Vec3d getTopRight() {
+			return this.forward.add(this.up).subtract(this.left);
+		}
+
+		public Vec3d getBottomLeft() {
+			return this.forward.subtract(this.up).add(this.left);
+		}
+
+		public Vec3d getBottomRight() {
+			return this.forward.subtract(this.up).subtract(this.left);
+		}
+
+		/** The point at (x, y) of the plane, -1 to 1 each way (left is -1). */
+		public Vec3d getPointOnPlane(float x, float y) {
+			return this.forward.add(this.up.scale(y)).subtract(this.left.scale(x));
+		}
+	}
+
 	/** As 1.21 sets it: yaw about Y (south is 0), then pitch about X. */
 	public org.joml.Quaternionf rotation() {
 		float rad = (float) (Math.PI / 180);

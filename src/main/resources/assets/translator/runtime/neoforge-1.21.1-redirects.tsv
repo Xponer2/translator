@@ -725,3 +725,14 @@ R	io/github/xponer2/translator/recipe/Recipe	io/github/xponer2/translator/runtim
 R	net/minecraftforge/fml/common/thread/SidedThreadGroup	io/github/xponer2/translator/runtime/redirect/ThreadSides
 # NeoForge FluidTank members Forge 1.12.2's lacks or has without the registry lookup (Refurbished Furniture's tanks)
 R	net/minecraftforge/fluids/FluidTank	io/github/xponer2/translator/runtime/redirect/FluidTankBridges
+# 1.21 VertexConsumer is an interface again (the mods implement it): its setColor keeps its name (not 1.12.2's color)
+M	com/mojang/blaze3d/vertex/VertexConsumer	setColor(int,int,int,int)	setColor
+# 1.21 PlayerRenderer is a view of 1.12.2's (the mods cast the skins' renderers to it and add their layers), with its own arms
+C	net/minecraft/client/renderer/entity/player/PlayerRenderer	io/github/xponer2/translator/client/entity/PlayerRenderer
+M	net/minecraft/client/renderer/entity/player/PlayerRenderer	renderLeftHand(com.mojang.blaze3d.vertex.PoseStack,net.minecraft.client.renderer.MultiBufferSource,int,net.minecraft.client.player.AbstractClientPlayer)	renderLeftHand
+M	net/minecraft/client/renderer/entity/player/PlayerRenderer	renderRightHand(com.mojang.blaze3d.vertex.PoseStack,net.minecraft.client.renderer.MultiBufferSource,int,net.minecraft.client.player.AbstractClientPlayer)	renderRightHand
+R	net/minecraftforge/client/event/RenderPlayerEvent	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
+# 1.21 ChatListener: the messages to the player go to 1.12.2 chat (Jade)
+C	net/minecraft/client/multiplayer/chat/ChatListener	io/github/xponer2/translator/client/ChatListener
+# 1.21 Camera.NearPlane: the facade camera's own (Twilight Forest scepter beams)
+C	net/minecraft/client/Camera$NearPlane	io/github/xponer2/translator/client/Camera$NearPlane

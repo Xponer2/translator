@@ -477,6 +477,30 @@ public final class ScreenBridges {
 		return key.hasKeyCodeModifierConflict(other);
 	}
 
+	/** 1.21 {@code options.setKey(key, input)}: bound, the bindings' map made again and the options saved. */
+	public static void setKey(net.minecraft.client.settings.GameSettings options, KeyBinding key,
+			io.github.xponer2.translator.runtime.neoforge.InputConstants.Key input) {
+		options.setOptionKeyBinding(key, input.lwjgl());
+	}
+
+	/** NeoForge {@code KeyModifier.isKeyCodeModifier(input)}: a control, shift or alt key. */
+	public static boolean isKeyCodeModifier(io.github.xponer2.translator.runtime.neoforge.InputConstants.Key input) {
+		return net.minecraftforge.client.settings.KeyModifier.isKeyCodeModifier(input.lwjgl());
+	}
+
+	/**
+	 * 1.21 {@code itemRenderer.renderQuadList(pose, consumer, quads, stack, light, overlay)}: the quads tinted by the
+	 * item's colors (Mekanism's, Create's and Twilight Forest's item renderers).
+	 */
+	public static void renderQuadList(net.minecraft.client.renderer.RenderItem renderer, Object pose, io.github.xponer2.translator.client.VertexConsumer consumer,
+			java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads, ItemStack stack, int light, int overlay) {
+		var colors = Minecraft.getMinecraft().getItemColors();
+		for (var quad : quads) {
+			int color = !stack.isEmpty() && quad.hasTintIndex() ? colors.colorMultiplier(stack, quad.getTintIndex()) : -1;
+			consumer.putBulkData(pose, quad, (color >> 16 & 0xFF) / 255.0F, (color >> 8 & 0xFF) / 255.0F, (color & 0xFF) / 255.0F, 1.0F, light, overlay);
+		}
+	}
+
 	/** NeoForge {@code getDisplayName()}: the key with its modifier, as a component (1.12.2's gives the text). */
 	public static ITextComponent getDisplayName(KeyBinding key) {
 		return new TextComponentString(key.getDisplayName());

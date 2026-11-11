@@ -21,10 +21,10 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class MeshData implements AutoCloseable {
 	private final BufferBuilder buffer;
-	private final VertexConsumer consumer;
+	private final BufferVertexConsumer consumer;
 	private boolean done;
 
-	MeshData(BufferBuilder buffer, VertexConsumer consumer) {
+	MeshData(BufferBuilder buffer, BufferVertexConsumer consumer) {
 		this.buffer = buffer;
 		this.consumer = consumer;
 	}

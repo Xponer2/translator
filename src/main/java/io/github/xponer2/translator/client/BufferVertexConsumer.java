@@ -1,0 +1,400 @@
+/*
+ * Translator: the Minecraft 1.21.1 / NeoForge API on Minecraft 1.12.2
+ * Copyright (c) 2026 Xponer2 (https://github.com/Xponer2/translator)
+ *
+ * Licensed under the PolyForm Noncommercial License 1.0.0 (see LICENSE or
+ * https://polyformproject.org/licenses/noncommercial/1.0.0): free to use, change and share for any noncommercial
+ * purpose, with credit to the author. This notice stays in this file and in every copy or changed version of it.
+ *
+ * Required Notice: Copyright (c) 2026 Xponer2 (https://github.com/Xponer2/translator)
+ */
+package io.github.xponer2.translator.client;
+
+import java.nio.FloatBuffer;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import javax.annotation.Nullable;
+
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.Vector4f;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.client.renderer.vertex.VertexFormatElement;
+
+/**
+ * 1.21 vertex consumer as immediate quads on the 1.12.2 Tessellator (blocks atlas, position + uv + color). Each vertex
+ * is taken with the GL matrix current when it was added (the PoseStack bridge is the GL matrix stack), so transforms
+ * between vertices work like in 1.21. Drawn by {@link #flush()} (the renderer adapters flush after each render).
+ * <p>
+ * The consumer of a buffer a mod began itself ({@code Tesselator.begin(mode, format)}, see {@link Tesselation}) writes
+ * each vertex into that buffer in its format's order, and is drawn by {@code BufferUploader.drawWithShader}.
+ */
+public final class BufferVertexConsumer implements VertexConsumer {
+	private static final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
+	private static final Map<BufferBuilder, BufferVertexConsumer> TARGETS = new WeakHashMap<>();
+
+	@Nullable
+	private final RenderType type;
+	@Nullable
+	private final BufferBuilder target;
+	private final Matrix4f begin = new Matrix4f();
+	private final Matrix4f beginInverse = new Matrix4f();
+	private final FloatBuffer beginBuffer = BufferUtils.createFloatBuffer(16);
+	private boolean started;
+	private boolean pending;
+	private float x, y, z, u, v;
+	private float normalX, normalY = 1.0F, normalZ;
+	private int red = 255, green = 255, blue = 255, alpha = 255;
+	private int lightU = 240, lightV = 240;
+
+	BufferVertexConsumer(RenderType type) {
+		// a mod's render type that couldn't be made is null: drawn as a plain one rather than failing every frame
+		this.type = type != null ? type : RenderType.solid();
+		this.target = null;
+		this.raw = false;
+	}
+
+	private BufferVertexConsumer(BufferBuilder target) {
+		this(target, false);
+	}
+
+	private BufferVertexConsumer(BufferBuilder target, boolean raw) {
+		this.type = null;
+		this.target = target;
+		this.raw = raw;
+	}
+
+	/** Positions as given, no matrix: the vertices of a batch 1.12.2 began and draws itself (its particles'). */
+	private final boolean raw;
+	private static final Map<BufferBuilder, BufferVertexConsumer> RAW_TARGETS = new WeakHashMap<>();
+
+	/** The consumer writing positions as they are into a buffer 1.12.2 began (one per buffer). */
+	public static BufferVertexConsumer raw(BufferBuilder buffer) {
+		synchronized (RAW_TARGETS) {
+			return RAW_TARGETS.computeIfAbsent(buffer, key -> new BufferVertexConsumer(key, true));
+		}
+	}
+
+	/** The last vertex written (the buffer is drawn by its owner). */
+	public void endVertices() {
+		this.emit();
+		this.started = false;
+	}
+
+	/** The consumer writing into a buffer the mod began (one per buffer). */
+	public static BufferVertexConsumer into(BufferBuilder buffer) {
+		synchronized (TARGETS) {
+			return TARGETS.computeIfAbsent(buffer, BufferVertexConsumer::new);
+		}
+	}
+
+	public RenderType type() {
+		return this.type != null ? this.type : RenderType.solid();
+	}
+
+	public VertexConsumer addVertex(Object pose, float x, float y, float z) {
+		return this.addVertex(x, y, z);
+	}
+
+	public VertexConsumer addVertex(float x, float y, float z) {
+		this.emit();
+		if (this.raw) {
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.pending = true;
+			return this;
+		}
+		if (!this.started) {
+			this.start();
+		}
+
+		// position in the matrix of the batch start: begin^-1 * current * vertex
+		var current = currentMatrix();
+		var relative = Matrix4f.mul(this.beginInverse, current, null);
+		var position = Matrix4f.transform(relative, new Vector4f(x, y, z, 1.0F), null);
+		this.x = position.x;
+		this.y = position.y;
+		this.z = position.z;
+		this.pending = true;
+		return this;
+	}
+
+	public VertexConsumer setColor(int argb) {
+		return this.setColor(argb >> 16 & 0xFF, argb >> 8 & 0xFF, argb & 0xFF, argb >>> 24);
+	}
+
+	public VertexConsumer setColor(int red, int green, int blue, int alpha) {
+		this.red = red;
+		this.green = green;
+		this.blue = blue;
+		this.alpha = alpha;
+		return this;
+	}
+
+	public VertexConsumer setColor(float red, float green, float blue, float alpha) {
+		return this.setColor((int) (red * 255), (int) (green * 255), (int) (blue * 255), (int) (alpha * 255));
+	}
+
+	public VertexConsumer setWhiteAlpha(int alpha) {
+		return this.setColor(255, 255, 255, alpha);
+	}
+
+	public VertexConsumer setUv(float u, float v) {
+		this.u = u;
+		this.v = v;
+		return this;
+	}
+
+	public VertexConsumer tex(double u, double v) {
+		return this.setUv((float) u, (float) v);
+	}
+
+	/** The overlay (hurt flash) texture coordinates: 1.12.2 has no overlay. */
+	public VertexConsumer setUv1(int u, int v) {
+		return this;
+	}
+
+	/** The lightmap coordinates (block light, sky light). */
+	public VertexConsumer setUv2(int u, int v) {
+		this.lightU = u;
+		this.lightV = v;
+		return this;
+	}
+
+	public VertexConsumer setLight(int light) {
+		return this.setUv2(light & 0xFFFF, light >> 16 & 0xFFFF);
+	}
+
+	public VertexConsumer setOverlay(int overlay) {
+		return this;
+	}
+
+	public VertexConsumer setNormal(float x, float y, float z) {
+		this.normalX = x;
+		this.normalY = y;
+		this.normalZ = z;
+		return this;
+	}
+
+	public VertexConsumer setNormal(Object pose, float x, float y, float z) {
+		return this.setNormal(x, y, z);
+	}
+
+	/** 1.21 {@code addVertex(x, y, z, color, u, v, overlay, light, nx, ny, nz)}: a whole vertex at once. */
+	public void addVertex(float x, float y, float z, int color, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
+		this.addVertex(x, y, z).setColor(color).setUv(u, v).setLight(light).setNormal(normalX, normalY, normalZ);
+	}
+
+	/** The four vertices of a baked quad (position and texture from its 1.12.2 vertex data), tinted and lit. */
+	public void putBulkData(Object pose, net.minecraft.client.renderer.block.model.BakedQuad quad, float red, float green, float blue, float alpha,
+			int light, int overlay) {
+		int[] data = quad.getVertexData();
+		var format = quad.getFormat();
+		int stride = format.getIntegerSize();
+		int uv = format.hasUvOffset(0) ? format.getUvOffsetById(0) / 4 : -1;
+		for (int i = 0; i < 4 && (i + 1) * stride <= data.length; i++) {
+			int base = i * stride;
+			this.addVertex(Float.intBitsToFloat(data[base]), Float.intBitsToFloat(data[base + 1]), Float.intBitsToFloat(data[base + 2]))
+					.setColor(red, green, blue, alpha).setLight(light);
+			if (uv >= 0) {
+				this.setUv(Float.intBitsToFloat(data[base + uv]), Float.intBitsToFloat(data[base + uv + 1]));
+			}
+		}
+	}
+
+	public void putBulkData(Object pose, net.minecraft.client.renderer.block.model.BakedQuad quad, float red, float green, float blue, float alpha,
+			int light, int overlay, boolean readAlpha) {
+		this.putBulkData(pose, quad, red, green, blue, alpha, light, overlay);
+	}
+
+	public void putBulkData(Object pose, net.minecraft.client.renderer.block.model.BakedQuad quad, float[] brightness, float red, float green, float blue,
+			float alpha, int[] lights, int overlay, boolean readAlpha) {
+		this.putBulkData(pose, quad, red, green, blue, alpha, lights.length > 0 ? lights[0] : 0xF000F0, overlay);
+	}
+
+	/** Draws the vertices added so far. */
+	public void flush() {
+		if (this.started && this.target == null && !drawing(Tessellator.getInstance().getBuffer())) {
+			// the shared Tessellator was drawn or reset behind this batch (a 1.12.2 render in the mod's renderer):
+			// its vertices are gone, nothing to draw ("Not building!" crashed MA's tinkering table)
+			this.pending = false;
+			this.started = false;
+			if (this.type != null) {
+				this.type.clearRenderState();
+			}
+			return;
+		}
+		this.emit();
+		if (!this.started) {
+			return;
+		}
+
+		this.started = false;
+		GlStateManager.pushMatrix();
+		if (this.type != null && this.type.viewOffsetZ()) {
+			// 1.21 VIEW_OFFSET_Z_LAYERING: the view scaled a hair towards the camera, so an outline isn't hidden in the face
+			GlStateManager.loadIdentity();
+			GlStateManager.scale(VIEW_OFFSET_Z, VIEW_OFFSET_Z, VIEW_OFFSET_Z);
+			GlStateManager.multMatrix(this.beginBuffer);
+		} else {
+			GL11.glLoadMatrix(this.beginBuffer);
+		}
+		if (RenderDebug.ENABLED && this.type != null) {
+			RenderDebug.drawn(this.type.name, Tessellator.getInstance().getBuffer().getVertexCount(), Tessellator.getInstance().getBuffer());
+		}
+		Tessellator.getInstance().draw();
+		if (RenderDebug.ENABLED && this.type != null) {
+			RenderDebug.afterDraw(this.type.name);
+		}
+		GlStateManager.popMatrix();
+		if (this.type != null) {
+			this.type.clearRenderState();
+		}
+	}
+
+	private static final float VIEW_OFFSET_Z = 0.99975586F;
+
+	/** The last vertex of a mod's buffer written, its vertices drawn in the matrix they were added in. */
+	void drawTarget() {
+		this.emit();
+		boolean added = this.started;
+		this.started = false;
+		if (added) {
+			GlStateManager.pushMatrix();
+			GL11.glLoadMatrix(this.beginBuffer);
+		}
+		if (this.target == Tessellator.getInstance().getBuffer()) {
+			Tessellator.getInstance().draw();
+		} else {
+			this.target.finishDrawing();
+			new net.minecraft.client.renderer.WorldVertexBufferUploader().draw(this.target);
+		}
+		if (added) {
+			GlStateManager.popMatrix();
+		}
+	}
+
+	/** The last vertex written, nothing drawn (a buffer the mod draws or discards itself). */
+	void finishTarget() {
+		this.emit();
+		this.started = false;
+	}
+
+	/** Whether the buffer is between begin and finishDrawing (1.12.2 has no getter: its private field). */
+	static boolean drawing(BufferBuilder buffer) {
+		if (DRAWING == null) {
+			return true;
+		}
+		try {
+			return DRAWING.getBoolean(buffer);
+		} catch (IllegalAccessException e) {
+			return true;
+		}
+	}
+
+	@Nullable
+	private static final java.lang.reflect.Field DRAWING = drawingField();
+
+	@Nullable
+	private static java.lang.reflect.Field drawingField() {
+		for (String name : new String[] {"field_179010_r", "isDrawing"}) {
+			try {
+				var field = BufferBuilder.class.getDeclaredField(name);
+				field.setAccessible(true);
+				return field;
+			} catch (NoSuchFieldException | RuntimeException e) {
+				// the other name (the game's or the development one)
+			}
+		}
+		return null;
+	}
+
+	/** Back to no batch, the vertices dropped (an error in the middle of one). */
+	void abandon() {
+		this.pending = false;
+		if (this.started && this.target == null && this.type != null) {
+			this.type.clearRenderState();
+		}
+		this.started = false;
+	}
+
+	private void start() {
+		if (this.target == null && drawing(Tessellator.getInstance().getBuffer())) {
+			// another render type's batch is on the shared Tessellator: drawn first (1.21 batches each type apart)
+			MultiBufferSource.INSTANCE.flushOthers(this);
+		}
+		this.started = true;
+		if (this.target == null) {
+			// the texture first: a type whose shard binds its own (a map tile's) binds it in its setup after; a type
+			// without a texture (gui, lines) leaves the screen's bound one alone
+			var texture = this.type.texture();
+			if (texture != null || this.type.textured()) {
+				Minecraft.getMinecraft().getTextureManager().bindTexture(texture != null ? texture : TextureMap.LOCATION_BLOCKS_TEXTURE);
+			}
+			this.type.setupRenderState();
+		}
+		this.begin.load(currentMatrix());
+		Matrix4f.invert(this.begin, this.beginInverse);
+		this.beginBuffer.clear();
+		this.begin.store(this.beginBuffer);
+		this.beginBuffer.flip();
+		if (this.target == null) {
+			// the type's primitive (lines of a mod's line type, triangles), quads for the Translator's own types
+			Tessellator.getInstance().getBuffer().begin(this.type.glMode(), DefaultVertexFormats.POSITION_TEX_COLOR);
+		}
+	}
+
+	private void emit() {
+		if (!this.pending) {
+			return;
+		}
+
+		this.pending = false;
+		if (this.target == null) {
+			Tessellator.getInstance().getBuffer().pos(this.x, this.y, this.z).tex(this.u, this.v)
+					.color(this.red, this.green, this.blue, this.alpha).endVertex();
+			return;
+		}
+		// the elements of the buffer's format in order (padding is skipped by the buffer)
+		for (VertexFormatElement element : this.target.getVertexFormat().getElements()) {
+			switch (element.getUsage()) {
+			case POSITION:
+				this.target.pos(this.x, this.y, this.z);
+				break;
+			case UV:
+				if (element.getIndex() == 0) {
+					this.target.tex(this.u, this.v);
+				} else {
+					this.target.lightmap(this.lightV, this.lightU);
+				}
+				break;
+			case COLOR:
+				this.target.color(this.red, this.green, this.blue, this.alpha);
+				break;
+			case NORMAL:
+				this.target.normal(this.normalX, this.normalY, this.normalZ);
+				break;
+			default:
+				break;
+			}
+		}
+		this.target.endVertex();
+	}
+
+	private static Matrix4f currentMatrix() {
+		MATRIX.clear();
+		GlStateManager.getFloat(GL11.GL_MODELVIEW_MATRIX, MATRIX);
+		var matrix = new Matrix4f();
+		matrix.load(MATRIX);
+		return matrix;
+	}
+}

@@ -37,14 +37,14 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * 1.21's humanoid parts); a layer that fails anyway is left out after its first failure (logged once).
  */
 @SideOnly(Side.CLIENT)
-public final class VanillaRendererView<T extends EntityLivingBase, M extends net.minecraft.client.model.ModelBase> extends LivingEntityRenderer<T, M> {
+public class VanillaRendererView<T extends EntityLivingBase, M extends net.minecraft.client.model.ModelBase> extends LivingEntityRenderer<T, M> {
 	private static final Map<Render<?>, VanillaRendererView<?, ?>> VIEWS = Collections.synchronizedMap(new IdentityHashMap<>());
 
 	private final RenderLivingBase<T> vanilla;
 	private final Set<RenderLayer<T, M>> failed = Collections.newSetFromMap(new IdentityHashMap<>());
 
 	@SuppressWarnings("unchecked")
-	private VanillaRendererView(RenderLivingBase<T> vanilla) {
+	protected VanillaRendererView(RenderLivingBase<T> vanilla) {
 		// its model is the 1.12.2 one (a 1.21 model is a 1.12.2 ModelBase in the tables): layers pose theirs after it
 		super(new RendererContext(), (M) vanilla.getMainModel(), 0.0F);
 		this.vanilla = vanilla;
@@ -64,7 +64,9 @@ public final class VanillaRendererView<T extends EntityLivingBase, M extends net
 		if (!(renderer instanceof RenderLivingBase<?> living)) {
 			return null;
 		}
-		return (R) VIEWS.computeIfAbsent(renderer, key -> new VanillaRendererView(living));
+		// a player renderer as the 1.21 PlayerRenderer (the Aether casts the skins' renderers to it and adds its layers)
+		return (R) VIEWS.computeIfAbsent(renderer, key -> living instanceof net.minecraft.client.renderer.entity.RenderPlayer player
+				? new PlayerRenderer(player) : new VanillaRendererView(living));
 	}
 
 	@Override

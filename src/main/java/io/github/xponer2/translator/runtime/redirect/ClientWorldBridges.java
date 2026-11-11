@@ -170,6 +170,11 @@ public final class ClientWorldBridges {
 	public static void setOverlay(Minecraft minecraft, @Nullable Object overlay) {
 	}
 
+	/** 1.21 {@code getChatListener()}: the game's messages to the player (1.12.2's chat). */
+	public static io.github.xponer2.translator.client.ChatListener getChatListener(Minecraft minecraft) {
+		return io.github.xponer2.translator.client.ChatListener.INSTANCE;
+	}
+
 	/** 1.21 {@code getFps()}. */
 	public static int getFps(Minecraft minecraft) {
 		return Minecraft.getDebugFPS();

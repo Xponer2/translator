@@ -56,7 +56,7 @@ public final class Tesselation {
 	/** Begins the tessellator's buffer (one still drawing from an earlier begin is drawn away first). */
 	public static BufferBuilder begin(Tessellator tessellator, Object mode, VertexFormat format) {
 		BufferBuilder buffer = tessellator.getBuffer();
-		VertexConsumer consumer = VertexConsumer.into(buffer);
+		BufferVertexConsumer consumer = VertexConsumer.into(buffer);
 		try {
 			buffer.begin(glMode(mode), format);
 		} catch (IllegalStateException alreadyBuilding) {

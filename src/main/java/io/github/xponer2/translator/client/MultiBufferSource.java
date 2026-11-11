@@ -19,10 +19,10 @@ public final class MultiBufferSource {
 
     private MultiBufferSource() { }
 
-    private final java.util.Map<RenderType, VertexConsumer> consumers = new java.util.LinkedHashMap<>();
+    private final java.util.Map<RenderType, BufferVertexConsumer> consumers = new java.util.LinkedHashMap<>();
 
     public VertexConsumer getBuffer(RenderType type) {
-        return this.consumers.computeIfAbsent(type, VertexConsumer::new);
+        return this.consumers.computeIfAbsent(type, BufferVertexConsumer::new);
     }
 
     /** Draws what the consumers got (the renderer adapters call it after each render, 1.21 endBatch). */
@@ -63,7 +63,7 @@ public final class MultiBufferSource {
             consumer.abandon();
         }
         var buffer = net.minecraft.client.renderer.Tessellator.getInstance().getBuffer();
-        if (VertexConsumer.drawing(buffer)) {
+        if (BufferVertexConsumer.drawing(buffer)) {
             buffer.finishDrawing();
         }
         buffer.reset();

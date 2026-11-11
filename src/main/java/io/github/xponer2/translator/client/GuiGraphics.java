@@ -379,7 +379,7 @@ public class GuiGraphics {
 
     /** The batches of the buffer source still open (a mod's own getBuffer) drawn first: they share the Tessellator. */
     private void flushOpen() {
-        if (VertexConsumer.drawing(net.minecraft.client.renderer.Tessellator.getInstance().getBuffer())) {
+        if (BufferVertexConsumer.drawing(net.minecraft.client.renderer.Tessellator.getInstance().getBuffer())) {
             MultiBufferSource.INSTANCE.endBatch();
         }
     }

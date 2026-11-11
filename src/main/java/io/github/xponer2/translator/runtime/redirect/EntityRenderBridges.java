@@ -72,4 +72,9 @@ public final class EntityRenderBridges {
 			net.minecraft.client.entity.AbstractClientPlayer player, float partialTick) {
 		return player.isSneaking() ? new net.minecraft.util.math.Vec3d(0.0, -0.125, 0.0) : net.minecraft.util.math.Vec3d.ZERO;
 	}
+
+	/** NeoForge {@code renderPlayerEvent.getRenderer()}: the 1.21 PlayerRenderer of the event's 1.12.2 one (Create's held tools). */
+	public static io.github.xponer2.translator.client.entity.PlayerRenderer getRenderer(net.minecraftforge.client.event.RenderPlayerEvent event) {
+		return io.github.xponer2.translator.client.entity.VanillaRendererView.of(event.getRenderer());
+	}
 }
