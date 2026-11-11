@@ -63,3 +63,8 @@ S	net/minecraft/world/level/block/VineBlock	io/github/xponer2/translator/runtime
 S	net/minecraft/world/level/block/entity/SignBlockEntity	io/github/xponer2/translator/runtime/mc/SignBlockEntity
 S	net/minecraft/world/entity/item/ItemEntity	io/github/xponer2/translator/runtime/mc/ItemEntity
 S	net/minecraft/world/SimpleContainer	io/github/xponer2/translator/menu/SimpleContainer
+# the mods' arrows (1.12.2's EntityArrow is made with the world, a position or a shooter)
+S	net/minecraft/world/entity/projectile/AbstractArrow	io/github/xponer2/translator/runtime/mc/AbstractArrow
+# facades only for the mod classes that extend these (new of the class itself stays 1.12.2's, by its constructor helpers)
+E	net/minecraft/world/entity/ai/goal/target/NearestAttackableTargetGoal	io/github/xponer2/translator/runtime/mc/NearestAttackableTargetGoal
+E	net/minecraft/world/damagesource/DamageSource	io/github/xponer2/translator/runtime/mc/DamageSource

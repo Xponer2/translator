@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "180";
+	static final String VERSION = "181";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
@@ -379,9 +379,15 @@ final class JarConverter {
 		try (var zip = new ZipFile(jar.file); var out = new ZipOutputStream(new FileOutputStream(output))) {
 			// accessor mixins into Translator classes: by reflection (they can't be applied there)
 			var accessors = AccessorMixins.find(jar, zip, remapper, MIXABLE::contains, target);
+			// a jar may hold the same path twice (Ars Nouveau: two META-INF/LICENSE.txt): the first one is kept, as a
+			// class loader reads it; writing the second threw "duplicate entry" and the whole mod wasn't converted
+			var written = new HashSet<String>();
 			for (ZipEntry entry : Collections.list(zip.entries())) {
 				String path = entry.getName();
 				if (entry.isDirectory() || path.matches("META-INF/[^/]+\\.(SF|RSA|DSA|EC)")) {
+					continue;
+				}
+				if (!path.endsWith(".class") && !written.add(path)) {
 					continue;
 				}
 				byte[] bytes;
@@ -394,7 +400,7 @@ final class JarConverter {
 				if (path.endsWith(".class") && !path.startsWith("META-INF/")) {
 					var reader = new ClassReader(bytes);
 					var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-					reader.accept(new ListenerTypes(new FacadeRemapper(writer, remapper, table.supers, target)), 0);
+					reader.accept(new ListenerTypes(new FacadeRemapper(writer, remapper, table.supers, target, table.kinds, table.extendsOnly)), 0);
 					bytes = writer.toByteArray();
 					path = remapper.map(reader.getClassName()) + ".class";
 					if (!accessors.isEmpty()) {
@@ -407,6 +413,12 @@ final class JarConverter {
 					}
 					// calls through 1.21 interfaces the 1.12.2 classes don't implement (DataComponentHolder on ItemStack)
 					bytes = InterfaceDispatch.rewrite(reader.getClassName(), bytes);
+					if (!written.add(path)) {
+						// the same class twice, or two classes the tables give one name: the first one stays
+						Conversion.LOGGER.warn("{}: {} is in the jar twice (or two classes got this name), the first one is kept",
+								jar.displayName(), path);
+						continue;
+					}
 				}
 				out.putNextEntry(new ZipEntry(path));
 				out.write(bytes);

@@ -149,6 +149,14 @@ public final class RecipeManager {
         return Optional.ofNullable(this.byName.get(id));
     }
 
+    /** 1.21 {@code byKeyTyped(type, id)}: the recipe of that id when it is of the type, else null. */
+    @javax.annotation.Nullable
+    @SuppressWarnings("unchecked")
+    public <T extends Recipe<?>> RecipeHolder<T> byKeyTyped(RecipeType<T> type, ResourceLocation id) {
+        RecipeHolder<?> holder = this.byName.get(id);
+        return holder != null && holder.value().getType() == type ? (RecipeHolder<T>) holder : null;
+    }
+
     public Collection<RecipeHolder<?>> getRecipes() {
         return Collections.unmodifiableCollection(this.byName.values());
     }

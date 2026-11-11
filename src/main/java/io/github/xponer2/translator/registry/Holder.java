@@ -32,6 +32,12 @@ public interface Holder<T> {
         return this.unwrapKey().map(k -> k == key || k.equals(key)).orElse(false);
     }
 
+    /** 1.21 {@code unwrap()}: the key of a registered entry, the value of a direct one. */
+    default com.mojang.datafixers.util.Either<ResourceKey<T>, T> unwrap() {
+        Optional<ResourceKey<T>> key = this.unwrapKey();
+        return key.isPresent() ? com.mojang.datafixers.util.Either.left(key.get()) : com.mojang.datafixers.util.Either.right(this.value());
+    }
+
     /** 1.21 {@code is(predicate)}: whether its key passes (TerraBlender's namespaced surface rules ask by namespace). */
     default boolean is(java.util.function.Predicate<ResourceKey<T>> predicate) {
         return this.unwrapKey().map(predicate::test).orElse(false);

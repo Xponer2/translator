@@ -30,7 +30,14 @@ public class ModContainer {
 		this.modId = modId;
 		this.displayName = displayName;
 		this.version = version;
-		var file = new ModFileInfo(new ModFile(jar == null ? new java.io.File(modId + ".jar") : jar));
+		java.io.File own = jar;
+		if (own == null && "minecraft".equals(modId)) {
+			// the files of Minecraft 1.21.1 itself (its data: structure sets, tags, loot tables) are in the player's 1.21.1
+			// jar; a mod reading them through the "minecraft" mod file found nothing at "minecraft.jar" (Cristel Lib read
+			// the vanilla structure sets so, failed, and the mods built on it failed with it)
+			own = io.github.xponer2.translator.runtime.Minecraft1211.clientJar();
+		}
+		var file = new ModFileInfo(new ModFile(own == null ? new java.io.File(modId + ".jar") : own));
 		this.modInfo = new ModInfo(modId, displayName, description, version, file);
 		file.mods.add(this.modInfo);
 		BY_ID.put(modId, this);

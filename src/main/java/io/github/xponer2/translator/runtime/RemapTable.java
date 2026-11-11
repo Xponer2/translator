@@ -45,6 +45,19 @@ final class RemapTable {
 	 * receiver first. EnumDyeColor.getName() is "silver" on 1.12.2, the 1.21 name is "light_gray".
 	 */
 	final Map<String, String> forced = new HashMap<>();
+	/**
+	 * I lines: {@code instanceof} of a 1.21 class that shares its 1.12.2 class with other 1.21 classes ("1.21 class" ->
+	 * helper class, method): the check is the helper's {@code method(Object)}, which tells them apart. EntityHitResult and
+	 * BlockHitResult are both 1.12.2's RayTraceResult: {@code hit instanceof EntityHitResult} was true for a block too.
+	 */
+	final Map<String, String[]> kinds = new HashMap<>();
+	/**
+	 * E lines: a facade (as an S line) only for the mod classes that extend the 1.21 class: their superclass and super
+	 * calls are the facade's (its 1.21 constructors), while {@code new} of the class itself stays the 1.12.2 class's (its
+	 * constructor helpers pick the right 1.12.2 class: an EntityDamageSource, a target goal for a mob that isn't a
+	 * creature).
+	 */
+	final java.util.Set<String> extendsOnly = new java.util.HashSet<>();
 	private Map<String, java.util.List<String>> reverse;
 
 	static RemapTable load() throws IOException {
@@ -82,6 +95,11 @@ final class RemapTable {
 					// X owner name desc helper [helperDesc]: the helper's descriptor when it takes wider types (Object for a
 					// carried 1.21 class the Translator can't name)
 					case "X" -> this.forced.put(cols[1] + "." + cols[2] + cols[3], cols.length > 5 && !cols[5].isEmpty() ? cols[4] + " " + cols[5] : cols[4]);
+					case "I" -> this.kinds.put(cols[1], new String[] {cols[2], cols[3]});
+					case "E" -> {
+						this.supers.put(cols[1], cols[2]);
+						this.extendsOnly.add(cols[1]);
+					}
 					default -> {
 					}
 				}

@@ -149,6 +149,19 @@ public class DeferredRegister<T> {
         this.register((Object) modEventBus);
     }
 
+    /**
+     * NeoForge {@code makeRegistry(consumer)}: the mod's own registry of this register's key, made with the builder now
+     * (a library that keeps its own registries: Moonlight's villager trade types; without it the registry was null and
+     * the mods registering into it failed while they were constructed: Supplementaries).
+     */
+    public Registry<T> makeRegistry(java.util.function.Consumer<RegistryBuilder<T>> consumer) {
+        var builder = new RegistryBuilder<T>(this.registryKey);
+        if (consumer != null) {
+            consumer.accept(builder);
+        }
+        return builder.create();
+    }
+
     public Collection<DeferredHolder<T, ? extends T>> getEntries() {
         return Collections.unmodifiableSet(this.entries.keySet());
     }

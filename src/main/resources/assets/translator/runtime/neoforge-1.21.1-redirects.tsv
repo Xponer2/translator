@@ -391,3 +391,62 @@ R	net/minecraft/client/renderer/block/model/ItemTransformVec3f	io/github/xponer2
 C	net/minecraft/client/gui/GuiSpriteManager	io/github/xponer2/translator/client/GuiSpriteManager
 R	net/minecraftforge/client/event/RenderLivingEvent	io/github/xponer2/translator/runtime/redirect/GuiBridges
 R	net/minecraft/client/renderer/texture/TextureAtlasSprite	io/github/xponer2/translator/runtime/redirect/GuiBridges
+# stale lines of the carried table (generated on v81, before the mob classes were mapped): these 1.21 classes have a
+# mapped 1.21 superclass again and no mod extends them, so they are 1.12.2's own classes (the game's cows, hoppers,
+# withers are instances of them: a mod's instanceof and casts were never true against the carried 1.21 class). Those
+# a mod extends (Zombie, Skeleton, Spider, Vex, Horse, the furnaces) stay carried until they have facades.
+C	net/minecraft/world/entity/animal/Chicken	net/minecraft/entity/passive/EntityChicken
+C	net/minecraft/world/entity/animal/Cow	net/minecraft/entity/passive/EntityCow
+C	net/minecraft/world/entity/animal/Ocelot	net/minecraft/entity/passive/EntityOcelot
+C	net/minecraft/world/entity/animal/Parrot	net/minecraft/entity/passive/EntityParrot
+C	net/minecraft/world/entity/animal/Pig	net/minecraft/entity/passive/EntityPig
+C	net/minecraft/world/entity/animal/Rabbit	net/minecraft/entity/passive/EntityRabbit
+C	net/minecraft/world/entity/animal/ShoulderRidingEntity	net/minecraft/entity/passive/EntityShoulderRiding
+C	net/minecraft/world/entity/animal/horse/AbstractChestedHorse	net/minecraft/entity/passive/AbstractChestHorse
+C	net/minecraft/world/entity/animal/horse/Donkey	net/minecraft/entity/passive/EntityDonkey
+C	net/minecraft/world/entity/animal/horse/Llama	net/minecraft/entity/passive/EntityLlama
+C	net/minecraft/world/entity/animal/horse/Mule	net/minecraft/entity/passive/EntityMule
+C	net/minecraft/world/entity/animal/horse/ZombieHorse	net/minecraft/entity/passive/EntityZombieHorse
+C	net/minecraft/world/entity/boss/wither/WitherBoss	net/minecraft/entity/boss/EntityWither
+C	net/minecraft/world/entity/monster/Blaze	net/minecraft/entity/monster/EntityBlaze
+C	net/minecraft/world/entity/monster/CaveSpider	net/minecraft/entity/monster/EntityCaveSpider
+C	net/minecraft/world/entity/monster/ElderGuardian	net/minecraft/entity/monster/EntityElderGuardian
+C	net/minecraft/world/entity/monster/Endermite	net/minecraft/entity/monster/EntityEndermite
+C	net/minecraft/world/entity/monster/Guardian	net/minecraft/entity/monster/EntityGuardian
+C	net/minecraft/world/entity/monster/Husk	net/minecraft/entity/monster/EntityHusk
+C	net/minecraft/world/entity/monster/Silverfish	net/minecraft/entity/monster/EntitySilverfish
+C	net/minecraft/world/entity/monster/Stray	net/minecraft/entity/monster/EntityStray
+C	net/minecraft/world/entity/monster/WitherSkeleton	net/minecraft/entity/monster/EntityWitherSkeleton
+C	net/minecraft/world/entity/monster/ZombieVillager	net/minecraft/entity/monster/EntityZombieVillager
+C	net/minecraft/world/entity/monster/ZombifiedPiglin	net/minecraft/entity/monster/EntityPigZombie
+C	net/minecraft/world/level/block/entity/BrewingStandBlockEntity	net/minecraft/tileentity/TileEntityBrewingStand
+C	net/minecraft/world/level/block/entity/DropperBlockEntity	net/minecraft/tileentity/TileEntityDropper
+C	net/minecraft/world/level/block/entity/HopperBlockEntity	net/minecraft/tileentity/TileEntityHopper
+C	net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity	net/minecraft/tileentity/TileEntityShulkerBox
+# calls on the world, block states and positions left empty most often across the mods (LevelGapBridges)
+R	net/minecraft/block/state/IBlockState	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/world/World	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/util/math/RayTraceResult	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/util/math/Vec3i	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/ai/EntityLookHelper	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/server/management/PlayerProfileCache	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	io/github/xponer2/translator/block/LootParams$Builder	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# NeoForge's pick block of a block is Forge's getPickBlock (same arguments)
+M	net/minecraft/world/level/block/Block	getCloneItemStack(net.minecraft.world.level.block.state.BlockState,net.minecraft.world.phys.HitResult,net.minecraft.world.level.LevelReader,net.minecraft.core.BlockPos,net.minecraft.world.entity.player.Player)	getPickBlock
+# 1.21's two hit results are 1.12.2's one: the entity hit is mapped like the block hit, and instanceof tells them apart
+C	net/minecraft/world/phys/EntityHitResult	net/minecraft/util/math/RayTraceResult
+I	net/minecraft/world/phys/EntityHitResult	io/github/xponer2/translator/runtime/redirect/HitKinds	isEntityHit
+I	net/minecraft/world/phys/BlockHitResult	io/github/xponer2/translator/runtime/redirect/HitKinds	isBlockHit
+R	net/minecraft/util/math/RayTraceResult	io/github/xponer2/translator/runtime/redirect/HitKinds
+# 1.21's sided container is 1.12.2's sided inventory (it was a carried interface: a mod's machine wasn't one for 1.12.2's
+# hoppers, and Forge's SidedInvWrapper couldn't be made of it)
+C	net/minecraft/world/WorldlyContainer	net/minecraft/inventory/ISidedInventory
+M	net/minecraft/world/WorldlyContainer	canPlaceItemThroughFace(int,net.minecraft.world.item.ItemStack,net.minecraft.core.Direction)	canInsertItem
+M	net/minecraft/world/WorldlyContainer	canTakeItemThroughFace(int,net.minecraft.world.item.ItemStack,net.minecraft.core.Direction)	canExtractItem
+M	net/minecraft/world/WorldlyContainer	getSlotsForFace(net.minecraft.core.Direction)	getSlotsForFace
+R	net/minecraft/entity/monster/EntityCreeper	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/entity/boss/EntityWither	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/pathfinding/PathNavigate	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/pathfinding/Path	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/util/math/BlockPos	io/github/xponer2/translator/runtime/redirect/LevelGapBridges

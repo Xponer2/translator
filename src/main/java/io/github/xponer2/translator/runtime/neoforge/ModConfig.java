@@ -48,6 +48,33 @@ public final class ModConfig {
 	public void save() {
 	}
 
+	/** The config as it was last read (NeoForge's {@code loadedConfig}), null before the first read. */
+	@javax.annotation.Nullable
+	private IConfigSpec.ILoadedConfig loadedConfig;
+
+	/** NeoForge {@code getLoadedConfig()} (a mod reading its own file's values: Moonlight). */
+	@javax.annotation.Nullable
+	public IConfigSpec.ILoadedConfig getLoadedConfig() {
+		return this.loadedConfig;
+	}
+
+	/**
+	 * NeoForge's package-private {@code setConfig(loadedConfig, eventConstructor)}: the config a mod read itself is given
+	 * to the spec (Moonlight calls it by reflection with FML's carried LoadedConfig, which is an ILoadedConfig; without
+	 * the method its config class failed to start and every config of the mods built on it with it).
+	 */
+	void setConfig(@javax.annotation.Nullable IConfigSpec.ILoadedConfig config, @javax.annotation.Nullable java.util.function.Function<?, ?> event) {
+		this.loadedConfig = config;
+		if (config != null) {
+			this.spec.acceptConfig(config);
+		}
+	}
+
+	/** What the loader read. */
+	void loaded(IConfigSpec.ILoadedConfig config) {
+		this.loadedConfig = config;
+	}
+
 	public enum Type {
 		COMMON,
 		CLIENT,

@@ -24,21 +24,33 @@ import xyz.wagyourtail.jvmdg.shade.asm.commons.MethodRemapper;
  * members the facade declares; everywhere else (descriptors, calls on any instance) it means the 1.12.2 class.
  */
 final class FacadeRemapper extends ClassRemapper {
+	private static final String ITEM_STACK = "net/minecraft/world/item/ItemStack";
+	private static final String DYE_ITEM = "net/minecraft/world/item/DyeItem";
 	private final ModRemapper names;
 	private final Map<String, String> supers;
 	private final TargetClasses target;
+	/** The table's I lines: 1.21 class -> helper class and method that checks an object is one. */
+	private final Map<String, String[]> kinds;
+	/** The table's E lines: 1.21 classes whose facade is only for the classes that extend them. */
+	private final java.util.Set<String> extendsOnly;
+	/** The 1.21 superclass of the class being read. */
+	private String superName;
 
-	FacadeRemapper(ClassVisitor next, ModRemapper names, Map<String, String> supers, TargetClasses target) {
+	FacadeRemapper(ClassVisitor next, ModRemapper names, Map<String, String> supers, TargetClasses target, Map<String, String[]> kinds,
+			java.util.Set<String> extendsOnly) {
 		super(Opcodes.ASM9, next, names);
 		this.names = names;
 		this.supers = supers;
 		this.target = target;
+		this.kinds = kinds;
+		this.extendsOnly = extendsOnly;
 	}
 
 	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 		// ClassRemapper#visit, with the facade as the superclass
 		this.className = name;
+		this.superName = superName;
 		String facade = superName == null ? null : this.supers.get(superName);
 		this.cv.visit(version, access, this.remapper.mapType(name), this.remapper.mapSignature(signature, false),
 				facade != null ? facade : this.remapper.mapType(superName), interfaces == null ? null : this.interfaces(interfaces));
@@ -238,15 +250,97 @@ final class FacadeRemapper extends ClassRemapper {
 				return visitor != null && isMixinAnnotation(descriptor) ? new MixinStrings(visitor, null) : visitor;
 			}
 
+			/** The local an ALOAD has just pushed (nothing else since), -1 otherwise. */
+			private int loaded = -1;
+			/** The local of the last item stack whose item was asked for ({@code stack.getItem()}), -1 when none. */
+			private int stackLocal = -1;
+
 			@Override
-			public void visitTypeInsn(int opcode, String type) {
-				String facade = FacadeRemapper.this.supers.get(type);
-				super.visitTypeInsn(opcode, opcode == Opcodes.NEW && facade != null ? facade : type);
+			public void visitVarInsn(int opcode, int varIndex) {
+				this.loaded = opcode == Opcodes.ALOAD ? varIndex : -1;
+				if (opcode == Opcodes.ASTORE && varIndex == this.stackLocal) {
+					this.stackLocal = -1;
+				}
+				super.visitVarInsn(opcode, varIndex);
 			}
 
 			@Override
+			public void visitInsn(int opcode) {
+				this.loaded = -1;
+				super.visitInsn(opcode);
+			}
+
+			@Override
+			public void visitIntInsn(int opcode, int operand) {
+				this.loaded = -1;
+				super.visitIntInsn(opcode, operand);
+			}
+
+			@Override
+			public void visitJumpInsn(int opcode, xyz.wagyourtail.jvmdg.shade.asm.Label label) {
+				this.loaded = -1;
+				super.visitJumpInsn(opcode, label);
+			}
+
+			@Override
+			public void visitLdcInsn(Object value) {
+				this.loaded = -1;
+				super.visitLdcInsn(value);
+			}
+
+			@Override
+			public void visitIincInsn(int varIndex, int increment) {
+				this.loaded = -1;
+				super.visitIincInsn(varIndex, increment);
+			}
+
+			@Override
+			public void visitTypeInsn(int opcode, String type) {
+				this.loaded = -1;
+				String[] kind = opcode == Opcodes.INSTANCEOF ? FacadeRemapper.this.kinds.get(type) : null;
+				if (kind != null) {
+					// one 1.12.2 class for several 1.21 ones: the helper tells which (the cast after it is the 1.12.2 class)
+					super.visitMethodInsn(Opcodes.INVOKESTATIC, kind[0], kind[1], "(Ljava/lang/Object;)Z", false);
+					return;
+				}
+				String facade = FacadeRemapper.this.supers.get(type);
+				if (opcode == Opcodes.NEW && facade != null && FacadeRemapper.this.extendsOnly.contains(type)) {
+					// made as the 1.12.2 class (its constructor helpers); its <init> below isn't the superclass's
+					facade = null;
+					this.pendingNew++;
+				}
+				super.visitTypeInsn(opcode, opcode == Opcodes.NEW && facade != null ? facade : type);
+			}
+
+			/** {@code new} of a class with an extends-only facade not yet closed by its constructor call. */
+			private int pendingNew;
+
+			@Override
 			public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+				int receiver = this.loaded;
+				this.loaded = -1;
+				if (ITEM_STACK.equals(owner) && "getItem".equals(name) && descriptor.startsWith("()") && receiver >= 0) {
+					this.stackLocal = receiver;
+				}
+				if (DYE_ITEM.equals(owner) && "getDyeColor".equals(name) && opcode == Opcodes.INVOKEVIRTUAL && this.stackLocal >= 0) {
+					// 1.12.2 has one dye item for the 16 colours (the stack's damage): the colour of the stack whose item this is
+					// (stack.getItem() instanceof DyeItem dye -> dye.getDyeColor()); the item alone can't tell
+					super.visitInsn(Opcodes.POP);
+					super.visitVarInsn(Opcodes.ALOAD, this.stackLocal);
+					super.visitMethodInsn(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/runtime/redirect/LevelGapBridges", "dyeColor",
+							"(L" + ITEM_STACK + ";)Lnet/minecraft/world/item/DyeColor;", false);
+					return;
+				}
 				String facade = FacadeRemapper.this.supers.get(owner);
+				if (facade != null && opcode == Opcodes.INVOKESPECIAL && FacadeRemapper.this.extendsOnly.contains(owner)) {
+					// only the super calls of a class that extends it (not the constructor of a new one, not another class's)
+					if ("<init>".equals(name) && this.pendingNew > 0) {
+						this.pendingNew--;
+						facade = null;
+					} else if (!owner.equals(FacadeRemapper.this.superName)) {
+						facade = null;
+					}
+				}
 				if (facade != null && (opcode == Opcodes.INVOKESPECIAL || opcode == Opcodes.INVOKESTATIC
 						&& FacadeRemapper.this.target.hasMember(facade, name, FacadeRemapper.this.names.mapMethodDesc(descriptor), true))) {
 					owner = facade;
@@ -257,10 +351,11 @@ final class FacadeRemapper extends ClassRemapper {
 			/** A constructor reference (BlockItem::new, as Registrate makes items) makes the facade, as {@code new} does. */
 			@Override
 			public void visitInvokeDynamicInsn(String name, String descriptor, xyz.wagyourtail.jvmdg.shade.asm.Handle bootstrap, Object... arguments) {
+				this.loaded = -1;
 				for (int i = 0; i < arguments.length; i++) {
 					if (arguments[i] instanceof xyz.wagyourtail.jvmdg.shade.asm.Handle handle && handle.getTag() == Opcodes.H_NEWINVOKESPECIAL) {
 						String facade = FacadeRemapper.this.supers.get(handle.getOwner());
-						if (facade != null) {
+						if (facade != null && !FacadeRemapper.this.extendsOnly.contains(handle.getOwner())) {
 							arguments[i] = new xyz.wagyourtail.jvmdg.shade.asm.Handle(handle.getTag(), facade, handle.getName(), handle.getDesc(), false);
 						}
 					}
@@ -270,6 +365,7 @@ final class FacadeRemapper extends ClassRemapper {
 
 			@Override
 			public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
+				this.loaded = -1;
 				String facade = FacadeRemapper.this.supers.get(owner);
 				if (facade != null && (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC)
 						&& FacadeRemapper.this.target.hasMember(facade, name, FacadeRemapper.this.names.mapDesc(descriptor), false)) {

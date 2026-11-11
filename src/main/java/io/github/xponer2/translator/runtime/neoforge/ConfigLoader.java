@@ -68,7 +68,7 @@ public final class ConfigLoader {
 				spec.correct(config);
 				config.save();
 			}
-			spec.acceptConfig(new IConfigSpec.ILoadedConfig() {
+			IConfigSpec.ILoadedConfig loaded = new IConfigSpec.ILoadedConfig() {
 				@Override
 				public CommentedConfig config() {
 					return config;
@@ -78,7 +78,9 @@ public final class ConfigLoader {
 				public void save() {
 					config.save();
 				}
-			});
+			};
+			modConfig.loaded(loaded);
+			spec.acceptConfig(loaded);
 			post("net.neoforged.fml.event.config.ModConfigEvent$Loading", modConfig);
 		} catch (Throwable t) {
 			ForgeBus.LOGGER.error("Can't load the config {} of {}", modConfig.getFileName(), modConfig.getModId(), t);
