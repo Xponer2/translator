@@ -83,3 +83,5 @@ E	net/minecraft/world/entity/LightningBolt	io/github/xponer2/translator/runtime/
 E	net/minecraft/world/level/block/entity/SkullBlockEntity	io/github/xponer2/translator/runtime/mc/SkullBlockEntity
 # 1.21 HurtByTargetGoal for the goals that extend it: 1.21's constructor (mob, ignored types), setAlertOthers
 E	net/minecraft/world/entity/ai/goal/target/HurtByTargetGoal	io/github/xponer2/translator/runtime/mc/HurtByTargetGoal
+E	net/minecraft/world/entity/ai/goal/LookAtPlayerGoal	io/github/xponer2/translator/runtime/mc/LookAtPlayerGoal
+E	net/minecraft/world/item/ArrowItem	io/github/xponer2/translator/runtime/mc/ArrowItem

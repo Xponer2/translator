@@ -95,6 +95,16 @@ public final class ApiBridges {
 		return dimensionKey(world.provider.getDimension());
 	}
 
+	/** 1.21 {@code mapData.dimension} (a level key; 1.12.2's field is the dimension id): maps of Supplementaries, Moonlight, TF. */
+	public static ResourceKey<World> dimension(net.minecraft.world.storage.MapData data) {
+		return dimensionKey(data.dimension);
+	}
+
+	/** A write to it. */
+	public static void dimension(net.minecraft.world.storage.MapData data, ResourceKey<World> key) {
+		data.dimension = dimensionId(key);
+	}
+
 	public static DimensionType dimensionType(World world) {
 		return world.provider.getDimensionType();
 	}
@@ -503,6 +513,25 @@ public final class ApiBridges {
 			stack.shrink(1);
 			broken.accept(item);
 		}
+	}
+
+	/** 1.21 {@code stack.hurtAndBreak(amount, level, entity, onBroken)}: any entity (none in creative), as the player one. */
+	public static void hurtAndBreak(net.minecraft.item.ItemStack stack, int amount, WorldServer world, net.minecraft.entity.EntityLivingBase entity,
+			java.util.function.Consumer<Item> broken) {
+		if (entity instanceof net.minecraft.entity.player.EntityPlayer && ((net.minecraft.entity.player.EntityPlayer) entity).capabilities.isCreativeMode) {
+			return;
+		}
+		Item item = stack.getItem();
+		if (stack.attemptDamageItem(amount, world.rand, entity instanceof EntityPlayerMP ? (EntityPlayerMP) entity : null)) {
+			stack.shrink(1);
+			broken.accept(item);
+		}
+	}
+
+	/** 1.21 {@code stack.interactLivingEntity(player, target, hand)} (the table names it interactWithEntity, 1.12.2's gives a boolean). */
+	public static net.minecraft.util.EnumActionResult interactWithEntity(net.minecraft.item.ItemStack stack, net.minecraft.entity.player.EntityPlayer player,
+			net.minecraft.entity.EntityLivingBase target, net.minecraft.util.EnumHand hand) {
+		return stack.interactWithEntity(player, target, hand) ? net.minecraft.util.EnumActionResult.SUCCESS : net.minecraft.util.EnumActionResult.PASS;
 	}
 
 	public static net.minecraft.item.ItemStack getCraftingRemainingItem(net.minecraft.item.ItemStack stack) {

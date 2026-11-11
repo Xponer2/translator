@@ -46,6 +46,11 @@ public final class TesrAdapter<T extends TileEntity> extends TileEntitySpecialRe
         if (io.github.xponer2.translator.runtime.mc.SignBlockEntity.class.isAssignableFrom(tileClass)) {
             return;
         }
+        // a vanilla type's 1.12.2 tile entity (Twilight Forest's chest renderer on BlockEntityType.CHEST): vanilla keeps its
+        // own renderer, a mod's 1.21 one would draw every vanilla chest
+        if (tileClass.getName().startsWith("net.minecraft.")) {
+            return;
+        }
         try {
             ClientRegistry.bindTileEntitySpecialRenderer((Class) tileClass, new TesrAdapter<>(provider.create(BlockEntityRendererProvider.Context.INSTANCE)));
         } catch (RuntimeException | LinkageError e) {

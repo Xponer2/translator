@@ -207,6 +207,22 @@ public final class VanillaRedirects {
 		return capability.getCapability(world, pos, context);
 	}
 
+	/** NeoForge {@code level.getCapability(capability, pos)} (a capability without context: Ars Nouveau's spell turrets, Supplementaries). */
+	@Nullable
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static Object getCapability(World world, io.github.xponer2.translator.capabilities.BlockCapability capability,
+			net.minecraft.util.math.BlockPos pos) {
+		return capability.getCapability(world, pos, null);
+	}
+
+	/** NeoForge {@code level.getCapability(capability, pos, state, blockEntity)}. */
+	@Nullable
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static Object getCapability(World world, io.github.xponer2.translator.capabilities.BlockCapability capability,
+			net.minecraft.util.math.BlockPos pos, @Nullable IBlockState state, @Nullable TileEntity tile) {
+		return capability.getCapability(world, pos, null);
+	}
+
 	/** 1.21 {@code ClientboundBlockEntityDataPacket.create(blockEntity)}. */
 	public static net.minecraft.network.play.server.SPacketUpdateTileEntity create(TileEntity tile) {
 		return new net.minecraft.network.play.server.SPacketUpdateTileEntity(tile.getPos(), 0, tile.getUpdateTag());

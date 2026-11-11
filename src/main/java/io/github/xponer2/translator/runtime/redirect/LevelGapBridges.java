@@ -574,6 +574,52 @@ public final class LevelGapBridges {
 		}
 	}
 
+	/**
+	 * 1.21 {@code mob.finalizeSpawn(level, difficulty, spawnType, groupData)} a mod calls on a mob it made: a mod's mob
+	 * (a Translator facade) runs its own, a vanilla one 1.12.2's onInitialSpawn.
+	 */
+	@Nullable
+	public static net.minecraft.entity.IEntityLivingData finalizeSpawn(net.minecraft.entity.EntityLiving mob, @Nullable World level,
+			net.minecraft.world.DifficultyInstance difficulty, @Nullable io.github.xponer2.translator.entity.MobSpawnType spawnType,
+			@Nullable net.minecraft.entity.IEntityLivingData data) {
+		if (mob instanceof io.github.xponer2.translator.entity.SpawnFinalizing) {
+			return ((io.github.xponer2.translator.entity.SpawnFinalizing) mob).finalizeSpawn(level == null ? mob.world : level, difficulty,
+					spawnType == null ? io.github.xponer2.translator.entity.MobSpawnType.NATURAL : spawnType, data);
+		}
+		return mob.onInitialSpawn(difficulty, data);
+	}
+
+	/** The carried 1.21 {@code EntityDimensions.scalable(width, height)}, found when first used. */
+	private static volatile java.lang.reflect.Method scalableDimensions;
+
+	@Nullable
+	private static Object dimensions(float width, float height) {
+		try {
+			java.lang.reflect.Method scalable = scalableDimensions;
+			if (scalable == null) {
+				scalable = Class.forName("net.minecraft.world.entity.EntityDimensions", true, net.minecraft.launchwrapper.Launch.classLoader)
+						.getMethod("scalable", float.class, float.class);
+				scalableDimensions = scalable;
+			}
+			return scalable.invoke(null, width, height);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("EntityDimensions.scalable", e);
+			return null;
+		}
+	}
+
+	/** 1.21 {@code type.getDimensions()}: the size its builder gave (a carried EntityDimensions). */
+	@Nullable
+	public static Object getDimensions(io.github.xponer2.translator.registry.EntityType<?> type) {
+		return dimensions(type.getWidth(), type.getHeight());
+	}
+
+	/** 1.21 {@code entity.getDimensions(pose)}: its 1.12.2 size (1.12.2 has one size for all poses). */
+	@Nullable
+	public static Object getDimensions(Entity entity, @Nullable Object pose) {
+		return dimensions(entity.width, entity.height);
+	}
+
 	/** 1.21 {@code entity.updateInWaterStateAndDoFluidPushing()}: 1.12.2's water check (pushed by the flow, in water or not). */
 	public static boolean updateInWaterStateAndDoFluidPushing(Entity entity) {
 		return entity.handleWaterMovement();
@@ -683,6 +729,153 @@ public final class LevelGapBridges {
 		return io.github.xponer2.translator.util.FluidState.of(chunk.getBlockState(x, y, z));
 	}
 
+	/** 1.21 {@code chunkSource.broadcast(entity, packet)}: to the players tracking the entity (Mekanism's, Ars', Iron's effects). */
+	public static void broadcast(net.minecraft.world.gen.ChunkProviderServer chunks, Entity entity, net.minecraft.network.Packet<?> packet) {
+		chunks.world.getEntityTracker().sendToTracking(entity, packet);
+	}
+
+	/** 1.21 {@code chunkSource.broadcastAndSend(entity, packet)}: to them and to the entity itself if it's a player. */
+	public static void broadcastAndSend(net.minecraft.world.gen.ChunkProviderServer chunks, Entity entity, net.minecraft.network.Packet<?> packet) {
+		chunks.world.getEntityTracker().sendToTrackingAndSelf(entity, packet);
+	}
+
+	/**
+	 * 1.21 {@code chunkSource.addRegionTicket(type, pos, distance, value)}: 1.12.2 has no chunk tickets; the chunk is
+	 * loaded now, which is what a mod's teleport or machine needs at that moment.
+	 */
+	public static void addRegionTicket(net.minecraft.world.gen.ChunkProviderServer chunks, @Nullable Object type, net.minecraft.util.math.ChunkPos pos,
+			int distance, @Nullable Object value) {
+		chunks.provideChunk(pos.x, pos.z);
+	}
+
+	/** 1.21 {@code chunkSource.removeRegionTicket(...)}: nothing to release. */
+	public static void removeRegionTicket(net.minecraft.world.gen.ChunkProviderServer chunks, @Nullable Object type, net.minecraft.util.math.ChunkPos pos,
+			int distance, @Nullable Object value) {
+	}
+
+	/** 1.21 {@code entity.addDeltaMovement(vec)}: pushed by it (a player's client told, as 1.12.2 knockback). */
+	public static void addDeltaMovement(Entity entity, Vec3d by) {
+		entity.motionX += by.x;
+		entity.motionY += by.y;
+		entity.motionZ += by.z;
+		entity.velocityChanged = true;
+	}
+
+	/** 1.21 {@code entity.canChangeDimensions(from, to)}: alive and no boss. */
+	public static boolean canChangeDimensions(Entity entity, @Nullable World from, @Nullable World to) {
+		return !entity.isDead && entity.isNonBoss();
+	}
+
+	/** 1.21 {@code entity.getMaxAirSupply()}: 1.12.2's 300 ticks. */
+	public static int getMaxAirSupply(Entity entity) {
+		return 300;
+	}
+
+	/** 1.21 {@code level.getDescription()}: the dimension's name. */
+	public static net.minecraft.util.text.ITextComponent getDescription(World world) {
+		return new net.minecraft.util.text.TextComponentString(world.provider.getDimensionType().getName());
+	}
+
+	/** 1.21 {@code effect.hiddenEffect}: 1.12.2 keeps no hidden effect under another. */
+	@Nullable
+	public static net.minecraft.potion.PotionEffect hiddenEffect(net.minecraft.potion.PotionEffect effect) {
+		return null;
+	}
+
+	/** 1.21 {@code state.destroySpeed}: the block's hardness. */
+	public static float destroySpeed(IBlockState state) {
+		try {
+			return state.getBlockHardness(null, null);
+		} catch (RuntimeException e) {
+			return 1.0F;
+		}
+	}
+
+	/** 1.21 {@code new ListTag(capacity)}: an empty list. */
+	public static net.minecraft.nbt.NBTTagList newNBTTagList(int capacity) {
+		return new net.minecraft.nbt.NBTTagList();
+	}
+
+	/** NeoForge {@code fluidStack.save(registries)}: Forge's NBT of the stack. */
+	public static net.minecraft.nbt.NBTBase save(net.minecraftforge.fluids.FluidStack stack, @Nullable Object registries) {
+		return stack.writeToNBT(new net.minecraft.nbt.NBTTagCompound());
+	}
+
+	/** 1.21 {@code spawner.getSpawner()}: 1.12.2's spawner logic. */
+	public static net.minecraft.tileentity.MobSpawnerBaseLogic getSpawner(net.minecraft.tileentity.TileEntityMobSpawner spawner) {
+		return spawner.getSpawnerBaseLogic();
+	}
+
+	/** 1.21 {@code spawner.setEntityId(type, random)}: what it spawns (the Aether's and Twilight Forest's dungeon spawners). */
+	public static void setEntityId(net.minecraft.tileentity.TileEntityMobSpawner spawner, io.github.xponer2.translator.registry.EntityType<?> type,
+			@Nullable java.util.Random random) {
+		net.minecraft.util.ResourceLocation id = io.github.xponer2.translator.registry.EntityType.getKey(type);
+		if (id != null) {
+			spawner.getSpawnerBaseLogic().setEntityId(id);
+			spawner.markDirty();
+		}
+	}
+
+	/** 1.21 {@code movingPiston.getMovedState()}: 1.12.2's piston state. */
+	public static IBlockState getMovedState(net.minecraft.tileentity.TileEntityPiston piston) {
+		return piston.getPistonState();
+	}
+
+	/** 1.21 {@code movingPiston.getMovementDirection()}: where the block moves (the piston's facing, back when retracting). */
+	public static net.minecraft.util.EnumFacing getMovementDirection(net.minecraft.tileentity.TileEntityPiston piston) {
+		return piston.isExtending() ? piston.getFacing() : piston.getFacing().getOpposite();
+	}
+
+	/** 1.21 {@code mapData.setColor(x, z, color)}: the map pixel, sent to the map's viewers. */
+	public static void setColor(net.minecraft.world.storage.MapData data, int x, int z, byte color) {
+		int index = x + z * 128;
+		if (index >= 0 && index < data.colors.length && data.colors[index] != color) {
+			data.colors[index] = color;
+			data.updateMapData(x, z);
+		}
+	}
+
+	/** 1.21 {@code savedData.setDirty()}: saved with the world (Twilight Forest's magic and maze maps). */
+	public static void setDirty(net.minecraft.world.storage.WorldSavedData data) {
+		data.markDirty();
+	}
+
+	/** 1.21 {@code block.defaultDestroyTime()}: its hardness. */
+	public static float defaultDestroyTime(Block block) {
+		try {
+			return block.getDefaultState().getBlockHardness(null, null);
+		} catch (RuntimeException e) {
+			return 1.0F;
+		}
+	}
+
+	/** 1.21 {@code box.encapsulate(other)}: the box grown over the other (1.12.2's expandTo), itself. */
+	public static net.minecraft.world.gen.structure.StructureBoundingBox encapsulate(net.minecraft.world.gen.structure.StructureBoundingBox box,
+			net.minecraft.world.gen.structure.StructureBoundingBox other) {
+		box.expandTo(other);
+		return box;
+	}
+
+	/** 1.21 {@code box.encapsulate(pos)}: the box grown over the position, itself. */
+	public static net.minecraft.world.gen.structure.StructureBoundingBox encapsulate(net.minecraft.world.gen.structure.StructureBoundingBox box, BlockPos pos) {
+		box.expandTo(new net.minecraft.world.gen.structure.StructureBoundingBox(pos, pos));
+		return box;
+	}
+
+	/** 1.21 {@code vec.zRot(angle)}: turned about the z axis. */
+	public static Vec3d zRot(Vec3d vec, float angle) {
+		double cos = Math.cos(angle);
+		double sin = Math.sin(angle);
+		return new Vec3d(vec.x * cos + vec.y * sin, vec.y * cos - vec.x * sin, vec.z);
+	}
+
+	/** 1.21 {@code vec2.distanceToSqr(other)}. */
+	public static float distanceToSqr(net.minecraft.util.math.Vec2f a, net.minecraft.util.math.Vec2f b) {
+		float dx = b.x - a.x;
+		float dy = b.y - a.y;
+		return dx * dx + dy * dy;
+	}
+
 	/** 1.21 {@code box.move(dx, dy, dz)}: the box itself moved (1.12.2's offset). */
 	public static net.minecraft.world.gen.structure.StructureBoundingBox move(net.minecraft.world.gen.structure.StructureBoundingBox box, int dx, int dy, int dz) {
 		box.offset(dx, dy, dz);
@@ -694,6 +887,32 @@ public final class LevelGapBridges {
 	}
 
 	// --- packets -------------------------------------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code new ClientboundGameEventPacket(type, value)}: 1.12.2's game state packet of the type's number (a
+	 * carried 1.21 type: its {@code id}; the numbers are the same: 1 rain starts, 7 rain level, 10 elder guardian, ...).
+	 */
+	public static net.minecraft.network.play.server.SPacketChangeGameState newSPacketChangeGameState(Object type, float value) {
+		int id = 0;
+		try {
+			java.lang.reflect.Field field = type.getClass().getDeclaredField("id");
+			field.setAccessible(true);
+			id = field.getInt(type);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("ClientboundGameEventPacket: the type " + type, e);
+		}
+		return new net.minecraft.network.play.server.SPacketChangeGameState(id, value);
+	}
+
+	/** 1.21 {@code entity.thunderHit(level, bolt)}: 1.12.2's onStruckByLightning. */
+	public static void thunderHit(Entity entity, @Nullable WorldServer level, net.minecraft.entity.effect.EntityLightningBolt bolt) {
+		entity.onStruckByLightning(bolt);
+	}
+
+	/** The same under the table's name (1.12.2's takes the bolt only). */
+	public static void onStruckByLightning(Entity entity, @Nullable WorldServer level, net.minecraft.entity.effect.EntityLightningBolt bolt) {
+		entity.onStruckByLightning(bolt);
+	}
 
 	/** 1.21 {@code new ClientboundUpdateMobEffectPacket(entityId, effect, blend)}: 1.12.2's effect packet. */
 	public static net.minecraft.network.play.server.SPacketEntityEffect newSPacketEntityEffect(int entityId, net.minecraft.potion.PotionEffect effect, boolean blend) {

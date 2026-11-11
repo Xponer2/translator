@@ -287,7 +287,77 @@ public final class MiscBridges {
 
 	/** A 1.21 damage type (in_fire) against the 1.12.2 damage type (inFire). */
 	public static boolean is(net.minecraft.util.DamageSource source, io.github.xponer2.translator.registry.ResourceKey<?> type) {
-		return damageType(type.location().getPath()).equalsIgnoreCase(source.getDamageType());
+		String path = type.location().getPath();
+		// a mod's own type is named by its id path (new DamageSource(typeHolder): ice_spike), vanilla's in 1.12.2's style
+		return path.equalsIgnoreCase(source.getDamageType()) || damageType(path).equalsIgnoreCase(source.getDamageType());
+	}
+
+	/**
+	 * 1.21 {@code source.typeHolder()}: the source's damage type as a holder, asked by key or tag as the source itself
+	 * (the 1.12.2 source's name and kind); its key is the type's id ({@code minecraft:in_fire}, a mod's own path).
+	 */
+	public static io.github.xponer2.translator.registry.Holder<Object> typeHolder(net.minecraft.util.DamageSource source) {
+		String name = source.getDamageType();
+		var id = new net.minecraft.util.ResourceLocation(damageTypeId(name));
+		var key = io.github.xponer2.translator.registry.ResourceKey.create(
+				(io.github.xponer2.translator.registry.ResourceKey) io.github.xponer2.translator.registry.ResourceKey.createRegistryKey(
+						new net.minecraft.util.ResourceLocation("damage_type")), id);
+		return new io.github.xponer2.translator.registry.Holder<Object>() {
+			@Override
+			public Object value() {
+				return source;
+			}
+
+			@Override
+			public boolean isBound() {
+				return true;
+			}
+
+			@Override
+			@SuppressWarnings("unchecked")
+			public java.util.Optional<io.github.xponer2.translator.registry.ResourceKey<Object>> unwrapKey() {
+				return java.util.Optional.of((io.github.xponer2.translator.registry.ResourceKey<Object>) key);
+			}
+
+			@Override
+			public boolean is(io.github.xponer2.translator.registry.ResourceKey<Object> type) {
+				return MiscBridges.is(source, type);
+			}
+
+			@Override
+			public boolean is(net.minecraft.util.ResourceLocation location) {
+				return location.getPath().equalsIgnoreCase(name) || damageType(location.getPath()).equalsIgnoreCase(name);
+			}
+
+			@Override
+			public boolean is(io.github.xponer2.translator.util.TagKey<?> tag) {
+				return MiscBridges.is(source, tag);
+			}
+		};
+	}
+
+	/** A 1.12.2 damage name's 1.21 type id: inFire is in_fire, a mod's own name (a type's path) stays. */
+	private static String damageTypeId(String name) {
+		switch (name) {
+		case "player":
+			return "player_attack";
+		case "mob":
+			return "mob_attack";
+		case "explosion.player":
+			return "player_explosion";
+		case "outOfWorld":
+			return "fell_out_of_world";
+		default:
+			var id = new StringBuilder();
+			for (char c : name.toCharArray()) {
+				if (Character.isUpperCase(c)) {
+					id.append('_').append(Character.toLowerCase(c));
+				} else {
+					id.append(c == '.' || c == ' ' ? '_' : c);
+				}
+			}
+			return id.toString();
+		}
 	}
 
 	/** Damage type tags: is_fire, is_explosion, is_projectile, bypasses_armor, ... by the 1.12.2 source's kind. */

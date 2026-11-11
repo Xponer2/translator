@@ -21,7 +21,7 @@ import net.minecraft.world.World;
  * world only), their size and attributes from the type. Without it their constructor couldn't run and no such entity
  * existed in the game.
  */
-public abstract class AgeableMob extends net.minecraft.entity.EntityAgeable {
+public abstract class AgeableMob extends net.minecraft.entity.EntityAgeable implements io.github.xponer2.translator.entity.SpawnFinalizing {
 	private final EntityType<?> type;
 
 	protected AgeableMob(EntityType<?> type, World world) {
@@ -82,5 +82,56 @@ public abstract class AgeableMob extends net.minecraft.entity.EntityAgeable {
 		if (!io.github.xponer2.translator.loot.BlockLoot.entityDrops(table, this, byPlayer, looting, stack -> this.entityDropItem(stack, 0.0F))) {
 			super.dropLoot(recentlyHit, looting, source);
 		}
+	}
+
+	/**
+	 * 1.21 {@code finalizeSpawn(level, difficulty, spawnType, groupData)}: the mod's mob sets itself up when it spawns
+	 * (its override; 1.12.2's onInitialSpawn by default).
+	 */
+	@Override
+	@javax.annotation.Nullable
+	public net.minecraft.entity.IEntityLivingData finalizeSpawn(World level, net.minecraft.world.DifficultyInstance difficulty,
+			io.github.xponer2.translator.entity.MobSpawnType spawnType, @javax.annotation.Nullable net.minecraft.entity.IEntityLivingData data) {
+		return super.onInitialSpawn(difficulty, data);
+	}
+
+	/** 1.12.2 calls this when the mob spawns: the mod's finalizeSpawn. */
+	@Override
+	@javax.annotation.Nullable
+	public net.minecraft.entity.IEntityLivingData onInitialSpawn(net.minecraft.world.DifficultyInstance difficulty,
+			@javax.annotation.Nullable net.minecraft.entity.IEntityLivingData data) {
+		return this.finalizeSpawn(this.world, difficulty, io.github.xponer2.translator.entity.MobSpawnType.NATURAL, data);
+	}
+
+
+	/**
+	 * 1.21 {@code populateDefaultEquipmentSlots(random, difficulty)}: the mod's gear, 1.12.2's by default. A mod's
+	 * override has this name or the table's (setEquipmentBasedOnDifficulty with the random): both lead here.
+	 */
+	protected void populateDefaultEquipmentSlots(java.util.Random random, net.minecraft.world.DifficultyInstance difficulty) {
+		super.setEquipmentBasedOnDifficulty(difficulty);
+	}
+
+	protected void setEquipmentBasedOnDifficulty(java.util.Random random, net.minecraft.world.DifficultyInstance difficulty) {
+		this.populateDefaultEquipmentSlots(random, difficulty);
+	}
+
+	@Override
+	protected void setEquipmentBasedOnDifficulty(net.minecraft.world.DifficultyInstance difficulty) {
+		this.setEquipmentBasedOnDifficulty(this.rand, difficulty);
+	}
+
+	/** 1.21 {@code populateDefaultEquipmentEnchantments(level, random, difficulty)}: as the gear. */
+	protected void populateDefaultEquipmentEnchantments(World level, java.util.Random random, net.minecraft.world.DifficultyInstance difficulty) {
+		super.setEnchantmentBasedOnDifficulty(difficulty);
+	}
+
+	protected void setEnchantmentBasedOnDifficulty(World level, java.util.Random random, net.minecraft.world.DifficultyInstance difficulty) {
+		this.populateDefaultEquipmentEnchantments(level, random, difficulty);
+	}
+
+	@Override
+	protected void setEnchantmentBasedOnDifficulty(net.minecraft.world.DifficultyInstance difficulty) {
+		this.setEnchantmentBasedOnDifficulty(this.world, this.rand, difficulty);
 	}
 }

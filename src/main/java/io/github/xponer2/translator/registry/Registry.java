@@ -85,6 +85,12 @@ public interface Registry<T> extends Iterable<T>, HolderLookup, IdMap<T> {
     @Nullable
     ResourceLocation getKey(T value);
 
+    /** NeoForge {@code getKeyOrNull(value)}: its id, null when it has none (Mekanism's). */
+    @javax.annotation.Nullable
+    default ResourceLocation getKeyOrNull(T value) {
+        return this.getKey(value);
+    }
+
     @Nullable
     T get(@Nullable ResourceLocation location);
 

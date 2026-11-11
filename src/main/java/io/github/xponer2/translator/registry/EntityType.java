@@ -512,6 +512,59 @@ public final class EntityType<T extends Entity> {
         return entity;
     }
 
+    /**
+     * 1.21 {@code create(level, configure, pos, reason, alignPosition, invertY)}: a new entity there, a mob set up for its
+     * spawn reason (its finalizeSpawn), then the mod's configure; not in the world yet (Supplementaries' hat stands
+     * and piñatas, placed by their items).
+     */
+    @Nullable
+    public T create(net.minecraft.world.WorldServer level, @Nullable java.util.function.Consumer<T> configure, net.minecraft.util.math.BlockPos pos,
+            @Nullable io.github.xponer2.translator.entity.MobSpawnType reason, boolean alignPosition, boolean invertY) {
+        T entity = this.create(level);
+        if (entity == null) {
+            return null;
+        }
+        entity.setLocationAndAngles(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, net.minecraft.util.math.MathHelper.wrapDegrees(level.rand.nextFloat() * 360.0F), 0.0F);
+        if (entity instanceof net.minecraft.entity.EntityLiving living) {
+            living.rotationYawHead = living.rotationYaw;
+            living.renderYawOffset = living.rotationYaw;
+            net.minecraft.world.DifficultyInstance difficulty = level.getDifficultyForLocation(pos);
+            if (living instanceof io.github.xponer2.translator.entity.SpawnFinalizing finalizing) {
+                finalizing.finalizeSpawn(level, difficulty, reason == null ? io.github.xponer2.translator.entity.MobSpawnType.NATURAL : reason, null);
+            } else {
+                living.onInitialSpawn(difficulty, null);
+            }
+        }
+        if (configure != null) {
+            configure.accept(entity);
+        }
+        return entity;
+    }
+
+    /** 1.21 {@code spawn(level, configure, pos, reason, alignPosition, invertY)}: made as {@link #create} and added to the world (the Aether's Moa eggs). */
+    @Nullable
+    public T spawn(net.minecraft.world.WorldServer level, @Nullable java.util.function.Consumer<T> configure, net.minecraft.util.math.BlockPos pos,
+            @Nullable io.github.xponer2.translator.entity.MobSpawnType reason, boolean alignPosition, boolean invertY) {
+        T entity = this.create(level, configure, pos, reason, alignPosition, invertY);
+        if (entity != null) {
+            level.spawnEntity(entity);
+        }
+        return entity;
+    }
+
+    /** 1.21 {@code spawn(level, stack, player, pos, reason, alignPosition, invertY)} (spawn eggs). */
+    @Nullable
+    public T spawn(net.minecraft.world.WorldServer level, @Nullable net.minecraft.item.ItemStack stack, @Nullable net.minecraft.entity.player.EntityPlayer player,
+            net.minecraft.util.math.BlockPos pos, @Nullable io.github.xponer2.translator.entity.MobSpawnType reason, boolean alignPosition, boolean invertY) {
+        return this.spawn(level, (java.util.function.Consumer<T>) null, pos, reason, alignPosition, invertY);
+    }
+
+    /** 1.21 {@code spawn(level, pos, reason)} (the Aether's incubator). */
+    @Nullable
+    public T spawn(net.minecraft.world.WorldServer level, net.minecraft.util.math.BlockPos pos, @Nullable io.github.xponer2.translator.entity.MobSpawnType reason) {
+        return this.spawn(level, (java.util.function.Consumer<T>) null, pos, reason, false, false);
+    }
+
     @Override
     public String toString() {
         var id = getKey(this);

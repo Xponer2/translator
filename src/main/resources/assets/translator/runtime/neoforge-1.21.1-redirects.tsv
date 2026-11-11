@@ -538,3 +538,47 @@ R	net/minecraft/client/renderer/entity/RenderEvokerFangs	io/github/xponer2/trans
 R	net/minecraft/client/renderer/entity/RenderMinecart	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
 # a clamped item model property gives unclampedCall; its call (clamped) is the default of its own facade
 C	net/minecraft/client/renderer/item/ClampedItemPropertyFunction	io/github/xponer2/translator/item/ClampedItemPropertyFunction
+# why a mob spawned and its group data (1.21 finalizeSpawn of the mods: SpawnFinalizing)
+C	net/minecraft/world/entity/MobSpawnType	io/github/xponer2/translator/entity/MobSpawnType
+C	net/minecraft/world/entity/SpawnGroupData	net/minecraft/entity/IEntityLivingData
+# 1.21 damage events: the hit's damage container over the 1.12.2 Forge events; Pre is Forge's LivingDamageEvent, Post the Translator's
+C	net/neoforged/neoforge/common/damagesource/DamageContainer	io/github/xponer2/translator/runtime/neoforge/DamageContainer
+C	net/neoforged/neoforge/event/entity/living/LivingDamageEvent$Pre	net/minecraftforge/event/entity/living/LivingDamageEvent
+C	net/neoforged/neoforge/event/entity/living/LivingDamageEvent$Post	io/github/xponer2/translator/runtime/neoforge/LivingDamagePostEvent
+M	net/neoforged/neoforge/event/entity/living/LivingDamageEvent$Pre	getNewDamage()	getAmount
+M	net/neoforged/neoforge/event/entity/living/LivingDamageEvent$Pre	setNewDamage(float)	setAmount
+R	net/minecraftforge/event/entity/living/LivingHurtEvent	io/github/xponer2/translator/runtime/neoforge/DamageContainer
+R	net/minecraftforge/event/entity/living/LivingDamageEvent	io/github/xponer2/translator/runtime/neoforge/DamageContainer
+# 1.21 WorldData is the overworld's WorldInfo; its WorldOptions the Translator's (seed and switches)
+C	net/minecraft/world/level/storage/WorldData	net/minecraft/world/storage/WorldInfo
+C	net/minecraft/world/level/levelgen/WorldOptions	io/github/xponer2/translator/world/WorldOptions
+R	net/minecraft/server/MinecraftServer	io/github/xponer2/translator/world/WorldOptions
+R	net/minecraft/world/storage/WorldInfo	io/github/xponer2/translator/world/WorldOptions
+M	net/minecraft/world/level/storage/WorldData	getLevelName()	getWorldName
+M	net/minecraft/world/level/storage/WorldData	isHardcore()	isHardcoreModeEnabled
+R	io/github/xponer2/translator/registry/EntityType	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/network/play/server/SPacketChangeGameState	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# the mods' server data loaders: posted and run when the server is about to start
+C	net/neoforged/neoforge/event/AddReloadListenerEvent	io/github/xponer2/translator/runtime/neoforge/AddReloadListenerEvent
+R	io/github/xponer2/translator/runtime/neoforge/AddReloadListenerEvent	io/github/xponer2/translator/runtime/neoforge/AddReloadListenerEvent
+# OSHI's tuples (1.21.1 ships OSHI; mods use its Pair and Quartet as plain tuples)
+C	oshi/util/tuples/Pair	io/github/xponer2/translator/util/tuples/Pair
+C	oshi/util/tuples/Triplet	io/github/xponer2/translator/util/tuples/Triplet
+C	oshi/util/tuples/Quartet	io/github/xponer2/translator/util/tuples/Quartet
+# the mods' commands: RegisterCommandsEvent posted when the server starts (ModCommands); its getters are the static ones
+C	net/neoforged/neoforge/event/RegisterCommandsEvent	io/github/xponer2/translator/runtime/neoforge/RegisterCommandsEvent
+R	io/github/xponer2/translator/runtime/neoforge/RegisterCommandsEvent	io/github/xponer2/translator/runtime/neoforge/RegisterCommandsEvent
+R	net/minecraft/world/storage/MapData	io/github/xponer2/translator/runtime/redirect/ApiBridges
+R	net/minecraft/util/math/Vec3d	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/util/math/Vec2f	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/world/gen/ChunkProviderServer	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# 1.21 vanilla block entity types the mods read (fields BlockEntityType lacks)
+R	io/github/xponer2/translator/registry/BlockEntityType	io/github/xponer2/translator/registry/VanillaBlockEntityTypes
+R	net/minecraft/tileentity/TileEntityMobSpawner	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/tileentity/TileEntityPiston	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/block/Block	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/nbt/NBTTagList	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/potion/PotionEffect	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraftforge/fluids/FluidStack	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+C	net/minecraft/server/ReloadableServerResources	io/github/xponer2/translator/runtime/neoforge/ServerResources
+R	net/minecraft/world/storage/MapData	io/github/xponer2/translator/runtime/redirect/LevelGapBridges

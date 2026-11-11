@@ -60,6 +60,8 @@ public final class Translator {
 		io.github.xponer2.translator.world.BlockIds.raiseLimit();
 		// the 1.21 entity data serializers 1.12.2 lacks: numbered before any mod's, the same on both sides
 		io.github.xponer2.translator.entity.ExtraDataSerializers.register();
+		// 1.21 damage containers (original damage) and LivingDamageEvent.Post
+		io.github.xponer2.translator.runtime.neoforge.DamageContainer.Hooks.register();
 		if (!net.minecraftforge.fml.common.Loader.isModLoaded("jeid") && !net.minecraftforge.fml.common.Loader.isModLoaded("reid")) {
 			MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.BlockIds.Saving());
 		}
@@ -128,6 +130,8 @@ public final class Translator {
 	@Mod.EventHandler
 	public void serverAboutToStart(net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent event) {
 		ServerEvents.post(new ServerEvents.ServerAboutToStartEvent(event.getServer()));
+		// the mods' server data loaders (NeoForge AddReloadListenerEvent), run over the server's data
+		io.github.xponer2.translator.runtime.neoforge.AddReloadListenerEvent.fire();
 		// the block entities that needed the server's configs to be made
 		io.github.xponer2.translator.registry.BlockEntityType.registerPending();
 	}
@@ -137,6 +141,8 @@ public final class Translator {
 		event.registerServerCommand(new io.github.xponer2.translator.selftest.SelfTest.Command());
 		event.registerServerCommand(new io.github.xponer2.translator.selftest.Persistence.Command());
 		ServerEvents.post(new ServerEvents.ServerStartingEvent(event.getServer()));
+		// the 1.21.1 mods' commands (NeoForge RegisterCommandsEvent, brigadier)
+		io.github.xponer2.translator.runtime.neoforge.ModCommands.register(event);
 	}
 
 	@Mod.EventHandler

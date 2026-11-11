@@ -104,6 +104,23 @@ public final class BlockEntityType<T extends TileEntity> implements Registration
         this(factory, validBlocks);
     }
 
+    /**
+     * A 1.21 vanilla type over 1.12.2's tile entity of that kind (VanillaBlockEntityTypes): its id and class are known,
+     * its blocks a set the mods may add theirs to (Twilight Forest's chests join CHEST).
+     */
+    static <T extends TileEntity> BlockEntityType<T> vanilla(String path, Class<T> type, Block... blocks) {
+        BlockEntityType<T> made = new BlockEntityType<>((pos, state) -> {
+            try {
+                return type.getConstructor().newInstance();
+            } catch (ReflectiveOperationException e) {
+                return null;
+            }
+        }, new java.util.HashSet<>(java.util.Arrays.asList(blocks)));
+        made.id = new ResourceLocation("minecraft", path);
+        made.tileClass = type;
+        return made;
+    }
+
     @Nullable
     public T create(BlockPos pos, IBlockState state) {
         var tile = this.factory.create(pos, state);

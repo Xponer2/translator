@@ -139,6 +139,22 @@ public final class DataComponents {
     public static final DataComponentType<Object> BUCKET_ENTITY_DATA = plain("bucket_entity_data");
     public static final DataComponentType<Object> CUSTOM_MODEL_DATA = plain("custom_model_data");
     public static final DataComponentType<Object> ITEM_NAME = plain("item_name");
+    // the other 1.21.1 components (a mod reading one got null: Supplementaries' and Twilight Forest's banners, shields, fireworks)
+    public static final DataComponentType<Object> CAN_PLACE_ON = plain("can_place_on");
+    public static final DataComponentType<Object> CAN_BREAK = plain("can_break");
+    public static final DataComponentType<Object> CREATIVE_SLOT_LOCK = plain("creative_slot_lock");
+    public static final DataComponentType<Object> MAP_COLOR = plain("map_color");
+    public static final DataComponentType<Object> MAP_DECORATIONS = plain("map_decorations");
+    public static final DataComponentType<Object> MAP_POST_PROCESSING = plain("map_post_processing");
+    public static final DataComponentType<Object> DEBUG_STICK_STATE = plain("debug_stick_state");
+    public static final DataComponentType<Object> INSTRUMENT = plain("instrument");
+    public static final DataComponentType<Object> OMINOUS_BOTTLE_AMPLIFIER = plain("ominous_bottle_amplifier");
+    public static final DataComponentType<Object> RECIPES = plain("recipes");
+    public static final DataComponentType<Object> FIREWORK_EXPLOSION = plain("firework_explosion");
+    public static final DataComponentType<Object> BANNER_PATTERNS = plain("banner_patterns");
+    public static final DataComponentType<Object> BASE_COLOR = plain("base_color");
+    public static final DataComponentType<Object> POT_DECORATIONS = plain("pot_decorations");
+    public static final DataComponentType<Object> BEES = plain("bees");
 
     private DataComponents() { }
 
