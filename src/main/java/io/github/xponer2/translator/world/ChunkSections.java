@@ -178,7 +178,7 @@ public final class ChunkSections {
 	 * (any other value: a biome holder) filled with that biome.
 	 */
 	@SuppressWarnings("unchecked")
-	public static BlockStateContainer newBlockStateContainer(@Nullable ObjectIntIdentityMap<?> ids, @Nullable Object value, @Nullable Object strategy) {
+	public static BlockStateContainer newBlockStateContainer(@Nullable Object ids, @Nullable Object value, @Nullable Object strategy) {
 		if (value instanceof Holder<?> holder && holder.value() instanceof Biome) {
 			return new BiomeContainer((Holder<Biome>) holder);
 		}
@@ -230,8 +230,16 @@ public final class ChunkSections {
 
 	// --- ids, bit storage, codecs --------------------------------------------------------------------------------------
 
-	/** 1.21 {@code registry.asHolderIdMap()}: the registry's holders by their order in it. */
-	public static ObjectIntIdentityMap<Object> asHolderIdMap(Registry<?> registry) {
+	/**
+	 * 1.21 {@code registry.asHolderIdMap()}: the registry's holders by their order in it (a 1.12.2 id map, which the
+	 * AccessWidener makes a 1.21 IdMap).
+	 */
+	@SuppressWarnings("unchecked")
+	public static io.github.xponer2.translator.registry.IdMap<Object> asHolderIdMap(Registry<?> registry) {
+		return (io.github.xponer2.translator.registry.IdMap<Object>) (Object) holderIds(registry);
+	}
+
+	private static ObjectIntIdentityMap<Object> holderIds(Registry<?> registry) {
 		return HOLDER_IDS.computeIfAbsent(registry, r -> {
 			var map = new ObjectIntIdentityMap<Object>();
 			int[] id = {0};

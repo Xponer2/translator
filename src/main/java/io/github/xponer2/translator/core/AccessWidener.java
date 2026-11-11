@@ -52,6 +52,13 @@ public final class AccessWidener implements IClassTransformer {
 					interfaces[interfaces.length - 1] = "io/github/xponer2/translator/util/ItemLike";
 					changed[0] = true;
 				}
+				if ("net.minecraft.util.ObjectIntIdentityMap".equals(transformedName)) {
+					// a 1.21 IdMap (the block states' ids, the mods' IdMappers), as the Translator's registries are: one type
+					// for both where 1.21 takes an IdMap (its default methods reach this class's own)
+					interfaces = java.util.Arrays.copyOf(interfaces, interfaces.length + 1);
+					interfaces[interfaces.length - 1] = "io/github/xponer2/translator/registry/IdMap";
+					changed[0] = true;
+				}
 				super.visit(version, widen(access, changed), name, signature, superName, interfaces);
 			}
 

@@ -485,3 +485,6 @@ R	net/minecraft/entity/monster/EntityEnderman	io/github/xponer2/translator/runti
 R	net/minecraft/entity/passive/EntityRabbit	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 R	net/minecraft/entity/EntityLiving	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 R	net/minecraft/tileentity/TileEntityShulkerBox	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# 1.21 IdMap is the Translator's interface: its registries extend it and 1.12.2's ObjectIntIdentityMap gets it (AccessWidener),
+# so a registry passed as an id map verifies (it was the ObjectIntIdentityMap class: resourcefullib's byte codecs didn't load)
+C	net/minecraft/core/IdMap	io/github/xponer2/translator/registry/IdMap

@@ -25,7 +25,7 @@ import java.util.stream.StreamSupport;
  * A registry of objects by id (1.21 {@code net.minecraft.core.Registry}). Implemented by {@link ForgeRegistryWrapper}
  * for the registries 1.12.2 has and by {@link MappedRegistry} for the 1.21 ones it doesn't have.
  */
-public interface Registry<T> extends Iterable<T>, HolderLookup {
+public interface Registry<T> extends Iterable<T>, HolderLookup, IdMap<T> {
     /**
      * 1.21 {@code Registry.register}: into a registry the Translator keeps (MappedRegistry) at once; a 1.12.2 Forge
      * registry (items, blocks) takes the entry, named, while it is open, else the entry stays unregistered (logged).
