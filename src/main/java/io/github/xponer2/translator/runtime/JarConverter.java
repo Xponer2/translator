@@ -38,7 +38,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.ClassWriter;
  */
 final class JarConverter {
 	/** Raise when the conversion changes: older cached jars are converted again. */
-	static final String VERSION = "184";
+	static final String VERSION = "185";
 	private static final String SHADE_PREFIX = "translator_jvmdg/";
 	private static final Flags FLAGS = new Flags();
 	static {
@@ -63,9 +63,11 @@ final class JarConverter {
 			return out;
 		}
 		cacheDir.mkdirs();
-		File remapped = new File(cacheDir, name + ".remapped.tmp");
-		File downgraded = new File(cacheDir, name + ".downgraded.tmp");
-		File shaded = new File(cacheDir, name + ".shaded.tmp");
+		// this game's own temporary files and jar: another game of the folder may convert the same jar at once
+		File remapped = CacheFiles.temporary(cacheDir, name + ".remapped.tmp");
+		File downgraded = CacheFiles.temporary(cacheDir, name + ".downgraded.tmp");
+		File shaded = CacheFiles.temporary(cacheDir, name + ".shaded.tmp");
+		File partial = CacheFiles.partial(out);
 		try {
 			long t0 = System.currentTimeMillis();
 			var remapper = new ModRemapper(table, jar.classes, target);
@@ -87,12 +89,13 @@ final class JarConverter {
 			var facades = new java.util.HashMap<String, String>();
 			table.supers.forEach((modern, facade) -> facades.putIfAbsent(table.classes.getOrDefault(modern, modern), facade));
 			guard.facades = facades;
-			guard.guard(shaded, out);
+			guard.guard(shaded, partial);
 			// the release game names Minecraft's members by SRG: the jar is renamed so (no-op in development)
 			Mappings mappings = Mappings.instance();
 			if (mappings != null) {
-				mappings.reobfuscate(out, target);
+				mappings.reobfuscate(partial, target);
 			}
+			CacheFiles.publish(partial, out);
 			Conversion.LOGGER.info("{}: remap {} ms, downgrade {} ms, shade {} ms, guard {} ms", jar.displayName(), t1 - t0, t2 - t1, t3 - t2,
 					System.currentTimeMillis() - t3);
 			if (guard.bridged.get() > 0) {
@@ -112,6 +115,7 @@ final class JarConverter {
 			remapped.delete();
 			downgraded.delete();
 			shaded.delete();
+			partial.delete();
 		}
 		return out;
 	}
@@ -175,7 +179,7 @@ final class JarConverter {
 	}
 
 	private static void writeDowngradeCache(File cacheFile, Map<String, Map<String, byte[]>> current) {
-		File temp = new File(cacheFile.getPath() + ".tmp");
+		File temp = CacheFiles.partial(cacheFile);
 		try (var out = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(temp))) {
 			out.setLevel(java.util.zip.Deflater.BEST_SPEED);
 			for (var entry : current.entrySet()) {
@@ -190,8 +194,9 @@ final class JarConverter {
 			temp.delete();
 			return;
 		}
-		cacheFile.delete();
-		if (!temp.renameTo(cacheFile)) {
+		try {
+			CacheFiles.publish(temp, cacheFile);
+		} catch (IOException e) {
 			temp.delete();
 		}
 	}

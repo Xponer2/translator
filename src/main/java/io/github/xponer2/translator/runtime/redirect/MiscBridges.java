@@ -577,6 +577,25 @@ public final class MiscBridges {
 		return value;
 	}
 
+	/** Supplementaries' tipped spike colors (the game crashed drawing one in the hand). */
+	public static int computeIfAbsent(it.unimi.dsi.fastutil.ints.Int2IntMap map, int key, it.unimi.dsi.fastutil.ints.Int2IntFunction function) {
+		if (map.containsKey(key)) {
+			return map.get(key);
+		}
+		int value = function.get(key);
+		map.put(key, value);
+		return value;
+	}
+
+	public static int computeIfAbsent(it.unimi.dsi.fastutil.ints.Int2IntMap map, int key, java.util.function.IntUnaryOperator function) {
+		if (map.containsKey(key)) {
+			return map.get(key);
+		}
+		int value = function.applyAsInt(key);
+		map.put(key, value);
+		return value;
+	}
+
 	public static Object computeIfAbsent(it.unimi.dsi.fastutil.longs.Long2ObjectMap<Object> map, long key,
 			java.util.function.LongFunction<Object> function) {
 		if (map.containsKey(key)) {

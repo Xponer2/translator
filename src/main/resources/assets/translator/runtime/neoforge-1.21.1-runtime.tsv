@@ -509,3 +509,5 @@ X	net/neoforged/neoforge/client/model/data/ModelDataManager	getAt	(Lnet/minecraf
 X	net/neoforged/fml/util/ObfuscationReflectionHelper	findMethod	(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;	io/github/xponer2/translator/runtime/redirect/ReflectionBridges
 # Registry.getOrThrow(key) of 1.21 gives the value (the holder one is HolderGetter's): a mod's call of it, by its descriptor
 X	io/github/xponer2/translator/registry/Registry	getOrThrow	(Lio/github/xponer2/translator/registry/ResourceKey;)Ljava/lang/Object;	io/github/xponer2/translator/registry/RegistryValues
+# ComponentUtils.updateForEntity of 1.21 resolves each part with 1.21's resolve, which 1.12.2's text hasn't (it gave null): the text as it is
+X	net/minecraft/network/chat/ComponentUtils	updateForEntity	(Lnet/minecraft/commands/CommandSourceStack;Lnet/minecraft/util/text/ITextComponent;Lnet/minecraft/entity/Entity;I)Lio/github/xponer2/translator/text/MutableComponent;	io/github/xponer2/translator/runtime/redirect/ApiBridges	(Ljava/lang/Object;Lnet/minecraft/util/text/ITextComponent;Lnet/minecraft/entity/Entity;I)Lio/github/xponer2/translator/text/MutableComponent;

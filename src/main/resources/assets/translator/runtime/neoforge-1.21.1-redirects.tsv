@@ -478,3 +478,5 @@ F	net/minecraft/client/model/HumanoidModel$ArmPose	TOOT_HORN	ITEM
 F	net/minecraft/client/model/HumanoidModel$ArmPose	BRUSH	ITEM
 R	net/minecraft/client/model/ModelBiped$ArmPose	io/github/xponer2/translator/runtime/redirect/ModelBridges
 R	net/minecraft/client/renderer/entity/RenderLivingBase	io/github/xponer2/translator/runtime/redirect/ModelBridges
+# fastutil 8's Int2IntMap.computeIfAbsent asks the function containsKey, which a lambda for fastutil 7's interface lacks
+R	it/unimi/dsi/fastutil/ints/Int2IntMap	io/github/xponer2/translator/runtime/redirect/MiscBridges

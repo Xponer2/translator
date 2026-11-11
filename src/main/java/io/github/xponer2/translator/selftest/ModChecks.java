@@ -82,34 +82,75 @@ final class ModChecks {
 	 * The roots of a mod's own packages (the first two parts of each: "journeymap.client."), read from its jar: what
 	 * tells a reported call of its code from the game's and other mods'.
 	 */
+	/**
+	 * The packages of a mod's own classes, as short as they can be told apart from another loaded mod's: two parts
+	 * ("journeymap.client."), three where another mod shares the two (Moonlight's and Supplementaries' are both
+	 * net.mehvahdjukaar: each one's failures were the other's too).
+	 */
 	static java.util.Set<String> packagesOf(String modId) {
-		var roots = new java.util.TreeSet<String>();
-		try {
-			var mod = io.github.xponer2.translator.runtime.neoforge.ModContainer.byId(modId);
-			java.io.File jar = mod == null ? null : mod.getModInfo().getOwningFile().getFile().getFilePath().toFile();
-			if (jar == null || !jar.isFile()) {
-				return roots;
+		var own = deepRoots(modId);
+		var others = new java.util.HashSet<String>();
+		for (var mod : io.github.xponer2.translator.runtime.neoforge.ModContainer.all()) {
+			String other = mod.getModId();
+			if (!modId.equals(other)) {
+				others.addAll(deepRoots(other));
 			}
-			try (var zip = new java.util.zip.ZipFile(jar)) {
-				for (var entry : java.util.Collections.list(zip.entries())) {
-					String path = entry.getName();
-					if (!path.endsWith(".class") || path.startsWith("META-INF/")) {
-						continue;
-					}
-					String[] parts = path.split("/");
-					if (parts.length < 2) {
-						continue;
-					}
-					String root = parts.length == 2 ? parts[0] + "." : parts[0] + "." + parts[1] + ".";
-					if (!root.startsWith("net.minecraft") && !root.startsWith("net.neoforged") && !root.startsWith("com.mojang") && !root.startsWith("java")) {
-						roots.add(root);
-					}
+		}
+		var roots = new java.util.TreeSet<String>();
+		for (String root : own) {
+			String shorter = shorter(root);
+			boolean shared = false;
+			for (String other : others) {
+				if (other.startsWith(shorter) && !own.contains(other)) {
+					shared = true;
+					break;
 				}
 			}
-		} catch (java.io.IOException | RuntimeException e) {
-			// no jar to read: nothing is its own
+			roots.add(shared ? root : shorter);
 		}
 		return roots;
+	}
+
+	private static final java.util.Map<String, java.util.Set<String>> DEEP = new java.util.concurrent.ConcurrentHashMap<>();
+
+	/** The first two parts of a package with the third one ("net.mehvahdjukaar.moonlight."). */
+	private static String shorter(String root) {
+		int second = root.indexOf('.', root.indexOf('.') + 1);
+		return second < 0 || second == root.length() - 1 ? root : root.substring(0, second + 1);
+	}
+
+	/** The packages of a mod's classes to three parts (fewer for classes nearer the root). */
+	private static java.util.Set<String> deepRoots(String modId) {
+		return DEEP.computeIfAbsent(modId, id -> {
+			var roots = new java.util.TreeSet<String>();
+			try {
+				var mod = io.github.xponer2.translator.runtime.neoforge.ModContainer.byId(id);
+				java.io.File jar = mod == null ? null : mod.getModInfo().getOwningFile().getFile().getFilePath().toFile();
+				if (jar == null || !jar.isFile()) {
+					return roots;
+				}
+				try (var zip = new java.util.zip.ZipFile(jar)) {
+					for (var entry : java.util.Collections.list(zip.entries())) {
+						String path = entry.getName();
+						if (!path.endsWith(".class") || path.startsWith("META-INF/")) {
+							continue;
+						}
+						String[] parts = path.split("/");
+						if (parts.length < 2) {
+							continue;
+						}
+						String root = parts.length == 2 ? parts[0] + "."
+								: parts.length == 3 ? parts[0] + "." + parts[1] + "." : parts[0] + "." + parts[1] + "." + parts[2] + ".";
+						if (!root.startsWith("net.minecraft") && !root.startsWith("net.neoforged") && !root.startsWith("com.mojang") && !root.startsWith("java")) {
+							roots.add(root);
+						}
+					}
+				}
+			} catch (java.io.IOException | RuntimeException e) {
+				// no jar to read: nothing is its own
+			}
+			return roots;
+		});
 	}
 
 	/** Whether a reported call names a class of those packages. */

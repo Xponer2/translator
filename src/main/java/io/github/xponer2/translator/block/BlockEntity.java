@@ -94,7 +94,12 @@ public class BlockEntity extends TileEntity implements ITickable {
 		if (!tag.hasKey("x") || !tag.hasKey("y") || !tag.hasKey("z")) {
 			this.pos = pos;
 		}
-		this.loadAdditional(tag, RegistryAccess.INSTANCE);
+		try {
+			this.loadAdditional(tag, RegistryAccess.INSTANCE);
+		} catch (RuntimeException | LinkageError e) {
+			// a mod's load failing stops the chunk from loading (the world doesn't open): logged, the rest of it loads
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".loadAdditional", e);
+		}
 	}
 
 	@Override
@@ -114,7 +119,13 @@ public class BlockEntity extends TileEntity implements ITickable {
 			}
 		}
 		super.writeToNBT(tag);
-		this.saveAdditional(tag, RegistryAccess.INSTANCE);
+		try {
+			this.saveAdditional(tag, RegistryAccess.INSTANCE);
+		} catch (RuntimeException | LinkageError e) {
+			// a mod's save failing crashed the server (the world saved or sent to a player): logged, what it wrote is kept
+			// (Supplementaries' sign posts, whose text 1.12.2 couldn't resolve)
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".saveAdditional", e);
+		}
 		return tag;
 	}
 

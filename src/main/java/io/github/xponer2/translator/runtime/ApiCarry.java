@@ -567,7 +567,9 @@ final class ApiCarry {
 			return out.length() > 22 ? out : null;
 		}
 		int added = 0;
-		try (var zip = new ZipFile(library); var jar = new ZipOutputStream(new FileOutputStream(out))) {
+		// written under this game's own name first: another game of the folder may read the jar meanwhile
+		File partial = CacheFiles.partial(out);
+		try (var zip = new ZipFile(library); var jar = new ZipOutputStream(new FileOutputStream(partial))) {
 			// the static methods of the classes the game has that a shadow (another package) can't call: their shadows'
 			var restricted = new java.util.HashSet<String>();
 			for (ZipEntry entry : Collections.list(zip.entries())) {
@@ -623,6 +625,7 @@ final class ApiCarry {
 				added++;
 			}
 		}
+		CacheFiles.publish(partial, out);
 		Conversion.LOGGER.info("{}: the game has an older version, {} classes and shadows of it added", library.getName(), added);
 		return added == 0 ? null : out;
 	}
@@ -645,6 +648,7 @@ final class ApiCarry {
 			}
 		}
 		File input = new File(cacheDir, "minecraft-1.21.1-api.jar");
+		File partial = CacheFiles.partial(input);
 		var probe = new ModRemapper(table, Collections.emptyMap(), target);
 		int carried = 0;
 		int shadows = 0;
@@ -659,7 +663,7 @@ final class ApiCarry {
 		if (newer != null) {
 			sources.add(newer);
 		}
-		try (var out = new ZipOutputStream(new FileOutputStream(input))) {
+		try (var out = new ZipOutputStream(new FileOutputStream(partial))) {
 			for (File source : sources) {
 			try (var zip = new ZipFile(source)) {
 			for (ZipEntry entry : Collections.list(zip.entries())) {
@@ -703,6 +707,7 @@ final class ApiCarry {
 			}
 			}
 		}
+		CacheFiles.publish(partial, input);
 		Conversion.LOGGER.info("Minecraft 1.21.1 API: {} classes carried, {} shadows of mapped classes, from {}", carried, shadows, api.getName());
 		if (newer != null) {
 			Conversion.LOGGER.info("Minecraft 1.21.1 API: {} newer NeoForge classes from {}", fromNewer, newer.getName());

@@ -658,6 +658,25 @@ final class MethodGuard {
 				continue;
 			}
 			var stub = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, name, desc, null, null);
+			MethodInsnNode helper = this.helperFor(node.superName, name, desc);
+			if (helper != null) {
+				// what a 1.12.2 superclass gives through a helper (1.21's level() of an entity is 1.12.2's field world):
+				// the stub returning null stood in for it, also for the mod's own calls (BOP's chest boats: null level)
+				stub.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+				int slot = 1;
+				for (Type argument : Type.getArgumentTypes(desc)) {
+					stub.instructions.add(new VarInsnNode(argument.getOpcode(Opcodes.ILOAD), slot));
+					slot += argument.getSize();
+				}
+				stub.instructions.add(helper);
+				stub.instructions.add(new InsnNode(Type.getReturnType(desc).getOpcode(Opcodes.IRETURN)));
+				stub.maxStack = slot + 1;
+				stub.maxLocals = slot;
+				node.methods.add(stub);
+				this.bridged.incrementAndGet();
+				changed = true;
+				continue;
+			}
 			stub.instructions.add(new LdcInsnNode(node.name.replace('/', '.') + "." + name + " (abstract on 1.12.2 in "
 					+ entry.getValue().replace('/', '.') + ", a default in 1.21)"));
 			stub.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/runtime/RuntimeStubs", "missing",
@@ -693,6 +712,26 @@ final class MethodGuard {
 			changed = true;
 		}
 		return changed;
+	}
+
+	/**
+	 * A static helper registered for a class of the superclass chain from {@code superName} that gives 1.21's
+	 * {@code name desc} with the instance first (as a mod's call of it is redirected), or null.
+	 */
+	@javax.annotation.Nullable
+	private MethodInsnNode helperFor(@javax.annotation.Nullable String superName, String name, String desc) {
+		var seen = new java.util.HashSet<String>();
+		for (String owner = superName; owner != null && seen.add(owner);) {
+			String helperDesc = "(L" + owner + ";" + desc.substring(1);
+			for (String helper : this.redirects.getOrDefault(owner, java.util.Collections.emptyList())) {
+				if (this.hasMember(helper, name, helperDesc, true)) {
+					return new MethodInsnNode(Opcodes.INVOKESTATIC, helper, name, helperDesc, false);
+				}
+			}
+			ClassInfo info = this.info(owner);
+			owner = info == null ? null : info.superName;
+		}
+		return null;
 	}
 
 	private boolean addEntityInitBridge(ClassNode node) {

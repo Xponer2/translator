@@ -282,6 +282,16 @@ public final class ApiBridges {
 		return new LiteralComponent("").append(text.createCopy());
 	}
 
+	/**
+	 * 1.21 {@code ComponentUtils.updateForEntity(source, text, entity, depth)}: the text as it is (selectors and scores
+	 * in it stay unresolved). The carried one asks each part for 1.21's {@code resolve}, which 1.12.2's text hasn't: it
+	 * gave null, and Supplementaries' sign posts, whose lines were null, crashed the server when it saved them.
+	 */
+	public static MutableComponent updateForEntity(@javax.annotation.Nullable Object source, @javax.annotation.Nullable ITextComponent text,
+			@javax.annotation.Nullable net.minecraft.entity.Entity entity, int depth) {
+		return text == null ? new LiteralComponent("") : copy(text);
+	}
+
 	/** 1.12.2 has no RGB text colors: the nearest of the 16 formatting colors. */
 	public static Style withColor(Style style, int rgb) {
 		TextFormatting nearest = TextFormatting.WHITE;
