@@ -30,7 +30,17 @@ public class LevelLightEngine {
 
 	/** 1.21 {@code new LevelLightEngine(chunks, blockLight, skyLight)}: the light of the chunks' world (none: of nothing). */
 	public LevelLightEngine(net.minecraft.world.level.chunk.LightChunkGetter chunks, boolean blockLight, boolean skyLight) {
-		net.minecraft.world.IBlockAccess level = chunks == null ? null : chunks.getLevel();
+		Object level = null;
+		if (chunks != null) {
+			try {
+				// the carried interface's getLevel() (a 1.21 BlockGetter, 1.12.2's IBlockAccess converted): the stub the
+				// Translator compiles against has no Minecraft types
+				level = Class.forName("net.minecraft.world.level.chunk.LightChunkGetter", true, net.minecraft.launchwrapper.Launch.classLoader)
+						.getMethod("getLevel").invoke(chunks);
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				level = null;
+			}
+		}
 		this.world = level instanceof World ? (World) level : null;
 	}
 

@@ -12,6 +12,4 @@ package net.minecraft.world.level.chunk;
 
 /** Compile-only stand-in of the carried 1.21 interface of this name (the converted API has the real one). */
 public interface LightChunkGetter {
-	/** The world the light is of: a 1.21 BlockGetter, 1.12.2's IBlockAccess once converted. */
-	net.minecraft.world.IBlockAccess getLevel();
 }
