@@ -119,6 +119,13 @@ public final class CarriedBridges {
 		return constant("net.minecraft.world.entity.Pose", pose);
 	}
 
+	/** 1.21 {@code entity.hasPose(pose)}: the pose above is that one (GeckoLib turns a sleeping or dying mob by it). */
+	public static boolean hasPose(Entity entity, Object pose) {
+		Object current = getPose(entity);
+		return current != null && current == pose
+				|| current instanceof Enum<?> a && pose instanceof Enum<?> b && a.name().equals(b.name());
+	}
+
 	/** 1.21 {@code entity.setPose(pose)}: 1.12.2 entities have no poses (sneaking is its own flag). */
 	public static void setPose(Entity entity, Object pose) {
 		if (pose instanceof Enum<?> value && "CROUCHING".equals(value.name())) {
