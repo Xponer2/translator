@@ -17,6 +17,7 @@ import io.github.xponer2.translator.registry.BlockEntityType;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntitySign;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.entity.SignText;
 
 /**
  * 1.21 {@code SignBlockEntity} (and the hanging sign's, a subclass): 1.12.2's sign block entity, made with the 1.21
@@ -47,28 +48,60 @@ public class SignBlockEntity extends TileEntitySign {
 		}
 	}
 
-	/**
-	 * 1.21's two sides of text (the carried SignText), as the mods' sign block entities set them in their constructors:
-	 * Farmer's Delight's dark canvas signs set {@code frontText = createDefaultSignText().setColor(WHITE)}, which threw
-	 * without them (no block entity for any of them). The text drawn and saved is still 1.12.2's.
-	 */
-	@Nullable
-	protected net.minecraft.world.level.block.entity.SignText frontText;
-	@Nullable
-	protected net.minecraft.world.level.block.entity.SignText backText;
+	// --- 1.21 text: the front is 1.12.2's lines with a color and glow (SignTexts) -----------------------------------------
 
-	protected net.minecraft.world.level.block.entity.SignText createDefaultSignText() {
-		return new net.minecraft.world.level.block.entity.SignText();
+	/** 1.21's front and back text (mods set them in their constructors: Farmer's Delight's dark canvas signs write white). */
+	@Nullable
+	protected SignText frontText;
+	@Nullable
+	protected SignText backText;
+
+	/** Protected as in 1.21: a mod's override (Farmer's Delight's hanging canvas sign) may keep it protected. */
+	protected SignText createDefaultSignText() {
+		return new SignText();
 	}
 
-	@Nullable
-	public net.minecraft.world.level.block.entity.SignText getFrontText() {
-		return this.frontText;
+	public SignText getFrontText() {
+		return SignTexts.getFrontText(this);
 	}
 
-	@Nullable
-	public net.minecraft.world.level.block.entity.SignText getBackText() {
-		return this.backText;
+	public SignText getBackText() {
+		return SignTexts.getBackText(this);
+	}
+
+	public SignText getText(boolean front) {
+		return SignTexts.getText(this, front);
+	}
+
+	public boolean setText(SignText text, boolean front) {
+		return SignTexts.setText(this, text, front);
+	}
+
+	public int getMaxTextLineWidth() {
+		return SignTexts.getMaxTextLineWidth(this);
+	}
+
+	public int getTextLineHeight() {
+		return SignTexts.getTextLineHeight(this);
+	}
+
+	/** The front's color and glow, kept with 1.12.2's lines. */
+	@Override
+	public void readFromNBT(net.minecraft.nbt.NBTTagCompound tag) {
+		super.readFromNBT(tag);
+		if (this.frontText == null) {
+			this.frontText = this.createDefaultSignText();
+		}
+		try {
+			if (tag.hasKey("translator_color")) {
+				this.frontText = this.frontText.setColor(net.minecraft.item.EnumDyeColor.byMetadata(tag.getInteger("translator_color")));
+			}
+			if (tag.hasKey("translator_glow")) {
+				this.frontText = this.frontText.setHasGlowingText(tag.getBoolean("translator_glow"));
+			}
+		} catch (RuntimeException | LinkageError e) {
+			// the carried text class is not there: 1.12.2's lines only
+		}
 	}
 
 	@Nullable
@@ -90,6 +123,14 @@ public class SignBlockEntity extends TileEntitySign {
 				id = new net.minecraft.util.ResourceLocation("translator", "sign_" + this.getClass().getName().toLowerCase(java.util.Locale.ROOT).replace('.', '_').replace('$', '_'));
 			}
 			net.minecraftforge.fml.common.registry.GameRegistry.registerTileEntity(this.getClass(), id);
+		}
+		if (this.frontText != null) {
+			try {
+				tag.setInteger("translator_color", this.frontText.getColor().getMetadata());
+				tag.setBoolean("translator_glow", this.frontText.hasGlowingText());
+			} catch (RuntimeException | LinkageError e) {
+				// 1.12.2's lines only
+			}
 		}
 		return super.writeToNBT(tag);
 	}

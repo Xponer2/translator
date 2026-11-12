@@ -23,10 +23,11 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * Facade of the 1.21 {@code RecipeBookComponent} (neoforge-1.21.1-supers.tsv) for a 1.21.1 mod's recipe book (Farmer's
  * Delight's cooking pot). The 1.12.2 book is made for a crafting grid; a 1.21 menu's book isn't set up, so it stays
  * closed: the screen, its slots and its clicks work (clicking a slot asked the never-initialized 1.12.2 book whether it
- * was open and crashed the game).
+ * was open and crashed the game). A screen's listener, as 1.21's (the cooking pot adds it as a widget: each click on
+ * its screen failed casting it).
  */
 @SideOnly(Side.CLIENT)
-public class RecipeBookComponent extends GuiRecipeBook {
+public class RecipeBookComponent extends GuiRecipeBook implements GuiEventListener {
 	/** The 1.12.2 book was set up (a crafting grid): only then does it do anything. */
 	private boolean initialized;
 

@@ -743,3 +743,7 @@ C	net/neoforged/neoforge/client/model/SimpleModelState	net/neoforged/neoforge/cl
 C	net/minecraft/world/entity/ai/behavior/EntityTracker	net/minecraft/world/entity/ai/behavior/EntityTracker
 C	net/minecraft/world/level/levelgen/synth/SimplexNoise	net/minecraft/world/level/levelgen/synth/SimplexNoise
 C	net/minecraft/world/level/levelgen/synth/PerlinSimplexNoise	net/minecraft/world/level/levelgen/synth/PerlinSimplexNoise
+# 1.21 sign text on 1.12.2's own signs (a mod's sign renderer reads it: Farmer's Delight's canvas signs)
+R	net/minecraft/tileentity/TileEntitySign	io/github/xponer2/translator/runtime/mc/SignTexts
+# 1.21 EntityMountEvent.getLevel (1.12.2: getWorldObj)
+R	net/minecraftforge/event/entity/EntityMountEvent	io/github/xponer2/translator/runtime/redirect/ForgeEventRedirects

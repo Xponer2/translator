@@ -467,6 +467,14 @@ public final class SelfTest {
 					this.current.problems.add("took the player to dimension " + this.player.dimension);
 				}
 				this.player.changeDimension(this.dimension, (world, entity, yaw) -> entity.setPositionAndUpdate(this.x, this.y, this.z));
+			} else if (this.player.isRiding()) {
+				// a seat (chairs, sofas, cushions of the furniture mods): the player sat down, as in 1.21; up again, and the
+				// seat's own entity goes when nobody rides it
+				if (this.current != null && !this.current.notes.contains("seats the player")) {
+					this.current.notes.add("seats the player");
+				}
+				this.player.dismountRidingEntity();
+				this.player.setPositionAndUpdate(this.x, this.y, this.z);
 			} else if (this.player.getDistanceSq(this.x, this.y, this.z) > 4) {
 				if (this.current != null) {
 					this.current.problems.add("moved the player " + (int) Math.sqrt(this.player.getDistanceSq(this.x, this.y, this.z)) + " blocks");
@@ -803,6 +811,18 @@ public final class SelfTest {
 		 * Bone meal as a player uses it (up to 40 times): a block that says it can grow must change something (its state,
 		 * a tree, plants around).
 		 */
+		/** 1.12.2's canUseBonemeal (1.21's isBonemealSuccess) said yes at least once in 60 tries. */
+		private boolean bonemealSucceeds(net.minecraft.block.IGrowable growable) {
+			boolean[] yes = new boolean[1];
+			this.attempt("bone meal: success chance", () -> {
+				IBlockState now = this.world.getBlockState(this.cell);
+				for (int i = 0; i < 60 && !yes[0]; i++) {
+					yes[0] = growable.canUseBonemeal(this.world, this.world.rand, this.cell, now);
+				}
+			});
+			return yes[0];
+		}
+
 		private void testBoneMeal(Block block) {
 			var growable = (net.minecraft.block.IGrowable) block;
 			IBlockState state = this.world.getBlockState(this.cell);
@@ -847,7 +867,11 @@ public final class SelfTest {
 					}
 				}
 			}
-			if (!grew[0]) {
+			if (!grew[0] && !sapling && !this.bonemealSucceeds(growable)) {
+				// the mod's own choice (Mystical Agriculture's crops take no bone meal unless its config says so): 1.21's
+				// isBonemealSuccess answered no every time, so nothing was meant to grow
+				this.current.notes.add("bone meal: the block refuses it (isBonemealSuccess false in 60 tries)");
+			} else if (!grew[0]) {
 				this.current.problems.add(sapling ? "sapling: no tree in 60 uses of bone meal" : "bone meal: nothing grew in 60 uses (canGrow said it can)");
 			} else if (sapling) {
 				Block[] expected = io.github.xponer2.translator.world.TreeInfo.saplingTree(

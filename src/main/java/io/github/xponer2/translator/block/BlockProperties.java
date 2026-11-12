@@ -70,6 +70,11 @@ public class BlockProperties {
      */
     @SuppressWarnings("deprecation")
     public static BlockProperties ofFullCopy(Block block) {
+        if (block instanceof io.github.xponer2.translator.runtime.redirect.AbsentBlock absent) {
+            // a 1.21 block 1.12.2 hasn't (a spruce trapdoor): the 1.12.2 block most like it; its default state is air's,
+            // a copy of it was air (could not be broken, dropped nothing)
+            block = absent.standIn();
+        }
         if (block == null || block == net.minecraft.init.Blocks.AIR) {
             // a 1.21 block 1.12.2 doesn't have (Blocks.BARREL): the default properties
             return of();

@@ -109,6 +109,11 @@ public final class ForgeEventRedirects {
 		return event.getWorld();
 	}
 
+	/** A mount event's world (Ars Nouveau's jar handler read it for every seat Handcrafted's chairs made). */
+	public static World getLevel(net.minecraftforge.event.entity.EntityMountEvent event) {
+		return event.getWorldObj();
+	}
+
 	// --- EventHooks (static) ------------------------------------------------------------------------------------------
 
 	public static ItemEntityPickupEvent.Pre fireItemPickupPre(EntityItem item, EntityPlayer player) {

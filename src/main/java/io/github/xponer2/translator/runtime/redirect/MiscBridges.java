@@ -2378,6 +2378,11 @@ public final class MiscBridges {
 		return io.github.xponer2.translator.registry.DataMaps.get(type, holder);
 	}
 
+	/** 1.21 {@code BlockGetter.getMaxLightLevel()}: 15, as in 1.12.2 (Macaw's blinds give their light block by it). */
+	public static int getMaxLightLevel(net.minecraft.world.IBlockAccess world) {
+		return 15;
+	}
+
 	/**
 	 * 1.21 {@code Block.canSupportCenter(level, pos, face)}: whether that face of the block there holds something in its
 	 * middle (a candle or torch on a fence post or a full face). It was missing, so Supplementaries' candle holders,

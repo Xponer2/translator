@@ -366,6 +366,13 @@ public abstract class AbstractContainerMenu extends Container {
 		}
 	}
 
+	/** 1.21 {@code checkContainerDataCount(data, count)}: fewer synced values than the menu needs is an error (Aether's furnaces). */
+	protected static void checkContainerDataCount(ContainerData data, int count) {
+		if (data.getCount() < count) {
+			throw new IllegalArgumentException("Container data count " + data.getCount() + " is smaller than expected " + count);
+		}
+	}
+
 	/** 1.21 {@code clearContainer(player, container)}: the items back to the player (1.12.2's takes the world too). */
 	protected void clearContainer(EntityPlayer player, net.minecraft.inventory.IInventory container) {
 		this.clearContainer(player, player.world, container);
