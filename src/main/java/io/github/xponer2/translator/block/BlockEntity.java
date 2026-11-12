@@ -169,7 +169,14 @@ public class BlockEntity extends TileEntity implements ITickable {
 	@Override
 	public NBTTagCompound getUpdateTag() {
 		this.ensureRegistered();
-		return this.getUpdateTag(RegistryAccess.INSTANCE);
+		try {
+			return this.getUpdateTag(RegistryAccess.INSTANCE);
+		} catch (RuntimeException | LinkageError e) {
+			// a mod's update tag failing crashed the server when the chunk was sent (Ars Nouveau's potion diffuser, whose
+			// potion the Translator couldn't encode): logged, the block entity goes with its position only
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".getUpdateTag", e);
+			return super.getUpdateTag();
+		}
 	}
 
 	/** 1.21 {@code handleUpdateTag(tag, registries)}; the 1.12.2 one calls it. */
@@ -179,7 +186,11 @@ public class BlockEntity extends TileEntity implements ITickable {
 
 	@Override
 	public void handleUpdateTag(NBTTagCompound tag) {
-		this.handleUpdateTag(tag, RegistryAccess.INSTANCE);
+		try {
+			this.handleUpdateTag(tag, RegistryAccess.INSTANCE);
+		} catch (RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".handleUpdateTag", e);
+		}
 	}
 
 	// a state change of the same block (facing, running) keeps the block entity, like on 1.21
