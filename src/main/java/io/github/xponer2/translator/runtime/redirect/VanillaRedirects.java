@@ -388,7 +388,11 @@ public final class VanillaRedirects {
 		return block instanceof io.github.xponer2.translator.runtime.mc.Block facade ? facade.defaultBlockState() : block.getDefaultState();
 	}
 
+	/** A null block entity gives air (a mod checking the block entity's block where there is none: Iron Furnaces' upgrades). */
 	public static IBlockState getBlockState(TileEntity tile) {
+		if (tile == null) {
+			return net.minecraft.init.Blocks.AIR.getDefaultState();
+		}
 		return tile.getWorld() == null ? tile.getBlockType().getDefaultState() : tile.getWorld().getBlockState(tile.getPos());
 	}
 

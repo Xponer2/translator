@@ -492,8 +492,12 @@ final class SelfTestClient {
 				if (!hidden.isEmpty()) {
 					run.addClientProblem("block", id, "block faces: hidden next to air toward " + String.join(", ", hidden));
 				}
-				// drawn solid with a texture that has holes: the holes show as a white or black background
-				if (block.getRenderLayer() == BlockRenderLayer.SOLID && block.canRenderInLayer(actual, BlockRenderLayer.SOLID)
+				// drawn solid with a texture that has holes, while the mod asked for another layer (its model's render_type or
+				// a render layer it set): the holes show as a white or black background. A block that names none is drawn solid
+				// by 1.21 too (Farmer's Delight's baskets): the mod's own look, not counted
+				BlockRenderLayer declared = io.github.xponer2.translator.client.RenderLayers.of(block);
+				if (declared != null && declared != BlockRenderLayer.SOLID
+						&& block.getRenderLayer() == BlockRenderLayer.SOLID && block.canRenderInLayer(actual, BlockRenderLayer.SOLID)
 						&& !block.canRenderInLayer(actual, BlockRenderLayer.CUTOUT) && !block.canRenderInLayer(actual, BlockRenderLayer.CUTOUT_MIPPED)) {
 					for (TextureAtlasSprite sprite : sprites) {
 						if (sprite != null && transparent(sprite)) {

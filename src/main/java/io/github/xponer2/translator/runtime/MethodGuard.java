@@ -1444,6 +1444,27 @@ final class MethodGuard {
 						}
 						continue;
 					}
+					// a method reference through a NeoForge extension interface (IItemStackExtension::getEnchantmentLevel): the 1.12.2
+					// class it is used on doesn't implement the carried interface, so the reference failed to link (Farmer's
+					// Delight's skillet lost its contents on load). The receiver's own helper (the R lines) takes it, as a call
+					// the receiver: the first captured argument (stack::getEnchantmentLevel), else the first of the function's own
+					Type[] captured = Type.getArgumentTypes(indy.desc);
+					Type[] own = i == 1 && indy.bsmArgs.length > 2 && indy.bsmArgs[2] instanceof Type used ? used.getArgumentTypes() : new Type[0];
+					Type receiverType = captured.length > 0 ? captured[0] : own.length > 0 ? own[0] : null;
+					if (i == 1 && indy.bsmArgs[i] instanceof Handle ext && ext.getTag() == Opcodes.H_INVOKEINTERFACE
+							&& ext.getOwner().startsWith("net/neoforged/neoforge/common/extensions/") && receiverType != null
+							&& receiverType.getSort() == Type.OBJECT) {
+						String receiver = receiverType.getInternalName();
+						if (!this.isSubtype("L" + receiver + ";", "L" + ext.getOwner() + ";")) {
+							String[] found = this.findRedirect(receiver, ext.getName(), ext.getDesc(), false);
+							if (found != null && (found.length <= 2 || found[2] == null)) {
+								indy.bsmArgs[i] = new Handle(Opcodes.H_INVOKESTATIC, found[0], ext.getName(), found[1], false);
+								this.redirected.incrementAndGet();
+								changed = true;
+								continue;
+							}
+						}
+					}
 					if (indy.bsmArgs[i] instanceof Handle handle && handle.getTag() >= Opcodes.H_INVOKEVIRTUAL && handle.getTag() != Opcodes.H_INVOKESPECIAL
 							&& handle.getTag() != Opcodes.H_NEWINVOKESPECIAL && !this.hasMember(handle.getOwner(), handle.getName(), handle.getDesc(), true)) {
 						String[] found = this.findRedirect(handle.getOwner(), handle.getName(), handle.getDesc(), handle.getTag() == Opcodes.H_INVOKESTATIC);
