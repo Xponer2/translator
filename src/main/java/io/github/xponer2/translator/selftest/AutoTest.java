@@ -91,16 +91,22 @@ public final class AutoTest {
 			}
 			long last = this.lastTick;
 			if ((this.state == 2 || this.state >= 4) && this.state != 5 && last != 0 && System.currentTimeMillis() - last > STUCK_MS) {
+				// where the game's threads are (the client's and the server's): what it waits for
 				var stuck = new StringBuilder();
-				Thread thread = this.client;
-				if (thread != null) {
-					for (StackTraceElement element : thread.getStackTrace()) {
-						stuck.append("\n\tat ").append(element);
+				for (var entry : Thread.getAllStackTraces().entrySet()) {
+					String name = entry.getKey().getName();
+					if (entry.getKey() == this.client || "Client thread".equals(name) || "Server thread".equals(name)) {
+						stuck.append("\n").append(name).append(" (").append(entry.getKey().getState()).append("):");
+						for (StackTraceElement element : entry.getValue()) {
+							stuck.append("\n\tat ").append(element);
+						}
 					}
 				}
 				LOGGER.error("Automatic self-test: the client stopped responding for {} s, quitting{}", (System.currentTimeMillis() - last) / 1000, stuck);
 				LogManager.shutdown();
-				Runtime.getRuntime().halt(2);
+				// FML's own exit: a mod's Runtime.halt is trapped by its security manager (ExitTrappedException) and the
+				// stuck game stayed open
+				net.minecraftforge.fml.common.FMLCommonHandler.instance().exitJava(2, true);
 			}
 		}
 	}

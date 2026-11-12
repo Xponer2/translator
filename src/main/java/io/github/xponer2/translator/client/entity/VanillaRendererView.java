@@ -118,9 +118,11 @@ public class VanillaRendererView<T extends EntityLivingBase, M extends net.minec
 					MultiBufferSource.INSTANCE.endBatch();
 				} catch (RuntimeException | LinkageError e) {
 					VanillaRendererView.this.failed.add(layer);
-					PoseStack.restore(depth);
 					io.github.xponer2.translator.runtime.RuntimeStubs.failed(layer.getClass().getName() + ".render on " + VanillaRendererView.this.vanilla
 							.getClass().getSimpleName(), e);
+				} finally {
+					// always: a layer that failed inside returns normally with its poses pushed
+					PoseStack.restore(depth);
 				}
 			}
 			net.minecraft.client.renderer.GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);

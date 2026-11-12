@@ -60,8 +60,10 @@ public abstract class EntityRenderer<T extends Entity> extends Render<T> {
 		} catch (RuntimeException | LinkageError e) {
 			// a renderer the Translator can't run all of: logged once, the entity is left undrawn this frame
 			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".render", e);
-			PoseStack.restore(depth);
 		} finally {
+			// always: a mod's render that failed inside returns normally (its method is softened) with its poses still
+			// pushed (Iron's Spells' bosses left 27: the GL stack of 32 overflowed for the rest of the frame)
+			PoseStack.restore(depth);
 			GlStateManager.popMatrix();
 		}
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);

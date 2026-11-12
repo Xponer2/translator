@@ -331,7 +331,9 @@ public abstract class AbstractContainerScreen<T extends Container> extends GuiCo
 			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".renderSlot", e);
 			return false;
 		} finally {
-			// the state 1.12.2's slot loop draws the next slot in
+			// the poses of a slot drawing that failed inside (its method softened), then the state 1.12.2's slot loop
+			// draws the next slot in
+			PoseStack.restore(depth);
 			net.minecraft.client.renderer.RenderHelper.enableGUIStandardItemLighting();
 		}
 	}

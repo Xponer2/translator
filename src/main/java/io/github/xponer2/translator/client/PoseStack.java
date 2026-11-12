@@ -56,6 +56,34 @@ public class PoseStack {
     public static final class FrameEnd {
         private boolean reported;
 
+        /**
+         * After the world and after the HUD too, not only at the frame's end: what a mod left pushed there would add up
+         * with the rest of the frame's matrices past GL's 32 ("1283: Stack overflow" every frame).
+         */
+        @net.minecraftforge.fml.common.eventhandler.SubscribeEvent(priority = net.minecraftforge.fml.common.eventhandler.EventPriority.LOWEST)
+        public void afterWorld(net.minecraftforge.client.event.RenderWorldLastEvent event) {
+            this.check("the world");
+        }
+
+        @net.minecraftforge.fml.common.eventhandler.SubscribeEvent(priority = net.minecraftforge.fml.common.eventhandler.EventPriority.LOWEST)
+        public void afterHud(net.minecraftforge.client.event.RenderGameOverlayEvent.Post event) {
+            if (event.getType() == net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType.ALL) {
+                this.check("the HUD");
+            }
+        }
+
+        private void check(String where) {
+            if (depth == 0) {
+                return;
+            }
+            int popped = restore(0);
+            if (!this.reported) {
+                this.reported = true;
+                org.apache.logging.log4j.LogManager.getLogger("Translator").warn(
+                        "Render code of a 1.21.1 mod left {} matrices pushed (it failed before popPose): popped after {}", popped, where);
+            }
+        }
+
         @net.minecraftforge.fml.common.eventhandler.SubscribeEvent
         public void onRenderTick(net.minecraftforge.fml.common.gameevent.TickEvent.RenderTickEvent event) {
             if (event.phase != net.minecraftforge.fml.common.gameevent.TickEvent.Phase.END || depth == 0) {
