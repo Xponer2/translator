@@ -1341,6 +1341,14 @@ public final class MiscBridges {
 		return net.minecraft.util.text.translation.I18n.canTranslate(key);
 	}
 
+	/** 1.21 {@code Language.getOrDefault(key)}: the translation, else the key (JourneyMap's icon tooltips). */
+	public static String getOrDefault(net.minecraft.util.text.translation.LanguageMap language, String key) {
+		if (net.minecraftforge.fml.common.FMLCommonHandler.instance().getSide().isClient()) {
+			return net.minecraft.client.resources.I18n.hasKey(key) ? net.minecraft.client.resources.I18n.format(key) : key;
+		}
+		return net.minecraft.util.text.translation.I18n.canTranslate(key) ? net.minecraft.util.text.translation.I18n.translateToLocal(key) : key;
+	}
+
 	public static boolean hasKey(net.minecraft.util.text.translation.LanguageMap language, String key) {
 		return has(language, key);
 	}

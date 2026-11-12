@@ -564,3 +564,5 @@ X	net/minecraft/world/item/crafting/AbstractCookingRecipe	getCookingTime	()I	io/
 X	net/minecraftforge/client/event/sound/PlaySoundEvent	getSound	()Lnet/minecraft/client/audio/ISound;	io/github/xponer2/translator/runtime/redirect/ClientGapBridges	(Lnet/minecraftforge/client/event/sound/PlaySoundEvent;)Lnet/minecraft/client/audio/ISound;
 # NeoForge KeyModifier.isKeyCodeModifier takes a GLFW key (JEI's key mappings); 1.12.2's an LWJGL code
 X	net/minecraftforge/client/settings/KeyModifier	isKeyCodeModifier	(Lio/github/xponer2/translator/runtime/neoforge/InputConstants$Key;)Z	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+# NeoForge ClientCommandHandler.runCommand (JourneyMap's chat commands): 1.12.2's client command handler
+X	net/minecraftforge/client/ClientCommandHandler	runCommand	(Ljava/lang/String;)Z	io/github/xponer2/translator/runtime/redirect/ClientGapBridges

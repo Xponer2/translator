@@ -624,4 +624,14 @@ public final class ClientGapBridges {
 	public static java.util.UUID getProfileId(net.minecraft.util.Session session) {
 		return session.getProfile().getId();
 	}
+
+	/**
+	 * NeoForge {@code ClientCommandHandler.runCommand(command)}: a client command (no slash) run here, true when one took
+	 * it (JourneyMap's own commands typed in chat).
+	 */
+	public static boolean runCommand(String command) {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+		return mc.player != null && net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.player,
+				command.startsWith("/") ? command : "/" + command) > 0;
+	}
 }
