@@ -40,4 +40,38 @@ public final class RegistryAccess implements HolderLookup.Provider {
     public RegistryAccess freeze() {
         return this;
     }
+
+    /**
+     * 1.21 {@code registries()}: every registry with its key. JEI makes a tag information category for each one's tags (an
+     * empty stream left them out).
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public java.util.stream.Stream<RegistryEntry<?>> registries() {
+        var entries = new java.util.ArrayList<RegistryEntry<?>>();
+        for (Registry<?> registry : io.github.xponer2.translator.util.BuiltInRegistries.all()) {
+            if (registry.key() != null) {
+                entries.add(new RegistryEntry(registry.key(), registry));
+            }
+        }
+        return entries.stream();
+    }
+
+    /** 1.21 {@code RegistryAccess.RegistryEntry}: a registry and its key. */
+    public static final class RegistryEntry<T> {
+        private final ResourceKey<? extends Registry<T>> key;
+        private final Registry<T> value;
+
+        public RegistryEntry(ResourceKey<? extends Registry<T>> key, Registry<T> value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public ResourceKey<? extends Registry<T>> key() {
+            return this.key;
+        }
+
+        public Registry<T> value() {
+            return this.value;
+        }
+    }
 }

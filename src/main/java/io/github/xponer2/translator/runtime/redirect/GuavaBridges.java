@@ -95,4 +95,38 @@ public final class GuavaBridges {
 			return builder.build();
 		}
 	}
+
+	/** Guava 22+ {@code Stopwatch.elapsed()} (a Duration; 1.12.2's Guava 21 has the TimeUnit one): JEI times its plugins. */
+	public static final class Stopwatches {
+		private Stopwatches() {
+		}
+
+		public static java.time.Duration elapsed(com.google.common.base.Stopwatch stopwatch) {
+			return java.time.Duration.ofNanos(stopwatch.elapsed(java.util.concurrent.TimeUnit.NANOSECONDS));
+		}
+	}
+
+	/**
+	 * Guava 25+ {@code CacheBuilder.expireAfterAccess / expireAfterWrite / refreshAfterWrite(Duration)}: JEI's TypedItemStack
+	 * built its cache in its static initializer with one (left empty, every ingredient of JEI's list failed).
+	 */
+	public static final class CacheBuilders {
+		private CacheBuilders() {
+		}
+
+		public static <K, V> com.google.common.cache.CacheBuilder<K, V> expireAfterAccess(com.google.common.cache.CacheBuilder<K, V> builder,
+				java.time.Duration duration) {
+			return builder.expireAfterAccess(duration.toNanos(), java.util.concurrent.TimeUnit.NANOSECONDS);
+		}
+
+		public static <K, V> com.google.common.cache.CacheBuilder<K, V> expireAfterWrite(com.google.common.cache.CacheBuilder<K, V> builder,
+				java.time.Duration duration) {
+			return builder.expireAfterWrite(duration.toNanos(), java.util.concurrent.TimeUnit.NANOSECONDS);
+		}
+
+		public static <K, V> com.google.common.cache.CacheBuilder<K, V> refreshAfterWrite(com.google.common.cache.CacheBuilder<K, V> builder,
+				java.time.Duration duration) {
+			return builder.refreshAfterWrite(duration.toNanos(), java.util.concurrent.TimeUnit.NANOSECONDS);
+		}
+	}
 }

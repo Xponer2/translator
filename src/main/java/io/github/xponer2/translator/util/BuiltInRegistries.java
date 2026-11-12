@@ -109,6 +109,11 @@ public final class BuiltInRegistries {
         return null;
     }
 
+    /** Every registry known so far (the 1.12.2 Forge registries' wrappers and the Translator's own), in no particular order. */
+    public static java.util.List<Registry<?>> all() {
+        return new java.util.ArrayList<>(REGISTRIES.values());
+    }
+
     /** The registries the Translator keeps (1.12.2 has no registry for them), in no particular order. */
     public static java.util.List<MappedRegistry<?>> mappedRegistries() {
         var list = new java.util.ArrayList<MappedRegistry<?>>();

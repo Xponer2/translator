@@ -768,3 +768,5 @@ R	net/minecraft/client/util/ITooltipFlag$TooltipFlags	io/github/xponer2/translat
 R	net/minecraft/util/Session	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 # 1.21 FoodData.eat(food) (Farmer's Delight's feasts)
 R	net/minecraft/util/FoodStats	io/github/xponer2/translator/runtime/redirect/MiscBridges
+R	com/google/common/base/Stopwatch	io/github/xponer2/translator/runtime/redirect/GuavaBridges$Stopwatches
+R	com/google/common/cache/CacheBuilder	io/github/xponer2/translator/runtime/redirect/GuavaBridges$CacheBuilders

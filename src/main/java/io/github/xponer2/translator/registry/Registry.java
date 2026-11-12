@@ -278,8 +278,40 @@ public interface Registry<T> extends Iterable<T>, HolderLookup, IdMap<T> {
         }
     }
 
+    /** 1.21 {@code getTagNames()}: the tags of this registry (its tag folder's files, the mods' and 1.21.1's). */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     default Stream<io.github.xponer2.translator.util.TagKey<T>> getTagNames() {
-        return Stream.empty();
+        ResourceKey key = this.key();
+        if (key == null) {
+            return Stream.empty();
+        }
+        var names = new java.util.ArrayList<io.github.xponer2.translator.util.TagKey<T>>();
+        for (ResourceLocation tag : io.github.xponer2.translator.tags.TagManager.tagNames(key.location().getPath())) {
+            names.add(io.github.xponer2.translator.util.TagKey.create(key, tag));
+        }
+        return names.stream();
+    }
+
+    /**
+     * 1.21 {@code getTags()}: each tag with its named holder set (the carried HolderSet.Named, bound to its members). JEI
+     * finds the tag a list of ingredients is with it.
+     */
+    default Stream<com.mojang.datafixers.util.Pair<io.github.xponer2.translator.util.TagKey<T>, Object>> getTags() {
+        return this.getTagNames().map(tag -> {
+            var members = new java.util.ArrayList<Holder<T>>();
+            for (Holder<T> holder : this.getTagOrEmpty(tag)) {
+                members.add(holder);
+            }
+            return com.mojang.datafixers.util.Pair.of(tag, NamedSets.bound(tag, members));
+        }).filter(pair -> pair.getSecond() != null);
+    }
+
+    /**
+     * 1.21 {@code lookup.filterFeatures(flags)}: the elements of the enabled features, every one here (1.12.2 has no
+     * feature flags). JEI's ingredient list was empty without it.
+     */
+    default Registry<T> filterFeatures(io.github.xponer2.translator.util.FeatureFlagSet flags) {
+        return this;
     }
 
     @Nullable

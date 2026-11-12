@@ -352,6 +352,14 @@ public final class WorldGapBridges {
 
 	// --- crash reports -----------------------------------------------------------------------------------------------------
 
+	/**
+	 * 1.21 {@code new CrashReportCategory(title)}: 1.12.2's takes the report it belongs to too (one of its own here). JEI
+	 * describes an ingredient that crashed with one.
+	 */
+	public static net.minecraft.crash.CrashReportCategory newCrashReportCategory(String title) {
+		return new net.minecraft.crash.CrashReportCategory(new net.minecraft.crash.CrashReport(title, new Throwable(title)), title);
+	}
+
 	/** 1.21 {@code category.setDetail(name, value)}: 1.12.2 addCrashSection (a supplier of the value: addDetail). */
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public static net.minecraft.crash.CrashReportCategory setDetail(net.minecraft.crash.CrashReportCategory category, String name, @javax.annotation.Nullable Object value) {

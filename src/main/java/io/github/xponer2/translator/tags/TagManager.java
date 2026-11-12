@@ -230,6 +230,12 @@ public final class TagManager {
         }
     }
 
+    /** The tags of a registry by the tag folder's name ("item", "block", "worldgen/biome"): every tag file's id. */
+    public static synchronized Set<ResourceLocation> tagNames(String type) {
+        readFiles();
+        return new java.util.LinkedHashSet<>(FILES.getOrDefault(type, Collections.emptyMap()).keySet());
+    }
+
     /**
      * The ids in a tag of any registry by the tag folder's name ("entity_type", "fluid"), nested tags included.
      */

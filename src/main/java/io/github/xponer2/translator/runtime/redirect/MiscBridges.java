@@ -1445,6 +1445,48 @@ public final class MiscBridges {
 		return count;
 	}
 
+	/**
+	 * 1.21 {@code entity.syncPacketPositionCodec(x, y, z)}: the base the next relative move packets of the entity count from
+	 * (1.12.2's serverPos, in 1/4096 of a block). JourneyMap's radar places the players a server reports so.
+	 */
+	public static void syncPacketPositionCodec(net.minecraft.entity.Entity entity, double x, double y, double z) {
+		entity.serverPosX = net.minecraft.entity.EntityTracker.getPositionLong(x);
+		entity.serverPosY = net.minecraft.entity.EntityTracker.getPositionLong(y);
+		entity.serverPosZ = net.minecraft.entity.EntityTracker.getPositionLong(z);
+	}
+
+	/**
+	 * 1.21 {@code connection.isAcceptingMessages()}: the player's connection is still open. JourneyMap sends the players'
+	 * positions only to connections that are.
+	 */
+	public static boolean isAcceptingMessages(net.minecraft.network.NetHandlerPlayServer connection) {
+		return connection.getNetworkManager() != null && connection.getNetworkManager().isChannelOpen();
+	}
+
+	/**
+	 * 1.21 {@code itemEntity.setTarget(uuid)}: only that player picks it up first (1.12.2 keeps the owner by name). JEI's
+	 * give command drops what doesn't fit so.
+	 */
+	public static void setTarget(net.minecraft.entity.item.EntityItem item, @javax.annotation.Nullable java.util.UUID target) {
+		if (target == null) {
+			item.setOwner(null);
+			return;
+		}
+		net.minecraft.server.MinecraftServer server = item.world == null ? null : item.world.getMinecraftServer();
+		net.minecraft.entity.player.EntityPlayer player = server == null ? null : server.getPlayerList().getPlayerByUUID(target);
+		if (player != null) {
+			item.setOwner(player.getName());
+		}
+	}
+
+	/**
+	 * 1.21 {@code Container.getMaxStackSize(stack)} (a default method 1.12.2's IInventory hasn't): the container's limit and
+	 * the stack's, whichever is less. Iron Furnaces' furnaces put nothing in a slot (setItem limits the stack with it).
+	 */
+	public static int getMaxStackSize(net.minecraft.inventory.IInventory inventory, ItemStack stack) {
+		return Math.min(inventory.getInventoryStackLimit(), stack.getMaxStackSize());
+	}
+
 	public static int getContainerSlot(net.minecraft.inventory.Slot slot) {
 		return slot.getSlotIndex();
 	}
