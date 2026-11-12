@@ -1466,4 +1466,49 @@ public final class LevelGapBridges {
 			entity.setLocationAndAngles(pos.x, pos.y, pos.z, yaw, pitch);
 		}
 	}
+
+	// --- structures (carried 1.21 pieces, templates and their processors) ------------------------------------------------
+
+	/**
+	 * 1.21 {@code chest.setLootTable(key, seed)} (a structure piece's chest, {@code StructurePiece.createChest}): 1.12.2's
+	 * loot table of the chest, filled when it is first opened.
+	 */
+	public static void setLootTable(net.minecraft.tileentity.TileEntityLockableLoot chest, io.github.xponer2.translator.registry.ResourceKey<?> table,
+			long seed) {
+		chest.setLootTable(table == null ? null : table.location(), seed);
+	}
+
+	/** 1.21 {@code rotation.rotation()}: the OctahedralGroup of the turn (templates and jigsaw blocks turn their states by it). */
+	public static Object rotation(net.minecraft.util.Rotation rotation) {
+		String name = switch (rotation) {
+			case CLOCKWISE_90 -> "ROT_90_Y_NEG";
+			case CLOCKWISE_180 -> "ROT_180_FACE_XZ";
+			case COUNTERCLOCKWISE_90 -> "ROT_90_Y_POS";
+			default -> "IDENTITY";
+		};
+		try {
+			return Class.forName("com.mojang.math.OctahedralGroup", true, net.minecraft.launchwrapper.Launch.classLoader).getField(name).get(null);
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("No carried OctahedralGroup", e);
+		}
+	}
+
+	/** 1.21 {@code listTag.getList(index)}: the list at that index, an empty one when it is something else. */
+	public static net.minecraft.nbt.NBTTagList getList(net.minecraft.nbt.NBTTagList list, int index) {
+		return index >= 0 && index < list.tagCount() && list.get(index) instanceof net.minecraft.nbt.NBTTagList inner ? inner
+				: new net.minecraft.nbt.NBTTagList();
+	}
+
+	/** 1.21 {@code state.hasDynamicShape()}: no 1.12.2 block changes its shape by itself (shulker boxes, pistons do in 1.21). */
+	public static boolean hasDynamicShape(net.minecraft.block.Block block) {
+		return false;
+	}
+
+	/**
+	 * 1.21 {@code chunkSource.randomState()} (the Aether's surface rule processor): the noise-less RandomState the 1.21
+	 * structures get (heights come from the 1.12.2 terrain).
+	 */
+	public static Object randomState(net.minecraft.world.gen.ChunkProviderServer source) {
+		return io.github.xponer2.translator.world.StructureGeneration.randomState();
+	}
 }

@@ -77,6 +77,9 @@ public final class Translator {
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.redirect.NewMobEffects());
 		// the biomes of the 1.21.1 mods (data/<mod>/worldgen/biome), into the 1.12.2 overworld
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.DataBiomes());
+		// the structures of the 1.21.1 mods, placed as chunks are populated (off until checked: -Dtranslator.structures=true)
+		net.minecraftforge.fml.common.registry.GameRegistry.registerWorldGenerator(new io.github.xponer2.translator.world.StructureGeneration(), 100);
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.StructureTemplates.Jigsaw());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.VanillaDimensionBiomes());
 		// the advancements of the 1.21.1 mods (data/<mod>/advancement), into the server's advancements
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.advancement.DataAdvancements());

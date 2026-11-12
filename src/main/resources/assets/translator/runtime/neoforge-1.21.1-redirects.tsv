@@ -680,3 +680,6 @@ R	net/minecraft/entity/player/EntityPlayer	io/github/xponer2/translator/runtime/
 R	com/google/common/collect/ImmutableMap$Builder	io/github/xponer2/translator/runtime/redirect/GuavaBridges$MapBuilders
 # 1.21 ChatComponent calls 1.12.2's chat lacks (render)
 R	net/minecraft/client/gui/GuiNewChat	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+# carried 1.21 structures: chests of their pieces (setLootTable with a ResourceKey), Rotation.rotation() of templates
+R	net/minecraft/tileentity/TileEntityLockableLoot	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/util/Rotation	io/github/xponer2/translator/runtime/redirect/LevelGapBridges

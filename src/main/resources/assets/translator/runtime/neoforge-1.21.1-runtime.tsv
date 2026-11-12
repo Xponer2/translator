@@ -532,3 +532,5 @@ X	translator_api/com/mojang/blaze3d/systems/RenderSystem	applyModelViewMatrix	()
 # 1.21 payload packets a mod sends itself through the connection (Common Networking): FML packets of the payload's channel
 C	net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket	io/github/xponer2/translator/network/ServerboundCustomPayloadPacket
 C	net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket	io/github/xponer2/translator/network/ClientboundCustomPayloadPacket
+# 1.21 block state text by 1.21 names (a jigsaw's final_state, the mods' own state strings): the carried parser needs a 1.21 block registry
+X	net/minecraft/commands/arguments/blocks/BlockStateParser	parseForBlock	(Lio/github/xponer2/translator/registry/HolderLookup;Ljava/lang/String;Z)Lnet/minecraft/commands/arguments/blocks/BlockStateParser$BlockResult;	io/github/xponer2/translator/world/BlockStateNbt

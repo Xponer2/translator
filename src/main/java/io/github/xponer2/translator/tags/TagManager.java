@@ -62,7 +62,11 @@ import org.apache.logging.log4j.Logger;
 public final class TagManager {
     private static final Logger LOGGER = LogManager.getLogger("Cucumber Tags");
 
-    private static final Pattern TAG_FILE = Pattern.compile("([a-z0-9_.-]+)/tags/([a-z_]+)/([a-z0-9_./-]+)\\.json");
+    /**
+     * namespace / kind / tag path; a worldgen kind has two parts ({@code tags/worldgen/biome/is_overworld.json} is the biome
+     * tag is_overworld: it was read as a "worldgen" tag named biome/is_overworld, and no biome tag was found).
+     */
+    private static final Pattern TAG_FILE = Pattern.compile("([a-z0-9_.-]+)/tags/((?:worldgen/)?[a-z_]+)/([a-z0-9_./-]+)\\.json");
     private static final Map<String, Map<ResourceLocation, List<Entry>>> FILES = new HashMap<>();
     private static final Map<ResourceLocation, IBlockState> FLATTENED_BLOCKS = new HashMap<>();
     private static final Map<ResourceLocation, List<ItemStack>> ITEM_TAGS = new HashMap<>();

@@ -61,6 +61,12 @@ public final class BuiltInRegistries {
     /** Advancement trigger types: kept, 1.12.2 advancements don't use them. */
     public static final Registry<Object> TRIGGER_TYPES = byKey(ResourceKey.createRegistryKey(new ResourceLocation("trigger_type")));
     /**
+     * 1.21's pool alias binding kinds (random, random_group, direct: filled by {@code PoolAliasBindings.bootstrap} when the
+     * structure data is first read). Its name isn't the registry key's (worldgen/pool_alias_binding): it was null, and
+     * PoolAliasBinding's codec, so every jigsaw structure (template pools), couldn't be made.
+     */
+    public static final Registry<Object> POOL_ALIAS_BINDING_TYPE = byKey(ResourceKey.createRegistryKey(new ResourceLocation("worldgen/pool_alias_binding")));
+    /**
      * 1.21's chat types (a data pack registry) as 1.12.2's one chat type: mods look them up by key (Moonlight's
      * per-side caches key on minecraft:chat; it threw "Failed to find CHAT_TYPE registry" and Supplementaries' red merchant
      * couldn't be saved).

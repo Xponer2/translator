@@ -114,11 +114,25 @@ public final class WorldGapBridges {
 		return PIVOTS.getOrDefault(settings, BlockPos.ORIGIN);
 	}
 
-	/** 1.21 {@code templateManager.getOrCreate(id)}: the 1.12.2 template of that name (empty when there is none). */
-	public static net.minecraft.world.gen.structure.template.Template getOrCreate(net.minecraft.world.gen.structure.template.TemplateManager manager,
-			net.minecraft.util.ResourceLocation id) {
-		var server = net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance();
-		return manager.getTemplate(server, id);
+	/**
+	 * 1.21 {@code templateManager.getOrCreate(id)}: the 1.21 template of that name (empty when there is none), read from
+	 * the data of the mods and of Minecraft 1.21.1; the manager is 1.12.2's, a handle only.
+	 */
+	public static net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate getOrCreate(
+			net.minecraft.world.gen.structure.template.TemplateManager manager, net.minecraft.util.ResourceLocation id) {
+		return io.github.xponer2.translator.world.StructureTemplates.getOrCreate(id);
+	}
+
+	/** 1.21 {@code templateManager.get(id)}: the 1.21 template of that name, if there is one. */
+	public static java.util.Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate> get(
+			net.minecraft.world.gen.structure.template.TemplateManager manager, net.minecraft.util.ResourceLocation id) {
+		return io.github.xponer2.translator.world.StructureTemplates.get(id);
+	}
+
+	/** 1.21 {@code templateManager.readStructure(tag)}: a template from its saved form. */
+	public static net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate readStructure(
+			net.minecraft.world.gen.structure.template.TemplateManager manager, net.minecraft.nbt.NBTTagCompound tag) {
+		return io.github.xponer2.translator.world.StructureTemplates.read(tag);
 	}
 
 	// --- Vec3 and JOML ----------------------------------------------------------------------------------------------------

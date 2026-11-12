@@ -648,8 +648,9 @@ public final class VanillaRedirects {
 	}
 
 	/** 1.21 {@code NbtUtils.readBlockState(HolderGetter<Block>, tag)}: the block registry lookup isn't needed. */
+	/** 1.21 {@code NbtUtils.readBlockState(blocks, tag)}: a state saved by its 1.21 name, as the 1.12.2 state. */
 	public static IBlockState readBlockState(io.github.xponer2.translator.registry.Registry<?> blocks, NBTTagCompound tag) {
-		return net.minecraft.nbt.NBTUtil.readBlockState(tag);
+		return io.github.xponer2.translator.world.BlockStateNbt.read(tag);
 	}
 
 	public static NBTTagCompound writeBlockState(IBlockState state) {

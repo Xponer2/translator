@@ -79,12 +79,16 @@ public final class DataFeatures {
 
 	/** Whether a registry's entries are the mods' feature files (configured and placed features). */
 	public static boolean isDataRegistry(ResourceLocation registry) {
-		return CONFIGURED.equals(registry) || PLACED.equals(registry);
+		return CONFIGURED.equals(registry) || PLACED.equals(registry) || DataStructures.isDataRegistry(registry);
 	}
 
 	/** The feature of a mod's file for that registry, read by the 1.21.1 codec; null when there is none or it doesn't read. */
 	@Nullable
 	public static Object decode(ResourceLocation registry, ResourceLocation id) {
+		if (DataStructures.isDataRegistry(registry)) {
+			// structures, their sets, jigsaw pools and processor lists
+			return DataStructures.decode(registry, id);
+		}
 		if ("minecraft".equals(id.getNamespace())) {
 			// a vanilla feature a mod's biome or feature names: made by 1.21's own feature bootstraps
 			VanillaFeatures.ensure();
