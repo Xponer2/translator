@@ -85,3 +85,5 @@ E	net/minecraft/world/level/block/entity/SkullBlockEntity	io/github/xponer2/tran
 E	net/minecraft/world/entity/ai/goal/target/HurtByTargetGoal	io/github/xponer2/translator/runtime/mc/HurtByTargetGoal
 E	net/minecraft/world/entity/ai/goal/LookAtPlayerGoal	io/github/xponer2/translator/runtime/mc/LookAtPlayerGoal
 E	net/minecraft/world/item/ArrowItem	io/github/xponer2/translator/runtime/mc/ArrowItem
+# 1.21 ChatScreen for the mods' chat screens (JourneyMap's map chat): its input an EditBox, the 1.21 methods on 1.12.2's chat
+E	net/minecraft/client/gui/screens/ChatScreen	io/github/xponer2/translator/client/ChatScreen

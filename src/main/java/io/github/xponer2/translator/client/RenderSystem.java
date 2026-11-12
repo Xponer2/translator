@@ -188,6 +188,7 @@ public final class RenderSystem {
     }
 
     public static void applyModelViewMatrix() {
-        // the GL matrix is already current
+        // the GL matrix is current, unless a mod changed 1.21's JOML model view stack (ModelViewStack)
+        ModelViewStack.applyModelViewMatrix();
     }
 }

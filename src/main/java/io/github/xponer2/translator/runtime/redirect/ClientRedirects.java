@@ -464,27 +464,43 @@ public final class ClientRedirects {
 	/** 1.21 batched text, drawn at once: the pose is the GL matrix (RenderBridges), display mode and light are the GL state. */
 	public static int drawInBatch(FontRenderer font, ITextComponent text, float x, float y, int color, boolean shadow, org.joml.Matrix4f pose,
 			io.github.xponer2.translator.client.MultiBufferSource buffers, Object mode, int background, int light) {
+		flushBefore(buffers);
 		return font.drawString(formatted(text), x, y, color, shadow);
+	}
+
+	/**
+	 * The batches started before the text, drawn first: 1.12.2's font draws at once, and a batch still open (a label's
+	 * background, a type without a texture) left GL's texturing off, so the letters came out as solid boxes
+	 * (JourneyMap's minimap labels).
+	 */
+	private static void flushBefore(@javax.annotation.Nullable io.github.xponer2.translator.client.MultiBufferSource buffers) {
+		if (buffers != null) {
+			buffers.endBatch();
+		}
 	}
 
 	public static int drawInBatch(FontRenderer font, String text, float x, float y, int color, boolean shadow, org.joml.Matrix4f pose,
 			io.github.xponer2.translator.client.MultiBufferSource buffers, Object mode, int background, int light) {
+		flushBefore(buffers);
 		return font.drawString(text, x, y, color, shadow);
 	}
 
 	public static int drawInBatch(FontRenderer font, String text, float x, float y, int color, boolean shadow, org.joml.Matrix4f pose,
 			io.github.xponer2.translator.client.MultiBufferSource buffers, Object mode, int background, int light, boolean bidirectional) {
+		flushBefore(buffers);
 		return font.drawString(text, x, y, color, shadow);
 	}
 
 	public static float renderText(FontRenderer font, String text, float x, float y, int color, boolean shadow, org.joml.Matrix4f pose,
 			io.github.xponer2.translator.client.MultiBufferSource buffers, Object mode, int background, int light) {
+		flushBefore(buffers);
 		return font.drawString(text, x, y, color, shadow);
 	}
 
 	/** Text with an outline (glowing signs): the outline color drawn around it, then the text. */
 	public static void drawInBatch8xOutline(FontRenderer font, ITextComponent text, float x, float y, int color, int outline, org.joml.Matrix4f pose,
 			io.github.xponer2.translator.client.MultiBufferSource buffers, int light) {
+		flushBefore(buffers);
 		String plain = net.minecraft.util.text.TextFormatting.getTextWithoutFormattingCodes(formatted(text));
 		for (int dx = -1; dx <= 1; dx++) {
 			for (int dy = -1; dy <= 1; dy++) {

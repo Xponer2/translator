@@ -38,6 +38,8 @@ public final class ForgeBus implements IEventBus {
 	static final Logger LOGGER = LogManager.getLogger("Translator Runtime");
 	private static final String SUBSCRIBE_EVENT = "Lnet/minecraftforge/fml/common/eventhandler/SubscribeEvent;";
 	public static final ForgeBus FORGE = new ForgeBus(MinecraftForge.EVENT_BUS);
+	private static final boolean DEBUG = Boolean.getBoolean("translator.debug.render");
+	private static final java.util.Set<String> DEBUG_SEEN = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
 	private final EventBus bus;
 	private final int busId;
@@ -199,8 +201,15 @@ public final class ForgeBus implements IEventBus {
 			Event instance = constructor.newInstance();
 			boolean[] reported = new boolean[1];
 			boolean render = isRenderEvent(type);
+			// the messages between mods are each mod's own: its listeners run as that mod (getIMCStream, the sender of sendTo)
+			ModContainer owner = InterModProcessEvent.class.isAssignableFrom(type) || InterModEnqueueEvent.class.isAssignableFrom(type)
+					? ModLoadingContext.get().getActiveContainer() : null;
 			IEventListener listener = event -> {
 				if (receiveCanceled || !event.isCancelable() || !event.isCanceled()) {
+					ModContainer previous = owner == null ? null : ModLoadingContext.get().getActiveContainer();
+					if (owner != null) {
+						ModLoadingContext.setActive(owner);
+					}
 					try {
 						if (render) {
 							// a 1.21 mod's drawing leaves its GL state: put back after it (JourneyMap broke the HUD)
@@ -213,6 +222,13 @@ public final class ForgeBus implements IEventBus {
 						if (!reported[0]) {
 							reported[0] = true;
 							LOGGER.error("A listener for {} failed (further errors of it are not logged)", type.getSimpleName(), t);
+						} else if (DEBUG && DEBUG_SEEN.add(type.getName() + " " + t + " " + (t.getStackTrace().length > 0 ? t.getStackTrace()[0] : ""))) {
+							// with -Dtranslator.debug.render: every other error of it too, once each
+							LOGGER.error("A listener for {} failed again, differently", type.getSimpleName(), t);
+						}
+					} finally {
+						if (owner != null) {
+							ModLoadingContext.setActive(previous);
 						}
 					}
 				}

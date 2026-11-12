@@ -1,3 +1,16 @@
 item.translator.copper_ingot.name=Copper Ingot
 tile.translator.copper_ore.name=Copper Ore
 tile.translator.copper_block.name=Block of Copper
+# 1.21 effects 1.12.2 hasn't
+effect.minecraft.slow_falling=Slow Falling
+effect.minecraft.conduit_power=Conduit Power
+effect.minecraft.dolphins_grace=Dolphin's Grace
+effect.minecraft.bad_omen=Bad Omen
+effect.minecraft.hero_of_the_village=Hero of the Village
+effect.minecraft.darkness=Darkness
+effect.minecraft.trial_omen=Trial Omen
+effect.minecraft.raid_omen=Raid Omen
+effect.minecraft.wind_charged=Wind Charged
+effect.minecraft.weaving=Weaving
+effect.minecraft.oozing=Oozing
+effect.minecraft.infested=Infested

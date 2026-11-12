@@ -248,7 +248,13 @@ public final class VertexConsumer {
 		} else {
 			GL11.glLoadMatrix(this.beginBuffer);
 		}
+		if (RenderDebug.ENABLED && this.type != null) {
+			RenderDebug.drawn(this.type.name, Tessellator.getInstance().getBuffer().getVertexCount(), Tessellator.getInstance().getBuffer());
+		}
 		Tessellator.getInstance().draw();
+		if (RenderDebug.ENABLED && this.type != null) {
+			RenderDebug.afterDraw(this.type.name);
+		}
 		GlStateManager.popMatrix();
 		if (this.type != null) {
 			this.type.clearRenderState();

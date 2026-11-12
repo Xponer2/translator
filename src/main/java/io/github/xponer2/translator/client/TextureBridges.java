@@ -28,10 +28,54 @@ public final class TextureBridges {
 	private TextureBridges() {
 	}
 
-	/** 1.21 {@code AbstractTexture.bind()}. */
+	/**
+	 * 1.21 {@code AbstractTexture.bind()}: the texture's own bind when its class has one, else its id bound. 1.12.2's
+	 * AbstractTexture has no bind, so a call of it is this static method, and a mod's texture that uploads in its own
+	 * bind (JourneyMap's LOD map tiles) was never uploaded: the zoomed out map and the minimap drew white or nothing.
+	 * Within that own bind (its super.bind(), also this method) the id is bound.
+	 */
 	public static void bind(AbstractTexture texture) {
+		java.lang.reflect.Method own = OWN_BIND.get(texture.getClass());
+		if (own != null) {
+			var active = BINDING.get();
+			if (active.add(texture)) {
+				try {
+					own.invoke(texture);
+					return;
+				} catch (java.lang.reflect.InvocationTargetException e) {
+					io.github.xponer2.translator.runtime.RuntimeStubs.failed(texture.getClass().getName() + ".bind", e.getCause());
+					return;
+				} catch (ReflectiveOperationException | RuntimeException e) {
+					// not callable: the id below
+				} finally {
+					active.remove(texture);
+				}
+			}
+		}
 		GlStateManager.bindTexture(texture.getGlTextureId());
 	}
+
+	private static final ThreadLocal<java.util.Set<AbstractTexture>> BINDING = ThreadLocal
+			.withInitial(() -> java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
+
+	/** A texture class's own public bind(), declared by a mod's class (not 1.12.2's or the Translator's). */
+	private static final ClassValue<java.lang.reflect.Method> OWN_BIND = new ClassValue<java.lang.reflect.Method>() {
+		@Override
+		@Nullable
+		protected java.lang.reflect.Method computeValue(Class<?> type) {
+			try {
+				java.lang.reflect.Method method = type.getMethod("bind");
+				String owner = method.getDeclaringClass().getName();
+				if (method.getReturnType() != void.class || owner.startsWith("net.minecraft.") || owner.startsWith("io.github.xponer2.translator.")) {
+					return null;
+				}
+				method.setAccessible(true);
+				return method;
+			} catch (NoSuchMethodException | RuntimeException e) {
+				return null;
+			}
+		}
+	};
 
 	/** 1.21 {@code AbstractTexture.getId()}. */
 	public static int getId(AbstractTexture texture) {

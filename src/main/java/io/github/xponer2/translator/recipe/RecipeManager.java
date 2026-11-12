@@ -77,7 +77,7 @@ public final class RecipeManager {
         if (lastRecipe != null && lastRecipe.value().matches(input, level)) {
             return Optional.of(lastRecipe);
         }
-        for (var holder : this.byType(type)) {
+        for (var holder : this.typed(type)) {
             if (holder.value().matches(input, level)) {
                 return Optional.of(holder);
             }
@@ -128,7 +128,7 @@ public final class RecipeManager {
 
     public <I extends RecipeInput, T extends Recipe<I>> List<RecipeHolder<T>> getRecipesFor(RecipeType<T> type, I input, World level) {
         var result = new ArrayList<RecipeHolder<T>>();
-        for (var holder : this.byType(type)) {
+        for (var holder : this.typed(type)) {
             if (holder.value().matches(input, level)) {
                 result.add(holder);
             }
@@ -137,11 +137,16 @@ public final class RecipeManager {
     }
 
     public <I extends RecipeInput, T extends Recipe<I>> List<RecipeHolder<T>> getAllRecipesFor(RecipeType<T> type) {
-        return Collections.unmodifiableList(this.byType(type));
+        return Collections.unmodifiableList(this.typed(type));
+    }
+
+    /** 1.21 {@code byType(type)}: the recipes of the type. */
+    public <I extends RecipeInput, T extends Recipe<I>> java.util.Collection<RecipeHolder<T>> byType(RecipeType<T> type) {
+        return Collections.unmodifiableList(this.typed(type));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private <T extends Recipe<?>> List<RecipeHolder<T>> byType(RecipeType<T> type) {
+    private <T extends Recipe<?>> List<RecipeHolder<T>> typed(RecipeType<T> type) {
         return (List) this.byType.getOrDefault(type, Collections.emptyList());
     }
 

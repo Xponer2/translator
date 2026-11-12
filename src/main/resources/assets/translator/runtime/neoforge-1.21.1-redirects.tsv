@@ -678,3 +678,5 @@ C	net/minecraft/world/entity/ai/control/MoveControl$Operation	net/minecraft/enti
 R	net/minecraft/entity/player/EntityPlayer	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 # newer Guava calls (1.21.1 ships Guava 32, 1.12.2 Guava 21)
 R	com/google/common/collect/ImmutableMap$Builder	io/github/xponer2/translator/runtime/redirect/GuavaBridges$MapBuilders
+# 1.21 ChatComponent calls 1.12.2's chat lacks (render)
+R	net/minecraft/client/gui/GuiNewChat	io/github/xponer2/translator/runtime/redirect/ClientGapBridges

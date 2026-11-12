@@ -71,8 +71,10 @@ public final class Translator {
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.redirect.VanillaPlaceholders());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.ChunkUnloadGuard());
 		Menus.init();
+		io.github.xponer2.translator.util.particle.ModParticles.init();
 		MinecraftForge.EVENT_BUS.register(new CapabilityAttacher());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.item.DataEnchantments());
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.redirect.NewMobEffects());
 		// the biomes of the 1.21.1 mods (data/<mod>/worldgen/biome), into the 1.12.2 overworld
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.DataBiomes());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.world.VanillaDimensionBiomes());

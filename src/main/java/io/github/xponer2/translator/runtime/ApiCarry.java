@@ -95,6 +95,9 @@ final class ApiCarry {
 			{ "com.mojang", "brigadier", "1.3.10" },
 			{ "com.mojang", "logging", "1.2.7" },
 			{ "org.joml", "joml", "1.10.5" },
+			// the ICU text library of 1.21.1: collators (JourneyMap's and Ars Nouveau's sorting), number formats (Twilight
+			// Forest's roman numerals); its classes were missing and the waypoint editor of JourneyMap failed to open
+			{ "com.ibm.icu", "icu4j", "73.2" },
 			{ "org.slf4j", "slf4j-api", "2.0.9" },
 			{ "com.electronwill.night-config", "core", "3.8.3" },
 			{ "com.electronwill.night-config", "toml", "3.8.3" },

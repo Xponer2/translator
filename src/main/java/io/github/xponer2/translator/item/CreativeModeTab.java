@@ -65,7 +65,12 @@ public class CreativeModeTab implements RegistrationCallback {
         return this.vanilla;
     }
 
-    public List<ItemStack> getDisplayItems() {
+    /** 1.21 {@code getDisplayItems()}: the items the tab shows, made when asked. */
+    public java.util.Collection<ItemStack> getDisplayItems() {
+        return this.displayItems();
+    }
+
+    private List<ItemStack> displayItems() {
         var stacks = new ArrayList<ItemStack>();
         try {
             this.displayItemsGenerator.accept(ItemDisplayParameters.INSTANCE, stack -> {
@@ -85,7 +90,7 @@ public class CreativeModeTab implements RegistrationCallback {
     }
 
     public boolean contains(ItemStack stack) {
-        for (ItemStack shown : this.getDisplayItems()) {
+        for (ItemStack shown : this.displayItems()) {
             if (ItemStack.areItemsEqual(shown, stack)) {
                 return true;
             }
@@ -94,7 +99,7 @@ public class CreativeModeTab implements RegistrationCallback {
     }
 
     public java.util.Collection<ItemStack> getSearchTabDisplayItems() {
-        return this.getDisplayItems();
+        return this.displayItems();
     }
 
     public Type getType() {
@@ -124,17 +129,17 @@ public class CreativeModeTab implements RegistrationCallback {
                 } catch (RuntimeException | LinkageError e) {
                     // the icon of an original 1.21.1 mod's tab is an item the Translator couldn't make: the tab's first item
                 }
-                List<ItemStack> items = tab.getDisplayItems();
+                List<ItemStack> items = tab.displayItems();
                 return items.isEmpty() ? new ItemStack(net.minecraft.init.Items.PAPER) : items.get(0);
             }
 
             @Override
             @SideOnly(Side.CLIENT)
             public void displayAllRelevantItems(NonNullList<ItemStack> items) {
-                items.addAll(tab.getDisplayItems());
+                items.addAll(tab.displayItems());
             }
         };
-        List<ItemStack> items = this.getDisplayItems();
+        List<ItemStack> items = this.displayItems();
         for (var stack : items) {
             Item item = stack.getItem();
             if (item.getCreativeTab() == null) {

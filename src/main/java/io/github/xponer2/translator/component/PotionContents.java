@@ -164,4 +164,35 @@ public final class PotionContents {
 	public String toString() {
 		return "PotionContents[potion=" + this.potion.map(Holder::value) + ", customColor=" + this.customColor + ", customEffects=" + this.customEffects + "]";
 	}
+
+	/** 1.21 {@code addPotionTooltip(tooltip, durationFactor, ticksPerSecond)}: a line per effect, as 1.12.2's potion tooltip. */
+	public void addPotionTooltip(Consumer<net.minecraft.util.text.ITextComponent> tooltip, float durationFactor, float ticksPerSecond) {
+		addPotionTooltip(this.getAllEffects(), tooltip, durationFactor, ticksPerSecond);
+	}
+
+	/** 1.21 {@code PotionContents.addPotionTooltip(effects, tooltip, durationFactor, ticksPerSecond)}. */
+	public static void addPotionTooltip(Iterable<PotionEffect> effects, Consumer<net.minecraft.util.text.ITextComponent> tooltip, float durationFactor,
+			float ticksPerSecond) {
+		boolean any = false;
+		for (PotionEffect effect : effects) {
+			any = true;
+			net.minecraft.util.text.ITextComponent line = new net.minecraft.util.text.TextComponentTranslation(effect.getEffectName());
+			if (effect.getAmplifier() > 0) {
+				line.appendText(" ").appendSibling(new net.minecraft.util.text.TextComponentTranslation("potion.potency." + effect.getAmplifier()));
+			}
+			if (effect.getDuration() > 20) {
+				String time = effect.getIsPotionDurationMax() ? "**:**"
+						: net.minecraft.util.StringUtils.ticksToElapsedTime((int) (effect.getDuration() * durationFactor));
+				line.appendText(" (" + time + ")");
+			}
+			line.getStyle().setColor(effect.getPotion().isBadEffect() ? net.minecraft.util.text.TextFormatting.RED
+					: net.minecraft.util.text.TextFormatting.BLUE);
+			tooltip.accept(line);
+		}
+		if (!any) {
+			var none = new net.minecraft.util.text.TextComponentTranslation("effect.none");
+			none.getStyle().setColor(net.minecraft.util.text.TextFormatting.GRAY);
+			tooltip.accept(none);
+		}
+	}
 }

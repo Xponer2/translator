@@ -389,7 +389,18 @@ public final class RuntimeMods {
 			}
 			try {
 				Class<?> subscriber = Class.forName(entry.getKey().replace('/', '.'), true, Launch.classLoader);
-				ForgeBus.FORGE.register(subscriber);
+				// registered as the subscriber's mod (its listeners of the messages between mods read that mod's)
+				Object modId = entry.getValue().get("modid");
+				ModContainer owner = modId instanceof String id ? ModContainer.byId(id) : null;
+				if (owner == null && jar.modClasses.size() == 1) {
+					owner = ModContainer.byId(jar.modClasses.values().iterator().next());
+				}
+				io.github.xponer2.translator.runtime.neoforge.ModLoadingContext.setActive(owner);
+				try {
+					ForgeBus.FORGE.register(subscriber);
+				} finally {
+					io.github.xponer2.translator.runtime.neoforge.ModLoadingContext.setActive(null);
+				}
 			} catch (Throwable t) {
 				LOGGER.error("Can't register the event subscriber {}: {}", entry.getKey(), t.toString());
 			}

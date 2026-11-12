@@ -87,6 +87,16 @@ public final class NetworkChannels {
         return new FMLProxyPacket(buffer, channelName(id.getNamespace()));
     }
 
+    /** A payload as its channel's bytes (id, then the payload by its codec), for the 1.21 payload packets. */
+    static net.minecraft.network.PacketBuffer encoded(CustomPacketPayload payload, boolean toClient) {
+        var packet = packet(payload, toClient);
+        return new net.minecraft.network.PacketBuffer(packet.payload());
+    }
+
+    static String channelNameOf(CustomPacketPayload payload) {
+        return channelName(payload.type().id().getNamespace());
+    }
+
     @Nullable
     private static Received decode(FMLProxyPacket packet) {
         var buffer = RegistryFriendlyByteBuf.wrap(packet.payload());

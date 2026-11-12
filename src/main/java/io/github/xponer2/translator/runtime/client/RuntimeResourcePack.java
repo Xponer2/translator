@@ -206,6 +206,10 @@ public final class RuntimeResourcePack implements IResourcePack {
 					out.append(tile).append('=').append(value).append('\n');
 					out.append(tile).append(".name=").append(value).append('\n');
 				}
+				// and entities entity.<namespace>.<id>.name (the boss bars of Iron's Spells showed the raw key)
+				if (entry.getKey().startsWith("entity.") && entry.getKey().chars().filter(c -> c == '.').count() == 2) {
+					out.append(entry.getKey()).append(".name=").append(value).append('\n');
+				}
 			}
 		}
 		return out.toString();

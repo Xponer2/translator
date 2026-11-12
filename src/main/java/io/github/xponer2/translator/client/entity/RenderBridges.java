@@ -44,7 +44,16 @@ public final class RenderBridges {
 			if (entityTexture == null) {
 				entityTexture = ReflectionHelper.findMethod(Render.class, "getEntityTexture", "func_110775_a", Entity.class);
 			}
-			return (ResourceLocation) entityTexture.invoke(render, entity);
+			ResourceLocation texture = (ResourceLocation) entityTexture.invoke(render, entity);
+			// a horse's 1.12.2 texture is a layered texture's name (horse/hch...), no file: the base layer's file, as 1.21's
+			// horse renderer gives (JourneyMap tried to load the layered name every frame, logged each and lagged)
+			if (entity instanceof net.minecraft.entity.passive.EntityHorse horse && texture != null && !texture.getPath().endsWith(".png")) {
+				String[] layers = horse.getVariantTexturePaths();
+				if (layers != null && layers.length > 0 && layers[0] != null) {
+					return new ResourceLocation(layers[0]);
+				}
+			}
+			return texture;
 		} catch (ReflectiveOperationException | RuntimeException e) {
 			return null;
 		}

@@ -523,3 +523,12 @@ X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createUpdateNamePacket
 X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createUpdateStylePacket	(Lnet/minecraft/world/BossInfo;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets
 X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createUpdatePropertiesPacket	(Lnet/minecraft/world/BossInfo;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets
 X	net/minecraft/network/play/server/SPacketUpdateBossInfo	createRemovePacket	(Ljava/util/UUID;)Lnet/minecraft/network/play/server/SPacketUpdateBossInfo;	io/github/xponer2/translator/runtime/redirect/BossPackets
+# 1.21 projection and JOML model view stack: 1.12.2's GL matrices (the carried RenderSystem kept its own copies: JourneyMap's maps drew off the screen)
+X	translator_api/com/mojang/blaze3d/systems/RenderSystem	setProjectionMatrix	(Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/vertex/VertexSorting;)V	io/github/xponer2/translator/client/ModelViewStack	(Lorg/joml/Matrix4f;Ljava/lang/Object;)V
+X	translator_api/com/mojang/blaze3d/systems/RenderSystem	getModelViewStack	()Lorg/joml/Matrix4fStack;	io/github/xponer2/translator/client/ModelViewStack
+X	io/github/xponer2/translator/client/RenderSystem	setProjectionMatrix	(Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/vertex/VertexSorting;)V	io/github/xponer2/translator/client/ModelViewStack	(Lorg/joml/Matrix4f;Ljava/lang/Object;)V
+X	io/github/xponer2/translator/client/RenderSystem	getModelViewStack	()Lorg/joml/Matrix4fStack;	io/github/xponer2/translator/client/ModelViewStack
+X	translator_api/com/mojang/blaze3d/systems/RenderSystem	applyModelViewMatrix	()V	io/github/xponer2/translator/client/ModelViewStack
+# 1.21 payload packets a mod sends itself through the connection (Common Networking): FML packets of the payload's channel
+C	net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket	io/github/xponer2/translator/network/ServerboundCustomPayloadPacket
+C	net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket	io/github/xponer2/translator/network/ClientboundCustomPayloadPacket

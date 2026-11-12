@@ -31,6 +31,32 @@ public class MenuType<T extends Container> {
 	public static final MenuType<ChestMenu> GENERIC_9x4 = vanilla("generic_9x4", ChestMenu::fourRows);
 	public static final MenuType<ChestMenu> GENERIC_9x5 = vanilla("generic_9x5", ChestMenu::fiveRows);
 	public static final MenuType<ChestMenu> GENERIC_9x6 = vanilla("generic_9x6", ChestMenu::sixRows);
+	// vanilla menus mods name (JEI's recipe transfer, Ars Nouveau's and Refined Storage's crafting grids): 1.12.2's containers
+	public static final MenuType<net.minecraft.inventory.ContainerWorkbench> CRAFTING = vanilla("crafting", (id, inventory) -> {
+		var menu = new net.minecraft.inventory.ContainerWorkbench(inventory, inventory.player.world, inventory.player.getPosition());
+		menu.windowId = id;
+		return menu;
+	});
+	public static final MenuType<net.minecraft.inventory.ContainerFurnace> FURNACE = vanilla("furnace", (id, inventory) -> {
+		var menu = new net.minecraft.inventory.ContainerFurnace(inventory, new net.minecraft.tileentity.TileEntityFurnace());
+		menu.windowId = id;
+		return menu;
+	});
+	public static final MenuType<net.minecraft.inventory.ContainerBrewingStand> BREWING_STAND = vanilla("brewing_stand", (id, inventory) -> {
+		var menu = new net.minecraft.inventory.ContainerBrewingStand(inventory, new net.minecraft.tileentity.TileEntityBrewingStand());
+		menu.windowId = id;
+		return menu;
+	});
+	public static final MenuType<net.minecraft.inventory.ContainerRepair> ANVIL = vanilla("anvil", (id, inventory) -> {
+		var menu = new net.minecraft.inventory.ContainerRepair(inventory, inventory.player.world, inventory.player.getPosition(), inventory.player);
+		menu.windowId = id;
+		return menu;
+	});
+	// menus of blocks 1.12.2 hasn't (JEI names them for its recipe transfer): a type of their own, none is ever opened
+	public static final MenuType<Container> SMOKER = vanilla("smoker", (id, inventory) -> null);
+	public static final MenuType<Container> BLAST_FURNACE = vanilla("blast_furnace", (id, inventory) -> null);
+	public static final MenuType<Container> SMITHING = vanilla("smithing", (id, inventory) -> null);
+	public static final MenuType<Container> CRAFTER_3x3 = vanilla("crafter_3x3", (id, inventory) -> null);
 
 	private final MenuSupplier<T> constructor;
 

@@ -95,6 +95,8 @@ public final class ParticleTypeStatics {
 	public static final SimpleParticleType GUST = of(EnumParticleTypes.CLOUD);
 	public static final SimpleParticleType SMALL_GUST = of(EnumParticleTypes.CLOUD);
 	public static final SimpleParticleType TRIAL_SPAWNER_DETECTED_PLAYER = of(EnumParticleTypes.FLAME);
+	public static final SimpleParticleType TRIAL_OMEN = of(EnumParticleTypes.SPELL_MOB);
+	public static final SimpleParticleType RAID_OMEN = of(EnumParticleTypes.SPELL_MOB);
 	public static final SimpleParticleType EGG_CRACK = of(EnumParticleTypes.ITEM_CRACK);
 
 	// particles with options: the options carry the state, item or color

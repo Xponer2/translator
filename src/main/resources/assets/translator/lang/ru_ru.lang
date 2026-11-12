@@ -1,3 +1,16 @@
 item.translator.copper_ingot.name=Медный слиток
 tile.translator.copper_ore.name=Медная руда
 tile.translator.copper_block.name=Медный блок
+# 1.21 effects 1.12.2 hasn't
+effect.minecraft.slow_falling=Плавное падение
+effect.minecraft.conduit_power=Сила источника
+effect.minecraft.dolphins_grace=Грация дельфина
+effect.minecraft.bad_omen=Дурное знамение
+effect.minecraft.hero_of_the_village=Герой деревни
+effect.minecraft.darkness=Тьма
+effect.minecraft.trial_omen=Знамение испытаний
+effect.minecraft.raid_omen=Знамение рейда
+effect.minecraft.wind_charged=Заряд ветра
+effect.minecraft.weaving=Плетение
+effect.minecraft.oozing=Просачивание
+effect.minecraft.infested=Заражение

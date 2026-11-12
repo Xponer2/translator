@@ -216,7 +216,10 @@ public final class ClientGapBridges {
 
 	/** 1.21 {@code narrator.sayNow(text)}: the 1.12.2 narrator reads it when it is on. */
 	public static void sayNow(net.minecraft.client.gui.chat.NarratorChatListener narrator, net.minecraft.util.text.ITextComponent text) {
-		narrator.say(net.minecraft.util.text.ChatType.SYSTEM, text);
+		// the game's narrator when the mod's lookup of it gave none (JourneyMap's popup menu threw here and drew half)
+		if (text != null) {
+			(narrator != null ? narrator : net.minecraft.client.gui.chat.NarratorChatListener.INSTANCE).say(net.minecraft.util.text.ChatType.SYSTEM, text);
+		}
 	}
 
 	public static void sayNow(net.minecraft.client.gui.chat.NarratorChatListener narrator, String text) {
@@ -577,5 +580,11 @@ public final class ClientGapBridges {
 	/** 1.21 {@code particleEngine.spriteSets}: the sprite sets of the particle types, by id (Ars Nouveau reads them). */
 	public static java.util.Map<net.minecraft.util.ResourceLocation, Object> spriteSets(ParticleManager engine) {
 		return io.github.xponer2.translator.client.particle.ParticleProviders.SPRITE_SETS;
+	}
+
+	/** 1.21 {@code chat.render(graphics, tick, mouseX, mouseY, focused)}: 1.12.2's chat lines (JourneyMap's map chat). */
+	public static void render(net.minecraft.client.gui.GuiNewChat chat, io.github.xponer2.translator.client.GuiGraphics graphics, int tick, int mouseX,
+			int mouseY, boolean focused) {
+		chat.drawChat(tick);
 	}
 }

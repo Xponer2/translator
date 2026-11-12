@@ -2371,4 +2371,24 @@ public final class MiscBridges {
 	public static java.util.function.Supplier<net.minecraft.profiler.Profiler> getProfilerSupplier(net.minecraft.world.World world) {
 		return () -> world.profiler;
 	}
+
+	/** NeoForge {@code holder.getData(type)}: the value the mods' data map gives the holder's entry, null when none. */
+	@Nullable
+	public static Object getData(Holder<?> holder, Object type) {
+		return io.github.xponer2.translator.registry.DataMaps.get(type, holder);
+	}
+
+	/**
+	 * 1.21 {@code Block.canSupportCenter(level, pos, face)}: whether that face of the block there holds something in its
+	 * middle (a candle or torch on a fence post or a full face). It was missing, so Supplementaries' candle holders,
+	 * sconces and globes could never stand anywhere.
+	 */
+	public static boolean canSupportCenter(net.minecraft.world.IBlockAccess world, net.minecraft.util.math.BlockPos pos, net.minecraft.util.EnumFacing face) {
+		var state = world.getBlockState(pos);
+		var shape = state.getBlockFaceShape(world, pos, face);
+		return shape == net.minecraft.block.state.BlockFaceShape.SOLID || shape == net.minecraft.block.state.BlockFaceShape.CENTER
+				|| shape == net.minecraft.block.state.BlockFaceShape.CENTER_BIG || shape == net.minecraft.block.state.BlockFaceShape.CENTER_SMALL
+				|| shape == net.minecraft.block.state.BlockFaceShape.MIDDLE_POLE || shape == net.minecraft.block.state.BlockFaceShape.MIDDLE_POLE_THICK
+				|| shape == net.minecraft.block.state.BlockFaceShape.MIDDLE_POLE_THIN;
+	}
 }

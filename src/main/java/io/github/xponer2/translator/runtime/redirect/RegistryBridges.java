@@ -27,8 +27,7 @@ public final class RegistryBridges {
 
 	/** 1.21 {@code HolderGetter.get(key)}: the holder of the entry, empty when there is none. */
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	public static Optional<?> get(Registry registry, ResourceKey key) {
-		return registry.getHolder(key);
+	public static Optional<?> get(Registry registry, ResourceKey key) {		return registry.getHolder(key);
 	}
 
 	/**
@@ -77,5 +76,36 @@ public final class RegistryBridges {
 			io.github.xponer2.translator.runtime.RuntimeStubs.failed("a holder set of the tag " + tag, e);
 		}
 		return null;
+	}
+
+	/** NeoForge {@code registry.getDataMap(type)}: the values the mods' data maps give the entries, by key. */
+	public static java.util.Map<ResourceKey<?>, Object> getDataMap(Registry<?> registry, Object type) {
+		return io.github.xponer2.translator.registry.DataMaps.byKey(registry, type);
+	}
+
+	/** NeoForge {@code registry.getData(type, key)}: the value the data map gives the entry, null when none. */
+	@javax.annotation.Nullable
+	public static Object getData(Registry<?> registry, Object type, ResourceKey<?> key) {
+		return key == null ? null : io.github.xponer2.translator.registry.DataMaps.get(type, key.location());
+	}
+
+	/** 1.21 {@code registry.getHolder(id)}: the holder of the entry of that numeric id, empty when there is none. */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static Optional<?> getHolder(Registry registry, int id) {
+		Object value = registry.byId(id);
+		if (value == null) {
+			return Optional.empty();
+		}
+		Optional<ResourceKey> key = registry.getResourceKey(value);
+		return key.isPresent() ? registry.getHolder(key.get()) : Optional.empty();
+	}
+
+	/** 1.21 {@code registry.getTags()}: each tag of the registry with its named set. */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static java.util.stream.Stream<?> getTags(Registry registry) {
+		return ((java.util.stream.Stream<TagKey>) registry.getTagNames()).map(tag -> {
+			Optional<Object> set = registry.getTag(tag);
+			return set.isPresent() ? com.mojang.datafixers.util.Pair.of(tag, set.get()) : null;
+		}).filter(java.util.Objects::nonNull);
 	}
 }

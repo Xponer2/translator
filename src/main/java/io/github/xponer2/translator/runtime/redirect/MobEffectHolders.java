@@ -48,6 +48,19 @@ public final class MobEffectHolders {
 	public static final Holder<Potion> LEVITATION = holder(MobEffects.LEVITATION);
 	public static final Holder<Potion> LUCK = holder(MobEffects.LUCK);
 	public static final Holder<Potion> UNLUCK = holder(MobEffects.UNLUCK);
+	// the effects 1.12.2 hasn't: the Translator's (NewMobEffects)
+	public static final Holder<Potion> SLOW_FALLING = holder(NewMobEffects.SLOW_FALLING);
+	public static final Holder<Potion> CONDUIT_POWER = holder(NewMobEffects.CONDUIT_POWER);
+	public static final Holder<Potion> DOLPHINS_GRACE = holder(NewMobEffects.DOLPHINS_GRACE);
+	public static final Holder<Potion> BAD_OMEN = holder(NewMobEffects.BAD_OMEN);
+	public static final Holder<Potion> HERO_OF_THE_VILLAGE = holder(NewMobEffects.HERO_OF_THE_VILLAGE);
+	public static final Holder<Potion> DARKNESS = holder(NewMobEffects.DARKNESS);
+	public static final Holder<Potion> TRIAL_OMEN = holder(NewMobEffects.TRIAL_OMEN);
+	public static final Holder<Potion> RAID_OMEN = holder(NewMobEffects.RAID_OMEN);
+	public static final Holder<Potion> WIND_CHARGED = holder(NewMobEffects.WIND_CHARGED);
+	public static final Holder<Potion> WEAVING = holder(NewMobEffects.WEAVING);
+	public static final Holder<Potion> OOZING = holder(NewMobEffects.OOZING);
+	public static final Holder<Potion> INFESTED = holder(NewMobEffects.INFESTED);
 
 	private MobEffectHolders() {
 	}

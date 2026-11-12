@@ -87,7 +87,12 @@ public abstract class RenderStateShard {
 		ShaderStateShard(String name, boolean textured) {
 			// the 1.21 shaders without a texture (gui, lines, position_color) drop no pixel by its alpha: 1.12.2's alpha
 			// test (0.1) left out the faint parts of slot highlights and gradients
-			super(name, textured ? GlStateManager::enableTexture2D : () -> {
+			// a textured 1.21 shader drops the transparent texels (discard): 1.12.2's alpha test, which earlier drawing may have
+			// left off (JourneyMap's minimap mask then wrote its depth over the whole square and no map tile showed)
+			super(name, textured ? () -> {
+				GlStateManager.enableTexture2D();
+				GlStateManager.enableAlpha();
+			} : () -> {
 				GlStateManager.disableTexture2D();
 				GlStateManager.disableAlpha();
 			}, textured ? GlStateManager::enableTexture2D : () -> {

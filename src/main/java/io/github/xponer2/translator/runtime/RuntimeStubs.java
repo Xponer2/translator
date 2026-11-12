@@ -64,6 +64,12 @@ public final class RuntimeStubs {
 			int line = text.indexOf(10);
 			FAILED.add("failed in " + where + ": " + (line < 0 ? text : text.substring(0, line)));
 			RuntimeMods.LOGGER.error("A 1.21.1 mod failed in {} (further errors there are not logged)", where, error);
+		} else if (DEBUG && DEBUG_SEEN.add(where + " " + error + " " + (error.getStackTrace().length > 0 ? error.getStackTrace()[0] : ""))) {
+			// with -Dtranslator.debug.render: each other error there too, once
+			RuntimeMods.LOGGER.error("A 1.21.1 mod failed in {} again, differently", where, error);
 		}
 	}
+
+	private static final boolean DEBUG = Boolean.getBoolean("translator.debug.render");
+	private static final java.util.Set<String> DEBUG_SEEN = java.util.concurrent.ConcurrentHashMap.newKeySet();
 }
