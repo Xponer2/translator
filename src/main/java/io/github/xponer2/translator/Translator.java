@@ -145,6 +145,7 @@ public final class Translator {
 	public void serverStarting(net.minecraftforge.fml.common.event.FMLServerStartingEvent event) {
 		event.registerServerCommand(new io.github.xponer2.translator.selftest.SelfTest.Command());
 		event.registerServerCommand(new io.github.xponer2.translator.selftest.Persistence.Command());
+		event.registerServerCommand(new io.github.xponer2.translator.selftest.Structures.Command());
 		ServerEvents.post(new ServerEvents.ServerStartingEvent(event.getServer()));
 		// the 1.21.1 mods' commands (NeoForge RegisterCommandsEvent, brigadier)
 		io.github.xponer2.translator.runtime.neoforge.ModCommands.register(event);

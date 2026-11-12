@@ -153,7 +153,12 @@ public final class AutoTest {
 				if (this.ticks > 40 && SelfTest.running() == null) {
 					// the first copy (or the only one) also tours the screens of the mods that change the interface
 					String shard = System.getProperty("translator.autotest.shard");
-					if (shard == null || shard.startsWith("1/")) {
+					if (Boolean.getBoolean("translator.autotest.structures") && !Structures.finished) {
+						// -Dtranslator.autotest.structures=true: every structure of the mods placed whole first
+						LOGGER.info("Self-test finished, placing the structures of the mods");
+						mc.player.sendChatMessage("/translatorstructures");
+						this.state = 11;
+					} else if (shard == null || shard.startsWith("1/")) {
 						// then what the mods keep across leaving the world and coming back, then the screens
 						LOGGER.info("Self-test finished, placing block entities and mobs for the save-and-reload check");
 						mc.player.sendChatMessage("/translatorpersist place");
@@ -247,6 +252,16 @@ public final class AutoTest {
 					this.tour = new ScreenTour(mc);
 					this.state = 4;
 					this.ticks = 0;
+				}
+			}
+			case 11 -> {
+				// the structures are placed on the server thread; then on as after the self-test
+				if (Structures.finished && this.ticks > 40) {
+					this.state = 2;
+					this.ticks = 41;
+				} else if (this.ticks > 20 * 60 * 10) {
+					LOGGER.error("Automatic self-test: placing the structures took over 10 minutes, going on");
+					Structures.finished = true;
 				}
 			}
 			default -> {

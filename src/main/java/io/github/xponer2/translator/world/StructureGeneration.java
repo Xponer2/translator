@@ -74,7 +74,7 @@ public final class StructureGeneration implements IWorldGenerator {
 	private static final int RANGE = 8;
 	private static final Object NONE = new Object();
 
-	private final Map<World, Level> levels = new java.util.WeakHashMap<>();
+	private static final Map<World, Level> LEVELS = new java.util.WeakHashMap<>();
 	@Nullable
 	private static Object randomState;
 
@@ -95,9 +95,71 @@ public final class StructureGeneration implements IWorldGenerator {
 		if (!ENABLED || !(world instanceof WorldServer server)) {
 			return;
 		}
-		Level level = this.levels.computeIfAbsent(world, w -> Level.create(server));
+		Level level = level(server);
 		if (level != null) {
 			level.populate(chunkX, chunkZ);
+		}
+	}
+
+	@Nullable
+	private static synchronized Level level(WorldServer world) {
+		return LEVELS.computeIfAbsent(world, w -> Level.create(world));
+	}
+
+	/** The structures of the 1.21.1 mods ({@code data/<mod>/worldgen/structure}), by id. */
+	public static List<ResourceLocation> modStructures() {
+		List<ResourceLocation> found = new ArrayList<>();
+		String folder = "worldgen/structure/";
+		for (ResourceLocation file : io.github.xponer2.translator.resources.ServerResourceManager.get()
+				.listResources("worldgen/structure", id -> id.getPath().endsWith(".json")).keySet()) {
+			if (!"minecraft".equals(file.getNamespace())) {
+				String path = file.getPath();
+				found.add(new ResourceLocation(file.getNamespace(), path.substring(folder.length(), path.length() - ".json".length())));
+			}
+		}
+		return found;
+	}
+
+	/**
+	 * For the self-test: makes the structure with its start in that chunk (its biome and placement not asked) and places
+	 * all of it, chunk by chunk (they are loaded). Throws what its 1.21.1 code threw; null when it made no start there
+	 * (its own checks: the ground, the height), else "pieces, size, chunks".
+	 */
+	@Nullable
+	public static String placeForTest(WorldServer world, ResourceLocation id, int chunkX, int chunkZ) throws Throwable {
+		Level level = level(world);
+		if (level == null) {
+			throw new IllegalStateException("no 1.21 structure context for this world");
+		}
+		DataStructures.bootstrap();
+		var registry = io.github.xponer2.translator.util.BuiltInRegistries.byKey(ResourceKey.<Object>createRegistryKey(new ResourceLocation("worldgen/structure")));
+		Object structure = registry.get(id);
+		if (structure == null) {
+			throw new IllegalStateException("its file didn't read (see the log: Couldn't read the 1.21 structure data)");
+		}
+		try {
+			Predicate<Object> any = holder -> true;
+			Object start = Reflect.method(structure, "generate", 10).invoke(structure, RegistryAccess.INSTANCE, level.generator, level.biomes, level.randomState,
+					world.getStructureTemplateManager(), world.getSeed(), new ChunkPos(chunkX, chunkZ), 0, world, any);
+			if (start == null || !(Boolean) Reflect.method(start, "isValid", 0).invoke(start)) {
+				return null;
+			}
+			StructureBoundingBox box = (StructureBoundingBox) Reflect.method(start, "getBoundingBox", 0).invoke(start);
+			Object pieces = Reflect.method(start, "getPieces", 0).invoke(start);
+			int chunks = 0;
+			for (int cx = box.minX >> 4; cx <= box.maxX >> 4 && chunks < 1024; cx++) {
+				for (int cz = box.minZ >> 4; cz <= box.maxZ >> 4 && chunks < 1024; cz++) {
+					world.getChunk(cx, cz);
+					var area = new StructureBoundingBox(cx * 16, 0, cz * 16, cx * 16 + 15, 255, cz * 16 + 15);
+					var random = new Random(world.getSeed() ^ ((long) cx * 341873128712L + (long) cz * 132897987541L));
+					Reflect.method(start, "placeInChunk", 6).invoke(start, world, null, level.generator, random, area, new ChunkPos(cx, cz));
+					chunks++;
+				}
+			}
+			return (pieces instanceof List<?> list ? list.size() : -1) + " pieces, " + (box.maxX - box.minX + 1) + "x" + (box.maxY - box.minY + 1) + "x"
+					+ (box.maxZ - box.minZ + 1) + " at " + box.minX + " " + box.minY + " " + box.minZ + ", " + chunks + " chunks";
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			throw e.getCause() != null ? e.getCause() : e;
 		}
 	}
 
