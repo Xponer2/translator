@@ -112,6 +112,30 @@ public final class PotionContents {
 		return PotionUtils.getPotionColorFromEffectList(list);
 	}
 
+	/**
+	 * 1.21 {@code PotionContents.CODEC} / {@code STREAM_CODEC}: the contents as 1.12.2's potion tags in a compound. The
+	 * mods save potions with them (Ars Nouveau's potion jars: the carried codec was null here, and a jar crashed the
+	 * server when its chunk was sent).
+	 */
+	public static final com.mojang.serialization.Codec<PotionContents> CODEC = io.github.xponer2.translator.util.Codecs.COMPOUND_TAG
+			.xmap(PotionContents::fromTag, PotionContents::toTag);
+	public static final io.github.xponer2.translator.network.StreamCodec<io.netty.buffer.ByteBuf, PotionContents> STREAM_CODEC =
+			io.github.xponer2.translator.network.ByteBufCodecs.COMPOUND_TAG.map(PotionContents::fromTag, PotionContents::toTag);
+
+	private static PotionContents fromTag(NBTTagCompound tag) {
+		PotionType type = PotionUtils.getPotionTypeFromNBT(tag);
+		var custom = new ArrayList<PotionEffect>();
+		PotionUtils.addCustomPotionEffectToList(tag, custom);
+		return new PotionContents(type == PotionTypes.EMPTY ? Optional.empty() : Optional.of(Holder.direct(type)),
+				tag.hasKey("CustomPotionColor", 99) ? Optional.of(tag.getInteger("CustomPotionColor")) : Optional.empty(), custom);
+	}
+
+	private static NBTTagCompound toTag(PotionContents contents) {
+		ItemStack stack = new ItemStack(net.minecraft.init.Items.POTIONITEM);
+		write(stack, contents);
+		return stack.hasTagCompound() ? stack.getTagCompound() : new NBTTagCompound();
+	}
+
 	/** The contents a 1.12.2 stack has (null when it has none of the potion tags). */
 	@Nullable
 	static PotionContents read(ItemStack stack) {
