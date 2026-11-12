@@ -475,7 +475,7 @@ public final class DataAdvancements {
 	}
 
 	/** The 1.12.2 biomes of a 1.21 biome list (an id, a list, a tag): those registered here. */
-	private static List<String> biomes(JsonElement biomes) {
+	public static List<String> biomes(JsonElement biomes) {
 		var ids = new ArrayList<String>();
 		for (String name : names(biomes)) {
 			if (name.startsWith("#")) {
@@ -509,13 +509,13 @@ public final class DataAdvancements {
 
 	/** A 1.21 dimension id as 1.12.2 names it (overworld, the_nether, the_end); null for another. */
 	@Nullable
-	private static String dimension(String id) {
+	public static String dimension(String id) {
 		String path = id.startsWith("minecraft:") ? id.substring("minecraft:".length()) : id;
 		return path.equals("overworld") || path.equals("the_nether") || path.equals("the_end") ? path : null;
 	}
 
 	/** 1.12.2 item predicates for a 1.21 one (its items, a list or a tag, each its own): empty when none is here. */
-	private static List<JsonObject> itemPredicates(JsonElement predicate) {
+	public static List<JsonObject> itemPredicates(JsonElement predicate) {
 		var out = new ArrayList<JsonObject>();
 		if (!predicate.isJsonObject()) {
 			return out;

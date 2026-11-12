@@ -701,3 +701,24 @@ R	net/minecraft/entity/EntityLivingBase	io/github/xponer2/translator/runtime/red
 R	net/minecraft/entity/EntityLiving	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/entity/player/EntityPlayer	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/entity/player/EntityPlayerMP	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+# the 1.21 data API on 1.12.2's advancements, predicates, loot contexts and commands (DataApiBridges): the datagen
+# Advancement.Builder (mutable, builds a holder), the predicate codecs of the mods' triggers (their static initializers
+# were left empty), criteria of 1.12.2's and the mods' triggers, new LootContext.Builder(params), server.getCommands(),
+# Recipe.CODEC and STREAM_CODEC (RecipeCodecs)
+R	net/minecraft/advancements/Advancement$Builder	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/advancements/Advancement	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/advancements/DisplayInfo	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/advancements/AdvancementRewards	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/advancements/Criterion	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/advancements/ICriterionTrigger	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/advancements/critereon/RecipeUnlockedTrigger	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/advancements/critereon/EntityPredicate	io/github/xponer2/translator/runtime/redirect/DataApiBridges$EntityPredicates
+R	net/minecraft/advancements/critereon/ItemPredicate	io/github/xponer2/translator/runtime/redirect/DataApiBridges$ItemPredicates
+R	net/minecraft/advancements/critereon/LocationPredicate	io/github/xponer2/translator/runtime/redirect/DataApiBridges$LocationPredicates
+R	net/minecraft/advancements/critereon/MobEffectsPredicate	io/github/xponer2/translator/runtime/redirect/DataApiBridges$MobEffectsPredicates
+R	net/minecraft/advancements/critereon/DistancePredicate	io/github/xponer2/translator/runtime/redirect/DataApiBridges$DistancePredicates
+R	net/minecraft/world/storage/loot/LootContext$Builder	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/world/storage/loot/LootContext$EntityTarget	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/server/MinecraftServer	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+X	net/minecraft/commands/Commands	performPrefixedCommand	(Lnet/minecraft/commands/CommandSourceStack;Ljava/lang/String;)V	io/github/xponer2/translator/runtime/redirect/DataApiBridges	(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V
+R	io/github/xponer2/translator/recipe/Recipe	io/github/xponer2/translator/runtime/redirect/RecipeCodecs

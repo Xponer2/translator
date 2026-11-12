@@ -45,7 +45,28 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
  * own classes (converted, carried), reached by reflection.
  */
 public final class ModCommands {
+	/** The dispatcher of the mods' commands (1.21 {@code server.getCommands().getDispatcher()}), once the server started. */
+	private static volatile Object dispatcher;
+
 	private ModCommands() {
+	}
+
+	/**
+	 * The dispatcher of the mods' commands; before the server posted RegisterCommandsEvent, an empty one of its own
+	 * (null when brigadier can't be reached).
+	 */
+	@Nullable
+	public static Object dispatcher(MinecraftServer server) {
+		Object current = dispatcher;
+		if (current == null) {
+			try {
+				current = RegisterCommandsEvent.getDispatcher(RegisterCommandsEvent.create(server));
+				dispatcher = current;
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
+		return current;
 	}
 
 	/** Posts RegisterCommandsEvent and registers the mods' root commands (a vanilla command's name is left to vanilla). */
@@ -60,6 +81,7 @@ public final class ModCommands {
 		}
 		ServerEvents.post(event);
 		Object dispatcher = RegisterCommandsEvent.getDispatcher(event);
+		ModCommands.dispatcher = dispatcher;
 		Collection<?> roots;
 		try {
 			roots = new ArrayList<>((Collection<?>) call(call(dispatcher, "getRoot"), "getChildren"));

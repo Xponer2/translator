@@ -44,6 +44,21 @@ public final class JsonLootTable extends LootTable {
 		return json != null ? new JsonLootTable(id, json) : fallback;
 	}
 
+	/**
+	 * What 1.12.2's {@code LootTableManager.getLootTableFromLocation} gives (ModLootTables): a table it found, else the
+	 * mod's 1.21 table of that id (a vanilla chest the 1.21.1 mods' structures fill: Twilight Forest's, the Aether's).
+	 */
+	public static LootTable orModTable(LootTable found, ResourceLocation id) {
+		if (found != LootTable.EMPTY_LOOT_TABLE || id == null) {
+			return found;
+		}
+		try {
+			return of(id, found);
+		} catch (RuntimeException e) {
+			return found;
+		}
+	}
+
 	@Override
 	public List<ItemStack> generateLootForPools(Random random, LootContext context) {
 		var out = new ArrayList<ItemStack>();
