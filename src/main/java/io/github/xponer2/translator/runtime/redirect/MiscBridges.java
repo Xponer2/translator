@@ -2403,6 +2403,16 @@ public final class MiscBridges {
 		return io.github.xponer2.translator.registry.DataMaps.get(type, holder);
 	}
 
+	/** NeoForge {@code state.isFertile(level, pos)}: 1.12.2's Block.isFertile (farmland, and Farmer's Delight's rich soil). */
+	public static boolean isFertile(net.minecraft.block.state.IBlockState state, net.minecraft.world.IBlockAccess world, net.minecraft.util.math.BlockPos pos) {
+		return world instanceof net.minecraft.world.World level && state.getBlock().isFertile(level, pos);
+	}
+
+	/** 1.21 {@code foodData.eat(food)}: its hunger and saturation (Farmer's Delight's feasts and pies, eaten from the block). */
+	public static void eat(net.minecraft.util.FoodStats stats, io.github.xponer2.translator.item.FoodProperties food) {
+		stats.addStats(food.nutrition(), food.saturation());
+	}
+
 	/** 1.21 {@code BlockGetter.getMaxLightLevel()}: 15, as in 1.12.2 (Macaw's blinds give their light block by it). */
 	public static int getMaxLightLevel(net.minecraft.world.IBlockAccess world) {
 		return 15;

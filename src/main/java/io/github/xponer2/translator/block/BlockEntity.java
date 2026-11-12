@@ -230,6 +230,16 @@ public class BlockEntity extends TileEntity implements ITickable {
 	protected void collectImplicitComponents(io.github.xponer2.translator.component.DataComponentMap.Builder builder) {
 	}
 
+	/**
+	 * 1.21 {@code collectComponents()}: the components this block entity gives its item (what it collects itself).
+	 * Farmer's Delight's cooking pot keeps its meal and container on the pot item by it.
+	 */
+	public io.github.xponer2.translator.component.DataComponentMap collectComponents() {
+		var builder = io.github.xponer2.translator.component.DataComponentMap.builder();
+		this.collectImplicitComponents(builder);
+		return builder.build();
+	}
+
 	public void removeComponentsFromTag(NBTTagCompound tag) {
 	}
 

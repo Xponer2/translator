@@ -107,6 +107,30 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 	 * 1.21 {@code Block.isExceptionForConnection}: blocks fences, walls, bars and panes don't connect to although they
 	 * are full (leaves, barrier, pumpkins, melon, shulker boxes).
 	 */
+	/**
+	 * 1.21 {@code canSupportRigidBlock(level, pos)}: the block there has a full top face (Farmer's Delight's pies, feasts
+	 * and cutting boards stand only on one; the call was missing, so none could be placed).
+	 */
+	public static boolean canSupportRigidBlock(IBlockAccess world, BlockPos pos) {
+		IBlockState below = world.getBlockState(pos);
+		return below.getBlockFaceShape(world, pos, net.minecraft.util.EnumFacing.UP) == net.minecraft.block.state.BlockFaceShape.SOLID;
+	}
+
+	/**
+	 * 1.21 {@code pushEntitiesUp(from, to, level, pos)}: the entities standing in the block when it grows (path or farmland
+	 * back to a full block: Farmer's Delight's rich soil) are lifted onto it. Gives the new state.
+	 */
+	public static IBlockState pushEntitiesUp(IBlockState from, IBlockState to, net.minecraft.world.World world, BlockPos pos) {
+		net.minecraft.util.math.AxisAlignedBB box = new net.minecraft.util.math.AxisAlignedBB(pos).expand(0, 1, 0);
+		for (net.minecraft.entity.Entity entity : world.getEntitiesWithinAABBExcludingEntity(null, box)) {
+			double top = pos.getY() + 1.0;
+			if (entity.posY < top && entity.posY >= pos.getY()) {
+				entity.setPositionAndUpdate(entity.posX, top, entity.posZ);
+			}
+		}
+		return to;
+	}
+
 	public static boolean isExceptionForConnection(IBlockState state) {
 		net.minecraft.block.Block block = state.getBlock();
 		return block instanceof net.minecraft.block.BlockLeaves || block instanceof net.minecraft.block.BlockShulkerBox
