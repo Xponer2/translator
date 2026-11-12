@@ -163,6 +163,19 @@ public final class Translator {
 		ServerEvents.post(new ServerEvents.ServerStoppingEvent(net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance()));
 	}
 
+	/**
+	 * The block ids changed (frozen after loading, a world's saved ids, a server's ids, back to the game's own): the
+	 * extra ids of the 1.21.1 mods' block states past their metadata again (Forge numbered the states anew).
+	 */
+	@Mod.EventHandler
+	public void idMapping(net.minecraftforge.fml.common.event.FMLModIdMappingEvent event) {
+		try {
+			io.github.xponer2.translator.world.StateIds.assign();
+		} catch (RuntimeException | LinkageError e) {
+			LOGGER.error("Can't number the block states past their metadata: they come back as their metadata's", e);
+		}
+	}
+
 	@Mod.EventHandler
 	public void serverStopped(net.minecraftforge.fml.common.event.FMLServerStoppedEvent event) {
 		ServerEvents.post(new ServerEvents.ServerStoppedEvent(net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance()));
