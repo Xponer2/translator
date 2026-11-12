@@ -224,6 +224,29 @@ public final class ChunkSections {
 	}
 
 	/** 1.21 {@code container.get(x, y, z)} as a mod's erased call reads it (a block state, or a biome holder). */
+	/**
+	 * 1.21 {@code container.count(counter)}: each state in the section with how many blocks have it (the carried
+	 * PalettedContainer.CountConsumer, called through its interface). AE2's meteorite compass looks for sky stone so.
+	 */
+	public static void count(BlockStateContainer container, Object counter) {
+		var counts = new java.util.IdentityHashMap<IBlockState, int[]>();
+		for (int index = 0; index < 4096; index++) {
+			counts.computeIfAbsent(container.get(index & 15, index >> 8 & 15, index >> 4 & 15), k -> new int[1])[0]++;
+		}
+		try {
+			java.lang.reflect.Method accept = Class.forName("net.minecraft.world.level.chunk.PalettedContainer$CountConsumer", true,
+					net.minecraft.launchwrapper.Launch.classLoader).getMethod("accept", Object.class, int.class);
+			for (var entry : counts.entrySet()) {
+				accept.invoke(counter, entry.getKey(), entry.getValue()[0]);
+			}
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			Throwable cause = e.getCause();
+			throw cause instanceof RuntimeException runtime ? runtime : new IllegalStateException(cause);
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("No carried PalettedContainer.CountConsumer", e);
+		}
+	}
+
 	public static Object get(BlockStateContainer container, int x, int y, int z) {
 		return container instanceof BiomeContainer biomes ? biomes.biome(x, y, z) : container.get(x, y, z);
 	}
