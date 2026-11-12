@@ -562,3 +562,5 @@ X	net/minecraft/world/item/crafting/AbstractCookingRecipe	getExperience	()F	io/g
 X	net/minecraft/world/item/crafting/AbstractCookingRecipe	getCookingTime	()I	io/github/xponer2/translator/recipe/CookingRecipes	(Ljava/lang/Object;)I
 # 1.21 PlaySoundEvent.getSound is the sound that plays (1.12.2's getResultSound; its getSound is the original)
 X	net/minecraftforge/client/event/sound/PlaySoundEvent	getSound	()Lnet/minecraft/client/audio/ISound;	io/github/xponer2/translator/runtime/redirect/ClientGapBridges	(Lnet/minecraftforge/client/event/sound/PlaySoundEvent;)Lnet/minecraft/client/audio/ISound;
+# NeoForge KeyModifier.isKeyCodeModifier takes a GLFW key (JEI's key mappings); 1.12.2's an LWJGL code
+X	net/minecraftforge/client/settings/KeyModifier	isKeyCodeModifier	(Lio/github/xponer2/translator/runtime/neoforge/InputConstants$Key;)Z	io/github/xponer2/translator/runtime/redirect/ClientGapBridges

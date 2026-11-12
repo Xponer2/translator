@@ -763,3 +763,6 @@ M	net/minecraft/client/gui/screens/ConfirmLinkScreen	copyToClipboard()	copyToCli
 R	com/google/common/base/Stopwatch	io/github/xponer2/translator/runtime/redirect/MiscBridges
 # 1.21 PlaySoundEvent: getEngine, getOriginalSound, setSound (Aether's music and sounds)
 R	net/minecraftforge/client/event/sound/PlaySoundEvent	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+# JEI's client calls: TooltipFlag.asCreative, User.getProfileId
+R	net/minecraft/client/util/ITooltipFlag$TooltipFlags	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/util/Session	io/github/xponer2/translator/runtime/redirect/ClientGapBridges

@@ -89,6 +89,11 @@ public class CreativeModeTab implements RegistrationCallback {
     public void buildContents(ItemDisplayParameters parameters) {
     }
 
+    /** 1.21 {@code shouldDisplay()}: whether the tab shows (JEI names an item's tabs by it); 1.12.2 shows every tab. */
+    public boolean shouldDisplay() {
+        return true;
+    }
+
     public boolean contains(ItemStack stack) {
         for (ItemStack shown : this.displayItems()) {
             if (ItemStack.areItemsEqual(shown, stack)) {

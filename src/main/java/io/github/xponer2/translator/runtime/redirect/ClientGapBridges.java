@@ -606,4 +606,22 @@ public final class ClientGapBridges {
 	public static void setSound(net.minecraftforge.client.event.sound.PlaySoundEvent event, net.minecraft.client.audio.ISound sound) {
 		event.setResultSound(sound);
 	}
+
+	// --- JEI's client calls --------------------------------------------------------------------------------------------
+
+	/** 1.21 {@code TooltipFlag.Default.asCreative()}: 1.12.2's flags have no creative variant, the same flag. */
+	public static net.minecraft.client.util.ITooltipFlag.TooltipFlags asCreative(net.minecraft.client.util.ITooltipFlag.TooltipFlags flags) {
+		return flags;
+	}
+
+	/** 1.21 {@code KeyModifier.isKeyCodeModifier(key)}: a GLFW key, 1.12.2 asks with its LWJGL code. */
+	public static boolean isKeyCodeModifier(io.github.xponer2.translator.runtime.neoforge.InputConstants.Key key) {
+		return key != null && net.minecraftforge.client.settings.KeyModifier.isKeyCodeModifier(
+				io.github.xponer2.translator.runtime.neoforge.KeyMapping.toLwjgl(key.getValue()));
+	}
+
+	/** 1.21 {@code User.getProfileId()}: the player's UUID (JEI keeps its settings per player by it). */
+	public static java.util.UUID getProfileId(net.minecraft.util.Session session) {
+		return session.getProfile().getId();
+	}
 }

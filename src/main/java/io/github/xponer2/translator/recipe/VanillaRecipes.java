@@ -133,6 +133,16 @@ public final class VanillaRecipes {
             this(group, ingredient, result, 0.0F, 200);
         }
 
+        /**
+         * 1.21's constructor (group, book category, ingredient, result, experience, cooking time): a mod's smelting recipe
+         * calls it (JEI's fuel and smelting recipes; none could be made). The book category stays out: 1.12.2's furnace
+         * has no recipe book tabs.
+         */
+        public SmeltingRecipe(String group, net.minecraft.world.item.crafting.CookingBookCategory category, Ingredient ingredient, ItemStack result,
+                float experience, int cookingTime) {
+            this(group, ingredient, result, experience, cookingTime);
+        }
+
         public float getExperience() {
             return this.experience;
         }
