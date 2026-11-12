@@ -206,11 +206,6 @@ public interface Registry<T> extends Iterable<T>, HolderLookup, IdMap<T> {
         return this.listElements();
     }
 
-    /** 1.21 {@code filterFeatures(flags)}: 1.12.2 has no feature flags, every entry is enabled (JEI lists all items by it). */
-    default Registry<T> filterFeatures(io.github.xponer2.translator.util.FeatureFlagSet flags) {
-        return this;
-    }
-
     /** 1.21 {@code listElementIds()}: the keys of all entries (Accessories and others go through all items by it). */
     default Stream<ResourceKey<T>> listElementIds() {
         return this.keySet().stream().map(location -> ResourceKey.create(this.key(), location));

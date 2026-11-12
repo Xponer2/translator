@@ -759,8 +759,6 @@ M	net/minecraft/client/gui/screens/ConfirmScreen	setDelay(int)	setDelay
 F	net/minecraft/client/gui/screens/ConfirmLinkScreen	url	url
 F	net/minecraft/client/gui/screens/ConfirmLinkScreen	showWarning	showWarning
 M	net/minecraft/client/gui/screens/ConfirmLinkScreen	copyToClipboard()	copyToClipboard
-# Guava 32's Stopwatch.elapsed() on 1.12.2's Guava 21
-R	com/google/common/base/Stopwatch	io/github/xponer2/translator/runtime/redirect/MiscBridges
 # 1.21 PlaySoundEvent: getEngine, getOriginalSound, setSound (Aether's music and sounds)
 R	net/minecraftforge/client/event/sound/PlaySoundEvent	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 # JEI's client calls: TooltipFlag.asCreative, User.getProfileId
