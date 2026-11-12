@@ -111,6 +111,24 @@ public class BlockEntity extends TileEntity implements ITickable {
 
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound tag) {
+		this.ensureRegistered();
+		super.writeToNBT(tag);
+		try {
+			this.saveAdditional(tag, RegistryAccess.INSTANCE);
+		} catch (RuntimeException | LinkageError e) {
+			// a mod's save failing crashed the server (the world saved or sent to a player): logged, what it wrote is kept
+			// (Supplementaries' sign posts, whose text 1.12.2 couldn't resolve)
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".saveAdditional", e);
+		}
+		return tag;
+	}
+
+	/**
+	 * The class registered with 1.12.2 (it saves and sends a block entity under its class's id) when its type didn't
+	 * register it: before a save and before an update tag (1.12.2's getUpdateTag writes the id too: BOP's anomaly crashed
+	 * the server when its chunk was sent, "missing a mapping").
+	 */
+	private void ensureRegistered() {
 		if (TileEntity.getKey(this.getClass()) == null) {
 			// a class its type didn't register (its sample was another class): 1.12.2 can't save it otherwise
 			var id = this.type == null ? null
@@ -129,15 +147,6 @@ public class BlockEntity extends TileEntity implements ITickable {
 				net.minecraftforge.fml.common.registry.GameRegistry.registerTileEntity(this.getClass(), id);
 			}
 		}
-		super.writeToNBT(tag);
-		try {
-			this.saveAdditional(tag, RegistryAccess.INSTANCE);
-		} catch (RuntimeException | LinkageError e) {
-			// a mod's save failing crashed the server (the world saved or sent to a player): logged, what it wrote is kept
-			// (Supplementaries' sign posts, whose text 1.12.2 couldn't resolve)
-			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".saveAdditional", e);
-		}
-		return tag;
 	}
 
 	// NeoForge loads the tag of an update packet (1.12.2 ignores it)
@@ -153,11 +162,13 @@ public class BlockEntity extends TileEntity implements ITickable {
 
 	/** 1.21 {@code getUpdateTag(registries)}; the 1.12.2 one calls it. */
 	public NBTTagCompound getUpdateTag(HolderLookup.Provider registries) {
+		this.ensureRegistered();
 		return super.getUpdateTag();
 	}
 
 	@Override
 	public NBTTagCompound getUpdateTag() {
+		this.ensureRegistered();
 		return this.getUpdateTag(RegistryAccess.INSTANCE);
 	}
 
