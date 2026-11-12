@@ -564,6 +564,11 @@ public final class MiscBridges {
 		return entity.getHeldItemMainhand();
 	}
 
+	/** Guava 32's {@code stopwatch.elapsed()} (1.12.2's Guava 21 has only elapsed(unit)). */
+	public static java.time.Duration elapsed(com.google.common.base.Stopwatch stopwatch) {
+		return java.time.Duration.ofNanos(stopwatch.elapsed(java.util.concurrent.TimeUnit.NANOSECONDS));
+	}
+
 	/** 1.21 {@code enchantment.getWeight()}: 1.12.2's rarity weight (enchanting tables and loot pick by it; Artifacts). */
 	public static int getWeight(net.minecraft.enchantment.Enchantment enchantment) {
 		return enchantment.getRarity().getWeight();

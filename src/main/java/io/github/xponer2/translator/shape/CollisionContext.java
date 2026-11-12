@@ -31,4 +31,17 @@ public interface CollisionContext {
 	static CollisionContext of(@Nullable Entity entity) {
 		return entity == null ? EMPTY : () -> entity;
 	}
+
+	/**
+	 * 1.21 {@code isHoldingItem(item)}: the entity asking holds it in its main hand (scaffolding and Supplementaries'
+	 * blocks change their shape for a player holding them).
+	 */
+	default boolean isHoldingItem(net.minecraft.item.Item item) {
+		return this.getEntity() instanceof net.minecraft.entity.EntityLivingBase living && living.getHeldItemMainhand().getItem() == item;
+	}
+
+	/** 1.21 {@code isDescending()}: the entity asking sneaks (it goes down through scaffolding). */
+	default boolean isDescending() {
+		return this.getEntity() != null && this.getEntity().isSneaking();
+	}
 }

@@ -759,3 +759,5 @@ M	net/minecraft/client/gui/screens/ConfirmScreen	setDelay(int)	setDelay
 F	net/minecraft/client/gui/screens/ConfirmLinkScreen	url	url
 F	net/minecraft/client/gui/screens/ConfirmLinkScreen	showWarning	showWarning
 M	net/minecraft/client/gui/screens/ConfirmLinkScreen	copyToClipboard()	copyToClipboard
+# Guava 32's Stopwatch.elapsed() on 1.12.2's Guava 21
+R	com/google/common/base/Stopwatch	io/github/xponer2/translator/runtime/redirect/MiscBridges

@@ -206,6 +206,11 @@ public interface Registry<T> extends Iterable<T>, HolderLookup, IdMap<T> {
         return this.listElements();
     }
 
+    /** 1.21 {@code listElementIds()}: the keys of all entries (Accessories and others go through all items by it). */
+    default Stream<ResourceKey<T>> listElementIds() {
+        return this.keySet().stream().map(location -> ResourceKey.create(this.key(), location));
+    }
+
     /** The members of an item or block tag (the tag files of the mods), as holders. */
     @SuppressWarnings("unchecked")
     default Iterable<Holder<T>> getTagOrEmpty(io.github.xponer2.translator.util.TagKey<T> tag) {
