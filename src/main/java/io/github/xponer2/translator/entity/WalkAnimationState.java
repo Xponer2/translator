@@ -33,9 +33,22 @@ public class WalkAnimationState {
 		this.entity = null;
 	}
 
-	/** 1.21 {@code LivingEntity.walkAnimation}. */
+	/** The states mods set as their entities' own ({@code walkAnimation = state}). */
+	private static final java.util.Map<EntityLivingBase, WalkAnimationState> OWN = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+	/** 1.21 {@code LivingEntity.walkAnimation}: the state a mod set for the entity, else its 1.12.2 limb swing. */
 	public static WalkAnimationState of(EntityLivingBase entity) {
-		return new WalkAnimationState(entity);
+		WalkAnimationState own = OWN.isEmpty() ? null : OWN.get(entity);
+		return own != null ? own : new WalkAnimationState(entity);
+	}
+
+	/** 1.21 {@code living.walkAnimation = state}: the entity's walk animation is that state from now (null: its own again). */
+	public static void set(EntityLivingBase entity, @javax.annotation.Nullable WalkAnimationState state) {
+		if (state == null || state.entity == entity) {
+			OWN.remove(entity);
+		} else {
+			OWN.put(entity, state);
+		}
 	}
 
 	public void setSpeed(float speed) {

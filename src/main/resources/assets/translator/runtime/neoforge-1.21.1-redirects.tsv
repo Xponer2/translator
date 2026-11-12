@@ -683,3 +683,21 @@ R	net/minecraft/client/gui/GuiNewChat	io/github/xponer2/translator/runtime/redir
 # carried 1.21 structures: chests of their pieces (setLootTable with a ResourceKey), Rotation.rotation() of templates
 R	net/minecraft/tileentity/TileEntityLockableLoot	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 R	net/minecraft/util/Rotation	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# the world classes' 1.21 calls 1.12.2 lacks: dimension effects, brewing, chunks by status, collisions, free positions, explosion getters, chunk positions (WorldApiBridges)
+R	net/minecraft/world/World	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/world/IBlockAccess	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/world/chunk/Chunk	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/world/DimensionType	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/world/Explosion	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/util/math/ChunkPos	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/world/storage/WorldInfo	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/world/chunk/storage/ExtendedBlockStorage	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+R	net/minecraft/world/gen/ChunkProviderServer	io/github/xponer2/translator/runtime/redirect/WorldApiBridges
+# 1.21 members of Entity, LivingEntity, Mob, Player and ServerPlayer the 1.12.2 classes lack (EntityApiBridges): sleeping,
+# multipart entities, loot, experience and equipment tables, poses, portals, fluid heights, captured drops, recipe book
+R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/EntityLivingBase	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/EntityLiving	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/player/EntityPlayer	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/player/EntityPlayerMP	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
