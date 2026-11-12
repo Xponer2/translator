@@ -560,3 +560,5 @@ X	translator_api/net/neoforged/neoforge/event/EventHooks	getItemBurnTime	(Lnet/m
 # 1.21 AbstractCookingRecipe getters on the furnace facade too (JEI's smelting recipe codec references them)
 X	net/minecraft/world/item/crafting/AbstractCookingRecipe	getExperience	()F	io/github/xponer2/translator/recipe/CookingRecipes	(Ljava/lang/Object;)F
 X	net/minecraft/world/item/crafting/AbstractCookingRecipe	getCookingTime	()I	io/github/xponer2/translator/recipe/CookingRecipes	(Ljava/lang/Object;)I
+# 1.21 PlaySoundEvent.getSound is the sound that plays (1.12.2's getResultSound; its getSound is the original)
+X	net/minecraftforge/client/event/sound/PlaySoundEvent	getSound	()Lnet/minecraft/client/audio/ISound;	io/github/xponer2/translator/runtime/redirect/ClientGapBridges	(Lnet/minecraftforge/client/event/sound/PlaySoundEvent;)Lnet/minecraft/client/audio/ISound;

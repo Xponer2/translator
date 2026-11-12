@@ -587,4 +587,23 @@ public final class ClientGapBridges {
 			int mouseY, boolean focused) {
 		chat.drawChat(tick);
 	}
+
+	// --- PlaySoundEvent: 1.21's getSound is the result (1.12.2's getResultSound), getOriginalSound 1.12.2's getSound ----
+
+	public static net.minecraft.client.audio.SoundManager getEngine(net.minecraftforge.client.event.sound.PlaySoundEvent event) {
+		return event.getManager();
+	}
+
+	public static net.minecraft.client.audio.ISound getOriginalSound(net.minecraftforge.client.event.sound.PlaySoundEvent event) {
+		return event.getSound();
+	}
+
+	/** 1.21 {@code event.getSound()}: the sound that will play (a listener may have changed it: Aether's music). */
+	public static net.minecraft.client.audio.ISound getSound(net.minecraftforge.client.event.sound.PlaySoundEvent event) {
+		return event.getResultSound();
+	}
+
+	public static void setSound(net.minecraftforge.client.event.sound.PlaySoundEvent event, net.minecraft.client.audio.ISound sound) {
+		event.setResultSound(sound);
+	}
 }
