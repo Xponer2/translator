@@ -14,10 +14,25 @@ package io.github.xponer2.translator.client;
  * The 1.21 buffers by render type ({@code MultiBufferSource}). 1.12.2 draws immediately, so a buffer only tells the
  * drawing helpers which render state to use. Client only.
  */
-public final class MultiBufferSource {
+public class MultiBufferSource {
+    /** Every buffer source made: they share the 1.12.2 Tessellator. */
+    private static final java.util.Set<MultiBufferSource> SOURCES = java.util.Collections.synchronizedSet(
+            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>()));
+
     public static final MultiBufferSource INSTANCE = new MultiBufferSource();
 
-    private MultiBufferSource() { }
+    private MultiBufferSource() {
+        SOURCES.add(this);
+    }
+
+    /**
+     * 1.21 {@code new MultiBufferSource.BufferSource(sharedBuffer, fixedBuffers)}: a mod's own buffer source (its subclass
+     * wraps the buffers: Patchouli's ghost multiblocks, GuideMe's scene export), batches of its own drawn when it ends
+     * them. As a final class it failed to load and the mods' classes with it.
+     */
+    protected MultiBufferSource(@javax.annotation.Nullable Object sharedBuffer, @javax.annotation.Nullable java.util.Map<?, ?> fixedBuffers) {
+        SOURCES.add(this);
+    }
 
     private final java.util.Map<RenderType, BufferVertexConsumer> consumers = new java.util.LinkedHashMap<>();
 
@@ -54,6 +69,17 @@ public final class MultiBufferSource {
             if (consumer != starting) {
                 consumer.flush();
             }
+        }
+    }
+
+    /** The other started batches of every buffer source (a mod's own ones too) drawn: the Tessellator is one. */
+    static void flushAllOthers(VertexConsumer starting) {
+        MultiBufferSource[] sources;
+        synchronized (SOURCES) {
+            sources = SOURCES.toArray(new MultiBufferSource[0]);
+        }
+        for (MultiBufferSource source : sources) {
+            source.flushOthers(starting);
         }
     }
 

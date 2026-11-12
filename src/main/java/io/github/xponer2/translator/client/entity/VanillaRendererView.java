@@ -116,7 +116,7 @@ public class VanillaRendererView<T extends EntityLivingBase, M extends net.minec
 					layer.render(PoseStack.INSTANCE, MultiBufferSource.INSTANCE, light, entity, limbSwing, limbSwingAmount, partialTicks, ageInTicks,
 							netHeadYaw, headPitch);
 					MultiBufferSource.INSTANCE.endBatch();
-				} catch (RuntimeException | LinkageError e) {
+				} catch (RuntimeException | LinkageError | com.google.common.util.concurrent.ExecutionError | AssertionError e) {
 					VanillaRendererView.this.failed.add(layer);
 					io.github.xponer2.translator.runtime.RuntimeStubs.failed(layer.getClass().getName() + ".render on " + VanillaRendererView.this.vanilla
 							.getClass().getSimpleName(), e);

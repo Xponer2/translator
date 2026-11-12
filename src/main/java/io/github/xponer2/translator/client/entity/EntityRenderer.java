@@ -57,7 +57,7 @@ public abstract class EntityRenderer<T extends Entity> extends Render<T> {
 			GlStateManager.translate(offset.x, offset.y, offset.z);
 			this.render(entity, entityYaw, partialTicks, PoseStack.INSTANCE, MultiBufferSource.INSTANCE, entity.getBrightnessForRender());
 			MultiBufferSource.INSTANCE.endBatch();
-		} catch (RuntimeException | LinkageError e) {
+		} catch (RuntimeException | LinkageError | com.google.common.util.concurrent.ExecutionError | AssertionError e) {
 			// a renderer the Translator can't run all of: logged once, the entity is left undrawn this frame
 			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".render", e);
 		} finally {

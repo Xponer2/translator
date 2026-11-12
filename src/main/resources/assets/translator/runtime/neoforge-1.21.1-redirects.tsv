@@ -747,3 +747,15 @@ C	net/minecraft/world/level/levelgen/synth/PerlinSimplexNoise	net/minecraft/worl
 R	net/minecraft/tileentity/TileEntitySign	io/github/xponer2/translator/runtime/mc/SignTexts
 # 1.21 EntityMountEvent.getLevel (1.12.2: getWorldObj)
 R	net/minecraftforge/event/entity/EntityMountEvent	io/github/xponer2/translator/runtime/redirect/ForgeEventRedirects
+# 1.21 FluidTank: save and load with the registries, isEmpty, getSpace
+R	net/minecraftforge/fluids/FluidTank	io/github/xponer2/translator/runtime/redirect/MiscBridges
+# 1.21 confirmation screens as 1.21 screens (the mods extend them and add their own buttons), their callbacks the mods' own
+C	net/minecraft/client/gui/screens/ConfirmScreen	io/github/xponer2/translator/client/ConfirmScreen
+C	net/minecraft/client/gui/screens/ConfirmLinkScreen	io/github/xponer2/translator/client/ConfirmLinkScreen
+F	net/minecraft/client/gui/screens/ConfirmScreen	yesButton	yesButton
+F	net/minecraft/client/gui/screens/ConfirmScreen	noButton	noButton
+F	net/minecraft/client/gui/screens/ConfirmScreen	message	message
+M	net/minecraft/client/gui/screens/ConfirmScreen	setDelay(int)	setDelay
+F	net/minecraft/client/gui/screens/ConfirmLinkScreen	url	url
+F	net/minecraft/client/gui/screens/ConfirmLinkScreen	showWarning	showWarning
+M	net/minecraft/client/gui/screens/ConfirmLinkScreen	copyToClipboard()	copyToClipboard

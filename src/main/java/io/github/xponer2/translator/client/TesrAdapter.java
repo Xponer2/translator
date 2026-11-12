@@ -53,7 +53,7 @@ public final class TesrAdapter<T extends TileEntity> extends TileEntitySpecialRe
         }
         try {
             ClientRegistry.bindTileEntitySpecialRenderer((Class) tileClass, new TesrAdapter<>(provider.create(BlockEntityRendererProvider.Context.INSTANCE)));
-        } catch (RuntimeException | LinkageError e) {
+        } catch (RuntimeException | LinkageError | com.google.common.util.concurrent.ExecutionError | AssertionError e) {
             io.github.xponer2.translator.runtime.RuntimeStubs.failed("the block entity renderer of " + type, e);
         }
     }
@@ -67,7 +67,7 @@ public final class TesrAdapter<T extends TileEntity> extends TileEntitySpecialRe
         GlStateManager.translate(x, y, z);
         try {
             this.renderer.render(tile, partialTicks, PoseStack.INSTANCE, MultiBufferSource.INSTANCE, light, OverlayTexture.NO_OVERLAY);
-        } catch (RuntimeException | LinkageError e) {
+        } catch (RuntimeException | LinkageError | com.google.common.util.concurrent.ExecutionError | AssertionError e) {
             // a renderer of an original 1.21.1 mod that fails: logged once, the block entity is drawn without it
             io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.renderer.getClass().getName() + ".render", e);
         } finally {

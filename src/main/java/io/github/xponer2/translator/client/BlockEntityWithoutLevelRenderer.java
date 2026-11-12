@@ -51,7 +51,7 @@ public class BlockEntityWithoutLevelRenderer extends TileEntityItemStackRenderer
 		try {
 			this.renderByItem(stack, ItemCameraTransforms.TransformType.NONE, PoseStack.INSTANCE, MultiBufferSource.INSTANCE, light,
 					OverlayTexture.NO_OVERLAY);
-		} catch (RuntimeException | LinkageError e) {
+		} catch (RuntimeException | LinkageError | com.google.common.util.concurrent.ExecutionError | AssertionError e) {
 			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".renderByItem", e);
 		} finally {
 			PoseStack.restore(depth);

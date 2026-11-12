@@ -330,7 +330,7 @@ public final class BufferVertexConsumer implements VertexConsumer {
 	private void start() {
 		if (this.target == null && drawing(Tessellator.getInstance().getBuffer())) {
 			// another render type's batch is on the shared Tessellator: drawn first (1.21 batches each type apart)
-			MultiBufferSource.INSTANCE.flushOthers(this);
+			MultiBufferSource.flushAllOthers(this);
 		}
 		this.started = true;
 		if (this.target == null) {
