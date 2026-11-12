@@ -106,6 +106,17 @@ public final class StructureGeneration implements IWorldGenerator {
 		return LEVELS.computeIfAbsent(world, w -> Level.create(world));
 	}
 
+	/**
+	 * 1.21 {@code chunkSource.getGeneratorState()}: the world's ChunkGeneratorStructureState over the mods' structure sets
+	 * (their placements, the concentric rings), whether or not their generation is on. Twilight Forest and Supplementaries
+	 * ask it where structures may start.
+	 */
+	@Nullable
+	public static Object generatorState(WorldServer world) {
+		Level level = level(world);
+		return level == null ? null : level.structureState;
+	}
+
 	private static final Map<World, Object> MANAGERS = new java.util.WeakHashMap<>();
 
 	/**

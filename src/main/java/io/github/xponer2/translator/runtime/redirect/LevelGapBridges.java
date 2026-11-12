@@ -1533,6 +1533,45 @@ public final class LevelGapBridges {
 		return io.github.xponer2.translator.world.StructureGeneration.startFor(chunk, structure);
 	}
 
+	/** 1.21 {@code redstoneSide.isConnected()}: up or side (Supplementaries' gunpowder trail connects by it). */
+	public static boolean isConnected(Enum<?> side) {
+		// 1.12.2's EnumAttachPosition (UP, SIDE, NONE) is package-private where the Translator compiles
+		return !"NONE".equals(side.name());
+	}
+
+	/**
+	 * 1.21 {@code lookControl.rotateTowards(from, to, maxDelta)}: from turned towards to by at most maxDelta degrees (the
+	 * mods' look controls call it as super: Iron's Spells' Dead King, keeper and cultists).
+	 */
+	public static float rotateTowards(net.minecraft.entity.ai.EntityLookHelper control, float from, float to, float maxDelta) {
+		float delta = net.minecraft.util.math.MathHelper.wrapDegrees(to - from);
+		return from + net.minecraft.util.math.MathHelper.clamp(delta, -maxDelta, maxDelta);
+	}
+
+	/**
+	 * 1.21 {@code difficultyInstance.getDifficulty()}: the world's difficulty it was made for (1.12.2 keeps it private).
+	 * Twilight Forest's mobs pick their gear by it.
+	 */
+	public static net.minecraft.world.EnumDifficulty getDifficulty(net.minecraft.world.DifficultyInstance instance) {
+		for (java.lang.reflect.Field field : net.minecraft.world.DifficultyInstance.class.getDeclaredFields()) {
+			if (field.getType() == net.minecraft.world.EnumDifficulty.class) {
+				try {
+					field.setAccessible(true);
+					return (net.minecraft.world.EnumDifficulty) field.get(instance);
+				} catch (ReflectiveOperationException | RuntimeException e) {
+					break;
+				}
+			}
+		}
+		return net.minecraft.world.EnumDifficulty.NORMAL;
+	}
+
+	/** 1.21 {@code chunkSource.getGeneratorState()}: the world's ChunkGeneratorStructureState (the mods' structure sets). */
+	@javax.annotation.Nullable
+	public static Object getGeneratorState(net.minecraft.world.gen.ChunkProviderServer source) {
+		return io.github.xponer2.translator.world.StructureGeneration.generatorState(source.world);
+	}
+
 	/** 1.21 {@code serverLevel.structureManager()}: the world's 1.21 StructureManager over the mods' structures. */
 	public static Object structureManager(net.minecraft.world.WorldServer world) {
 		return io.github.xponer2.translator.world.StructureGeneration.structureManager(world);

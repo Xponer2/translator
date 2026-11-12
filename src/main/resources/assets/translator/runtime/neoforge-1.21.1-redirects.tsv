@@ -806,3 +806,7 @@ R	net/minecraft/client/network/NetHandlerPlayClient	io/github/xponer2/translator
 # a recipe book's ghost recipe and filter toggle of a 1.21 book (Farmer's Delight, the Aether, Refurbished Furniture)
 R	net/minecraft/client/gui/recipebook/GhostRecipe	io/github/xponer2/translator/runtime/redirect/GuiBridges
 R	net/minecraft/client/gui/GuiButtonToggle	io/github/xponer2/translator/runtime/redirect/GuiBridges
+R	net/minecraft/world/DifficultyInstance	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+R	net/minecraft/block/BlockRedstoneWire$EnumAttachPosition	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
+# 1.21 BaseSpawner members whose 1.12.2 counterparts take other arguments or are private (Twilight Forest spawners)
+R	net/minecraft/tileentity/MobSpawnerBaseLogic	io/github/xponer2/translator/runtime/redirect/SpawnerBridges

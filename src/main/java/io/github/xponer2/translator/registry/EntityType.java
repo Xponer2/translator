@@ -451,6 +451,15 @@ public final class EntityType<T extends Entity> {
         return this.height;
     }
 
+    /**
+     * 1.21 {@code getSpawnAABB(x, y, z)}: the box an entity of the type takes standing at that point (its size). Twilight
+     * Forest's spawners check the room for a mob with it.
+     */
+    public net.minecraft.util.math.AxisAlignedBB getSpawnAABB(double x, double y, double z) {
+        double half = this.width / 2.0;
+        return new net.minecraft.util.math.AxisAlignedBB(x - half, y, z - half, x + half, y + this.height, z + half);
+    }
+
     public ITextComponent getDescription() {
         return new TextComponentTranslation(this.getDescriptionId());
     }

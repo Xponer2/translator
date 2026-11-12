@@ -1455,6 +1455,25 @@ public final class MiscBridges {
 	}
 
 	/**
+	 * 1.21 {@code effect.addAttributeModifier(attribute, id, amount, operation)} on an effect typed as the plain MobEffect
+	 * (1.12.2's Potion): the facade's for a mod's effect, else the 1.12.2 potion modifier. Iron's Spells registers its
+	 * effects so (a chained call on the new effect), and they changed no attribute.
+	 */
+	public static net.minecraft.potion.Potion addAttributeModifier(net.minecraft.potion.Potion potion,
+			io.github.xponer2.translator.registry.Holder<io.github.xponer2.translator.entity.Attribute> attribute, ResourceLocation id, double amount,
+			io.github.xponer2.translator.entity.AttributeModifier.Operation operation) {
+		if (potion instanceof io.github.xponer2.translator.runtime.mc.MobEffect effect) {
+			return effect.addAttributeModifier(attribute, id, amount, operation);
+		}
+		var forge = attribute.value().forge();
+		if (forge != null) {
+			potion.registerPotionAttributeModifier(forge, io.github.xponer2.translator.entity.AttributeModifier.uuidOf(id).toString(), amount,
+					operation.ordinal());
+		}
+		return potion;
+	}
+
+	/**
 	 * 1.21 {@code entity.syncPacketPositionCodec(x, y, z)}: the base the next relative move packets of the entity count from
 	 * (1.12.2's serverPos, in 1/4096 of a block). JourneyMap's radar places the players a server reports so.
 	 */
@@ -1600,6 +1619,11 @@ public final class MiscBridges {
 
 	public static boolean isInside(net.minecraft.world.gen.structure.StructureBoundingBox box, Vec3i pos) {
 		return box.isVecInside(pos);
+	}
+
+	/** 1.21 {@code box.isInside(x, y, z)}: Twilight Forest's pieces place their spawners, chests and insects by it. */
+	public static boolean isInside(net.minecraft.world.gen.structure.StructureBoundingBox box, int x, int y, int z) {
+		return x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ && y >= box.minY && y <= box.maxY;
 	}
 
 	public static boolean intersects(net.minecraft.world.gen.structure.StructureBoundingBox box, net.minecraft.world.gen.structure.StructureBoundingBox other) {
