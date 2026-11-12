@@ -772,3 +772,12 @@ R	com/google/common/cache/CacheBuilder	io/github/xponer2/translator/runtime/redi
 R	net/minecraft/client/renderer/texture/TextureManager	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/client/multiplayer/ServerData	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 R	net/minecraft/item/ItemArmor	io/github/xponer2/translator/runtime/redirect/MiscBridges
+# 1.21 RecipeSerializer constants of the carried cooking and smithing recipes (registered by VanillaRecipes)
+R	io/github/xponer2/translator/recipe/RecipeSerializer	io/github/xponer2/translator/runtime/redirect/RecipeCodecs$Serializers
+# 1.21 server.getAdvancements().getAllAdvancements() (holders of 1.12.2's advancements)
+R	net/minecraft/advancements/AdvancementManager	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+# 1.21 calls on 1.12.2's criterion listeners and NBT predicates (DataApiBridges)
+R	net/minecraft/advancements/ICriterionTrigger$Listener	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+R	net/minecraft/advancements/critereon/NBTPredicate	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+# 1.21 Ingredient.getValues() / values of 1.12.2's ingredients (DataApiBridges)
+R	net/minecraft/item/crafting/Ingredient	io/github/xponer2/translator/runtime/redirect/DataApiBridges

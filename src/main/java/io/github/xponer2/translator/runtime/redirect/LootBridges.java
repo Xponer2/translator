@@ -119,6 +119,14 @@ public final class LootBridges {
 		getRandomItems(table, context, consumer);
 	}
 
+	/** 1.21 {@code table.fill(container, params, seed)}: 1.12.2's fillInventory with a context made of the params. */
+	public static void fill(LootTable table, net.minecraft.inventory.IInventory container, LootParams params, long seed) {
+		LootContext context = context(params);
+		if (context != null) {
+			table.fillInventory(container, seed == 0L ? new Random() : new Random(seed), context);
+		}
+	}
+
 	/** A 1.12.2 loot context for 1.21 loot parameters (the server world, the entity, the player). */
 	@Nullable
 	private static LootContext context(LootParams params) {

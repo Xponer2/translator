@@ -576,9 +576,93 @@ public final class DataApiBridges {
 		}
 	}
 
+	/** 1.21 {@code InventoryChangeTrigger.trigger(player, inventory, changed stack)}: 1.12.2's checks the whole inventory. */
+	public static void trigger(ICriterionTrigger<?> trigger, EntityPlayerMP player, net.minecraft.entity.player.InventoryPlayer inventory, ItemStack changed) {
+		if (trigger instanceof net.minecraft.advancements.critereon.InventoryChangeTrigger inventoryChange) {
+			inventoryChange.trigger(player, inventory);
+		}
+	}
+
+	/** 1.21 {@code EffectsChangedTrigger.trigger(player, source)}: 1.12.2's looks at the player's effects only. */
+	public static void trigger(ICriterionTrigger<?> trigger, EntityPlayerMP player, @Nullable Entity source) {
+		if (trigger instanceof net.minecraft.advancements.critereon.EffectsChangedTrigger effects) {
+			effects.trigger(player);
+		}
+	}
+
+	/** 1.21 {@code listener.trigger()}: the listener's instance when it is a 1.21 one (a mod's), else null. */
+	@Nullable
+	public static Object trigger(ICriterionTrigger.Listener<?> listener) {
+		ICriterionInstance instance = listener.getCriterionInstance();
+		if (instance instanceof ModInstance mod) {
+			return mod.instance;
+		}
+		return isCarried(instance, "net.minecraft.advancements.CriterionTriggerInstance") ? instance : null;
+	}
+
+	/** 1.21 {@code NbtPredicate.tag()}: the compound 1.12.2's predicate tests (null for ANY). */
+	@Nullable
+	public static net.minecraft.nbt.NBTTagCompound tag(NBTPredicate predicate) {
+		try {
+			Field field = NbtTag.FIELD;
+			return field == null ? null : (net.minecraft.nbt.NBTTagCompound) field.get(predicate);
+		} catch (IllegalAccessException | RuntimeException e) {
+			return null;
+		}
+	}
+
+	private static final class NbtTag {
+		static final Field FIELD = find();
+
+		@Nullable
+		private static Field find() {
+			try {
+				return ObfuscationReflectionHelper.findField(NBTPredicate.class, "field_193480_b");
+			} catch (RuntimeException e) {
+				return null;
+			}
+		}
+	}
+
+	/** 1.21 {@code server.getAdvancements().getAllAdvancements()}: the holders of 1.12.2's advancements. */
+	public static Collection<Object> getAllAdvancements(net.minecraft.advancements.AdvancementManager manager) {
+		var out = new ArrayList<Object>();
+		for (Advancement advancement : manager.getAdvancements()) {
+			out.add(holder(advancement.getId(), advancement));
+		}
+		return out;
+	}
+
 	/** 1.21 {@code RecipeUnlockedTrigger.unlocked(recipe id)}: 1.12.2's criterion for the crafting recipe of that id. */
 	public static Criterion unlocked(ResourceLocation recipe) {
 		return new Criterion(new RecipeUnlockedTrigger.Instance(CraftingManager.getRecipe(recipe)));
+	}
+
+	// --- ingredients --------------------------------------------------------------------------------------------------
+
+	/**
+	 * 1.21 {@code ingredient.getValues()} (and its {@code values} field): one carried 1.21 {@code Ingredient.ItemValue}
+	 * per stack 1.12.2's ingredient matches (Create's blueprint filters, Mekanism's and Sophisticated Core's readers).
+	 */
+	@Nullable
+	public static Object getValues(net.minecraft.item.crafting.Ingredient ingredient) {
+		try {
+			Class<?> value = carried("net.minecraft.world.item.crafting.Ingredient$Value");
+			Constructor<?> item = carried("net.minecraft.world.item.crafting.Ingredient$ItemValue").getConstructor(ItemStack.class);
+			ItemStack[] stacks = ingredient.getMatchingStacks();
+			Object values = java.lang.reflect.Array.newInstance(value, stacks.length);
+			for (int i = 0; i < stacks.length; i++) {
+				java.lang.reflect.Array.set(values, i, item.newInstance(stacks[i].copy()));
+			}
+			return values;
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	@Nullable
+	public static Object values(net.minecraft.item.crafting.Ingredient ingredient) {
+		return getValues(ingredient);
 	}
 
 	// --- loot contexts ------------------------------------------------------------------------------------------------

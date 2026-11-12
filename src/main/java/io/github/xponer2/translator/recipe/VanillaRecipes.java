@@ -55,6 +55,21 @@ public final class VanillaRecipes {
         serializers.register(new ResourceLocation("minecraft", "crafting_shapeless"), SHAPELESS);
         serializers.register(new ResourceLocation("minecraft", "smelting"), SMELTING);
         serializers.register(new ResourceLocation("minecraft", "stonecutting"), STONECUTTER);
+        // the carried 1.21 cooking and smithing recipes (RecipeCodecs.Serializers): blasting, smoking, campfire, smithing
+        types.register(new ResourceLocation("minecraft", "blasting"), RecipeType.BLASTING);
+        types.register(new ResourceLocation("minecraft", "smoking"), RecipeType.SMOKING);
+        types.register(new ResourceLocation("minecraft", "campfire_cooking"), RecipeType.CAMPFIRE_COOKING);
+        types.register(new ResourceLocation("minecraft", "smithing"), RecipeType.SMITHING);
+        carried(serializers, "blasting", io.github.xponer2.translator.runtime.redirect.RecipeCodecs.Serializers.BLASTING_RECIPE);
+        carried(serializers, "smoking", io.github.xponer2.translator.runtime.redirect.RecipeCodecs.Serializers.SMOKING_RECIPE);
+        carried(serializers, "campfire_cooking", io.github.xponer2.translator.runtime.redirect.RecipeCodecs.Serializers.CAMPFIRE_COOKING_RECIPE);
+        carried(serializers, "smithing_transform", io.github.xponer2.translator.runtime.redirect.RecipeCodecs.Serializers.SMITHING_TRANSFORM);
+    }
+
+    private static void carried(MappedRegistry<RecipeSerializer<?>> serializers, String name, @javax.annotation.Nullable RecipeSerializer<?> serializer) {
+        if (serializer != null) {
+            serializers.register(new ResourceLocation("minecraft", name), serializer);
+        }
     }
 
     /**

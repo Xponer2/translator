@@ -35,4 +35,67 @@ public final class RecipeCodecs {
 
 	private RecipeCodecs() {
 	}
+
+	/**
+	 * 1.21 {@code RecipeSerializer.BLASTING_RECIPE}, {@code SMOKING_RECIPE}, {@code CAMPFIRE_COOKING_RECIPE} and
+	 * {@code SMITHING_TRANSFORM}: the carried 1.21 serializers (SimpleCookingSerializer of the carried cooking recipes,
+	 * SmithingTransformRecipe's), which the Translator's interface hasn't. Null when the carried classes can't be made.
+	 * VanillaRecipes registers them, so the mods' blasting, smoking, campfire and smithing recipes load.
+	 */
+	public static final class Serializers {
+		public static final RecipeSerializer<?> BLASTING_RECIPE = cooking("BlastingRecipe", 100);
+		public static final RecipeSerializer<?> SMOKING_RECIPE = cooking("SmokingRecipe", 100);
+		public static final RecipeSerializer<?> CAMPFIRE_COOKING_RECIPE = cooking("CampfireCookingRecipe", 100);
+		public static final RecipeSerializer<?> SMITHING_TRANSFORM = carried("net.minecraft.world.item.crafting.SmithingTransformRecipe$Serializer");
+
+		private Serializers() {
+		}
+
+		@javax.annotation.Nullable
+		private static RecipeSerializer<?> cooking(String recipe, int cookingTime) {
+			try {
+				ClassLoader loader = net.minecraft.launchwrapper.Launch.classLoader;
+				Class<?> factory = Class.forName("net.minecraft.world.item.crafting.AbstractCookingRecipe$Factory", true, loader);
+				Class<?> type = Class.forName("net.minecraft.world.item.crafting." + recipe, true, loader);
+				java.lang.reflect.Constructor<?> constructor = null;
+				for (java.lang.reflect.Constructor<?> candidate : type.getConstructors()) {
+					if (candidate.getParameterCount() == 6) {
+						constructor = candidate;
+					}
+				}
+				if (constructor == null) {
+					return null;
+				}
+				java.lang.reflect.Constructor<?> make = constructor;
+				// 1.21 BlastingRecipe::new (group, category, ingredient, result, experience, cooking time)
+				Object create = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[] {factory}, (proxy, method, args) -> {
+					switch (method.getName()) {
+						case "create":
+							return make.newInstance(args);
+						case "hashCode":
+							return System.identityHashCode(proxy);
+						case "equals":
+							return proxy == args[0];
+						default:
+							return recipe + "::new";
+					}
+				});
+				Class<?> serializer = Class.forName("net.minecraft.world.item.crafting.SimpleCookingSerializer", true, loader);
+				return (RecipeSerializer<?>) serializer.getConstructor(factory, int.class).newInstance(create, cookingTime);
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").warn("No 1.21 {} serializer: {}", recipe, e.toString());
+				return null;
+			}
+		}
+
+		@javax.annotation.Nullable
+		private static RecipeSerializer<?> carried(String name) {
+			try {
+				return (RecipeSerializer<?>) Class.forName(name, true, net.minecraft.launchwrapper.Launch.classLoader).getConstructor().newInstance();
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").warn("No 1.21 serializer {}: {}", name, e.toString());
+				return null;
+			}
+		}
+	}
 }
