@@ -159,6 +159,26 @@ public class VoxelShape {
 		return faces.isEmpty() ? EMPTY : new VoxelShape(faces);
 	}
 
+	/**
+	 * 1.21 {@code closestPointTo(point)}: the point of the shape's boxes nearest to it, empty for an empty shape (Pipez finds
+	 * the pipe side a player looks at by it).
+	 */
+	public java.util.Optional<net.minecraft.util.math.Vec3d> closestPointTo(net.minecraft.util.math.Vec3d point) {
+		net.minecraft.util.math.Vec3d best = null;
+		double bestDistance = Double.MAX_VALUE;
+		for (AxisAlignedBB box : this.toAabbs()) {
+			double x = Math.max(box.minX, Math.min(point.x, box.maxX));
+			double y = Math.max(box.minY, Math.min(point.y, box.maxY));
+			double z = Math.max(box.minZ, Math.min(point.z, box.maxZ));
+			double distance = point.squareDistanceTo(x, y, z);
+			if (distance < bestDistance) {
+				bestDistance = distance;
+				best = new net.minecraft.util.math.Vec3d(x, y, z);
+			}
+		}
+		return java.util.Optional.ofNullable(best);
+	}
+
 	public double min(net.minecraft.util.EnumFacing.Axis axis) {
 		return this.isEmpty() ? Double.POSITIVE_INFINITY : axis == net.minecraft.util.EnumFacing.Axis.X ? this.bounds().minX : axis == net.minecraft.util.EnumFacing.Axis.Y ? this.bounds().minY : this.bounds().minZ;
 	}

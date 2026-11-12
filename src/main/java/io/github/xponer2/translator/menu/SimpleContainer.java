@@ -28,4 +28,25 @@ public class SimpleContainer extends InventoryBasic {
 			this.setInventorySlotContents(i, stacks[i]);
 		}
 	}
+
+	/** The 1.12.2 listener made for each 1.21 one (to remove it again). */
+	private final java.util.Map<net.minecraft.world.ContainerListener, net.minecraft.inventory.IInventoryChangedListener> listeners121 =
+			new java.util.IdentityHashMap<>();
+
+	/**
+	 * 1.21 {@code addListener}: a 1.21 listener (carried) told of every change, as 1.12.2's are. Called on a subclass
+	 * (Refined Storage's filters, pattern grid) it found no 1.12.2 method: the containers never told their block entities.
+	 */
+	public void addListener(net.minecraft.world.ContainerListener listener) {
+		net.minecraft.inventory.IInventoryChangedListener wrapped = listener::containerChanged;
+		this.listeners121.put(listener, wrapped);
+		this.addInventoryChangeListener(wrapped);
+	}
+
+	public void removeListener(net.minecraft.world.ContainerListener listener) {
+		net.minecraft.inventory.IInventoryChangedListener wrapped = this.listeners121.remove(listener);
+		if (wrapped != null) {
+			this.removeInventoryChangeListener(wrapped);
+		}
+	}
 }

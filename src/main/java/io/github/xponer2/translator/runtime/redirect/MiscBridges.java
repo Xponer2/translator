@@ -1320,6 +1320,21 @@ public final class MiscBridges {
 		io.github.xponer2.translator.network.PacketDistributor.sendToPlayer(connection.player, payload);
 	}
 
+	/**
+	 * 1.21 {@code Language.has(key)}: whether the key has a translation (the client's languages, the mods' lang files with
+	 * them, on a client; 1.12.2's server table on a server). Iron Jetpacks names its jetpacks by it, Mezz's config its options.
+	 */
+	public static boolean has(net.minecraft.util.text.translation.LanguageMap language, String key) {
+		if (net.minecraftforge.fml.common.FMLCommonHandler.instance().getSide().isClient()) {
+			return net.minecraft.client.resources.I18n.hasKey(key);
+		}
+		return net.minecraft.util.text.translation.I18n.canTranslate(key);
+	}
+
+	public static boolean hasKey(net.minecraft.util.text.translation.LanguageMap language, String key) {
+		return has(language, key);
+	}
+
 	/** Right-to-left text (1.21 visual order): 1.12.2 draws text as it is. */
 	public static List<?> getVisualOrder(net.minecraft.util.text.translation.LanguageMap language, List<?> texts) {
 		return texts;

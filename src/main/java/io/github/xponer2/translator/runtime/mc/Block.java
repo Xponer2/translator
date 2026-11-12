@@ -193,7 +193,11 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 			this.ownLightBlock = own;
 		}
 		int light;
-		if (this.ownLightBlock) {
+		if (this.ownLightBlock && (world == null || pos == null)) {
+			// asked without a world (1.12.2's getLightOpacity(state)): a block's own answer reads its block entity there
+			// (Storage Drawers' drawers failed each time), the property's value instead
+			light = this.lightOpacity;
+		} else if (this.ownLightBlock) {
 			light = this.guarded("getLightBlock", () -> this.getLightBlock(state, world, pos), this.lightOpacity);
 		} else {
 			light = this.lightBlock.computeIfAbsent(state, key -> this.guarded("getLightBlock", () -> this.getLightBlock(key, null, null), this.lightOpacity));
