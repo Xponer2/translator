@@ -555,3 +555,8 @@ X	net/minecraftforge/fluids/FluidStack	isFluidStackIdentical	(Lnet/minecraftforg
 X	net/minecraftforge/fluids/FluidStack	getLocalizedName	()Ljava/lang/String;	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
 X	net/minecraftforge/fluids/FluidStack	getUnlocalizedName	()Ljava/lang/String;	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
 X	net/minecraftforge/fluids/FluidStack	writeToNBT	(Lnet/minecraft/nbt/NBTTagCompound;)Lnet/minecraft/nbt/NBTTagCompound;	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
+# NeoForge's fuel hook (Iron Furnaces): 1.12.2's fuel event, the carried hook built 1.21's event 1.12.2 cannot make
+X	translator_api/net/neoforged/neoforge/event/EventHooks	getItemBurnTime	(Lnet/minecraft/item/ItemStack;ILio/github/xponer2/translator/recipe/RecipeType;)I	io/github/xponer2/translator/runtime/redirect/MiscBridges	(Lnet/minecraft/item/ItemStack;ILjava/lang/Object;)I
+# 1.21 AbstractCookingRecipe getters on the furnace facade too (JEI's smelting recipe codec references them)
+X	net/minecraft/world/item/crafting/AbstractCookingRecipe	getExperience	()F	io/github/xponer2/translator/recipe/CookingRecipes	(Ljava/lang/Object;)F
+X	net/minecraft/world/item/crafting/AbstractCookingRecipe	getCookingTime	()I	io/github/xponer2/translator/recipe/CookingRecipes	(Ljava/lang/Object;)I
