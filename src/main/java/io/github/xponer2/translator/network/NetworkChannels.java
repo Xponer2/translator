@@ -47,7 +47,9 @@ public final class NetworkChannels {
     static <T extends CustomPacketPayload> void register(CustomPacketPayload.Type<T> type, StreamCodec<? super RegistryFriendlyByteBuf, T> codec,
                                                          @Nullable IPayloadHandler<T> clientHandler, @Nullable IPayloadHandler<T> serverHandler) {
         if (PAYLOADS.putIfAbsent(type.id(), new Registration<>(codec, clientHandler, serverHandler)) != null) {
-            throw new IllegalStateException("Payload " + type.id() + " is registered twice");
+            // the event is posted again after the mods' setup (RegisterPayloadHandlersEvent.fireAfterSetup): the first
+            // registration stays
+            return;
         }
         channel(type.id().getNamespace());
     }

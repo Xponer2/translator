@@ -35,4 +35,13 @@ public class RegisterPayloadHandlersEvent extends Event {
             MinecraftForge.EVENT_BUS.post(new RegisterPayloadHandlersEvent());
         }
     }
+
+    /**
+     * Once more after the mods' common setup: a mod that registers its packets there (JourneyMap through Common
+     * Networking) had them only queued when the event was first posted, so none of them could be sent ("Payload
+     * journeymap:perm_req isn't registered": no handshake, no teleport). Payloads already registered are kept.
+     */
+    public static synchronized void fireAfterSetup() {
+        MinecraftForge.EVENT_BUS.post(new RegisterPayloadHandlersEvent());
+    }
 }

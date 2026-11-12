@@ -118,6 +118,8 @@ public final class Translator {
 		io.github.xponer2.translator.world.BiomeSpawns.apply();
 		io.github.xponer2.translator.runtime.neoforge.ConfigLoader.loadServerConfigs();
 		io.github.xponer2.translator.runtime.RuntimeMods.setup();
+		// the payloads the mods registered only in their setup (JourneyMap through Common Networking)
+		RegisterPayloadHandlersEvent.fireAfterSetup();
 	}
 
 	@Mod.EventHandler
