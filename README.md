@@ -123,7 +123,7 @@ Tested with converter v138, 2026-11-05. 90 mods: 2 work, 60 partly work, 7 don't
 
 <!-- stubs:start -->
 
-Converter v202, 2026-11-11: **3541 stubs left in 72 mods**, 2169 distinct API methods, fields and classes still missing (99.0% of the mods' API references are bridged).
+Converter v208, 2026-11-13: **2697 stubs left in 72 mods**, 1712 distinct API methods, fields and classes still missing (99.3% of the mods' API references are bridged).
 
 An *API reference* is a place in a mod's code that names a Minecraft 1.21.1 or NeoForge class, method or field. The converter maps each one to 1.12.2 or to the Translator. When it finds nothing to map it to, it leaves a *stub*: the call does nothing, or the method throws when it runs. The mod still loads, but that part of it doesn't work. The stubs are the work that is left. The counts come from converting the mods outside the game, not from playing: a bridged call can still behave differently from 1.21.1, so the in-game state is the table above.
 
@@ -131,74 +131,75 @@ An *API reference* is a place in a mod's code that names a Minecraft 1.21.1 or N
 |---|---|---|---|---|
 | v197 | 2026-11-11 | 4134 | 2544 | 98.9% |
 | v202 | 2026-11-11 | 3541 | 2169 | 99.0% |
+| v208 | 2026-11-13 | 2697 | 1712 | 99.3% |
 
 <details><summary>Stubs by mod (most first)</summary>
 
 | Mod | Stubs left | Missing API parts | API references | Bridged |
 |---|---|---|---|---|
-| The Twilight Forest | 584 | 406 | 45747 | 98.7% |
-| Supplementaries | 392 | 313 | 27527 | 98.6% |
-| Ars Nouveau | 319 | 233 | 30409 | 99.0% |
-| Mekanism | 252 | 168 | 19406 | 98.7% |
-| Create | 247 | 189 | 47810 | 99.5% |
-| The Aether | 243 | 178 | 17839 | 98.6% |
-| Iron's Spells 'n Spellbooks | 158 | 125 | 24400 | 99.4% |
-| Applied Energistics 2 | 134 | 98 | 14883 | 99.1% |
-| Moonlight Lib | 122 | 99 | 8300 | 98.5% |
-| oωo | 102 | 77 | 2827 | 96.4% |
-| GuideME | 101 | 80 | 2835 | 96.4% |
-| Just Enough Items | 63 | 50 | 4148 | 98.5% |
-| MrCrayfish's Furniture Mod: Refurbished | 61 | 47 | 7355 | 99.2% |
+| The Twilight Forest | 319 | 241 | 45747 | 99.3% |
+| Supplementaries | 305 | 244 | 27527 | 98.9% |
+| Ars Nouveau | 272 | 196 | 30409 | 99.1% |
+| Mekanism | 212 | 137 | 19406 | 98.9% |
+| Create | 190 | 143 | 47810 | 99.6% |
+| The Aether | 149 | 122 | 17839 | 99.2% |
+| Iron's Spells 'n Spellbooks | 117 | 98 | 24400 | 99.5% |
+| Applied Energistics 2 | 105 | 76 | 14883 | 99.3% |
+| Moonlight Lib | 102 | 81 | 8300 | 98.8% |
+| oωo | 99 | 75 | 2827 | 96.5% |
+| GuideME | 75 | 54 | 2835 | 97.4% |
 | Fusion | 55 | 37 | 1921 | 97.1% |
-| Journeymap | 49 | 43 | 7522 | 99.3% |
-| Farmer's Delight | 47 | 37 | 6768 | 99.3% |
-| Jade | 45 | 41 | 3226 | 98.6% |
-| Sophisticated Core | 40 | 23 | 6351 | 99.4% |
-| Refined Storage | 35 | 20 | 6088 | 99.4% |
-| SuperMartijn642's Core Lib | 32 | 29 | 1857 | 98.3% |
+| Just Enough Items | 47 | 37 | 4148 | 98.9% |
+| MrCrayfish's Furniture Mod: Refurbished | 45 | 36 | 7355 | 99.4% |
+| Jade | 42 | 38 | 3226 | 98.7% |
+| Journeymap | 38 | 33 | 7522 | 99.5% |
+| Sophisticated Core | 35 | 18 | 6351 | 99.4% |
+| Refined Storage | 32 | 17 | 6088 | 99.5% |
 | Tom's Simple Storage Mod | 32 | 14 | 3652 | 99.1% |
-| Sophisticated Storage | 29 | 24 | 5669 | 99.5% |
-| Xaero's Minimap | 28 | 12 | 3547 | 99.2% |
-| Artifacts | 27 | 22 | 3443 | 99.2% |
-| Xaero's World Map | 27 | 12 | 2290 | 98.8% |
-| Resourceful Lib | 26 | 22 | 1093 | 97.6% |
-| Mystical Agriculture | 24 | 14 | 4644 | 99.5% |
-| Curios API | 23 | 20 | 1928 | 98.8% |
+| Farmer's Delight | 31 | 21 | 6768 | 99.5% |
+| Sophisticated Storage | 27 | 22 | 5669 | 99.5% |
+| Xaero's Minimap | 27 | 11 | 3547 | 99.2% |
+| SuperMartijn642's Core Lib | 25 | 24 | 1857 | 98.7% |
+| Xaero's World Map | 25 | 10 | 2290 | 98.9% |
+| Mystical Agriculture | 23 | 13 | 4644 | 99.5% |
+| Resourceful Lib | 22 | 19 | 1093 | 98.0% |
 | Iron's Lib | 21 | 16 | 1858 | 98.9% |
-| Comforts | 20 | 18 | 859 | 97.7% |
-| GeckoLib 4 | 19 | 12 | 1702 | 98.9% |
-| Powah | 18 | 10 | 3446 | 99.5% |
-| What Are They Up To | 16 | 13 | 793 | 98.0% |
-| Modular Routers | 14 | 11 | 4316 | 99.7% |
+| Artifacts | 20 | 15 | 3443 | 99.4% |
+| Comforts | 15 | 14 | 859 | 98.3% |
+| Curios API | 15 | 13 | 1928 | 99.2% |
+| What Are They Up To | 15 | 13 | 793 | 98.1% |
+| Modular Routers | 13 | 10 | 4316 | 99.7% |
 | Sophisticated Backpacks | 13 | 11 | 4428 | 99.7% |
-| Patchouli | 11 | 9 | 2058 | 99.5% |
 | Pipez | 11 | 9 | 2240 | 99.5% |
 | Handcrafted | 10 | 10 | 1735 | 99.4% |
+| Patchouli | 10 | 8 | 2058 | 99.5% |
+| Powah | 10 | 8 | 3446 | 99.7% |
 | Rechiseled | 10 | 4 | 1108 | 99.1% |
-| Storage Drawers | 8 | 7 | 2720 | 99.7% |
-| Cucumber Library | 7 | 5 | 1603 | 99.6% |
+| GeckoLib 4 | 8 | 6 | 1702 | 99.5% |
 | Framework | 7 | 5 | 1074 | 99.3% |
+| Storage Drawers | 7 | 6 | 2720 | 99.7% |
 | Configured | 6 | 5 | 1038 | 99.4% |
+| Cucumber Library | 6 | 4 | 1603 | 99.6% |
 | GlitchCore | 6 | 3 | 265 | 97.7% |
-| AppleSkin | 5 | 2 | 404 | 98.8% |
 | Biomes O' Plenty | 5 | 4 | 7541 | 99.9% |
-| Nature's Compass | 4 | 4 | 629 | 99.4% |
+| AppleSkin | 4 | 1 | 404 | 99.0% |
 | Chat Heads | 3 | 3 | 213 | 98.6% |
 | Cloth Config v15 API | 3 | 3 | 1471 | 99.8% |
 | Controlling | 3 | 3 | 300 | 99.0% |
 | CoroUtil | 3 | 3 | 210 | 98.6% |
 | Iron Jetpacks | 3 | 2 | 779 | 99.6% |
+| Nature's Compass | 3 | 3 | 629 | 99.5% |
 | Player Animator | 3 | 1 | 184 | 98.4% |
 | Another Furniture | 2 | 2 | 1835 | 99.9% |
 | Iron Furnaces | 2 | 2 | 1798 | 99.9% |
-| Macaw's Windows | 2 | 2 | 781 | 99.7% |
-| TerraBlender | 2 | 2 | 439 | 99.5% |
 | Common Networking | 1 | 1 | 114 | 99.1% |
 | Cristel Lib | 1 | 1 | 270 | 99.6% |
 | Macaw's Doors | 1 | 1 | 290 | 99.7% |
 | Macaw's Fences and Walls | 1 | 1 | 401 | 99.8% |
 | Macaw's Furniture | 1 | 1 | 1081 | 99.9% |
+| Macaw's Windows | 1 | 1 | 781 | 99.9% |
 | Mouse Tweaks | 1 | 0 | 123 | 99.2% |
+| TerraBlender | 1 | 1 | 439 | 99.8% |
 | Torchmaster | 1 | 1 | 779 | 99.9% |
 | CosmeticArmorReworked | 0 | 0 | 579 | 100.0% |
 | Macaw's Bridges | 0 | 0 | 636 | 100.0% |
