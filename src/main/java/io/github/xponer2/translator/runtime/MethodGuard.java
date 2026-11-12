@@ -1354,6 +1354,26 @@ final class MethodGuard {
 				continue;
 			}
 			if (insn instanceof InvokeDynamicInsnNode indy) {
+				// an X line for a method reference too (ClientboundBossEventPacket::createUpdateProgressPacket): the helper,
+				// as a call gets it. Iron's Spells' boss bars sent the packet of the reference's own body, null, and the server
+				// crashed sending it (EnumConnectionState.getFromPacket)
+				for (int i = 0; i < indy.bsmArgs.length && !this.forced.isEmpty(); i++) {
+					if (indy.bsmArgs[i] instanceof Handle ref && (ref.getTag() == Opcodes.H_INVOKESTATIC || ref.getTag() == Opcodes.H_INVOKEVIRTUAL
+							|| ref.getTag() == Opcodes.H_INVOKEINTERFACE)) {
+						String helper = this.forced.get(ref.getOwner() + "." + ref.getName() + ref.getDesc());
+						if (helper != null) {
+							String desc = ref.getTag() == Opcodes.H_INVOKESTATIC ? ref.getDesc() : "(L" + ref.getOwner() + ";" + ref.getDesc().substring(1);
+							int space = helper.indexOf(' ');
+							if (space > 0) {
+								desc = helper.substring(space + 1);
+								helper = helper.substring(0, space);
+							}
+							indy.bsmArgs[i] = new Handle(Opcodes.H_INVOKESTATIC, helper, ref.getName(), desc, false);
+							this.redirected.incrementAndGet();
+							changed = true;
+						}
+					}
+				}
 				// a method reference (Blocks.AIR::defaultBlockState) of a missing method: a reference to the stand-in
 				for (int i = 0; i < indy.bsmArgs.length; i++) {
 					if (indy.bsmArgs[i] instanceof Handle ctor && ctor.getTag() == Opcodes.H_NEWINVOKESPECIAL
