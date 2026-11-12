@@ -781,3 +781,17 @@ R	net/minecraft/advancements/ICriterionTrigger$Listener	io/github/xponer2/transl
 R	net/minecraft/advancements/critereon/NBTPredicate	io/github/xponer2/translator/runtime/redirect/DataApiBridges
 # 1.21 Ingredient.getValues() / values of 1.12.2's ingredients (DataApiBridges)
 R	net/minecraft/item/crafting/Ingredient	io/github/xponer2/translator/runtime/redirect/DataApiBridges
+# 1.21 members of signs (SignText), skulls, chests, armor (materials), stacks (enchantments, interactions), items, blocks,
+# block states and effects that 1.12.2's classes lack
+R	net/minecraft/tileentity/TileEntitySign	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/tileentity/TileEntitySkull	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/tileentity/TileEntityLockableLoot	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/item/ItemArmor	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	io/github/xponer2/translator/item/ArmorMaterialData	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/item/ItemStack	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/item/Item	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/block/Block	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/block/state/IBlockState	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/potion/Potion	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/potion/PotionEffect	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+R	net/minecraft/tileentity/TileEntityChest	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges

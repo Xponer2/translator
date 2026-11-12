@@ -403,5 +403,19 @@ public interface Registry<T> extends Iterable<T>, HolderLookup, IdMap<T> {
         public String toString() {
             return "Reference{" + this.key() + "=" + this.value + "}";
         }
+
+        /**
+         * 1.21 has one reference holder per registered object, so maps keyed by holders (ItemEnchantments, effect maps)
+         * find an entry by any holder of the same object: holders of one object are equal here.
+         */
+        @Override
+        public boolean equals(Object other) {
+            return this == other || this.value != null && other instanceof Reference<?> reference && reference.value == this.value;
+        }
+
+        @Override
+        public int hashCode() {
+            return this.value == null ? super.hashCode() : System.identityHashCode(this.value);
+        }
     }
 }

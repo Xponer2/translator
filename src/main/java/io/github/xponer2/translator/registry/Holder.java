@@ -110,5 +110,16 @@ public interface Holder<T> {
         public String toString() {
             return "Direct{" + this.value + "}";
         }
+
+        /** 1.21's Direct is a record: equal by value. */
+        @Override
+        public boolean equals(Object other) {
+            return this == other || other instanceof Direct<?> direct && java.util.Objects.equals(direct.value, this.value);
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hashCode(this.value);
+        }
     }
 }

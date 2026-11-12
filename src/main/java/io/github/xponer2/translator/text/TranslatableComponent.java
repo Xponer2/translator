@@ -16,9 +16,14 @@ import net.minecraft.util.text.TextComponentTranslation;
  * 1.21 {@code Component.translatable(key, args)}.
  */
 public class TranslatableComponent extends TextComponentTranslation implements MutableComponent {
+	/**
+	 * A copy of the style: 1.21 styles are values, a 1.12.2 one is mutable and appendSibling sets its parent. A shared
+	 * one (Style.EMPTY, a mod's style constant) held by two components appended to each other became its own ancestor,
+	 * and every getBold/getColor of the text recursed until the stack overflowed (Iron's Spells' scroll names).
+	 */
 	@Override
 	public TranslatableComponent setStyle(net.minecraft.util.text.Style style) {
-		super.setStyle(style);
+		super.setStyle(style == null ? null : style.createShallowCopy());
 		return this;
 	}
 
