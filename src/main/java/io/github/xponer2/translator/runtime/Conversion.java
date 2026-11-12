@@ -295,6 +295,7 @@ public final class Conversion {
 			bar.done();
 		}
 		enumExtensions(converted.keySet(), table, target);
+		accessTransformers(converted.keySet(), table, target);
 		var ordered = JarJar.dependencyOrder(mods);
 		var mixinConfigs = new ArrayList<String>();
 		for (ModJar jar : ordered) {
@@ -361,6 +362,56 @@ public final class Conversion {
 					LOGGER.warn("Can't read the enum extensions {} of {}: {}", path, jar.displayName(), e.toString());
 				}
 			}
+		}
+	}
+
+	/**
+	 * The mods' access transformers (META-INF/accesstransformer.cfg) on the 1.21 classes that are Translator classes here
+	 * (facades, Translator versions of 1.21 classes): those members are widened when the class loads (core.AccessWidener),
+	 * as NeoForge widens them in 1.21's. 1.12.2's own classes are widened whole. AE2's menus read
+	 * AbstractContainerMenu.stateId (IllegalAccessError on the client: the slots never filled).
+	 */
+	private static void accessTransformers(Collection<ModJar> jars, RemapTable table, TargetClasses target) {
+		var names = new ModRemapper(table, java.util.Collections.emptyMap(), target);
+		int count = 0;
+		for (ModJar jar : jars) {
+			try (var zip = new java.util.zip.ZipFile(jar.file)) {
+				var entries = zip.entries();
+				while (entries.hasMoreElements()) {
+					var entry = entries.nextElement();
+					String path = entry.getName();
+					if (!path.startsWith("META-INF/") || !path.endsWith(".cfg") || !path.toLowerCase(java.util.Locale.ROOT).contains("accesstransformer")) {
+						continue;
+					}
+					String text;
+					try (var in = zip.getInputStream(entry)) {
+						text = new String(ModJar.readAll(in), java.nio.charset.StandardCharsets.UTF_8);
+					}
+					for (String line : text.split("\n")) {
+						int hash = line.indexOf('#');
+						String[] parts = (hash >= 0 ? line.substring(0, hash) : line).trim().split("\\s+");
+						if (parts.length < 2 || !parts[0].startsWith("public") && !parts[0].startsWith("protected")) {
+							continue;
+						}
+						String owner = parts[1].replace('.', '/');
+						String member = parts.length > 2 ? parts[2] : "";
+						int paren = member.indexOf('(');
+						String name = paren > 0 && !member.startsWith("*") ? member.substring(0, paren) : member;
+						boolean definal = parts[0].endsWith("-f");
+						for (String mapped : new String[] { names.map(owner), table.supers.get(owner) }) {
+							if (mapped != null && mapped.startsWith("io/github/xponer2/translator/")) {
+								io.github.xponer2.translator.core.AccessWidener.widenTranslator(mapped, name, definal);
+								count++;
+							}
+						}
+					}
+				}
+			} catch (java.io.IOException | RuntimeException e) {
+				LOGGER.warn("Can't read the access transformers of {}: {}", jar.displayName(), e.toString());
+			}
+		}
+		if (count > 0) {
+			LOGGER.info("{} access transformer entries of the 1.21.1 mods widen Translator classes", count);
 		}
 	}
 

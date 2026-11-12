@@ -15,28 +15,40 @@ import net.minecraft.world.World;
 
 /**
  * 1.21 {@code LevelLightEngine} of a world ({@code level.getLightEngine()}): 1.12.2 relights a block with
- * {@code World.checkLight} and keeps no queue of its own (AE2's cable buses relight when their parts change).
+ * {@code World.checkLight} and keeps no queue of its own (AE2's cable buses relight when their parts change). Mods
+ * extend it for the light of a world of their own (Flywheel's VirtualLightEngine, which Create's block entity renderers
+ * use: it couldn't load while this class was final, and Create's schematicannon, shafts and cogwheels crashed the client).
  */
-public final class LevelLightEngine {
+public class LevelLightEngine {
+	/** The world, or null for a mod's light engine of no real world (it gives the light itself). */
+	@javax.annotation.Nullable
 	private final World world;
 
 	public LevelLightEngine(World world) {
 		this.world = world;
 	}
 
+	/** 1.21 {@code new LevelLightEngine(chunks, blockLight, skyLight)}: the light of the chunks' world (none: of nothing). */
+	public LevelLightEngine(net.minecraft.world.level.chunk.LightChunkGetter chunks, boolean blockLight, boolean skyLight) {
+		net.minecraft.world.IBlockAccess level = chunks == null ? null : chunks.getLevel();
+		this.world = level instanceof World ? (World) level : null;
+	}
+
 	public void checkBlock(BlockPos pos) {
-		this.world.checkLight(pos);
+		if (this.world != null) {
+			this.world.checkLight(pos);
+		}
 	}
 
 	public int getRawBrightness(BlockPos pos, int skyDarken) {
-		return this.world.getLightFromNeighbors(pos);
+		return this.world == null ? 0 : this.world.getLightFromNeighbors(pos);
 	}
 
 	/**
 	 * 1.21 {@code getLayerListener(layer)}: the light of one kind (block or sky) at a block, 1.12.2's saved light there.
 	 */
 	public LayerLightListener getLayerListener(net.minecraft.world.EnumSkyBlock layer) {
-		return pos -> this.world.isBlockLoaded(pos) ? this.world.getLightFor(layer, pos) : 0;
+		return pos -> this.world != null && this.world.isBlockLoaded(pos) ? this.world.getLightFor(layer, pos) : 0;
 	}
 
 	public boolean hasLightWork() {

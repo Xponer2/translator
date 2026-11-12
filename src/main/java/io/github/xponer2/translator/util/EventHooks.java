@@ -43,6 +43,16 @@ public final class EventHooks {
 	}
 
 	/** 1.21 BlockGrowFeatureEvent for saplings: false if a mod stopped the tree from growing. */
+	/**
+	 * NeoForge {@code getItemBurnTime(stack, burnTime, recipeType)}: Forge 1.12.2's fuel event (its constructor takes no
+	 * recipe type: the carried NeoForge one couldn't be made, and Iron Furnaces' furnaces threw at every fuel).
+	 */
+	public static int getItemBurnTime(ItemStack stack, int burnTime, @Nullable io.github.xponer2.translator.recipe.RecipeType<?> recipeType) {
+		var event = new net.minecraftforge.event.furnace.FurnaceFuelBurnTimeEvent(stack, burnTime);
+		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event);
+		return event.getBurnTime();
+	}
+
 	public static boolean saplingGrowTree(World level, java.util.Random random, BlockPos pos) {
 		return TerrainGen.saplingGrowTree(level, random, pos);
 	}

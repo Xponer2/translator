@@ -48,6 +48,27 @@ public final class BlockEntityDefaults {
 		return type;
 	}
 
+	/**
+	 * 1.12.2's {@code TileEntity.create} (a saved block entity, made when its chunk loads) makes one with the class's
+	 * no-argument constructor (the coremod's TileEntityCreate calls this instead): a class without one is made by the
+	 * factory of its registered type at the origin with its block's default state, then reads its data as before. The
+	 * converter gives a no-argument constructor only to the (pos, state) and (type, pos, state) shapes: every Refined
+	 * Storage block entity (a controller takes its own controller type) was skipped and lost on every reload.
+	 */
+	public static Object newInstance(Class<?> tile) throws InstantiationException, IllegalAccessException {
+		try {
+			return tile.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			BlockEntityType<?> type = type(tile);
+			IBlockState state = state(tile);
+			Object made = type == null || state == null ? null : type.create(net.minecraft.util.math.BlockPos.ORIGIN, state);
+			if (made == null) {
+				throw e;
+			}
+			return made;
+		}
+	}
+
 	/** The default state of the type's first block, else null. */
 	@Nullable
 	public static IBlockState state(Class<?> tile) {

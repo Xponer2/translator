@@ -205,7 +205,7 @@ public final class WorldBridges {
 	public static List<Entity> getEntities(World world, Object test, AxisAlignedBB box, Predicate<? super Entity> filter) {
 		var result = new ArrayList<Entity>();
 		for (Entity entity : world.getEntitiesWithinAABB(Entity.class, box)) {
-			if ((!(test instanceof io.github.xponer2.translator.registry.EntityType<?> type) || ApiBridges.getType(entity) == type) && filter.test(entity)) {
+			if (WorldApiBridges.typeTest(test, entity) && filter.test(entity)) {
 				result.add(entity);
 			}
 		}

@@ -722,3 +722,6 @@ R	net/minecraft/world/storage/loot/LootContext$EntityTarget	io/github/xponer2/tr
 R	net/minecraft/server/MinecraftServer	io/github/xponer2/translator/runtime/redirect/DataApiBridges
 X	net/minecraft/commands/Commands	performPrefixedCommand	(Lnet/minecraft/commands/CommandSourceStack;Ljava/lang/String;)V	io/github/xponer2/translator/runtime/redirect/DataApiBridges	(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V
 R	io/github/xponer2/translator/recipe/Recipe	io/github/xponer2/translator/runtime/redirect/RecipeCodecs
+R	net/minecraftforge/fml/common/thread/SidedThreadGroup	io/github/xponer2/translator/runtime/redirect/ThreadSides
+# NeoForge FluidTank members Forge 1.12.2's lacks or has without the registry lookup (Refurbished Furniture's tanks)
+R	net/minecraftforge/fluids/FluidTank	io/github/xponer2/translator/runtime/redirect/FluidTankBridges

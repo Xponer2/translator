@@ -12,14 +12,18 @@ package io.github.xponer2.translator.entity;
 
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.UUID;
 
 import io.github.xponer2.translator.network.RegistryFriendlyByteBuf;
 import io.github.xponer2.translator.network.StreamCodec;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializer;
 import net.minecraft.network.datasync.DataSerializers;
+import net.minecraft.util.math.BlockPos;
 
 /**
  * The 1.21 entity data serializers 1.12.2's DataSerializers lacks, which mods' entities use (the converter reads a
@@ -69,12 +73,75 @@ public final class ExtraDataSerializers {
 	/** A carried 1.21 wolf variant holder, by the variant's stream codec. */
 	public static final DataSerializer<Object> WOLF_VARIANT = new Carried("net.minecraft.world.entity.animal.WolfVariant", false);
 
+	/**
+	 * 1.21's BLOCK_STATE, a block state: 1.12.2 has only an optional one, of a Guava Optional (the runtime table names
+	 * these for the mods' EntityDataSerializers fields: 1.12.2's own are another type).
+	 */
+	public static final DataSerializer<IBlockState> BLOCK_STATE = new Serializer<IBlockState>() {
+		@Override
+		public void write(PacketBuffer buffer, IBlockState value) {
+			buffer.writeVarInt(Block.getStateId(value));
+		}
+
+		@Override
+		public IBlockState read(PacketBuffer buffer) {
+			return Block.getStateById(buffer.readVarInt());
+		}
+	};
+
+	/** 1.21's OPTIONAL_BLOCK_STATE: a java.util.Optional (empty is air, as on 1.21). */
+	public static final DataSerializer<Optional<IBlockState>> OPTIONAL_STATE = new Serializer<Optional<IBlockState>>() {
+		@Override
+		public void write(PacketBuffer buffer, Optional<IBlockState> value) {
+			buffer.writeVarInt(value.isPresent() ? Block.getStateId(value.get()) : 0);
+		}
+
+		@Override
+		public Optional<IBlockState> read(PacketBuffer buffer) {
+			int id = buffer.readVarInt();
+			return id == 0 ? Optional.empty() : Optional.of(Block.getStateById(id));
+		}
+	};
+
+	/** 1.21's OPTIONAL_BLOCK_POS: a java.util.Optional. */
+	public static final DataSerializer<Optional<BlockPos>> OPTIONAL_POS = new Serializer<Optional<BlockPos>>() {
+		@Override
+		public void write(PacketBuffer buffer, Optional<BlockPos> value) {
+			buffer.writeBoolean(value.isPresent());
+			if (value.isPresent()) {
+				buffer.writeBlockPos(value.get());
+			}
+		}
+
+		@Override
+		public Optional<BlockPos> read(PacketBuffer buffer) {
+			return buffer.readBoolean() ? Optional.of(buffer.readBlockPos()) : Optional.empty();
+		}
+	};
+
+	/** 1.21's OPTIONAL_UUID: a java.util.Optional (the TF lich's master; 1.12.2's OPTIONAL_UNIQUE_ID is a Guava one). */
+	public static final DataSerializer<Optional<UUID>> OPTIONAL_UUID = new Serializer<Optional<UUID>>() {
+		@Override
+		public void write(PacketBuffer buffer, Optional<UUID> value) {
+			buffer.writeBoolean(value.isPresent());
+			if (value.isPresent()) {
+				buffer.writeUniqueId(value.get());
+			}
+		}
+
+		@Override
+		public Optional<UUID> read(PacketBuffer buffer) {
+			return buffer.readBoolean() ? Optional.of(buffer.readUniqueId()) : Optional.empty();
+		}
+	};
+
 	private ExtraDataSerializers() {
 	}
 
 	/** Registers them with 1.12.2 (the pre-init, before any mod's: the same numbers on the server and the clients). */
 	public static void register() {
-		for (DataSerializer<?> serializer : new DataSerializer<?>[] {OPTIONAL_UNSIGNED_INT, VECTOR3, VILLAGER_DATA, OPTIONAL_GLOBAL_POS, WOLF_VARIANT}) {
+		for (DataSerializer<?> serializer : new DataSerializer<?>[] {OPTIONAL_UNSIGNED_INT, VECTOR3, VILLAGER_DATA, OPTIONAL_GLOBAL_POS, WOLF_VARIANT, BLOCK_STATE,
+				OPTIONAL_STATE, OPTIONAL_POS, OPTIONAL_UUID}) {
 			DataSerializerDefaults.register(serializer);
 		}
 	}

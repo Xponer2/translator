@@ -817,22 +817,42 @@ public final class WorldApiBridges {
 		return found;
 	}
 
-	/** An EntityTypeTest of the mods: a 1.21 entity type (that type), a carried test ({@code tryCast} not null), or none (all). */
-	private static boolean typeTest(@Nullable Object test, Entity entity) {
+	/**
+	 * An EntityTypeTest of the mods: a 1.21 entity type (that type), a carried test ({@code tryCast} not null:
+	 * {@code EntityTypeTest.forClass(Player.class)} of the carried ContainerOpenersCounter, which every chest-like block
+	 * entity of the mods asks for the players near it), or none (all). WorldBridges' {@code getEntities} too.
+	 */
+	static boolean typeTest(@Nullable Object test, Entity entity) {
 		if (test == null) {
 			return true;
 		}
 		if (test instanceof io.github.xponer2.translator.registry.EntityType<?> type) {
 			return ApiBridges.getType(entity) == type;
 		}
-		try {
-			java.lang.reflect.Method tryCast = test.getClass().getMethod("tryCast", Object.class);
-			tryCast.setAccessible(true);
-			return tryCast.invoke(test, entity) != null;
-		} catch (ReflectiveOperationException | RuntimeException e) {
+		java.lang.reflect.Method tryCast = TRY_CAST.get(test.getClass());
+		if (tryCast == null) {
 			return true;
 		}
+		try {
+			return tryCast.invoke(test, entity) != null;
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return false;
+		}
 	}
+
+	/** The {@code tryCast(Object)} of a carried EntityTypeTest class (null when it has none). */
+	private static final ClassValue<java.lang.reflect.Method> TRY_CAST = new ClassValue<java.lang.reflect.Method>() {
+		@Override
+		protected java.lang.reflect.Method computeValue(Class<?> type) {
+			try {
+				java.lang.reflect.Method method = type.getMethod("tryCast", Object.class);
+				method.setAccessible(true);
+				return method;
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				return null;
+			}
+		}
+	};
 
 	// --- chunk sections, chunk source ------------------------------------------------------------------------------
 

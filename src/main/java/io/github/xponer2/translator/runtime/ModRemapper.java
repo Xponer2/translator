@@ -225,6 +225,16 @@ final class ModRemapper extends Remapper {
 		return found != null && !this.map(returned.getInternalName()).startsWith(TRANSLATOR) ? found : name;
 	}
 
+	/** Whether a helper class registered for the 1.12.2 class (R lines) declares that static field. */
+	private boolean helperHasField(String mappedOwner, String name, String mappedDesc) {
+		for (String helper : this.table.redirects.getOrDefault(mappedOwner, java.util.Collections.emptyList())) {
+			if (this.target.hasTranslatorMember(helper, name, mappedDesc, false)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private String member(String owner, String name, String desc, boolean method) {
 		var todo = new ArrayDeque<String>();
 		var seen = new HashSet<String>();
@@ -284,6 +294,13 @@ final class ModRemapper extends Remapper {
 				// models read their humanoid parts so, and found nothing under the 1.21 name). Not for an unrelated
 				// type: MobEffects.MOVEMENT_SPEED (a Holder) stays, its helper field has that name, SPEED is a Potion
 				if (!method && this.target.hasFieldNamed(mappedOwner, candidate, mappedDesc)) {
+					return candidate;
+				}
+				// a field of a helper class of the 1.12.2 class (an R line), named by the runtime table where the 1.12.2
+				// field of the same name is another thing: EntityDataSerializers.OPTIONAL_UUID of a mod is a
+				// java.util.Optional, 1.12.2's OPTIONAL_UNIQUE_ID a Guava one (the TF lich's data crashed the server
+				// when it was sent); MethodGuard then reads the helper's field
+				if (!method && this.helperHasField(mappedOwner, candidate, mappedDesc)) {
 					return candidate;
 				}
 			}

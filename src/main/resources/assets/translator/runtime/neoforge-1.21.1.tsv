@@ -10365,9 +10365,9 @@ F	net/minecraft/world/level/block/Blocks	SAND	SAND
 F	net/minecraft/world/level/block/Blocks	SANDSTONE	SANDSTONE
 F	net/minecraft/world/level/block/Blocks	SANDSTONE_STAIRS	SANDSTONE_STAIRS
 F	net/minecraft/world/level/block/Blocks	SEA_LANTERN	SEA_LANTERN
-F	net/minecraft/world/level/block/Blocks	SHORT_GRASS	GRASS
+F	net/minecraft/world/level/block/Blocks	SHORT_GRASS	TALLGRASS
 F	net/minecraft/world/level/block/Blocks	SLIME_BLOCK	SLIME_BLOCK
-F	net/minecraft/world/level/block/Blocks	SNOW	SNOW
+F	net/minecraft/world/level/block/Blocks	SNOW	SNOW_LAYER
 F	net/minecraft/world/level/block/Blocks	SOUL_SAND	SOUL_SAND
 F	net/minecraft/world/level/block/Blocks	SPAWNER	MOB_SPAWNER
 F	net/minecraft/world/level/block/Blocks	SPONGE	SPONGE

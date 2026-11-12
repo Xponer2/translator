@@ -31,8 +31,24 @@ import xyz.wagyourtail.jvmdg.shade.asm.Opcodes;
 public final class AccessWidener implements IClassTransformer {
 	private static final int HIDING = Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED;
 
+	/**
+	 * Members of Translator classes the 1.21.1 mods' access transformers widen (internal class name -> member name ->
+	 * whether final goes too; "" is the class itself, "*" every field, "*()" every method). Filled by the conversion
+	 * before Minecraft loads.
+	 */
+	private static final java.util.Map<String, java.util.Map<String, Boolean>> TRANSLATOR = new java.util.concurrent.ConcurrentHashMap<>();
+
+	/** A member of a Translator class a mod's access transformer widens (the 1.21 name the Translator class keeps). */
+	public static void widenTranslator(String owner, String member, boolean definal) {
+		TRANSLATOR.computeIfAbsent(owner, k -> new java.util.concurrent.ConcurrentHashMap<>()).merge(member, definal, Boolean::logicalOr);
+	}
+
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] basicClass) {
+		if (basicClass != null && !TRANSLATOR.isEmpty() && transformedName.startsWith("io.github.xponer2.translator.")) {
+			var members = TRANSLATOR.get(transformedName.replace('.', '/'));
+			return members == null ? basicClass : widenListed(basicClass, members);
+		}
 		if (basicClass == null || !transformedName.startsWith("net.minecraft.")) {
 			return basicClass;
 		}
@@ -176,6 +192,54 @@ public final class AccessWidener implements IClassTransformer {
 			default:
 				return null;
 		}
+	}
+
+	/** Widens the members of a Translator class the mods' access transformers name (and final off where they say -f). */
+	private static byte[] widenListed(byte[] basicClass, java.util.Map<String, Boolean> members) {
+		var reader = new ClassReader(basicClass);
+		boolean[] changed = {false};
+		var writer = new ClassWriter(reader, 0);
+		reader.accept(new ClassVisitor(Opcodes.ASM9, writer) {
+			private String self;
+
+			@Override
+			public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+				this.self = name;
+				super.visit(version, members.containsKey("") ? widen(access, changed) : access, name, signature, superName, interfaces);
+			}
+
+			@Override
+			public void visitInnerClass(String name, String outerName, String innerName, int access) {
+				super.visitInnerClass(name, outerName, innerName, name.equals(this.self) && members.containsKey("") ? widen(access, changed) : access);
+			}
+
+			@Override
+			public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+				Boolean definal = members.containsKey(name) ? members.get(name) : members.get("*");
+				if (definal != null) {
+					access = widen(access, changed);
+					if (definal && (access & Opcodes.ACC_FINAL) != 0) {
+						access &= ~Opcodes.ACC_FINAL;
+						changed[0] = true;
+					}
+				}
+				return super.visitField(access, name, descriptor, signature, value);
+			}
+
+			@Override
+			public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+				Boolean definal = members.containsKey(name) ? members.get(name) : "<clinit>".equals(name) ? null : members.get("*()");
+				if (definal != null) {
+					access = widen(access, changed);
+					if (definal && (access & Opcodes.ACC_FINAL) != 0) {
+						access &= ~Opcodes.ACC_FINAL;
+						changed[0] = true;
+					}
+				}
+				return super.visitMethod(access, name, descriptor, signature, exceptions);
+			}
+		}, 0);
+		return changed[0] ? writer.toByteArray() : basicClass;
 	}
 
 	private static int widen(int access, boolean[] changed) {

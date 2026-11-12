@@ -39,6 +39,36 @@ public class SignBlockEntity extends TileEntitySign {
 	public SignBlockEntity(@Nullable BlockEntityType<?> type, BlockPos pos, IBlockState state) {
 		this.type = type;
 		this.setPos(pos.toImmutable());
+		try {
+			this.frontText = this.createDefaultSignText();
+			this.backText = this.createDefaultSignText();
+		} catch (LinkageError e) {
+			// no carried 1.21 API: the 1.12.2 text only
+		}
+	}
+
+	/**
+	 * 1.21's two sides of text (the carried SignText), as the mods' sign block entities set them in their constructors:
+	 * Farmer's Delight's dark canvas signs set {@code frontText = createDefaultSignText().setColor(WHITE)}, which threw
+	 * without them (no block entity for any of them). The text drawn and saved is still 1.12.2's.
+	 */
+	@Nullable
+	protected net.minecraft.world.level.block.entity.SignText frontText;
+	@Nullable
+	protected net.minecraft.world.level.block.entity.SignText backText;
+
+	protected net.minecraft.world.level.block.entity.SignText createDefaultSignText() {
+		return new net.minecraft.world.level.block.entity.SignText();
+	}
+
+	@Nullable
+	public net.minecraft.world.level.block.entity.SignText getFrontText() {
+		return this.frontText;
+	}
+
+	@Nullable
+	public net.minecraft.world.level.block.entity.SignText getBackText() {
+		return this.backText;
 	}
 
 	@Nullable

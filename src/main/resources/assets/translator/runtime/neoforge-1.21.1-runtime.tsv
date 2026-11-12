@@ -534,3 +534,24 @@ C	net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket	io/github
 C	net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket	io/github/xponer2/translator/network/ClientboundCustomPayloadPacket
 # 1.21 block state text by 1.21 names (a jigsaw's final_state, the mods' own state strings): the carried parser needs a 1.21 block registry
 X	net/minecraft/commands/arguments/blocks/BlockStateParser	parseForBlock	(Lio/github/xponer2/translator/registry/HolderLookup;Ljava/lang/String;Z)Lnet/minecraft/commands/arguments/blocks/BlockStateParser$BlockResult;	io/github/xponer2/translator/world/BlockStateNbt
+# the entity data serializers whose 1.12.2 namesakes take a Guava Optional (or an optional state): a mod's are
+# java.util.Optional / a plain state, the 1.12.2 ones threw ClassCastException when the data was sent (the TF lich):
+# ExtraDataSerializers' (fields of DataSerializers' helper)
+F	net/minecraft/network/syncher/EntityDataSerializers	BLOCK_STATE	BLOCK_STATE
+F	net/minecraft/network/syncher/EntityDataSerializers	OPTIONAL_BLOCK_STATE	OPTIONAL_STATE
+F	net/minecraft/network/syncher/EntityDataSerializers	OPTIONAL_BLOCK_POS	OPTIONAL_POS
+F	net/minecraft/network/syncher/EntityDataSerializers	OPTIONAL_UUID	OPTIONAL_UUID
+# NeoForge's sided thread groups are Forge 1.12.2's (fml.common.thread): the server thread runs in Forge's SERVER group;
+# the carried NeoForge class made a group of its own no thread was in (AE2's assertServerThread failed on the server
+# thread: no grid for any node, its menus crashed the server; the Sophisticated mods took the server for the client)
+C	net/neoforged/fml/util/thread/SidedThreadGroups	net/minecraftforge/fml/common/thread/SidedThreadGroups
+C	net/neoforged/fml/util/thread/SidedThreadGroup	net/minecraftforge/fml/common/thread/SidedThreadGroup
+# NeoForge FluidStack members Forge's has too, called on a null stack (Forge's empty; NeoForge's is FluidStack.EMPTY): null-safe
+X	net/minecraftforge/fluids/FluidStack	getFluid	()Lnet/minecraftforge/fluids/Fluid;	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
+X	net/minecraftforge/fluids/FluidStack	copy	()Lnet/minecraftforge/fluids/FluidStack;	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
+X	net/minecraftforge/fluids/FluidStack	isFluidEqual	(Lnet/minecraftforge/fluids/FluidStack;)Z	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
+X	net/minecraftforge/fluids/FluidStack	containsFluid	(Lnet/minecraftforge/fluids/FluidStack;)Z	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
+X	net/minecraftforge/fluids/FluidStack	isFluidStackIdentical	(Lnet/minecraftforge/fluids/FluidStack;)Z	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
+X	net/minecraftforge/fluids/FluidStack	getLocalizedName	()Ljava/lang/String;	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
+X	net/minecraftforge/fluids/FluidStack	getUnlocalizedName	()Ljava/lang/String;	io/github/xponer2/translator/runtime/redirect/FluidStackNulls
+X	net/minecraftforge/fluids/FluidStack	writeToNBT	(Lnet/minecraft/nbt/NBTTagCompound;)Lnet/minecraft/nbt/NBTTagCompound;	io/github/xponer2/translator/runtime/redirect/FluidStackNulls

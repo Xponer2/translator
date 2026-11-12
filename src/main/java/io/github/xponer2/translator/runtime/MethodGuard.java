@@ -439,6 +439,38 @@ final class MethodGuard {
 		return null;
 	}
 
+	/**
+	 * {@code Blocks.X.defaultBlockState()} of a 1.21 block that is a variant of a 1.12.2 block (FlattenedBlocks.X: granite
+	 * is stone 1; 1.12.2's Blocks.TALLGRASS, which only 1.21's SHORT_GRASS maps to: tall grass 1): the flattening's
+	 * state (FlattenedStates), not the 1.12.2 block's default (plain stone, a dead bush).
+	 */
+	private static boolean flattenedDefaults(MethodNode method) {
+		boolean changed = false;
+		for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+			if (!(insn instanceof FieldInsnNode field) || field.getOpcode() != Opcodes.GETSTATIC) {
+				continue;
+			}
+			String name = "io/github/xponer2/translator/runtime/redirect/FlattenedBlocks".equals(field.owner) ? field.name
+					: "net/minecraft/init/Blocks".equals(field.owner) && "TALLGRASS".equals(field.name) ? "SHORT_GRASS" : null;
+			if (name == null) {
+				continue;
+			}
+			AbstractInsnNode next = field.getNext();
+			while (next != null && next.getOpcode() < 0) {
+				next = next.getNext();
+			}
+			if (!(next instanceof MethodInsnNode call) || call.getOpcode() != Opcodes.INVOKEVIRTUAL || !"getDefaultState".equals(call.name)
+					|| !"()Lnet/minecraft/block/state/IBlockState;".equals(call.desc)) {
+				continue;
+			}
+			method.instructions.insertBefore(call, new LdcInsnNode("minecraft:" + name.toLowerCase(java.util.Locale.ROOT)));
+			method.instructions.set(call, new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/runtime/redirect/FlattenedStates",
+					"defaultState", "(Lnet/minecraft/block/Block;Ljava/lang/String;)Lnet/minecraft/block/state/IBlockState;", false));
+			changed = true;
+		}
+		return changed;
+	}
+
 	private boolean registryByKey(MethodNode method, FieldInsnNode field) {
 		if (field.getOpcode() != Opcodes.GETSTATIC || !BUILT_IN_REGISTRIES.equals(field.owner)) {
 			return false;
@@ -562,6 +594,8 @@ final class MethodGuard {
 				continue;
 			}
 			changed |= this.redirect(method, node.name);
+			// after redirect: the 1.21 Blocks fields 1.12.2 lacks are FlattenedBlocks' then
+			changed |= flattenedDefaults(method);
 			changed |= this.fixInvokeKinds(method);
 			if ("<clinit>".equals(method.name)) {
 				// a throwing static initializer would take the whole class down: what is missing there gives null / 0,

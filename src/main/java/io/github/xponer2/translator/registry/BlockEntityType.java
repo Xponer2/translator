@@ -26,9 +26,10 @@ import java.util.Set;
 /**
  * The type of a tile entity (1.21 {@code BlockEntityType}), registered in {@code Registries.BLOCK_ENTITY_TYPE}. When
  * it is registered it registers its tile entity class with 1.12.2 under the same id (1.12.2 creates tile entities
- * from NBT through that class and its no-arg constructor).
+ * from NBT through that class and its no-arg constructor). Not final: mods extend it (SuperMartijn642's Core Lib's
+ * BaseBlockEntityType, and with it every block entity of his mods, couldn't load).
  */
-public final class BlockEntityType<T extends TileEntity> implements RegistrationCallback {
+public class BlockEntityType<T extends TileEntity> implements RegistrationCallback {
     /** The types whose sample couldn't be made when they were registered: their class is registered later. */
     private static final java.util.List<BlockEntityType<?>> PENDING = new java.util.ArrayList<>();
 
