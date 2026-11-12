@@ -566,3 +566,5 @@ X	net/minecraftforge/client/event/sound/PlaySoundEvent	getSound	()Lnet/minecraft
 X	net/minecraftforge/client/settings/KeyModifier	isKeyCodeModifier	(Lio/github/xponer2/translator/runtime/neoforge/InputConstants$Key;)Z	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 # NeoForge ClientCommandHandler.runCommand (JourneyMap's chat commands): 1.12.2's client command handler
 X	net/minecraftforge/client/ClientCommandHandler	runCommand	(Ljava/lang/String;)Z	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+# Commons Compress 1.13 Lists.newArrayList() (1.12.2 ships 1.8)
+X	org/apache/commons/compress/utils/Lists	newArrayList	()Ljava/util/ArrayList;	io/github/xponer2/translator/runtime/redirect/MiscBridges

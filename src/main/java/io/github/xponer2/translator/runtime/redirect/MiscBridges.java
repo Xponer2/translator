@@ -808,6 +808,16 @@ public final class MiscBridges {
 		return false;
 	}
 
+	/** NeoForge {@code item.getBurnTime(stack, recipeType)}: the item's own burn time (-1: the fuel table decides). */
+	public static int getBurnTime(net.minecraft.item.Item item, ItemStack stack, @Nullable Object recipeType) {
+		return item.getItemBurnTime(stack);
+	}
+
+	/** Commons Compress 1.13's {@code Lists.newArrayList()} (1.12.2 has 1.8: Iron Furnaces' JEI tooltips). */
+	public static <T> java.util.ArrayList<T> newArrayList() {
+		return new java.util.ArrayList<>();
+	}
+
 	public static int getBurnTime(ItemStack stack, @Nullable Object recipeType) {
 		return net.minecraft.tileentity.TileEntityFurnace.getItemBurnTime(stack);
 	}
