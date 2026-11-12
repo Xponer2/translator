@@ -106,6 +106,42 @@ public final class StructureGeneration implements IWorldGenerator {
 		return LEVELS.computeIfAbsent(world, w -> Level.create(world));
 	}
 
+	private static final Map<World, Object> MANAGERS = new java.util.WeakHashMap<>();
+
+	/**
+	 * 1.21 {@code chunk.getAllReferences()}: by structure, the start chunks of the mods' structures that reach into the
+	 * chunk (empty while their generation is off: there are none in the world then).
+	 */
+	public static Map<Object, it.unimi.dsi.fastutil.longs.LongSet> references(Chunk chunk) {
+		Level level = ENABLED && chunk.getWorld() instanceof WorldServer server ? level(server) : null;
+		return level == null ? java.util.Collections.emptyMap() : level.references(chunk.x, chunk.z);
+	}
+
+	/** 1.21 {@code chunk.getStartForStructure(structure)}: the start of that structure in the chunk, else null. */
+	@Nullable
+	public static Object startFor(Chunk chunk, Object structure) {
+		Level level = ENABLED && chunk.getWorld() instanceof WorldServer server ? level(server) : null;
+		return level == null ? null : level.startAt(chunk.x, chunk.z, structure);
+	}
+
+	/**
+	 * 1.21 {@code serverLevel.structureManager()}: the carried StructureManager of the world, which finds the mods'
+	 * structures through the chunks' references above (Twilight Forest's spawns in its structures, its magic map, the
+	 * mods' "is the player in this structure" checks). Its structure check (locate) isn't there.
+	 */
+	public static synchronized Object structureManager(WorldServer world) {
+		Object manager = MANAGERS.get(world);
+		if (manager == null) {
+			try {
+				manager = Reflect.constructor("net.minecraft.world.level.StructureManager", 3).newInstance(world, WorldOptions.of(world.getWorldInfo()), null);
+			} catch (ReflectiveOperationException e) {
+				throw new IllegalStateException("No carried 1.21 StructureManager", e);
+			}
+			MANAGERS.put(world, manager);
+		}
+		return manager;
+	}
+
 	/** The structures of the 1.21.1 mods ({@code data/<mod>/worldgen/structure}), by id. */
 	public static List<ResourceLocation> modStructures() {
 		List<ResourceLocation> found = new ArrayList<>();
@@ -236,6 +272,70 @@ public final class StructureGeneration implements IWorldGenerator {
 					}
 				}
 			}
+		}
+
+		/** By chunk: the structures reaching into it and their start chunks (a few thousand chunks kept). */
+		private final Map<Long, Map<Object, it.unimi.dsi.fastutil.longs.LongSet>> references = new LinkedHashMap<Long, Map<Object, it.unimi.dsi.fastutil.longs.LongSet>>(
+				256, 0.75F, true) {
+			@Override
+			protected boolean removeEldestEntry(Map.Entry<Long, Map<Object, it.unimi.dsi.fastutil.longs.LongSet>> eldest) {
+				return this.size() > 4096;
+			}
+		};
+
+		synchronized Map<Object, it.unimi.dsi.fastutil.longs.LongSet> references(int chunkX, int chunkZ) {
+			long key = ChunkPos.asLong(chunkX, chunkZ);
+			var known = this.references.get(key);
+			if (known != null) {
+				return known;
+			}
+			var found = new HashMap<Object, it.unimi.dsi.fastutil.longs.LongSet>();
+			var area = new StructureBoundingBox(chunkX * 16, 0, chunkZ * 16, chunkX * 16 + 15, 255, chunkZ * 16 + 15);
+			for (ModSet set : this.sets) {
+				if (set.broken) {
+					continue;
+				}
+				for (int dx = -RANGE; dx <= RANGE; dx++) {
+					for (int dz = -RANGE; dz <= RANGE; dz++) {
+						Object start = set.start(this, chunkX + dx, chunkZ + dz);
+						if (start == NONE) {
+							continue;
+						}
+						try {
+							StructureBoundingBox box = (StructureBoundingBox) Reflect.method(start, "getBoundingBox", 0).invoke(start);
+							if (box != null && box.intersectsWith(area)) {
+								Object structure = Reflect.method(start, "getStructure", 0).invoke(start);
+								found.computeIfAbsent(structure, k -> new it.unimi.dsi.fastutil.longs.LongOpenHashSet()).add(ChunkPos.asLong(chunkX + dx, chunkZ + dz));
+							}
+						} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+							set.failed(e);
+						}
+					}
+				}
+			}
+			this.references.put(key, found);
+			return found;
+		}
+
+		@Nullable
+		synchronized Object startAt(int chunkX, int chunkZ, Object structure) {
+			for (ModSet set : this.sets) {
+				if (set.broken) {
+					continue;
+				}
+				Object start = set.start(this, chunkX, chunkZ);
+				if (start == NONE) {
+					continue;
+				}
+				try {
+					if (Reflect.method(start, "getStructure", 0).invoke(start) == structure) {
+						return start;
+					}
+				} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+					set.failed(e);
+				}
+			}
+			return null;
 		}
 
 		/** Whether the biome of a 1.21 holder is one a structure may start in. */

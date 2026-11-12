@@ -1511,4 +1511,30 @@ public final class LevelGapBridges {
 	public static Object randomState(net.minecraft.world.gen.ChunkProviderServer source) {
 		return io.github.xponer2.translator.world.StructureGeneration.randomState();
 	}
+
+	/** 1.21 {@code chunk.getAllReferences()}: the mods' structures reaching into the chunk, by their start chunks. */
+	public static java.util.Map<Object, it.unimi.dsi.fastutil.longs.LongSet> getAllReferences(net.minecraft.world.chunk.Chunk chunk) {
+		return io.github.xponer2.translator.world.StructureGeneration.references(chunk);
+	}
+
+	/** 1.21 {@code chunk.getReferencesForStructure(structure)}. */
+	public static it.unimi.dsi.fastutil.longs.LongSet getReferencesForStructure(net.minecraft.world.chunk.Chunk chunk, Object structure) {
+		var found = io.github.xponer2.translator.world.StructureGeneration.references(chunk).get(structure);
+		return found == null ? it.unimi.dsi.fastutil.longs.LongSets.EMPTY_SET : found;
+	}
+
+	/** 1.21 {@code chunk.hasAnyStructureReferences()}. */
+	public static boolean hasAnyStructureReferences(net.minecraft.world.chunk.Chunk chunk) {
+		return !io.github.xponer2.translator.world.StructureGeneration.references(chunk).isEmpty();
+	}
+
+	/** 1.21 {@code chunk.getStartForStructure(structure)}: the start of that structure in the chunk, else null. */
+	public static Object getStartForStructure(net.minecraft.world.chunk.Chunk chunk, Object structure) {
+		return io.github.xponer2.translator.world.StructureGeneration.startFor(chunk, structure);
+	}
+
+	/** 1.21 {@code serverLevel.structureManager()}: the world's 1.21 StructureManager over the mods' structures. */
+	public static Object structureManager(net.minecraft.world.WorldServer world) {
+		return io.github.xponer2.translator.world.StructureGeneration.structureManager(world);
+	}
 }
