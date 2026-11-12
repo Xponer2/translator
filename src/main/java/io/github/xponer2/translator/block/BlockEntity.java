@@ -52,7 +52,9 @@ public class BlockEntity extends TileEntity implements ITickable {
 	}
 
 	public IBlockState getBlockState() {
-		if (this.world != null) {
+		// its chunk still loading (1.12.2 gives a loaded block entity its world before the chunk is in the world): asking
+		// the world would load that chunk again, inside its own loading (Refined Storage reads its state in setLevel)
+		if (this.world != null && this.world.isBlockLoaded(this.pos, true)) {
 			IBlockState here = this.world.getBlockState(this.pos);
 			if (this.blockState == null || here.getBlock() == this.blockState.getBlock()) {
 				this.blockState = here;
