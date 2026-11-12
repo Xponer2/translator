@@ -94,10 +94,10 @@ public class SignBlockEntity extends TileEntitySign {
 		}
 		try {
 			if (tag.hasKey("translator_color")) {
-				this.frontText = this.frontText.setColor(net.minecraft.item.EnumDyeColor.byMetadata(tag.getInteger("translator_color")));
+				this.frontText = SignTexts.withColor(this.frontText, net.minecraft.item.EnumDyeColor.byMetadata(tag.getInteger("translator_color")));
 			}
 			if (tag.hasKey("translator_glow")) {
-				this.frontText = this.frontText.setHasGlowingText(tag.getBoolean("translator_glow"));
+				this.frontText = SignTexts.withGlowing(this.frontText, tag.getBoolean("translator_glow"));
 			}
 		} catch (RuntimeException | LinkageError e) {
 			// the carried text class is not there: 1.12.2's lines only
@@ -126,8 +126,8 @@ public class SignBlockEntity extends TileEntitySign {
 		}
 		if (this.frontText != null) {
 			try {
-				tag.setInteger("translator_color", this.frontText.getColor().getMetadata());
-				tag.setBoolean("translator_glow", this.frontText.hasGlowingText());
+				tag.setInteger("translator_color", SignTexts.color(this.frontText).getMetadata());
+				tag.setBoolean("translator_glow", SignTexts.glowing(this.frontText));
 			} catch (RuntimeException | LinkageError e) {
 				// 1.12.2's lines only
 			}

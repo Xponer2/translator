@@ -10,7 +10,10 @@
  */
 package net.minecraft.world.level.block.entity;
 
-/** Compile-only stand-in of the carried 1.21 class of this name (the converted API has the real one). */
+/**
+ * Compile-only stand-in of the carried 1.21 class of this name (the converted API has the real one; its methods take
+ * Minecraft types the stubs can't name, they are called by reflection: runtime.mc.SignTexts).
+ */
 public class SignText {
 	public SignText() {
 	}

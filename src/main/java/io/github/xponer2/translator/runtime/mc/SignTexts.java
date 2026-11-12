@@ -10,6 +10,9 @@
  */
 package io.github.xponer2.translator.runtime.mc;
 
+import java.lang.reflect.Method;
+
+import net.minecraft.item.EnumDyeColor;
 import net.minecraft.tileentity.TileEntitySign;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.level.block.entity.SignText;
@@ -23,6 +26,81 @@ public final class SignTexts {
 	private SignTexts() {
 	}
 
+	// the carried SignText's methods (its compile stub can't name Minecraft types): getMessage(int, boolean),
+	// setMessage(int, ITextComponent), getColor(), setColor(EnumDyeColor), hasGlowingText(), setHasGlowingText(boolean)
+	private static Method getMessage;
+	private static Method setMessage;
+	private static Method getColor;
+	private static Method setColor;
+	private static Method hasGlowingText;
+	private static Method setHasGlowingText;
+
+	private static synchronized void methods() throws ReflectiveOperationException {
+		if (getMessage == null) {
+			Class<?> type = SignText.class;
+			setMessage = type.getMethod("setMessage", int.class, ITextComponent.class);
+			getColor = type.getMethod("getColor");
+			setColor = type.getMethod("setColor", EnumDyeColor.class);
+			hasGlowingText = type.getMethod("hasGlowingText");
+			setHasGlowingText = type.getMethod("setHasGlowingText", boolean.class);
+			getMessage = type.getMethod("getMessage", int.class, boolean.class);
+		}
+	}
+
+	static ITextComponent message(SignText text, int line) {
+		try {
+			methods();
+			return (ITextComponent) getMessage.invoke(text, line, false);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return null;
+		}
+	}
+
+	static SignText withMessage(SignText text, int line, ITextComponent message) {
+		try {
+			methods();
+			return (SignText) setMessage.invoke(text, line, message);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return text;
+		}
+	}
+
+	static EnumDyeColor color(SignText text) {
+		try {
+			methods();
+			return (EnumDyeColor) getColor.invoke(text);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return EnumDyeColor.BLACK;
+		}
+	}
+
+	static SignText withColor(SignText text, EnumDyeColor color) {
+		try {
+			methods();
+			return (SignText) setColor.invoke(text, color);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return text;
+		}
+	}
+
+	static boolean glowing(SignText text) {
+		try {
+			methods();
+			return (Boolean) hasGlowingText.invoke(text);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	static SignText withGlowing(SignText text, boolean glowing) {
+		try {
+			methods();
+			return (SignText) setHasGlowingText.invoke(text, glowing);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return text;
+		}
+	}
+
 	public static SignText getFrontText(TileEntitySign sign) {
 		SignText text = sign instanceof SignBlockEntity own ? own.frontText : null;
 		if (text == null) {
@@ -30,8 +108,8 @@ public final class SignTexts {
 		}
 		for (int i = 0; i < sign.signText.length && i < 4; i++) {
 			ITextComponent line = sign.signText[i];
-			if (line != null && line != text.getMessage(i, false)) {
-				text = text.setMessage(i, line);
+			if (line != null && line != message(text, i)) {
+				text = withMessage(text, i, line);
 			}
 		}
 		if (sign instanceof SignBlockEntity own) {
@@ -58,7 +136,7 @@ public final class SignTexts {
 	public static boolean setText(TileEntitySign sign, SignText text, boolean front) {
 		if (front) {
 			for (int i = 0; i < sign.signText.length && i < 4; i++) {
-				ITextComponent line = text.getMessage(i, false);
+				ITextComponent line = message(text, i);
 				if (line != null) {
 					sign.signText[i] = line;
 				}

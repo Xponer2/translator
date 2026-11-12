@@ -38,7 +38,16 @@ public class SimpleContainer extends InventoryBasic {
 	 * (Refined Storage's filters, pattern grid) it found no 1.12.2 method: the containers never told their block entities.
 	 */
 	public void addListener(net.minecraft.world.ContainerListener listener) {
-		net.minecraft.inventory.IInventoryChangedListener wrapped = listener::containerChanged;
+		net.minecraft.inventory.IInventoryChangedListener wrapped = inventory -> {
+			try {
+				// the carried interface's containerChanged(IInventory) (its compile stub can't name it)
+				java.lang.reflect.Method changed = listener.getClass().getMethod("containerChanged", net.minecraft.inventory.IInventory.class);
+				changed.setAccessible(true);
+				changed.invoke(listener, inventory);
+			} catch (ReflectiveOperationException e) {
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed(listener.getClass().getName() + ".containerChanged", e);
+			}
+		};
 		this.listeners121.put(listener, wrapped);
 		this.addInventoryChangeListener(wrapped);
 	}

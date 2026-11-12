@@ -10,9 +10,9 @@
  */
 package net.minecraft.world;
 
-import net.minecraft.inventory.IInventory;
-
-/** Compile-only stand-in of the carried 1.21 interface of this name (the converted API has the real one). */
+/**
+ * Compile-only stand-in of the carried 1.21 interface of this name (the converted API has the real one, with
+ * containerChanged(IInventory); the stubs have no Minecraft types, it is called by reflection).
+ */
 public interface ContainerListener {
-	void containerChanged(IInventory container);
 }
