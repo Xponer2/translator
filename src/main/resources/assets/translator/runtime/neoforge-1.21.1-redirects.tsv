@@ -768,3 +768,7 @@ R	net/minecraft/util/Session	io/github/xponer2/translator/runtime/redirect/Clien
 R	net/minecraft/util/FoodStats	io/github/xponer2/translator/runtime/redirect/MiscBridges
 R	com/google/common/base/Stopwatch	io/github/xponer2/translator/runtime/redirect/GuavaBridges$Stopwatches
 R	com/google/common/cache/CacheBuilder	io/github/xponer2/translator/runtime/redirect/GuavaBridges$CacheBuilders
+# JEI: dynamic textures by name, Realms check, armor values
+R	net/minecraft/client/renderer/texture/TextureManager	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/client/multiplayer/ServerData	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
+R	net/minecraft/item/ItemArmor	io/github/xponer2/translator/runtime/redirect/MiscBridges

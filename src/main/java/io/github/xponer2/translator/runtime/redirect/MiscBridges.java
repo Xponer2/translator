@@ -564,6 +564,15 @@ public final class MiscBridges {
 		return entity.getHeldItemMainhand();
 	}
 
+	/** 1.21 {@code armor.getDefense()}: its armor points (JEI sorts armor by them). */
+	public static int getDefense(net.minecraft.item.ItemArmor armor) {
+		return armor.damageReduceAmount;
+	}
+
+	public static float getToughness(net.minecraft.item.ItemArmor armor) {
+		return armor.toughness;
+	}
+
 	/** 1.21 {@code enchantment.getWeight()}: 1.12.2's rarity weight (enchanting tables and loot pick by it; Artifacts). */
 	public static int getWeight(net.minecraft.enchantment.Enchantment enchantment) {
 		return enchantment.getRarity().getWeight();

@@ -634,4 +634,15 @@ public final class ClientGapBridges {
 		return mc.player != null && net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.player,
 				command.startsWith("/") ? command : "/" + command) > 0;
 	}
+
+	/** 1.21 {@code textureManager.register(name, texture)}: a dynamic texture under a made-up name (JEI's ingredient icons). */
+	public static net.minecraft.util.ResourceLocation register(net.minecraft.client.renderer.texture.TextureManager manager, String name,
+			net.minecraft.client.renderer.texture.DynamicTexture texture) {
+		return manager.getDynamicTextureLocation(name, texture);
+	}
+
+	/** 1.21 {@code serverData.isRealm()}: 1.12.2 servers are never Realms here (JEI's cheat-mode checks). */
+	public static boolean isRealm(net.minecraft.client.multiplayer.ServerData data) {
+		return false;
+	}
 }
