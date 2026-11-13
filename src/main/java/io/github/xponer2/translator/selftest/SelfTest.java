@@ -133,6 +133,10 @@ public final class SelfTest {
 		transient long startTick;
 		long millis = -1;
 		long ticks = -1;
+		/** The client's frames a second when its test ended (the last second's), -1 on a server. */
+		int fps = -1;
+		/** The used heap then, in MB (a test that leaks shows as a heap that keeps growing). */
+		long heapMb = -1;
 
 		Record(String mod, String id, String kind) {
 			this.mod = mod;
@@ -565,6 +569,9 @@ public final class SelfTest {
 			if (record != null && record.millis < 0) {
 				record.millis = (System.nanoTime() - record.startNanos) / 1_000_000L;
 				record.ticks = this.world.getTotalWorldTime() - record.startTick;
+				record.fps = FMLCommonHandler.instance().getSide().isClient() ? SelfTestClient.fps() : -1;
+				Runtime runtime = Runtime.getRuntime();
+				record.heapMb = (runtime.totalMemory() - runtime.freeMemory()) / (1024L * 1024L);
 			}
 		}
 
@@ -1608,11 +1615,60 @@ public final class SelfTest {
 			byMod.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]))
 					.forEach(e -> out.append(String.format(java.util.Locale.ROOT, "- %s: %.1f min for %d (%.2f s each)%n", e.getKey(),
 							e.getValue()[0] / 60000.0, e.getValue()[1], e.getValue()[0] / 1000.0 / e.getValue()[1])));
+			this.frames(out, slowest);
 			slowest.sort((a, b) -> Long.compare(b.millis, a.millis));
 			long slow = slowest.stream().filter(r -> r.millis > SLOW_MILLIS).count();
 			out.append("\nSlowest (").append(slow).append(" over ").append(SLOW_MILLIS / 1000).append(" s):\n\n");
 			for (Record record : slowest.subList(0, Math.min(25, slowest.size()))) {
 				out.append(String.format(java.util.Locale.ROOT, "- %.1f s (%d ticks): %s %s%n", record.millis / 1000.0, record.ticks, record.kind, record.id));
+			}
+		}
+
+		/**
+		 * The client's frames a second and the heap while the test ran (the user: a mod that drops the frames makes the
+		 * game unplayable): per mod, the lowest, and the heap from the first record to the last.
+		 */
+		private void frames(StringBuilder out, List<Record> timed) {
+			var withFps = new ArrayList<Record>();
+			for (Record record : timed) {
+				if (record.fps >= 0) {
+					withFps.add(record);
+				}
+			}
+			if (!withFps.isEmpty()) {
+				double average = withFps.stream().mapToInt(r -> r.fps).average().orElse(0);
+				int lowest = withFps.stream().mapToInt(r -> r.fps).min().orElse(0);
+				out.append(String.format(java.util.Locale.ROOT, "%nFrames a second while the test ran (its server runs ticks back to back, so lower than in a game): "
+						+ "%.0f on average, %d at the lowest.%n%n", average, lowest));
+				Map<String, int[]> byMod = new TreeMap<>();
+				for (Record record : withFps) {
+					int[] sum = byMod.computeIfAbsent(record.mod, k -> new int[] {0, 0, Integer.MAX_VALUE});
+					sum[0] += record.fps;
+					sum[1]++;
+					sum[2] = Math.min(sum[2], record.fps);
+				}
+				byMod.entrySet().stream().sorted((a, b) -> Double.compare((double) a.getValue()[0] / a.getValue()[1], (double) b.getValue()[0] / b.getValue()[1]))
+						.forEach(e -> out.append(String.format(java.util.Locale.ROOT, "- %s: %.0f fps on average, %d at the lowest%n", e.getKey(),
+								(double) e.getValue()[0] / e.getValue()[1], e.getValue()[2])));
+				withFps.sort((a, b) -> Integer.compare(a.fps, b.fps));
+				out.append("\nLowest frames a second:\n\n");
+				for (Record record : withFps.subList(0, Math.min(15, withFps.size()))) {
+					out.append(String.format(java.util.Locale.ROOT, "- %d fps: %s %s%n", record.fps, record.kind, record.id));
+				}
+			}
+			Record first = null;
+			Record last = null;
+			long peak = 0;
+			for (Record record : timed) {
+				if (record.heapMb >= 0) {
+					first = first == null ? record : first;
+					last = record;
+					peak = Math.max(peak, record.heapMb);
+				}
+			}
+			if (first != null) {
+				out.append(String.format(java.util.Locale.ROOT, "%nHeap: %d MB at the first, %d MB at the last, %d MB at most (of %d MB).%n",
+						first.heapMb, last.heapMb, peak, Runtime.getRuntime().maxMemory() / (1024L * 1024L)));
 			}
 		}
 

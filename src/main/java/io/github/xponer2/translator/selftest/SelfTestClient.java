@@ -49,6 +49,11 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 final class SelfTestClient {
+	/** The client's frames a second (the last second's, as the debug screen shows them). */
+	static int fps() {
+		return net.minecraft.client.Minecraft.getDebugFPS();
+	}
+
 	private static final Method MOUSE_CLICKED = ObfuscationReflectionHelper.findMethod(GuiScreen.class, "func_73864_a", void.class,
 			int.class, int.class, int.class);
 	private static final Method MOUSE_RELEASED = ObfuscationReflectionHelper.findMethod(GuiScreen.class, "func_146286_b", void.class,

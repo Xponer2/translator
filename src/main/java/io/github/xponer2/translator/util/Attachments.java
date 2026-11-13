@@ -36,6 +36,18 @@ public final class Attachments {
 	}
 
 	private static Map<Object, Object> of(Object holder) {
+		// in the holder itself when it can hold them (AttachmentStore), else weakly by the holder
+		Map<Object, Object> own = AttachmentStore.of(holder);
+		if (own != null) {
+			if (!VALUES.isEmpty()) {
+				// set before the holder had its store (in its constructor): moved in
+				Map<Object, Object> early = VALUES.remove(holder);
+				if (early != null) {
+					own.putAll(early);
+				}
+			}
+			return own;
+		}
 		return VALUES.computeIfAbsent(holder, k -> new HashMap<>());
 	}
 
@@ -62,20 +74,26 @@ public final class Attachments {
 		}
 	}
 
+	@Nullable
+	private static Map<Object, Object> existing(Object holder) {
+		Map<Object, Object> own = AttachmentStore.of(holder);
+		return own != null ? own : VALUES.get(holder);
+	}
+
 	/** Whether the holder has any attachment. */
 	public static boolean any(Object holder) {
-		var values = VALUES.get(holder);
+		var values = existing(holder);
 		return values != null && !values.isEmpty();
 	}
 
 	public static boolean has(Object holder, Object type) {
-		var values = VALUES.get(holder);
+		var values = existing(holder);
 		return values != null && values.containsKey(type(type));
 	}
 
 	@Nullable
 	public static Object remove(Object holder, Object type) {
-		var values = VALUES.get(holder);
+		var values = existing(holder);
 		return values == null ? null : values.remove(type(type));
 	}
 

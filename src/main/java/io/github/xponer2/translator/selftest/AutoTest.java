@@ -149,6 +149,9 @@ public final class AutoTest {
 						// the debug screen on: the minimap mods hide behind it (Xaero's, JourneyMap). With the self-test
 						// placing and breaking blocks at its pace they redrew their map all the time and the game lagged
 						mc.gameSettings.showDebugInfo = true;
+						// no natural spawns: the test's server runs its ticks back to back, and mobs spawning at that pace
+						// (Iron's Spells' necromancers) filled the heap; spawners and spawn eggs don't need the rule
+						mc.player.sendChatMessage("/gamerule doMobSpawning false");
 						mc.player.sendChatMessage("/translatortest");
 						this.state = 2;
 						this.ticks = 0;
