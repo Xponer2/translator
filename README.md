@@ -39,6 +39,11 @@ of two neighbouring versions, taken from the official mappings and the loaders' 
 [What is left to bridge](#what-is-left-to-bridge)); the table below shows each mod's state in the self-test. Twilight
 Forest passes 97% of its blocks and items, Supplementaries 96%.
 
+**Corpus** (the 300 most popular NeoForge 1.21.1 mods on Modrinth, converted outside the game with v236): all 300
+convert; **74 need nothing the Translator lacks yet**, 98 miss 1–10 calls, 128 miss more (23 074 call sites in
+all). The largest gaps are converter-wide (stack map frames naming missing classes: 128 mods; mixin fields 1.12.2
+doesn't have: 106 mods), so they are closed first.
+
 ## Mods
 
 <!-- mods:start -->
