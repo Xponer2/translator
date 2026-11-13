@@ -174,7 +174,7 @@ public final class RuntimeResourcePack implements IResourcePack {
 			throw new FileNotFoundException(location.toString());
 		}
 		if (path.endsWith(".json") && path.contains("/blockstates/")) {
-			JsonElement json = blockstate(this.read(entry));
+			JsonElement json = blockstate(this.read(entry), location);
 			fullVariants(json, location);
 			return text(json.toString());
 		}
@@ -215,7 +215,7 @@ public final class RuntimeResourcePack implements IResourcePack {
 		return out.toString();
 	}
 
-	private static JsonElement blockstate(JsonElement json) {
+	private static JsonElement blockstate(JsonElement json, ResourceLocation location) {
 		if (json.isJsonObject() && json.getAsJsonObject().has("variants")) {
 			JsonObject variants = json.getAsJsonObject().getAsJsonObject("variants");
 			if (variants.has("")) {
@@ -223,7 +223,9 @@ public final class RuntimeResourcePack implements IResourcePack {
 			}
 		}
 		blockstateModels(json);
-		wallSides(json);
+		if (!hasWallSideProperty(location)) {
+			wallSides(json);
+		}
 		attachFaces(json);
 		return json;
 	}
@@ -382,6 +384,40 @@ public final class RuntimeResourcePack implements IResourcePack {
 			}
 		}
 		additions.forEach(variants::add);
+	}
+
+	/**
+	 * Whether the block of the blockstate file has 1.21's three-valued wall sides itself (none, low, tall: a mod's own
+	 * block with BlockStateProperties.NORTH_WALL, Supplementaries' wicker fence) rather than the true / false sides of a
+	 * wall built on 1.12.2's: its file stays as it is (made true / false, no part of its model matched and it was the
+	 * missing model).
+	 */
+	private static boolean hasWallSideProperty(ResourceLocation location) {
+		String path = location.getPath();
+		int start = path.lastIndexOf("blockstates/");
+		if (start < 0 || !path.endsWith(".json")) {
+			return false;
+		}
+		var block = net.minecraft.block.Block.REGISTRY.getObject(new ResourceLocation(location.getNamespace(),
+				path.substring(start + "blockstates/".length(), path.length() - ".json".length())));
+		if (block == null || block == net.minecraft.init.Blocks.AIR) {
+			return false;
+		}
+		for (var property : block.getBlockState().getProperties()) {
+			if (SIDES.contains(property.getName()) && property.getValueClass() != Boolean.class && hasLow(property)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static <T extends Comparable<T>> boolean hasLow(net.minecraft.block.properties.IProperty<T> property) {
+		for (T value : property.getAllowedValues()) {
+			if ("low".equals(property.getName(value))) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static final Set<String> SIDES = new HashSet<>(java.util.Arrays.asList("north", "east", "south", "west"));

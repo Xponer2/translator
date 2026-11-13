@@ -187,11 +187,16 @@ public abstract class AbstractContainerMenu extends Container {
 		this.broadcastChanges();
 	}
 
+	/**
+	 * A click the server saw otherwise than the client: the whole menu is sent again, as 1.21 does by its state id.
+	 * 1.12.2 also stopped taking the player's clicks until the client confirmed (its transaction lock), which 1.21 has
+	 * not: a click in between was dropped without a word (Macaw's drawers, Iron's scroll forge, Supplementaries'
+	 * presents, the cooking pot: the client held the item, the server nothing). The menu keeps taking clicks.
+	 */
 	@Override
 	public void setCanCraft(EntityPlayer player, boolean canCraft) {
-		super.setCanCraft(player, canCraft);
+		super.setCanCraft(player, true);
 		if (!canCraft) {
-			// a click the server saw otherwise than the client: 1.12.2 resends the menu by its packets (counts as bytes)
 			this.resendAll = true;
 		}
 	}
