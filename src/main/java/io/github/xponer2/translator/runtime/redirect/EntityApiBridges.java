@@ -636,6 +636,42 @@ public final class EntityApiBridges {
 		return worn;
 	}
 
+	private static final Method DO_BLOCK_COLLISIONS = method(Entity.class, "doBlockCollisions", "func_145775_I");
+
+	/**
+	 * 1.21 {@code entity.checkInsideBlocks()}: the blocks its box is in act on it (1.12.2's doBlockCollisions: cobwebs,
+	 * pressure plates, portals).
+	 */
+	public static void checkInsideBlocks(Entity entity) {
+		if (DO_BLOCK_COLLISIONS != null) {
+			try {
+				DO_BLOCK_COLLISIONS.invoke(entity);
+			} catch (InvocationTargetException e) {
+				throw EntityApiBridges.<RuntimeException>sneaky(e.getCause());
+			} catch (IllegalAccessException e) {
+				RuntimeStubs.failed("Entity.doBlockCollisions", e);
+			}
+		}
+	}
+
+	/** 1.21 {@code entity.tryCheckInsideBlocks()} (Moonlight's projectiles, every tick): as above, a failure reported. */
+	public static void tryCheckInsideBlocks(Entity entity) {
+		try {
+			checkInsideBlocks(entity);
+		} catch (RuntimeException e) {
+			RuntimeStubs.failed(entity.getClass().getName() + ".checkInsideBlocks", e);
+		}
+	}
+
+	/**
+	 * 1.21 {@code entity.maybeBackOffFromEdge(movement, type)}: a sneaking player stops at an edge; anything else moves
+	 * as asked (the move is left to 1.12.2's own edge check). Stubbed it gave no movement and Moonlight's projectiles
+	 * failed in every move.
+	 */
+	public static Vec3d maybeBackOffFromEdge(Entity entity, Vec3d movement, @Nullable Object type) {
+		return movement;
+	}
+
 	// --- Entity: 1.21 fields 1.12.2 hasn't ------------------------------------------------------------------------------
 
 	private static final Map<Entity, boolean[]> FLAGS = Collections.synchronizedMap(new WeakHashMap<>());
