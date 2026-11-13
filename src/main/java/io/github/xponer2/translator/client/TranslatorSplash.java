@@ -41,10 +41,22 @@ public final class TranslatorSplash {
 			// its own projection in window pixels: the splash leaves its matrices as its last drawing needed them
 			int w = Display.getWidth();
 			int h = Display.getHeight();
-			float width = Math.min(720, w * 0.5f);
-			float height = width * 150 / 720;
-			float x0 = (w - width) / 2;
-			float y1 = h - 12;
+			// the splash lays its things out in 640 x 480 around the middle: under that when there is room, else small in
+			// the bottom left corner beside its 400 wide bars (Forge's anvil is in the other one)
+			float free = (h - 480) / 2f;
+			float width;
+			float height;
+			float x0;
+			if (free >= 60) {
+				height = Math.min(free - 16, 120);
+				width = height * 720 / 150;
+				x0 = (w - width) / 2;
+			} else {
+				width = Math.max(120, Math.min(300, (w - 400) / 2f - 16));
+				height = width * 150 / 720;
+				x0 = 10;
+			}
+			float y1 = h - 10;
 			float y0 = y1 - height;
 			if (!logged) {
 				logged = true;
