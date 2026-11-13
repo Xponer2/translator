@@ -43,100 +43,100 @@ Forest passes 97% of its blocks and items, Supplementaries 96%.
 
 <!-- mods:start -->
 
-Tested with converter v219, 2026-11-13. 90 mods: 11 work, 66 partly work, 4 don't work, 9 not tested yet.
+Tested with converter v233, 2026-11-13. 90 mods: 12 work, 65 partly work, 4 don't work, 9 not tested yet.
 
 ✅ works: every block, item and screen of the mod passed the self-test, no crash, all its mixins applied. 🟡 partly works: it loads and plays, some content fails. ❌ doesn't work: it doesn't load or crashes the game. ⬜ not tested yet.
 
 | Mod | Version | Status | Self-test | Notes |
 |---|---|---|---|---|
 | Accessories | 1.1.0-beta.48 | 🟡 Partly works | 0 / 1 | library, 2 mixins not applied, inside another jar |
-| Another Furniture | 4.0.3 | 🟡 Partly works | 254 / 335 |  |
+| Another Furniture | 4.0.3 | 🟡 Partly works | 334 / 335 |  |
 | AppleSkin | 3.0.9 | ✅ Works | 1 / 1 | library |
-| Applied Energistics 2 | 19.2.18 | 🟡 Partly works | 378 / 468 |  |
-| Ars Nouveau | 5.13.4 | 🟡 Partly works | 60 / 82 | 3 mixins not applied |
-| Artifacts | 13.2.5 | 🟡 Partly works | 37 / 41 | 1 mixin not applied |
-| Biomes O' Plenty | 21.1.0.14 | 🟡 Partly works | 830 / 867 |  |
+| Applied Energistics 2 | 19.2.18 | 🟡 Partly works | 270 / 470 |  |
+| Ars Nouveau | 5.13.4 | 🟡 Partly works | 316 / 393 | 3 mixins not applied |
+| Artifacts | 13.2.5 | 🟡 Partly works | 38 / 42 | 1 mixin not applied |
+| Biomes O' Plenty | 21.1.0.14 | 🟡 Partly works | 928 / 936 |  |
 | Chat Heads | 0.15.7 | 🟡 Partly works | 1 / 1 | library, 1 mixin not applied |
 | Cloth Config v15 API | 15.0.140 | ✅ Works | 1 / 1 | library |
 | CodecUI | 1.4.7 | 🟡 Partly works | 0 / 1 | library, 1 mixin not applied, inside another jar |
-| Comforts | 9.0.5 | 🟡 Partly works | 36 / 37 |  |
-| Common Networking | 1.0.21 | ✅ Works | 1 / 1 | library |
+| Comforts | 9.0.5 | 🟡 Partly works | 65 / 68 |  |
+| Common Networking | 1.0.21 | 🟡 Partly works | 0 / 1 | library |
 | Configured | 2.6.3 | 🟡 Partly works | 0 / 1 | library |
 | Controlling | 19.0.5 | ✅ Works | 1 / 1 | library |
 | CoroUtil | 1.3.9 | ⬜ Not tested yet | — | library |
 | CosmeticArmorReworked | 1 | ⬜ Not tested yet | — | library |
-| Create | 6.0.10 | 🟡 Partly works | 1084 / 1338 | 3 mixins not applied |
+| Create | 6.0.10 | 🟡 Partly works | 1292 / 1360 | 3 mixins not applied |
 | Cristel Lib | 3.1.7 | ❌ Doesn't work | 1 / 1 | library |
 | Cucumber Library | 8.0.16 | ⬜ Not tested yet | — | library |
 | Cumulus | 2.0.7 | 🟡 Partly works | 0 / 1 | library, inside another jar |
-| Curios API | 9.5.1 | ✅ Works | 1 / 1 | library |
+| Curios API | 9.5.1 | 🟡 Partly works | 0 / 1 | library |
 | ExpandAbility | — | ⬜ Not tested yet | — | library, inside another jar |
-| Farmer's Delight | 1.3.4 | 🟡 Partly works | 318 / 320 | 1 mixin not applied |
-| Flywheel | 1.0.6 | 🟡 Partly works | 1 / 1 | library, 1 mixin not applied, inside another jar |
+| Farmer's Delight | 1.3.4 | 🟡 Partly works | 317 / 320 | 1 mixin not applied |
+| Flywheel | 1.0.6 | 🟡 Partly works | 0 / 1 | library, 2 mixins not applied, inside another jar |
 | Forgified Fabric API Base | — | ⬜ Not tested yet | — | library, inside another jar |
 | Framework | 0.13.11 | ⬜ Not tested yet | — | library |
 | Fusion | 1.3.16 | 🟡 Partly works | 0 / 1 | library, 2 mixins not applied |
 | GeckoLib 4 | 4.9.3 | 🟡 Partly works | 0 / 1 | library, 2 mixins not applied |
 | GlitchCore | 2.1.0.2 | 🟡 Partly works | — | library, 2 mixins not applied |
 | GuideME | 21.1.21 | 🟡 Partly works | 0 / 1 |  |
-| Handcrafted | 4.0.3 | 🟡 Partly works | 410 / 553 | 1 mixin not applied |
+| Handcrafted | 4.0.3 | 🟡 Partly works | 430 / 555 | 1 mixin not applied |
 | Infiniverse | — | ✅ Works | 1 / 1 | library, inside another jar |
-| Iron Furnaces | 4.3.2 | 🟡 Partly works | 58 / 59 |  |
-| Iron Jetpacks | 8.0.11 | 🟡 Partly works | 5 / 10 |  |
-| Iron's Lib | 2.3.0 | 🟡 Partly works | 2 / 4 | 1 mixin not applied |
-| Iron's Spells 'n Spellbooks | 3.16.3 | 🟡 Partly works | 243 / 255 | 5 mixins not applied |
+| Iron Furnaces | 4.3.2 | 🟡 Partly works | 57 / 59 |  |
+| Iron Jetpacks | 8.0.11 | 🟡 Partly works | 9 / 11 |  |
+| Iron's Lib | 2.3.0 | 🟡 Partly works | 4 / 6 | 1 mixin not applied |
+| Iron's Spells 'n Spellbooks | 3.16.3 | 🟡 Partly works | 298 / 346 | 5 mixins not applied |
 | Jade | 15.10.6 | 🟡 Partly works | 0 / 1 | library, 1 mixin not applied |
 | Journeymap | 6.0.9 | 🟡 Partly works | 0 / 1 | library |
 | JourneyMap API | 2.0.0 | 🟡 Partly works | 0 / 1 | library, inside another jar |
 | Just Enough Items | 19.64.0.455 | ✅ Works | 1 / 1 | library |
 | LambDynamicLights (API) | 4.5.1 | ❌ Doesn't work | 1 / 1 | library, inside another jar |
-| Macaw's Bridges | 3.1.2 | 🟡 Partly works | 292 / 293 |  |
-| Macaw's Doors | 1.1.5 | 🟡 Partly works | 457 / 458 |  |
-| Macaw's Fences and Walls | 1.2.1 | 🟡 Partly works | 351 / 362 |  |
-| Macaw's Furniture | 3.4.1 | 🟡 Partly works | 1232 / 1308 |  |
-| Macaw's Lights and Lamps | 1.1.5 | 🟡 Partly works | 271 / 282 |  |
-| Macaw's Roofs | 2.3.2 | 🟡 Partly works | 1213 / 1214 |  |
-| Macaw's Trapdoors | 1.1.5 | 🟡 Partly works | 371 / 372 |  |
-| Macaw's Windows | 2.4.2 | 🟡 Partly works | 605 / 627 |  |
-| Mekanism | 10.7.19.85 | 🟡 Partly works | 48 / 52 |  |
-| MezzConfig | 0.6.6 | 🟡 Partly works | 0 / 1 | library, inside another jar |
-| Mining Gadgets | 1.18.8 | 🟡 Partly works | 32 / 34 |  |
+| Macaw's Bridges | 3.1.2 | 🟡 Partly works | 289 / 293 |  |
+| Macaw's Doors | 1.1.5 | 🟡 Partly works | 453 / 458 |  |
+| Macaw's Fences and Walls | 1.2.1 | 🟡 Partly works | 357 / 362 |  |
+| Macaw's Furniture | 3.4.1 | 🟡 Partly works | 1290 / 1310 |  |
+| Macaw's Lights and Lamps | 1.1.5 | 🟡 Partly works | 278 / 282 |  |
+| Macaw's Roofs | 2.3.2 | 🟡 Partly works | 1203 / 1214 |  |
+| Macaw's Trapdoors | 1.1.5 | 🟡 Partly works | 368 / 372 |  |
+| Macaw's Windows | 2.4.2 | 🟡 Partly works | 621 / 627 |  |
+| Mekanism | 10.7.19.85 | 🟡 Partly works | 247 / 291 |  |
+| MezzConfig | 0.6.6 | ✅ Works | 1 / 1 | library, inside another jar |
+| Mining Gadgets | 1.18.8 | 🟡 Partly works | 29 / 34 |  |
 | MixinSquared | 0.3.7 | ❌ Doesn't work | — | library, inside another jar |
-| Modular Routers | 13.2.7 | 🟡 Partly works | 48 / 56 |  |
-| Moonlight Lib | 3.7.2 | 🟡 Partly works | 1 / 2 | 3 mixins not applied |
+| Modular Routers | 13.2.7 | 🟡 Partly works | 33 / 56 |  |
+| Moonlight Lib | 3.7.2 | 🟡 Partly works | 2 / 5 | 3 mixins not applied |
 | Mouse Tweaks | 2.26.1 | ✅ Works | 1 / 1 | library |
-| MrCrayfish's Furniture Mod: Refurbished | 1.0.22 | 🟡 Partly works | 345 / 921 | 1 mixin not applied |
-| Mystical Agriculture | 8.0.29 | 🟡 Partly works | 487 / 635 |  |
-| Nature's Compass | 3.4.0 | 🟡 Partly works | 1 / 2 |  |
-| Nitrogen | 1.1.25 | 🟡 Partly works | 0 / 1 | library, inside another jar |
-| Nuggets | 1.1.0.48 | 🟡 Partly works | 1 / 1 | library, inside another jar |
+| MrCrayfish's Furniture Mod: Refurbished | 1.0.22 | 🟡 Partly works | 523 / 922 | 1 mixin not applied |
+| Mystical Agriculture | 8.0.29 | 🟡 Partly works | 610 / 635 |  |
+| Nature's Compass | 3.4.0 | 🟡 Partly works | 0 / 3 |  |
+| Nitrogen | 1.1.25 | ✅ Works | 1 / 1 | library, inside another jar |
+| Nuggets | 1.1.0.48 | 🟡 Partly works | 0 / 1 | library, inside another jar |
 | oωo | 0.12.15.6-beta.1 | 🟡 Partly works | 0 / 1 | library, 5 mixins not applied |
 | Patchouli | 93 | 🟡 Partly works | 1 / 1 |  |
-| Pipez | 1.2.31 | 🟡 Partly works | 10 / 19 |  |
+| Pipez | 1.2.31 | 🟡 Partly works | 18 / 19 |  |
 | Player Animator | 2.0.4 | 🟡 Partly works | — | library |
 | Ponder | 1.0.82 | 🟡 Partly works | 0 / 1 | library, inside another jar |
-| Powah | 6.2.10 | 🟡 Partly works | 72 / 256 |  |
-| Rechiseled | 1.2.6 | 🟡 Partly works | 773 / 1795 |  |
-| Refined Storage | 2.0.9 | 🟡 Partly works | 187 / 401 |  |
+| Powah | 6.2.10 | 🟡 Partly works | 74 / 257 |  |
+| Rechiseled | 1.2.6 | 🟡 Partly works | 435 / 7257 |  |
+| Refined Storage | 2.0.9 | 🟡 Partly works | 435 / 786 |  |
 | Resourceful Lib | 3.0.12 | 🟡 Partly works | 0 / 1 | library |
 | Sable Companion | 1.6.0 | ❌ Doesn't work | 1 / 1 | library, inside another jar |
 | Searchables | 1.0.2 | ⬜ Not tested yet | — | library |
-| Sophisticated Backpacks | 3.26.17.2232 | 🟡 Partly works | 65 / 79 |  |
-| Sophisticated Core | 1.5.25.2451 | 🟡 Partly works | 3 / 3 |  |
-| Sophisticated Storage | 1.6.15.2219 | 🟡 Partly works | 89 / 200 |  |
+| Sophisticated Backpacks | 3.26.17.2232 | 🟡 Partly works | 72 / 80 |  |
+| Sophisticated Core | 1.5.25.2451 | 🟡 Partly works | 3 / 4 |  |
+| Sophisticated Storage | 1.6.15.2219 | 🟡 Partly works | 135 / 200 |  |
 | SpectreLib | 0.17.2 | ✅ Works | 1 / 1 | library, inside another jar |
-| Storage Drawers | 13.11.4 | 🟡 Partly works | 209 / 304 |  |
+| Storage Drawers | 13.11.4 | 🟡 Partly works | 214 / 304 |  |
 | SuperMartijn642's Config Library | 1.1.8 | ⬜ Not tested yet | — | library |
 | SuperMartijn642's Core Lib | 1.1.26 | ✅ Works | 1 / 1 | library |
-| Supplementaries | 4.0.2 | 🟡 Partly works | 238 / 265 | 5 mixins not applied |
+| Supplementaries | 4.0.2 | 🟡 Partly works | 464 / 496 | 5 mixins not applied |
 | TerraBlender | 4.1.0.8 | ⬜ Not tested yet | — | library |
-| The Aether | 1.5.10 | 🟡 Partly works | 256 / 304 | 1 mixin not applied |
-| The Twilight Forest | 4.8.3345 | 🟡 Partly works | 962 / 1162 |  |
-| Tom's Simple Storage Mod | 2.4.2 | 🟡 Partly works | 18 / 39 |  |
-| Torchmaster | 21.1.13 | 🟡 Partly works | 6 / 8 |  |
+| The Aether | 1.5.10 | 🟡 Partly works | 410 / 460 | 1 mixin not applied |
+| The Twilight Forest | 4.8.3345 | 🟡 Partly works | 1177 / 1281 |  |
+| Tom's Simple Storage Mod | 2.4.2 | 🟡 Partly works | 29 / 39 |  |
+| Torchmaster | 21.1.13 | 🟡 Partly works | 6 / 9 |  |
 | Towns and Towers | 1.13.11 | ✅ Works | 1 / 1 | library |
 | What Are They Up To | 1.2.7 | 🟡 Partly works | 0 / 1 | library, 1 mixin not applied |
-| Xaero's Minimap | 26.6.0 | 🟡 Partly works | 0 / 1 | library |
+| Xaero's Minimap | 26.6.0 | ✅ Works | 1 / 1 | library |
 | Xaero's World Map | 1.47.0 | 🟡 Partly works | 0 / 1 | library |
 | XaeroLib | 1.7.3 | 🟡 Partly works | 0 / 1 | library, inside another jar |
 
