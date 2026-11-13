@@ -672,6 +672,53 @@ public final class EntityApiBridges {
 		return movement;
 	}
 
+	private static final Field CAREER_LEVEL = field(net.minecraft.entity.passive.EntityVillager.class, "careerLevel", "field_175562_bw");
+
+	/**
+	 * 1.21 {@code villager.getVillagerData()}: 1.21's data (the carried VillagerData) of the 1.12.2 villager: its
+	 * profession by name (priest is the cleric, smith the armorer), plains type, its career level (14 of 300 popular
+	 * mods read it).
+	 */
+	@Nullable
+	public static Object getVillagerData(net.minecraft.entity.passive.EntityVillager villager) {
+		int level = get(CAREER_LEVEL, villager) instanceof Integer career ? Math.max(1, Math.min(5, career)) : 1;
+		var profession = villager.getProfessionForge();
+		return villagerData(profession == null ? null : profession.getRegistryName(), level);
+	}
+
+	/** The same for a zombie villager (its profession, level 1). */
+	@Nullable
+	public static Object getVillagerData(net.minecraft.entity.monster.EntityZombieVillager zombie) {
+		var profession = zombie.getForgeProfession();
+		return villagerData(profession == null ? null : profession.getRegistryName(), 1);
+	}
+
+	@Nullable
+	private static Object villagerData(@Nullable ResourceLocation profession, int level) {
+		String name = profession == null ? "none" : switch (profession.getPath()) {
+			case "priest" -> "cleric";
+			case "smith" -> "armorer";
+			default -> profession.getPath();
+		};
+		try {
+			ClassLoader loader = net.minecraft.launchwrapper.Launch.classLoader;
+			Class<?> professions = Class.forName("net.minecraft.world.entity.npc.VillagerProfession", true, loader);
+			Class<?> types = Class.forName("net.minecraft.world.entity.npc.VillagerType", true, loader);
+			Object job;
+			try {
+				job = professions.getField(name.toUpperCase(java.util.Locale.ROOT)).get(null);
+			} catch (NoSuchFieldException e) {
+				job = professions.getField("NONE").get(null);
+			}
+			Object type = types.getField("PLAINS").get(null);
+			return Class.forName("net.minecraft.world.entity.npc.VillagerData", true, loader).getConstructor(types, professions, int.class)
+					.newInstance(type, job, level);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			RuntimeStubs.failed("VillagerData", e);
+			return null;
+		}
+	}
+
 	/** 1.21 {@code entity.closerThan(other, distance)}: their positions nearer than that. */
 	public static boolean closerThan(Entity entity, Entity other, double distance) {
 		return entity.getDistanceSq(other) < distance * distance;

@@ -93,6 +93,8 @@ R	net/minecraft/entity/passive/EntityTameable	io/github/xponer2/translator/runti
 R	net/minecraft/entity/passive/AbstractHorse	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/entity/item/EntityBoat	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/entity/monster/EntitySpider$GroupData	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/passive/EntityVillager	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/monster/EntityZombieVillager	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/entity/EntityLivingBase	io/github/xponer2/translator/runtime/redirect/EntityBridges
 R	net/minecraft/entity/player/EntityPlayer	io/github/xponer2/translator/runtime/redirect/EntityBridges
