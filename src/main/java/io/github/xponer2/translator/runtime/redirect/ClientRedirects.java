@@ -30,6 +30,41 @@ public final class ClientRedirects {
 	 * 1.21 {@code sprite.contents().byMipLevel}: the sprite's pixels per mip level (1.12.2's first frame, ARGB) as native
 	 * images (JourneyMap takes its map colors from them: with none every block was colorless and nothing was mapped).
 	 */
+	/**
+	 * 1.21 {@code spriteContents.getOriginalImage()} / its field {@code originalImage}: the sprite's first frame
+	 * (Iron's Spells' statue textures, Sophisticated Storage's wood tints, CoroUtil's colors read it).
+	 */
+	public static io.github.xponer2.translator.client.NativeImage getOriginalImage(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+		return byMipLevel(sprite)[0];
+	}
+
+	public static io.github.xponer2.translator.client.NativeImage originalImage(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+		return getOriginalImage(sprite);
+	}
+
+	/**
+	 * 1.21 {@code spriteContents.animatedTexture}: none (a mod checks it for null; 1.12.2 animates the sprite itself, its
+	 * frames are read by frame index through getPixelRGBA).
+	 */
+	@javax.annotation.Nullable
+	public static Object animatedTexture(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+		return null;
+	}
+
+	/** NeoForge {@code spriteContents.getPixelRGBA(frame, x, y)}: a pixel of a frame, ABGR as 1.21's (Moonlight's colors). */
+	public static int getPixelRGBA(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite, int frame, int x, int y) {
+		int width = sprite.getIconWidth();
+		if (sprite.getFrameCount() == 0 || x < 0 || y < 0 || x >= width || y >= sprite.getIconHeight()) {
+			return 0;
+		}
+		int[][] levels = sprite.getFrameTextureData(Math.max(0, Math.min(frame, sprite.getFrameCount() - 1)));
+		if (levels.length == 0 || levels[0] == null || y * width + x >= levels[0].length) {
+			return 0;
+		}
+		int argb = levels[0][y * width + x];
+		return (argb & 0xFF00FF00) | (argb & 0xFF) << 16 | (argb >> 16) & 0xFF;
+	}
+
 	public static io.github.xponer2.translator.client.NativeImage[] byMipLevel(net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
 		int width = sprite.getIconWidth();
 		int height = sprite.getIconHeight();

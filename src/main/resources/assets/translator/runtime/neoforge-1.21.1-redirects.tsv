@@ -818,3 +818,7 @@ F	net/minecraft/world/item/UseAnim	SPYGLASS	NONE
 F	net/minecraft/world/item/UseAnim	TOOT_HORN	NONE
 F	net/minecraft/world/item/UseAnim	BRUSH	NONE
 R	net/minecraft/client/gui/inventory/GuiShulkerBox	io/github/xponer2/translator/runtime/redirect/GuiBridges
+# 1.21 postChain.close(): 1.12.2's delete (a mod's override of close is one of it)
+M	net/minecraft/client/renderer/PostChain	close()	deleteShaderGroup
+# a pack of the client's list: its resources (pack.open()), and the frames and pixels of a sprite
+R	io/github/xponer2/translator/client/resources/Pack	io/github/xponer2/translator/runtime/redirect/PackBridges
