@@ -37,6 +37,16 @@ public class Explosion extends net.minecraft.world.Explosion {
 	protected final net.minecraft.world.level.ExplosionDamageCalculator damageCalculator;
 	/** 1.21 {@code fire} (the table's name: causesFire, private in 1.12.2). */
 	protected final boolean causesFire;
+	/** 1.21 {@code toBlow} (the table's name: affectedBlockPositions): 1.12.2's own list, shared, so its finalize blows them. */
+	protected final it.unimi.dsi.fastutil.objects.ObjectArrayList<BlockPos> affectedBlockPositions = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+	@Nullable
+	protected net.minecraft.util.DamageSource damageSource;
+	@Nullable
+	protected io.github.xponer2.translator.util.particle.ParticleOptions smallExplosionParticles;
+	@Nullable
+	protected io.github.xponer2.translator.util.particle.ParticleOptions largeExplosionParticles;
+	@Nullable
+	protected io.github.xponer2.translator.registry.Holder<?> explosionSound;
 	@Nullable
 	protected final net.minecraft.world.level.Explosion.BlockInteraction blockInteraction;
 
@@ -52,6 +62,7 @@ public class Explosion extends net.minecraft.world.Explosion {
 		this.causesFire = fire;
 		this.blockInteraction = interaction;
 		this.damageCalculator = null;
+		this.shareBlocks();
 	}
 
 	public Explosion(World level, @Nullable Entity source, double x, double y, double z, float radius, boolean fire,
@@ -66,6 +77,7 @@ public class Explosion extends net.minecraft.world.Explosion {
 		this.causesFire = fire;
 		this.blockInteraction = interaction;
 		this.damageCalculator = null;
+		this.shareBlocks();
 	}
 
 	/** 1.21's explosion with its damage source, calculator and effects: 1.12.2's own damage and particles. */
@@ -83,6 +95,32 @@ public class Explosion extends net.minecraft.world.Explosion {
 		this.causesFire = fire;
 		this.blockInteraction = interaction;
 		this.damageCalculator = calculator;
+		this.damageSource = damage;
+		this.smallExplosionParticles = small;
+		this.largeExplosionParticles = large;
+		this.explosionSound = sound;
+		this.shareBlocks();
+	}
+
+	/** 1.12.2's private list of the blocks to blow is this one (what the mod's explode adds, 1.12.2's finalize blows). */
+	private void shareBlocks() {
+		this.affectedBlockPositions.addAll(super.getAffectedBlockPositions());
+		try {
+			net.minecraftforge.fml.common.ObfuscationReflectionHelper.setPrivateValue(net.minecraft.world.Explosion.class, this, this.affectedBlockPositions,
+					"field_77281_g");
+		} catch (RuntimeException e) {
+			// 1.12.2 keeps its own list: getAffectedBlockPositions below still gives this one
+		}
+	}
+
+	@Override
+	public List<BlockPos> getAffectedBlockPositions() {
+		return this.affectedBlockPositions;
+	}
+
+	@Override
+	public void clearAffectedBlockPositions() {
+		this.affectedBlockPositions.clear();
 	}
 
 	/** Whether a 1.21 block interaction breaks blocks: all but KEEP (TRIGGER_BLOCK only triggers, 1.12.2 can't). */
