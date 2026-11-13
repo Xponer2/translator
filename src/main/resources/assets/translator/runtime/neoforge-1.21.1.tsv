@@ -1113,7 +1113,7 @@ C	net/minecraft/world/entity/vehicle/MinecartTNT	net/minecraft/entity/item/Entit
 C	net/minecraft/world/flag/FeatureFlagSet	io/github/xponer2/translator/util/FeatureFlagSet
 C	net/minecraft/world/food/FoodData	net/minecraft/util/FoodStats
 C	net/minecraft/world/inventory/AbstractContainerMenu	io/github/xponer2/translator/menu/AbstractContainerMenu
-C	net/minecraft/world/inventory/AnvilMenu	net/minecraft/inventory/ContainerRepair
+C	net/minecraft/world/inventory/AnvilMenu	io/github/xponer2/translator/menu/AnvilMenu
 C	net/minecraft/world/inventory/BeaconMenu	net/minecraft/inventory/ContainerBeacon
 C	net/minecraft/world/inventory/BrewingStandMenu	net/minecraft/inventory/ContainerBrewingStand
 C	net/minecraft/world/inventory/BrewingStandMenu$FuelSlot	net/minecraft/inventory/ContainerBrewingStand$Fuel
@@ -1134,7 +1134,10 @@ C	net/minecraft/world/inventory/HorseInventoryMenu	net/minecraft/inventory/Conta
 C	net/minecraft/world/inventory/HorseInventoryMenu$1	net/minecraft/inventory/ContainerHorseInventory$1
 C	net/minecraft/world/inventory/HorseInventoryMenu$2	net/minecraft/inventory/ContainerHorseInventory$2
 C	net/minecraft/world/inventory/InventoryMenu	net/minecraft/inventory/ContainerPlayer
-C	net/minecraft/world/inventory/ItemCombinerMenu	net/minecraft/inventory/ContainerRepair
+C	net/minecraft/world/inventory/ItemCombinerMenu	io/github/xponer2/translator/menu/ItemCombinerMenu
+C	net/minecraft/world/inventory/ItemCombinerMenuSlotDefinition	io/github/xponer2/translator/menu/ItemCombinerMenuSlotDefinition
+C	net/minecraft/world/inventory/ItemCombinerMenuSlotDefinition$Builder	io/github/xponer2/translator/menu/ItemCombinerMenuSlotDefinition$Builder
+C	net/minecraft/world/inventory/ItemCombinerMenuSlotDefinition$SlotDefinition	io/github/xponer2/translator/menu/ItemCombinerMenuSlotDefinition$SlotDefinition
 C	net/minecraft/world/inventory/MenuType	io/github/xponer2/translator/menu/MenuType
 C	net/minecraft/world/inventory/MerchantContainer	net/minecraft/inventory/InventoryMerchant
 C	net/minecraft/world/inventory/MerchantMenu	net/minecraft/inventory/ContainerMerchant

@@ -73,8 +73,9 @@ public class CreativeModeTab implements RegistrationCallback {
     private List<ItemStack> displayItems() {
         var stacks = new ArrayList<ItemStack>();
         try {
-            this.displayItemsGenerator.accept(ItemDisplayParameters.INSTANCE, stack -> {
-                if (stack != null && !stack.isEmpty()) {
+            this.displayItemsGenerator.accept(ItemDisplayParameters.INSTANCE, (stack, visibility) -> {
+                // 1.12.2 has no separate search tab list: an item only for the search tab isn't in the tab
+                if (stack != null && !stack.isEmpty() && visibility != TabVisibility.SEARCH_TAB_ONLY) {
                     stacks.add(stack);
                 }
             });
@@ -167,9 +168,18 @@ public class CreativeModeTab implements RegistrationCallback {
         void accept(ItemDisplayParameters parameters, Output output);
     }
 
+    /**
+     * 1.21 {@code CreativeModeTab.Output}: as in 1.21 the item with its visibility is the method to implement, the
+     * others come to it (Cucumber's tab lists implement only that one: Mystical Agriculture's and Iron Jetpacks' tabs
+     * were empty, the one-item method was missing).
+     */
     @FunctionalInterface
     public interface Output {
-        void accept(ItemStack stack);
+        void accept(ItemStack stack, TabVisibility visibility);
+
+        default void accept(ItemStack stack) {
+            this.accept(stack, TabVisibility.PARENT_AND_SEARCH_TABS);
+        }
 
         default void accept(net.minecraft.item.Item item) {
             this.accept(new ItemStack(item));
@@ -177,13 +187,6 @@ public class CreativeModeTab implements RegistrationCallback {
 
         default void accept(io.github.xponer2.translator.util.ItemLike item) {
             this.accept(new ItemStack(io.github.xponer2.translator.util.ItemLike.item(item)));
-        }
-
-        /** 1.21 {@code accept(stack, visibility)}: 1.12.2 has no separate search tab list, the item goes in the tab. */
-        default void accept(ItemStack stack, TabVisibility visibility) {
-            if (visibility != TabVisibility.SEARCH_TAB_ONLY) {
-                this.accept(stack);
-            }
         }
 
         default void accept(io.github.xponer2.translator.util.ItemLike item, TabVisibility visibility) {
