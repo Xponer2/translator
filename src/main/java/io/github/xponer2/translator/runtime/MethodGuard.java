@@ -370,6 +370,12 @@ final class MethodGuard {
 						}
 					}
 					field.name = same;
+					// the mixin's own class knowledge: its uses of the field are found under the new name
+					ClassInfo own = this.info(node.name);
+					if (own != null) {
+						own.fields.remove(old + " " + field.desc);
+						own.fields.add(same + " " + field.desc);
+					}
 					changed = true;
 					continue;
 				}
