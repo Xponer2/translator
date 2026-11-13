@@ -419,7 +419,9 @@ public final class SelfTest {
 		private void waitFor(java.util.function.BooleanSupplier done, int ticks) {
 			Record record = this.current;
 			this.steps.addFirst(new Runnable() {
-				private int left = ticks;
+				// the client's time, not the server's: the server runs its ticks back to back while the test runs
+				// (FAST), the client answers at its own pace; the budget is the ticks' time at 20 ticks a second
+				private final long deadline = System.nanoTime() + ticks * 50_000_000L;
 				private boolean seen;
 
 				@Override
@@ -429,7 +431,7 @@ public final class SelfTest {
 						return;
 					}
 					this.seen = done.getAsBoolean();
-					if (--this.left > 0 || this.seen) {
+					if (System.nanoTime() < this.deadline || this.seen) {
 						Run.this.steps.addFirst(this);
 					} else {
 						record.problems.add("client: no answer in " + ticks + " ticks");
@@ -446,6 +448,19 @@ public final class SelfTest {
 			Runnable step = this.steps.poll();
 			if (step == null) {
 				return;
+			}
+			if (FAST) {
+				// the next tick at once: the server's clock is set back by a tick, so its loop runs ticks back to back
+				// instead of sleeping out the rest of each 50 ms (a block's test is a few ticks: most of a test was sleep)
+				try {
+					var server = this.player.getServer();
+					long now = net.minecraftforge.fml.common.ObfuscationReflectionHelper.<Long, net.minecraft.server.MinecraftServer>getPrivateValue(
+							net.minecraft.server.MinecraftServer.class, server, "field_175591_ab");
+					net.minecraftforge.fml.common.ObfuscationReflectionHelper.setPrivateValue(net.minecraft.server.MinecraftServer.class, server, now - 50L,
+							"field_175591_ab");
+				} catch (RuntimeException e) {
+					// the server keeps its pace
+				}
 			}
 			Thread server = Thread.currentThread();
 			RuntimeStubs.listener = what -> {
@@ -1586,6 +1601,12 @@ public final class SelfTest {
 				out.append(String.format(java.util.Locale.ROOT, "- %.1f s (%d ticks): %s %s%n", record.millis / 1000.0, record.ticks, record.kind, record.id));
 			}
 		}
+
+		/**
+		 * The server runs its ticks back to back while the test runs ({@code -Dtranslator.selftest.slow=true} keeps
+		 * 20 a second).
+		 */
+		private static final boolean FAST = !Boolean.getBoolean("translator.selftest.slow");
 
 		/** A block or item whose test took longer than this is counted as slow in the report's time section. */
 		private static final long SLOW_MILLIS = 5000;
