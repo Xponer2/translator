@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -106,7 +107,7 @@ public final class DataAdvancements {
 				continue;
 			}
 			try {
-				JsonObject converted = convert(entry.getValue());
+				JsonObject converted = convert(entry.getValue(), !parents().contains(entry.getKey().toString()));
 				if (converted == null) {
 					unlocksNothing++;
 					continue;
@@ -154,6 +155,23 @@ public final class DataAdvancements {
 		return null;
 	}
 
+	private static Set<String> parents;
+
+	/** The ids the mods' advancements name as their parent (those aren't leaves). */
+	private static synchronized Set<String> parents() {
+		if (parents == null) {
+			var found = new java.util.HashSet<String>();
+			for (JsonObject file : files().values()) {
+				if (file.has("parent") && file.get("parent").isJsonPrimitive()) {
+					String parent = file.get("parent").getAsString();
+					found.add(parent.contains(":") ? parent : "minecraft:" + parent);
+				}
+			}
+			parents = found;
+		}
+		return parents;
+	}
+
 	private static synchronized Map<ResourceLocation, JsonObject> files() {
 		if (files == null) {
 			var found = new LinkedHashMap<ResourceLocation, JsonObject>();
@@ -181,9 +199,13 @@ public final class DataAdvancements {
 	 * stonecutting: 1.12.2 checks every recipe it names against its crafting recipes).
 	 */
 	@Nullable
-	static JsonObject convert(JsonObject in) {
+	static JsonObject convert(JsonObject in, boolean leaf) {
 		var out = new JsonObject();
-		if (in.has("parent")) {
+		// the parent only places an advancement in the advancement screens' trees, where a leaf without a display isn't
+		// shown: those (the mods' recipe unlocks, 5920 of them) come without it. Under minecraft:recipes/root 1.12.2's
+		// visibility update walked all of root's children again for each one that changed, nested: picking up a boat
+		// completed hundreds at once and the server died of a StackOverflowError (Twilight Forest's chest boats)
+		if (in.has("parent") && (in.has("display") || !leaf)) {
 			out.add("parent", in.get("parent"));
 		}
 		if (in.has("display") && in.get("display").isJsonObject()) {
