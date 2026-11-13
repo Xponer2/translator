@@ -38,6 +38,14 @@ public class RegistryOps<T> implements DynamicOps<T> {
 	private final HolderLookup.Provider registries;
 
 	@SuppressWarnings("unchecked")
+	/**
+	 * 1.21's copy constructor, for subclasses: NeoForge's ConditionalOps (the data files of the mods with conditions:
+	 * Supplementaries' faucet behaviours, hourglass times, cage mobs and songs weren't read).
+	 */
+	protected RegistryOps(RegistryOps<T> other) {
+		this(other.delegate, other.registries);
+	}
+
 	protected RegistryOps(DynamicOps<T> delegate, HolderLookup.Provider registries) {
 		this.delegate = delegate instanceof RegistryOps<?> ops ? (DynamicOps<T>) ops.delegate : delegate;
 		this.registries = registries;

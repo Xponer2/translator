@@ -62,7 +62,8 @@ public final class ParticleCodec {
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	static void encode(RegistryFriendlyByteBuf buffer, ParticleOptions options) {
-		if (options instanceof LegacyParticleOptions legacy) {
+		// a 1.12.2 particle, as options or as a 1.21 vanilla type standing for one (Twilight Forest's trophies send these)
+		if (options instanceof VanillaParticle legacy) {
 			buffer.writeResourceLocation(LEGACY);
 			buffer.writeVarInt(legacy.legacyType().getParticleID());
 			int[] arguments = legacy.legacyArguments();
