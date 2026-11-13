@@ -92,7 +92,13 @@ public final class DataComponents {
     public static final DataComponentType<Integer> MAX_STACK_SIZE = plain("max_stack_size");
     public static final DataComponentType<Integer> MAX_DAMAGE = plain("max_damage");
     public static final DataComponentType<Integer> REPAIR_COST = plain("repair_cost");
-    public static final DataComponentType<Object> CONTAINER = plain("container");
+    /**
+     * Persistent with the carried ItemContainerContents codec (read lazily: the 1.21.1 classes are carried after this
+     * class loads): Twilight Forest's travellers modifiers (swap_hotbar) name it in their data, and an item patch with a
+     * component that isn't persistent doesn't read.
+     */
+    public static final DataComponentType<Object> CONTAINER = register("container",
+            DataComponentType.<Object>builder().persistent(new CarriedCodec<>("net.minecraft.world.item.component.ItemContainerContents")).build());
     /** The potion of a stack (1.12.2's "Potion", "CustomPotionColor" and "CustomPotionEffects" tags). */
     public static final DataComponentType<PotionContents> POTION_CONTENTS = register("potion_contents",
             DataComponentType.<PotionContents>builder().storage(new StackStorage<>() {
