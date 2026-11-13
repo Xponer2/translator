@@ -91,3 +91,4 @@ E	net/minecraft/client/gui/screens/ChatScreen	io/github/xponer2/translator/clien
 S	net/minecraft/client/renderer/PostChain	io/github/xponer2/translator/client/PostChain
 S	net/minecraft/world/level/BaseSpawner	io/github/xponer2/translator/runtime/mc/BaseSpawner
 S	net/minecraft/world/level/block/piston/PistonMovingBlockEntity	io/github/xponer2/translator/runtime/mc/PistonMovingBlockEntity
+S	net/minecraft/world/level/Explosion	io/github/xponer2/translator/runtime/mc/Explosion
