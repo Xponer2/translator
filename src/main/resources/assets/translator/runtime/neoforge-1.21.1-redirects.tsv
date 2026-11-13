@@ -859,3 +859,4 @@ R	net/minecraft/entity/EntityCreature	io/github/xponer2/translator/runtime/redir
 R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
 R	net/minecraft/world/BossInfoServer	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/network/play/server/SPacketSpawnObject	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+X	net/minecraft/util/WeightedRandom	getTotalWeight	(Ljava/util/List;)I	io/github/xponer2/translator/runtime/redirect/RandomSourceBridges

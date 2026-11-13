@@ -55,6 +55,19 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 
 	// --- 1.21 methods ---------------------------------------------------------------------------------------------
 
+	/** 1.21 {@code getSoundType(state)}: the block's sound (a mod's override: Moonlight's mimic blocks sound as what they show). */
+	@SuppressWarnings("deprecation")
+	public net.minecraft.block.SoundType getSoundType(net.minecraft.block.state.IBlockState state) {
+		return super.getSoundType();
+	}
+
+	/** 1.12.2 (Forge) asks this one: the 1.21 one above, a mod's override of it included. */
+	@Override
+	public net.minecraft.block.SoundType getSoundType(net.minecraft.block.state.IBlockState state, net.minecraft.world.World world,
+			net.minecraft.util.math.BlockPos pos, @javax.annotation.Nullable net.minecraft.entity.Entity entity) {
+		return this.getSoundType(state);
+	}
+
 	protected void createBlockStateDefinition(BlockStateContainer.Builder builder) {
 	}
 

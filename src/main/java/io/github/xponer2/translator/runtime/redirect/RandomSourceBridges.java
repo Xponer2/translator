@@ -109,6 +109,23 @@ public final class RandomSourceBridges {
 		}
 	}
 
+	/**
+	 * 1.21 {@code WeightedRandom.getTotalWeight(list)} (an X line: 1.12.2's WeightedRandom has a method of the same
+	 * name and descriptor that casts every entry to its own Item): the weights of 1.21 entries and of 1.12.2 items.
+	 * Supplementaries' flute picked an animal with it and failed.
+	 */
+	public static int getTotalWeight(java.util.List<?> entries) {
+		long total = 0;
+		for (Object entry : entries) {
+			if (entry instanceof io.github.xponer2.translator.util.random.WeightedEntry weighted) {
+				total += weighted.getWeight().asInt();
+			} else if (entry instanceof net.minecraft.util.WeightedRandom.Item item) {
+				total += item.itemWeight;
+			}
+		}
+		return (int) Math.min(total, Integer.MAX_VALUE);
+	}
+
 	public static void consumeCount(Random random, int count) {
 		for (int i = 0; i < count; i++) {
 			random.nextInt();
