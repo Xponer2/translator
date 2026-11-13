@@ -53,6 +53,17 @@ public final class EventHooks {
 		return event.getBurnTime();
 	}
 
+	/**
+	 * 1.21 {@code canEntityGrief(level, entity)}: the mob griefing rule, as Forge's event leaves it. The 1.21.1 code made
+	 * NeoForge's event, whose constructor 1.12.2's lacks, and posted nothing (Twilight Forest's naga failed every tick).
+	 */
+	public static boolean canEntityGrief(World level, @Nullable net.minecraft.entity.Entity entity) {
+		if (entity == null) {
+			return level.getGameRules().getBoolean("mobGriefing");
+		}
+		return ForgeEventFactory.getMobGriefingEvent(level, entity);
+	}
+
 	public static boolean saplingGrowTree(World level, java.util.Random random, BlockPos pos) {
 		return TerrainGen.saplingGrowTree(level, random, pos);
 	}

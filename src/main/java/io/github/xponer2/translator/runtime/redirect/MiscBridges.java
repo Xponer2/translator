@@ -1904,6 +1904,40 @@ public final class MiscBridges {
 		return box.grow(x, y, z);
 	}
 
+	// 1.21 AABB's withers: a box with one side moved (Supplementaries' hitboxes and ranges)
+	public static AxisAlignedBB setMinX(AxisAlignedBB box, double value) {
+		return new AxisAlignedBB(value, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+	}
+
+	public static AxisAlignedBB setMinY(AxisAlignedBB box, double value) {
+		return new AxisAlignedBB(box.minX, value, box.minZ, box.maxX, box.maxY, box.maxZ);
+	}
+
+	public static AxisAlignedBB setMinZ(AxisAlignedBB box, double value) {
+		return new AxisAlignedBB(box.minX, box.minY, value, box.maxX, box.maxY, box.maxZ);
+	}
+
+	public static AxisAlignedBB setMaxX(AxisAlignedBB box, double value) {
+		return new AxisAlignedBB(box.minX, box.minY, box.minZ, value, box.maxY, box.maxZ);
+	}
+
+	public static AxisAlignedBB setMaxY(AxisAlignedBB box, double value) {
+		return new AxisAlignedBB(box.minX, box.minY, box.minZ, box.maxX, value, box.maxZ);
+	}
+
+	public static AxisAlignedBB setMaxZ(AxisAlignedBB box, double value) {
+		return new AxisAlignedBB(box.minX, box.minY, box.minZ, box.maxX, box.maxY, value);
+	}
+
+	/** 1.21 {@code getMinPosition()} / {@code getMaxPosition()}: the corners as vectors. */
+	public static Vec3d getMinPosition(AxisAlignedBB box) {
+		return new Vec3d(box.minX, box.minY, box.minZ);
+	}
+
+	public static Vec3d getMaxPosition(AxisAlignedBB box) {
+		return new Vec3d(box.maxX, box.maxY, box.maxZ);
+	}
+
 	public static AxisAlignedBB move(AxisAlignedBB box, Vec3d offset) {
 		return box.offset(offset);
 	}
