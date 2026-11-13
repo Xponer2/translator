@@ -247,6 +247,18 @@ public final class ChunkSections {
 		}
 	}
 
+	/** 1.21 {@code container.getAll(consumer)}: each different state in the section once (Twilight Forest's chunk blankets). */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static void getAll(BlockStateContainer container, java.util.function.Consumer consumer) {
+		var seen = java.util.Collections.newSetFromMap(new IdentityHashMap<IBlockState, Boolean>());
+		for (int index = 0; index < 4096; index++) {
+			IBlockState state = container.get(index & 15, index >> 8 & 15, index >> 4 & 15);
+			if (seen.add(state)) {
+				consumer.accept(state);
+			}
+		}
+	}
+
 	public static Object get(BlockStateContainer container, int x, int y, int z) {
 		return container instanceof BiomeContainer biomes ? biomes.biome(x, y, z) : container.get(x, y, z);
 	}

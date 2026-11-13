@@ -572,3 +572,9 @@ X	org/apache/commons/compress/utils/Lists	newArrayList	()Ljava/util/ArrayList;	i
 X	net/minecraft/client/multiplayer/WorldClient	getModelDataManager	()Lnet/neoforged/neoforge/client/model/data/ModelDataManager;	io/github/xponer2/translator/client/TextureBridges	(Ljava/lang/Object;)Lnet/neoforged/neoforge/client/model/data/ModelDataManager;
 C	net/neoforged/neoforge/registries/DataPackRegistryEvent	io/github/xponer2/translator/registry/DataPackRegistryEvent
 C	net/neoforged/neoforge/registries/DataPackRegistryEvent$NewRegistry	io/github/xponer2/translator/registry/DataPackRegistryEvent$NewRegistry
+# super.start() / super.tick() of a mod goal on MeleeAttackGoal (1.12.2 EntityAIAttackMelee): Goal's names weren't reached through it (Twilight Forest's lich and throw-rider goals)
+M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	start()	startExecuting
+M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	tick()	updateTask
+M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	stop()	resetTask
+M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	canUse()	shouldExecute
+M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	canContinueToUse()	shouldContinueExecuting

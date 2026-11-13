@@ -822,3 +822,6 @@ R	net/minecraft/client/gui/inventory/GuiShulkerBox	io/github/xponer2/translator/
 M	net/minecraft/client/renderer/PostChain	close()	deleteShaderGroup
 # a pack of the client's list: its resources (pack.open()), and the frames and pixels of a sprite
 R	io/github/xponer2/translator/client/resources/Pack	io/github/xponer2/translator/runtime/redirect/PackBridges
+R	net/minecraftforge/fluids/IFluidTank	io/github/xponer2/translator/runtime/redirect/MiscBridges
+# 1.21 AbstractContainerMenu members 1.12.2's Container lacks, on its own menus (sendAllDataToRemote)
+R	net/minecraft/inventory/Container	io/github/xponer2/translator/runtime/redirect/MiscBridges

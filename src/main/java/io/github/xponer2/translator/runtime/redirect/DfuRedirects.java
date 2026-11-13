@@ -48,6 +48,12 @@ public final class DfuRedirects {
 		return DataResult.error(message.get(), value);
 	}
 
+	/** DFU 7+ {@code hasResultOrPartial()}: a result, or an error with a partial one (Moonlight's alternative codecs). */
+	public static boolean hasResultOrPartial(DataResult<?> result) {
+		return result.result().isPresent() || result.resultOrPartial(message -> {
+		}).isPresent();
+	}
+
 	public static <R> R getOrThrow(DataResult<R> result) {
 		return result.getOrThrow(false, message -> {
 		});

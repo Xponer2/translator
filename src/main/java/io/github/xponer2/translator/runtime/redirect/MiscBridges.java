@@ -1727,6 +1727,41 @@ public final class MiscBridges {
 		return stack == null ? 0 : handler.fill(stack, execute(action));
 	}
 
+	/**
+	 * 1.21 {@code menu.sendAllDataToRemote()}: every slot sent to the menu's players again (Twilight Forest puts back a block
+	 * placed in a locked area so; Refurbished Furniture's cauldrons).
+	 */
+	public static void sendAllDataToRemote(net.minecraft.inventory.Container container) {
+		java.util.List<net.minecraft.inventory.IContainerListener> listeners = net.minecraftforge.fml.common.ObfuscationReflectionHelper
+				.getPrivateValue(net.minecraft.inventory.Container.class, container, "field_75149_d");
+		if (listeners == null) {
+			return;
+		}
+		for (net.minecraft.inventory.IContainerListener listener : new java.util.ArrayList<>(listeners)) {
+			listener.sendAllContents(container, container.getInventory());
+		}
+	}
+
+	// IFluidTank (a single tank: Iron's Spells' alchemist cauldron) with the FluidAction, as IFluidHandler above
+
+	public static int fill(net.minecraftforge.fluids.IFluidTank tank, @Nullable net.minecraftforge.fluids.FluidStack stack, Object action) {
+		return stack == null ? 0 : tank.fill(stack, execute(action));
+	}
+
+	@Nullable
+	public static net.minecraftforge.fluids.FluidStack drain(net.minecraftforge.fluids.IFluidTank tank, int amount, Object action) {
+		return tank.drain(amount, execute(action));
+	}
+
+	@Nullable
+	public static net.minecraftforge.fluids.FluidStack drain(net.minecraftforge.fluids.IFluidTank tank, @Nullable net.minecraftforge.fluids.FluidStack stack,
+			Object action) {
+		if (stack == null || tank.getFluid() == null || !tank.getFluid().isFluidEqual(stack)) {
+			return null;
+		}
+		return tank.drain(stack.amount, execute(action));
+	}
+
 	@Nullable
 	public static net.minecraftforge.fluids.FluidStack drain(net.minecraftforge.fluids.capability.IFluidHandler handler,
 			@Nullable net.minecraftforge.fluids.FluidStack stack, Object action) {
