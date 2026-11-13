@@ -279,6 +279,8 @@ public final class GeometryLoaders implements ICustomModelLoader {
 		private final ResourceLocation location;
 		private final Resolved model;
 		private final Object geometry;
+		/** Whether the geometry's resolveParents ran (once, before its first bake). */
+		private boolean parentsResolved;
 
 		GeometryModel(ResourceLocation location, Resolved model, Object geometry) {
 			this.location = location;
@@ -312,6 +314,7 @@ public final class GeometryLoaders implements ICustomModelLoader {
 				Object baker = proxy("net.minecraft.client.resources.model.ModelBaker", (proxy, method, args) -> baker(method, args));
 				Object modelState = proxy("net.minecraft.client.resources.model.ModelState", (proxy, method, args) -> modelState(method));
 				Function<Object, TextureAtlasSprite> materials = material -> sprite(material);
+				this.resolveParents(context);
 				Method bake = method(this.geometry.getClass(), "bake", 5);
 				Object baked = bake.invoke(this.geometry, context, baker, materials, modelState, ItemOverrideList.NONE);
 				return baked instanceof IBakedModel model ? model : ModelLoaderRegistry.getMissingModel().bake(state, format, sprites);
@@ -330,6 +333,34 @@ public final class GeometryLoaders implements ICustomModelLoader {
 				} else {
 					BAKING.set(before);
 				}
+			}
+		}
+
+		/**
+		 * 1.21 {@code geometry.resolveParents(modelGetter, context)}, once before the first bake, as 1.21 does when it
+		 * loads the models: a geometry reads the models it is made of there (Twilight Forest's noise-varying aurora block
+		 * its variants; without it the list was empty and the bake failed).
+		 */
+		private void resolveParents(Object context) {
+			if (this.parentsResolved) {
+				return;
+			}
+			this.parentsResolved = true;
+			Method resolve;
+			try {
+				resolve = method(this.geometry.getClass(), "resolveParents", 2);
+			} catch (NoSuchMethodException e) {
+				return;
+			}
+			Function<ResourceLocation, ModelBlock> models = location -> {
+				ModelBlock loaded = load(location);
+				return loaded != null ? loaded : ModelBlock.deserialize("{}");
+			};
+			try {
+				resolve.invoke(this.geometry, models, context);
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				Throwable cause = e instanceof java.lang.reflect.InvocationTargetException invocation && invocation.getCause() != null ? invocation.getCause() : e;
+				LOGGER.warn("Couldn't resolve the parents of the 1.21.1 model {} ({}): {}", this.location, this.model.loader, cause.toString());
 			}
 		}
 

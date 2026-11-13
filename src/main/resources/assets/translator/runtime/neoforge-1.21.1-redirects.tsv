@@ -838,3 +838,5 @@ X	net/minecraft/util/text/ITextComponent$Serializer	jsonToComponent	(Ljava/lang/
 X	net/minecraft/util/text/ITextComponent$Serializer	fromJsonLenient	(Ljava/lang/String;Lio/github/xponer2/translator/registry/HolderLookup$Provider;)Lio/github/xponer2/translator/text/MutableComponent;	io/github/xponer2/translator/text/ComponentJson
 X	net/minecraft/util/text/ITextComponent$Serializer	toJson	(Lnet/minecraft/util/text/ITextComponent;Lio/github/xponer2/translator/registry/HolderLookup$Provider;)Ljava/lang/String;	io/github/xponer2/translator/text/ComponentJson
 X	net/minecraft/util/text/ITextComponent$Serializer	componentToJson	(Lnet/minecraft/util/text/ITextComponent;Lio/github/xponer2/translator/registry/HolderLookup$Provider;)Ljava/lang/String;	io/github/xponer2/translator/text/ComponentJson
+# 1.21 itemModelShaper.getItemModel(item)
+R	net/minecraft/client/renderer/ItemModelMesher	io/github/xponer2/translator/runtime/redirect/GuiBridges

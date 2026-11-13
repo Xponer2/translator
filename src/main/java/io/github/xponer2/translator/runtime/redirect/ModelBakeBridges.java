@@ -175,6 +175,21 @@ public final class ModelBakeBridges {
 	}
 
 	/**
+	 * 1.21 {@code blockModel.getGuiLight()}: how the model is lit in a GUI (the carried BlockModel.GuiLight): front
+	 * lit for a model whose json says "gui_light": "front" (flat items), from the side for a block (Twilight Forest's
+	 * noise-varying aurora block asks its variants so while baking).
+	 */
+	@javax.annotation.Nullable
+	public static Object getGuiLight(ModelBlock model) {
+		try {
+			Class<?> light = Class.forName("net.minecraft.client.renderer.block.model.BlockModel$GuiLight", true, ModelBakeBridges.class.getClassLoader());
+			return light.getField(model.isGui3d() ? "SIDE" : "FRONT").get(null);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	/**
 	 * NeoForge's {@code blockModel.customData}: the model's geometry baking context (its custom geometry, render type
 	 * and visible parts; carried), one per model.
 	 */

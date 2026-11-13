@@ -571,4 +571,12 @@ public final class ScreenBridges {
 	public static io.github.xponer2.translator.client.Camera camera(net.minecraft.client.renderer.entity.RenderManager manager) {
 		return io.github.xponer2.translator.client.Camera.main();
 	}
+
+	/**
+	 * 1.21 {@code blockRenderDispatcher.blockColors} (a field mods widen): the game's block colors (Twilight Forest's
+	 * jar renderer, Supplementaries' candle holders tint their blocks with them).
+	 */
+	public static net.minecraft.client.renderer.color.BlockColors blockColors(net.minecraft.client.renderer.BlockRendererDispatcher dispatcher) {
+		return net.minecraft.client.Minecraft.getMinecraft().getBlockColors();
+	}
 }

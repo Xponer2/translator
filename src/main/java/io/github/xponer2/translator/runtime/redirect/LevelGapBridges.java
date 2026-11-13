@@ -133,6 +133,18 @@ public final class LevelGapBridges {
 
 	// --- positions -----------------------------------------------------------------------------------------------------
 
+	/**
+	 * 1.21 {@code vec.multiply(factor)}: each coordinate times the factor; a block position stays one. Twilight Forest's
+	 * connected texture models work out their corners so: the call was left out, the corner was null, and the castle
+	 * doors, the coronation carpet, the auroralized glass and the arctic fur were missing models.
+	 */
+	public static Vec3i multiply(Vec3i vec, int factor) {
+		if (vec instanceof BlockPos pos) {
+			return new BlockPos(pos.getX() * factor, pos.getY() * factor, pos.getZ() * factor);
+		}
+		return new Vec3i(vec.getX() * factor, vec.getY() * factor, vec.getZ() * factor);
+	}
+
 	/** 1.21 {@code Vec3i.offset(dx, dy, dz)}: a block position stays one. */
 	public static Vec3i offset(Vec3i vec, int dx, int dy, int dz) {
 		if (dx == 0 && dy == 0 && dz == 0) {

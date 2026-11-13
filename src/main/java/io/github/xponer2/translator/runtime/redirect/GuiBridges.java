@@ -243,6 +243,21 @@ public final class GuiBridges {
 		return screen;
 	}
 
+	/**
+	 * 1.21 {@code texture.load(resourceManager)}: 1.12.2's loadTexture from the game's resources (Twilight Forest's
+	 * generated textures load their pixels so).
+	 */
+	public static void load(net.minecraft.client.renderer.texture.AbstractTexture texture, @javax.annotation.Nullable Object resources)
+			throws java.io.IOException {
+		texture.loadTexture(Minecraft.getMinecraft().getResourceManager());
+	}
+
+	/** 1.21 {@code itemModelShaper.getItemModel(item)}: the model of the item's plain stack (Twilight Forest's ghast tear particle). */
+	public static net.minecraft.client.renderer.block.model.IBakedModel getItemModel(net.minecraft.client.renderer.ItemModelMesher mesher,
+			net.minecraft.item.Item item) {
+		return mesher.getItemModel(new net.minecraft.item.ItemStack(item));
+	}
+
 	@javax.annotation.Nullable
 	public static Object getLastInputType(Minecraft minecraft) {
 		return CarriedBridges.constant("net.minecraft.client.InputType", "MOUSE");

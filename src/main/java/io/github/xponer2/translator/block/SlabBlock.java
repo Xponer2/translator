@@ -45,20 +45,32 @@ public class SlabBlock extends PropertiesBlock {
 		this.lightOpacity = 255;
 	}
 
-	@Override
-	protected BlockStateContainer createBlockState() {
-		return new BlockStateContainer(this, TYPE);
+	/**
+	 * 1.21 {@code createBlockStateDefinition(builder)}: the slab's type; a mod's slab adds its own properties after the
+	 * super call (Supplementaries' directional slabs add their axis: without it no variant of their blockstate fitted,
+	 * and fine wood slabs were the missing model).
+	 */
+	protected void createBlockStateDefinition(BlockStateContainer.Builder builder) {
+		builder.add(TYPE);
 	}
 
 	@Override
+	protected BlockStateContainer createBlockState() {
+		var builder = new LazyStateContainer.Builder(this);
+		this.createBlockStateDefinition(builder);
+		return builder.build();
+	}
+
+	/** The saved properties as a number (a slab of the type alone: its type's number, as before). */
+	@Override
 	@SuppressWarnings("deprecation")
 	public IBlockState getStateFromMeta(int meta) {
-		return this.getDefaultState().withProperty(TYPE, SlabType.values()[Math.min(meta, 2)]);
+		return BlockStates.fromMeta(this, meta);
 	}
 
 	@Override
 	public int getMetaFromState(IBlockState state) {
-		return state.getValue(TYPE).ordinal();
+		return BlockStates.toMeta(state);
 	}
 
 	@Override
@@ -95,8 +107,25 @@ public class SlabBlock extends PropertiesBlock {
 		return type == SlabType.DOUBLE || (type == SlabType.BOTTOM && face == EnumFacing.DOWN) || (type == SlabType.TOP && face == EnumFacing.UP);
 	}
 
+	/** 1.21 {@code getStateForPlacement(context)}: the top or the bottom half, by the face and the height clicked. */
+	public IBlockState getStateForPlacement(io.github.xponer2.translator.util.BlockPlaceContext context) {
+		EnumFacing facing = context.getClickedFace();
+		double hitY = context.getClickLocation().y - context.getClickedPos().getY();
+		var top = facing == EnumFacing.DOWN || (facing != EnumFacing.UP && hitY > 0.5D);
+		return this.getDefaultState().withProperty(TYPE, top ? SlabType.TOP : SlabType.BOTTOM);
+	}
+
+	/** 1.12.2's placement: the 1.21 one, which a mod's slab overrides (and adds its own properties to). */
 	@Override
 	public IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta, EntityLivingBase placer, EnumHand hand) {
+		try {
+			IBlockState state = this.getStateForPlacement(io.github.xponer2.translator.util.BlockPlaceContext.of(world, pos, facing, hitX, hitY, hitZ, placer, hand));
+			if (state != null) {
+				return state;
+			}
+		} catch (RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".getStateForPlacement", e);
+		}
 		var top = facing == EnumFacing.DOWN || (facing != EnumFacing.UP && hitY > 0.5F);
 		return this.getDefaultState().withProperty(TYPE, top ? SlabType.TOP : SlabType.BOTTOM);
 	}

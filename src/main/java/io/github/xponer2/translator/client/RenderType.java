@@ -249,6 +249,20 @@ public class RenderType extends RenderStateShard {
         return TRANSLUCENT;
     }
 
+    /**
+     * 1.21 {@code tripwire()}: the tripwire's layer, translucent here. ItemBlockRenderTypes' table of the vanilla layers
+     * asks for it while it loads; without it the table failed to load, and every mod renderer asking a block's layer
+     * through it failed with it (Supplementaries' blackboard item).
+     */
+    public static RenderType tripwire() {
+        return TRANSLUCENT;
+    }
+
+    /** 1.21 {@code crumbling(texture)}: the block breaking overlay of that texture. */
+    public static RenderType crumbling(net.minecraft.util.ResourceLocation texture) {
+        return entity("crumbling", texture, false, true);
+    }
+
     // --- the 1.21 GUI and line types, with the shards 1.21 gives them (14 mods fill slot highlights and overlays with
     // guiOverlay, 11 draw block outlines with lines; without them the call was left empty and nothing drawn)
 

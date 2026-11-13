@@ -27,7 +27,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * {@code super(root, slim)} had nothing to call, and the renderers weren't made.
  */
 @SideOnly(Side.CLIENT)
-public class PlayerModel<T extends EntityLivingBase> extends ModelPlayer {
+public class PlayerModel<T extends EntityLivingBase> extends ModelPlayer
+		implements net.minecraft.client.model.ArmedModel, net.minecraft.client.model.HeadedModel {
 	public PlayerModel(ModelPart root, boolean slim) {
 		super(0.0F, slim);
 		HumanoidModel.assign(this, root);
@@ -83,8 +84,12 @@ public class PlayerModel<T extends EntityLivingBase> extends ModelPlayer {
 		return ModelPart.of(super.getArmForSide(side));
 	}
 
-	/** 1.21 {@code translateToHand(arm, poseStack)} (1.12.2's name): to the hand of that arm, for a held item. */
-	public void postRenderArm(net.minecraft.util.EnumHandSide side, PoseStack poseStack) {
+	/**
+	 * 1.21 {@code translateToHand(arm, poseStack)} (ArmedModel): to the hand of that arm, for a held item. The carried
+	 * layers (ItemInHandLayer) cast the model to ArmedModel and call it: Twilight Forest's lich and minoshroom models,
+	 * built on this one, weren't one, and their renderers failed every frame.
+	 */
+	public void translateToHand(net.minecraft.util.EnumHandSide side, PoseStack poseStack) {
 		ModelPart arm = this.getArmForSide(side);
 		if (arm != null) {
 			arm.translateAndRotate(poseStack);
@@ -96,7 +101,20 @@ public class PlayerModel<T extends EntityLivingBase> extends ModelPlayer {
 		return HumanoidModel.lerpAngle(angle, maxAngle, mul);
 	}
 
-	/** 1.21 {@code getHead()} (HeadedModel). */
+	/**
+	 * 1.21 {@code getArm(arm)} as a mod's model calls it (Twilight Forest's lich and attack swings, Supplementaries'
+	 * jarred and pickle players).
+	 */
+	protected ModelPart getArm(net.minecraft.util.EnumHandSide side) {
+		return this.getArmForSide(side);
+	}
+
+	/** The same under the name the tables give ArmedModel's method. */
+	public void postRenderArm(net.minecraft.util.EnumHandSide side, PoseStack poseStack) {
+		this.translateToHand(side, poseStack);
+	}
+
+	/** 1.21 {@code getHead()} (HeadedModel: the carried head layer casts to it; Twilight Forest's knight phantom). */
 	public ModelPart getHead() {
 		return ModelPart.of(this.bipedHead);
 	}

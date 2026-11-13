@@ -67,6 +67,20 @@ public class GuiGraphics {
         new Gui().drawTexturedModalRect(x, y, sprite, width, height);
     }
 
+    /**
+     * 1.21 {@code blit(x, y, z, width, height, sprite, red, green, blue, alpha)}: the same, tinted (the empty-slot icons a
+     * CyclingSlotBackground fades between: smithing and the mods' upgrade screens).
+     */
+    public void blit(int x, int y, int z, int width, int height, net.minecraft.client.renderer.texture.TextureAtlasSprite sprite, float red, float green,
+            float blue, float alpha) {
+        GlStateManager.color(red, green, blue, alpha);
+        try {
+            this.blit(x, y, z, width, height, sprite);
+        } finally {
+            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        }
+    }
+
     /** A GUI sprite at a depth, stretched, tiled or nine-sliced as its .mcmeta says (1.21). */
     public void blitSprite(ResourceLocation sprite, int x, int y, int z, int width, int height) {
         this.flushOpen();
