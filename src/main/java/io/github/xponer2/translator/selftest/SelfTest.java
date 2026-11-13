@@ -547,6 +547,19 @@ public final class SelfTest {
 					+ ", ride cooldown " + cooldown;
 		}
 
+		/**
+		 * What an earlier block's test left around the player goes before the next one: a boss a spawner block made (Twilight
+		 * Forest's hydra) pushed the player and failed every block after it ("moved the player 2 blocks").
+		 */
+		private void clearLeftovers() {
+			var area = new net.minecraft.util.math.AxisAlignedBB(this.x - 48, this.y - 48, this.z - 48, this.x + 48, this.y + 48, this.z + 48);
+			for (net.minecraft.entity.Entity entity : this.world.getEntitiesWithinAABBExcludingEntity(this.player, area)) {
+				if (!(entity instanceof net.minecraft.entity.player.EntityPlayer) && !entity.isRidingOrBeingRiddenBy(this.player)) {
+					entity.setDead();
+				}
+			}
+		}
+
 		/** The time the record's test took: until now (the next record begins, or the report is written). */
 		private void timed(@javax.annotation.Nullable Record record) {
 			if (record != null && record.millis < 0) {
@@ -561,6 +574,7 @@ public final class SelfTest {
 				this.current.kept = true;
 				this.keep(this.current);
 			}
+			this.clearLeftovers();
 			int colon = id.indexOf(':');
 			this.current = new Record(colon > 0 ? id.substring(0, colon) : id, id, kind);
 			this.current.startTick = this.world.getTotalWorldTime();
