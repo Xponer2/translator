@@ -98,9 +98,14 @@ public final class GlStateGuard {
 		boolean maskGreen = MASK.get(1) != 0;
 		boolean maskBlue = MASK.get(2) != 0;
 		boolean maskAlpha = MASK.get(3) != 0;
+		int poses = PoseStack.depth();
 		try {
 			body.run();
 		} finally {
+			// the GL stacks come back to their depth below: so does the count of the 1.21 poses pushed (a handler that
+			// failed after pushPose left it one up, and the frame's end then popped a matrix of 1.12.2's own: stack
+			// underflows every frame, the world's entities drawn off their place, only their shadows seen)
+			PoseStack.resetDepth(poses);
 			restore(GL11.GL_TEXTURE, GL11.GL_TEXTURE_STACK_DEPTH, texture, textureMatrix);
 			restore(GL11.GL_PROJECTION, GL11.GL_PROJECTION_STACK_DEPTH, projection, projectionMatrix);
 			restore(GL11.GL_MODELVIEW, GL11.GL_MODELVIEW_STACK_DEPTH, modelview, modelviewMatrix);

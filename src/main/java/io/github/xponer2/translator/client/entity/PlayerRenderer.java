@@ -35,6 +35,23 @@ public class PlayerRenderer extends VanillaRendererView<AbstractClientPlayer, Mo
 		this.player = player;
 	}
 
+	/**
+	 * A cast to this class (the converter calls this for {@code (PlayerRenderer) x}): 1.12.2's player renderer as its
+	 * view. Mining Gadgets cast the renderer it got for the player and failed every frame with the gadget in hand, after
+	 * pushing a matrix: the frame's matrices went wrong (stack underflows; the mobs drawn off their place, only their
+	 * shadows seen).
+	 */
+	@javax.annotation.Nullable
+	public static PlayerRenderer translatorCast(@javax.annotation.Nullable Object value) {
+		if (value == null || value instanceof PlayerRenderer) {
+			return (PlayerRenderer) value;
+		}
+		if (value instanceof RenderPlayer player) {
+			return VanillaRendererView.of(player);
+		}
+		throw new ClassCastException(value.getClass().getName() + " cannot be cast to " + PlayerRenderer.class.getName());
+	}
+
 	/** The 1.12.2 renderer it shows. */
 	public RenderPlayer vanilla() {
 		return this.player;

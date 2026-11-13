@@ -39,6 +39,25 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public abstract class LivingEntityRenderer<T extends EntityLivingBase, M extends net.minecraft.client.model.ModelBase> extends EntityRenderer<T>
 		implements RenderLayerParent<T, M> {
+	/**
+	 * A cast to this class (the converter calls this for {@code (LivingEntityRenderer) x}): a 1.12.2 living renderer
+	 * (a vanilla mob's, the player's) as its view, which the mods add their layers to; a cast of another object fails
+	 * as a cast does.
+	 */
+	@javax.annotation.Nullable
+	public static LivingEntityRenderer<?, ?> translatorCast(@javax.annotation.Nullable Object value) {
+		if (value == null || value instanceof LivingEntityRenderer) {
+			return (LivingEntityRenderer<?, ?>) value;
+		}
+		if (value instanceof net.minecraft.client.renderer.entity.RenderLivingBase<?> living) {
+			LivingEntityRenderer<?, ?> view = VanillaRendererView.of(living);
+			if (view != null) {
+				return view;
+			}
+		}
+		throw new ClassCastException(value.getClass().getName() + " cannot be cast to " + LivingEntityRenderer.class.getName());
+	}
+
 	protected M model;
 	protected final List<RenderLayer<T, M>> layers = new ArrayList<>();
 

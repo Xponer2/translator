@@ -41,6 +41,13 @@ public class PoseStack {
         return depth;
     }
 
+    /** The count only, set back (the GL stack was restored by other means: {@link GlStateGuard}). */
+    static void resetDepth(int to) {
+        if (depth > to) {
+            depth = to;
+        }
+    }
+
     /** Pops the matrices pushed since the stack had that depth; how many there were. */
     public static int restore(int to) {
         int popped = 0;
