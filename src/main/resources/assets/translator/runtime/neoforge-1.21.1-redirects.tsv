@@ -86,6 +86,14 @@ R	io/github/xponer2/translator/client/Axis	io/github/xponer2/translator/runtime/
 R	net/minecraft/world/World	io/github/xponer2/translator/runtime/redirect/WorldBridges
 R	net/minecraft/server/MinecraftServer	io/github/xponer2/translator/runtime/redirect/WorldBridges
 R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/EntityBridges
+# helpers of 1.21 entity methods whose receiver is a narrower 1.12.2 class (a helper is found by the receiver's own R lines)
+R	net/minecraft/entity/EntityLivingBase	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/EntityLiving	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/passive/EntityTameable	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/passive/AbstractHorse	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/item/EntityBoat	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/entity/monster/EntitySpider$GroupData	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/entity/EntityLivingBase	io/github/xponer2/translator/runtime/redirect/EntityBridges
 R	net/minecraft/entity/player/EntityPlayer	io/github/xponer2/translator/runtime/redirect/EntityBridges
 R	net/minecraft/tileentity/TileEntity	io/github/xponer2/translator/runtime/redirect/EntityBridges
