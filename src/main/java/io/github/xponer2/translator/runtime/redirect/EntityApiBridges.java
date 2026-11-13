@@ -434,6 +434,258 @@ public final class EntityApiBridges {
 		return own instanceof Vec3d point ? point : new Vec3d(0.0D, -entity.getYOffset(), 0.0D);
 	}
 
+	private static final Own POSITION_RIDER = new Own("positionRider", 2);
+	private static final Own RIDING_POSITION = new Own("getPassengerRidingPosition", 1);
+	private static final Own ATTACHMENT_POINT = new Own("getPassengerAttachmentPoint", 3);
+
+	/**
+	 * 1.12.2's {@code updatePassenger(passenger)} of every entity starts here (core hook): a vehicle whose class has
+	 * 1.21's rider placing of its own (positionRider, getPassengerRidingPosition, getPassengerAttachmentPoint) places its
+	 * riders by it, as 1.21 does; true when it did. 1.12.2 never called them: Twilight Forest's trolls and goblin knights,
+	 * Iron's Spells' ice spiders, the seats of Create and Handcrafted, Aether's moas kept 1.12.2's seat.
+	 */
+	public static boolean placesRiders(Entity vehicle, Entity passenger) {
+		Class<?> type = vehicle.getClass();
+		if (POSITION_RIDER.get(type) == null && RIDING_POSITION.get(type) == null && ATTACHMENT_POINT.get(type) == null) {
+			return false;
+		}
+		if (!vehicle.isPassenger(passenger)) {
+			return true;
+		}
+		try {
+			positionRider(vehicle, passenger, MoveFunctions.SET_POSITION.get());
+			return true;
+		} catch (RuntimeException | LinkageError e) {
+			RuntimeStubs.failed(type.getName() + ".positionRider", e);
+			return false;
+		}
+	}
+
+	/**
+	 * 1.21 {@code vehicle.positionRider(passenger, move)}: the vehicle's own, else (and for its super call) the rider's
+	 * seat point on the vehicle's riding position.
+	 */
+	public static void positionRider(Entity vehicle, Entity passenger, @Nullable Object move) {
+		if (POSITION_RIDER.call(vehicle, passenger, move) != INHERITED) {
+			return;
+		}
+		Vec3d riding = getPassengerRidingPosition(vehicle, passenger);
+		Vec3d seat = getVehicleAttachmentPoint(passenger, vehicle);
+		MoveFunctions.accept(move, passenger, riding.x - seat.x, riding.y - seat.y, riding.z - seat.z);
+	}
+
+	/** 1.21 {@code vehicle.positionRider(passenger)}: placed as above, by setPosition. */
+	public static void positionRider(Entity vehicle, Entity passenger) {
+		if (vehicle.isPassenger(passenger)) {
+			positionRider(vehicle, passenger, MoveFunctions.SET_POSITION.get());
+		}
+	}
+
+	/**
+	 * 1.21 {@code vehicle.getPassengerRidingPosition(passenger)}: the vehicle's own, else its position plus its passenger
+	 * attachment point, turned with a living vehicle's body.
+	 */
+	public static Vec3d getPassengerRidingPosition(Entity vehicle, Entity passenger) {
+		Object own = RIDING_POSITION.call(vehicle, passenger);
+		if (own instanceof Vec3d position) {
+			return position;
+		}
+		Vec3d point = getPassengerAttachmentPoint(vehicle, passenger, CarriedBridges.getDimensions(vehicle, null), 1.0F);
+		if (vehicle instanceof EntityLivingBase living) {
+			point = point.rotateYaw(-living.renderYawOffset * 0.017453292F);
+		}
+		return new Vec3d(vehicle.posX + point.x, vehicle.posY + point.y, vehicle.posZ + point.z);
+	}
+
+	/**
+	 * 1.21 {@code vehicle.getPassengerAttachmentPoint(passenger, dimensions, scale)}: the vehicle's own, else 1.12.2's
+	 * seat height (getMountedYOffset).
+	 */
+	public static Vec3d getPassengerAttachmentPoint(Entity vehicle, Entity passenger, @Nullable Object dimensions, float scale) {
+		Object own = ATTACHMENT_POINT.call(vehicle, passenger, dimensions, scale);
+		return own instanceof Vec3d point ? point : new Vec3d(0.0D, vehicle.getMountedYOffset(), 0.0D);
+	}
+
+	/** 1.21's {@code Entity.MoveFunction} (carried): how a placed rider is moved. */
+	private static final class MoveFunctions {
+		private static final String TYPE = "net.minecraft.world.entity.Entity$MoveFunction";
+		/** One that sets the rider's position (1.21's {@code Entity::setPos}); null when the interface isn't carried. */
+		static final java.util.function.Supplier<Object> SET_POSITION = com.google.common.base.Suppliers.memoize(() -> {
+			try {
+				Class<?> type = Class.forName(TYPE, true, net.minecraft.launchwrapper.Launch.classLoader);
+				return java.lang.reflect.Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
+					switch (method.getName()) {
+						case "accept":
+							((Entity) args[0]).setPosition((Double) args[1], (Double) args[2], (Double) args[3]);
+							return null;
+						case "equals":
+							return proxy == args[0];
+						case "hashCode":
+							return System.identityHashCode(proxy);
+						default:
+							return "MoveFunction[setPosition]";
+					}
+				});
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				RuntimeStubs.failed(TYPE, e);
+				return null;
+			}
+		})::get;
+		private static final ClassValue<Method> ACCEPT = new ClassValue<Method>() {
+			@Override
+			@Nullable
+			protected Method computeValue(Class<?> type) {
+				for (Class<?> itf : type.getInterfaces()) {
+					if (TYPE.equals(itf.getName())) {
+						try {
+							return itf.getMethod("accept", Entity.class, double.class, double.class, double.class);
+						} catch (NoSuchMethodException e) {
+							return null;
+						}
+					}
+				}
+				return null;
+			}
+		};
+
+		private MoveFunctions() {
+		}
+
+		/** {@code move.accept(entity, x, y, z)}; without a move function the entity is set there. */
+		static void accept(@Nullable Object move, Entity entity, double x, double y, double z) {
+			Method accept = move == null || move == SET_POSITION.get() ? null : ACCEPT.get(move.getClass());
+			if (accept == null) {
+				entity.setPosition(x, y, z);
+				return;
+			}
+			try {
+				accept.invoke(move, entity, x, y, z);
+			} catch (InvocationTargetException e) {
+				throw EntityApiBridges.<RuntimeException>sneaky(e.getCause());
+			} catch (IllegalAccessException e) {
+				entity.setPosition(x, y, z);
+			}
+		}
+	}
+
+	/** 1.21 {@code mob.setLeashedTo(holder, sendPacket)}: 1.12.2's lead (Twilight Forest's leashed zombies of the lich tower). */
+	public static void setLeashedTo(Entity entity, @Nullable Entity holder, boolean sendPacket) {
+		if (entity instanceof EntityLiving living && holder != null) {
+			living.setLeashHolder(holder, sendPacket);
+		}
+	}
+
+	/** 1.21 {@code tamable.setOrderedToSit(sit)}: 1.12.2's sitting, its sit goal too. */
+	public static void setOrderedToSit(net.minecraft.entity.passive.EntityTameable tamable, boolean sit) {
+		tamable.setSitting(sit);
+		if (tamable.getAISit() != null) {
+			tamable.getAISit().setSitting(sit);
+		}
+	}
+
+	/** 1.21 {@code tamable.isOrderedToSit()}. */
+	public static boolean isOrderedToSit(net.minecraft.entity.passive.EntityTameable tamable) {
+		return tamable.isSitting();
+	}
+
+	private static final Field HORSE_CHEST = field(net.minecraft.entity.passive.AbstractHorse.class, "horseChest", "field_110296_bG");
+
+	/** 1.21 {@code horse.equipSaddle(stack, sound)}: the saddle into its saddle slot (1.12.2 then saddles it), with the sound. */
+	public static void equipSaddle(net.minecraft.entity.passive.AbstractHorse horse, ItemStack stack, @Nullable Object source) {
+		if (get(HORSE_CHEST, horse) instanceof net.minecraft.inventory.IInventory chest && chest.getSizeInventory() > 0) {
+			chest.setInventorySlotContents(0, stack);
+		} else {
+			horse.setHorseSaddled(true);
+		}
+		if (source != null) {
+			horse.playSound(net.minecraft.init.SoundEvents.ENTITY_HORSE_SADDLE, 0.5F, 1.0F);
+		}
+	}
+
+	/** 1.21 {@code boat.setVariant(type)}: 1.12.2's boat type (Supplementaries' plunderers' boats). */
+	public static void setVariant(net.minecraft.entity.item.EntityBoat boat, @Nullable net.minecraft.entity.item.EntityBoat.Type type) {
+		if (type != null) {
+			boat.setBoatType(type);
+		}
+	}
+
+	/** 1.21 {@code boat.getVariant()}. */
+	public static net.minecraft.entity.item.EntityBoat.Type getVariant(net.minecraft.entity.item.EntityBoat boat) {
+		return boat.getBoatType();
+	}
+
+	/** 1.21 {@code mob.wantsToPickUp(stack)}: 1.21's default (canHoldItem: any stack). */
+	public static boolean wantsToPickUp(EntityLiving mob, ItemStack stack) {
+		return !stack.isEmpty();
+	}
+
+	/**
+	 * 1.21 {@code mob.equipItemIfPossible(stack)}: worn in its slot when that slot is empty (then always dropped), the
+	 * stack it put on, else none.
+	 */
+	public static ItemStack equipItemIfPossible(EntityLiving mob, ItemStack stack) {
+		EntityEquipmentSlot slot = EntityLiving.getSlotForItemStack(stack);
+		if (stack.isEmpty() || !mob.getItemStackFromSlot(slot).isEmpty()) {
+			return ItemStack.EMPTY;
+		}
+		ItemStack worn = stack.copy();
+		worn.setCount(1);
+		mob.setItemStackToSlot(slot, worn);
+		mob.setDropChance(slot, 2.0F);
+		mob.enablePersistence();
+		return worn;
+	}
+
+	// --- Entity: 1.21 fields 1.12.2 hasn't ------------------------------------------------------------------------------
+
+	private static final Map<Entity, boolean[]> FLAGS = Collections.synchronizedMap(new WeakHashMap<>());
+	private static final int WAS_ON_FIRE = 0;
+	private static final int MINOR_COLLISION = 1;
+
+	private static boolean flag(Entity entity, int index) {
+		boolean[] flags = FLAGS.get(entity);
+		return flags != null && flags[index];
+	}
+
+	private static void flag(Entity entity, int index, boolean value) {
+		boolean[] flags = FLAGS.get(entity);
+		if (flags == null) {
+			if (!value) {
+				return;
+			}
+			flags = new boolean[2];
+			FLAGS.put(entity, flags);
+		}
+		flags[index] = value;
+	}
+
+	/** 1.21 {@code entity.isInPowderSnow} (read): 1.12.2 has no powder snow. */
+	public static boolean isInPowderSnow(Entity entity) {
+		return false;
+	}
+
+	/** Writing it: nothing to keep. */
+	public static void isInPowderSnow(Entity entity, boolean value) {
+	}
+
+	/** 1.21 {@code entity.wasOnFire} (read): what the entity's own tick kept (Moonlight's projectiles). */
+	public static boolean wasOnFire(Entity entity) {
+		return flag(entity, WAS_ON_FIRE);
+	}
+
+	public static void wasOnFire(Entity entity, boolean value) {
+		flag(entity, WAS_ON_FIRE, value);
+	}
+
+	/** 1.21 {@code entity.minorHorizontalCollision} (read): what the entity's own move kept. */
+	public static boolean minorHorizontalCollision(Entity entity) {
+		return flag(entity, MINOR_COLLISION);
+	}
+
+	public static void minorHorizontalCollision(Entity entity, boolean value) {
+		flag(entity, MINOR_COLLISION, value);
+	}
+
 	private static final Own SHOW_VEHICLE_HEALTH = new Own("showVehicleHealth", 0);
 
 	/** 1.21 {@code entity.showVehicleHealth()}: a living mount's health shows (the entity's own answer first). */
@@ -548,6 +800,35 @@ public final class EntityApiBridges {
 	@Nullable
 	public static Object dimensions(Entity entity) {
 		return CarriedBridges.getDimensions(entity, null);
+	}
+
+	private static final Own DEFAULT_DIMENSIONS = new Own("getDefaultDimensions", 1);
+
+	/**
+	 * 1.21 {@code entity.getDefaultDimensions(pose)}: the entity's own, else (and for its super call) its type's size
+	 * (a slime's times its size), else its size now. Twilight Forest's pinch beetles and rising zombies, Iron's Spells'
+	 * ice spiders and roots, Create's packages, Aether's swets ask it in their own sizes.
+	 */
+	@Nullable
+	public static Object getDefaultDimensions(Entity entity, @Nullable Object pose) {
+		Object own = DEFAULT_DIMENSIONS.call(entity, pose);
+		if (own != INHERITED) {
+			return own;
+		}
+		io.github.xponer2.translator.registry.EntityType<?> type = io.github.xponer2.translator.registry.EntityType.of(entity);
+		float width = type != null && type.getWidth() > 0.0F ? type.getWidth() : entity.width;
+		float height = type != null && type.getHeight() > 0.0F ? type.getHeight() : entity.height;
+		if (entity instanceof net.minecraft.entity.monster.EntitySlime slime && type != null) {
+			width *= slime.getSlimeSize();
+			height *= slime.getSlimeSize();
+		}
+		try {
+			return Class.forName("net.minecraft.world.entity.EntityDimensions", true, net.minecraft.launchwrapper.Launch.classLoader)
+					.getMethod("scalable", float.class, float.class).invoke(null, width, height);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			RuntimeStubs.failed("EntityDimensions.scalable", e);
+			return null;
+		}
 	}
 
 	/** 1.21 {@code living.getLocalBoundsForPose(pose)}: its box in that pose around its feet (a sleeper's is 0.2 wide). */

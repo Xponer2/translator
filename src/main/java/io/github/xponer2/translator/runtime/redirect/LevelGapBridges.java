@@ -1224,16 +1224,22 @@ public final class LevelGapBridges {
 		entity.setPosition(pos.x, pos.y, pos.z);
 	}
 
-	/** A mod entity class's 1.21 {@code getDimensions(pose)} (its own size by pose or state), null when it has none. */
+	/**
+	 * A mod entity class's 1.21 {@code getDimensions(pose)} (its own size by pose or state), else its own
+	 * {@code getDefaultDimensions(pose)} (what 1.21's LivingEntity.getDimensions scales), null when it has neither.
+	 */
 	private static final ClassValue<java.lang.reflect.Method> OWN_DIMENSIONS = new ClassValue<java.lang.reflect.Method>() {
 		@Override
 		protected java.lang.reflect.Method computeValue(Class<?> type) {
-			for (Class<?> current = type; current != null && !current.getName().startsWith("net.minecraft.")
-					&& !current.getName().startsWith("io.github.xponer2.translator."); current = current.getSuperclass()) {
-				for (java.lang.reflect.Method method : current.getDeclaredMethods()) {
-					if ("getDimensions".equals(method.getName()) && method.getParameterCount() == 1 && method.getParameterTypes()[0].isEnum()) {
-						method.setAccessible(true);
-						return method;
+			for (String name : new String[] {"getDimensions", "getDefaultDimensions"}) {
+				for (Class<?> current = type; current != null && !current.getName().startsWith("net.minecraft.")
+						&& !current.getName().startsWith("io.github.xponer2.translator."); current = current.getSuperclass()) {
+					for (java.lang.reflect.Method method : current.getDeclaredMethods()) {
+						if (name.equals(method.getName()) && method.getParameterCount() == 1 && method.getParameterTypes()[0].isEnum()
+								&& !java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !java.lang.reflect.Modifier.isAbstract(method.getModifiers())) {
+							method.setAccessible(true);
+							return method;
+						}
 					}
 				}
 			}
@@ -1241,11 +1247,6 @@ public final class LevelGapBridges {
 		}
 	};
 
-	/**
-	 * 1.21 {@code entity.refreshDimensions()}: its size again from its {@code getDimensions(pose)} (a mod's own: Iron's
-	 * Spells' areas grow, its ice spider's parts), applied as 1.12.2's setSize does; a mod entity without one keeps its
-	 * type's size.
-	 */
 	/** 1.21 {@code entity.reapplyPosition()}: its box again at its position (after a size change: the Knight Phantoms). */
 	public static void reapplyPosition(Entity entity) {
 		entity.setPosition(entity.posX, entity.posY, entity.posZ);
@@ -1282,6 +1283,11 @@ public final class LevelGapBridges {
 		}
 	}
 
+	/**
+	 * 1.21 {@code entity.refreshDimensions()}: its size again from its own {@code getDimensions(pose)} or
+	 * {@code getDefaultDimensions(pose)} (a mod's: Iron's Spells' areas grow, Twilight Forest's pinch beetle with a rider),
+	 * applied as 1.12.2's setSize does; a mod entity without one keeps its type's size.
+	 */
 	public static void refreshDimensions(Entity entity) {
 		java.lang.reflect.Method own = OWN_DIMENSIONS.get(entity.getClass());
 		float width;
