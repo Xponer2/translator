@@ -135,13 +135,118 @@ public final class ExtraDataSerializers {
 		}
 	};
 
+	/** 1.21 {@code LONG}. */
+	public static final DataSerializer<Long> LONG = new Serializer<Long>() {
+		@Override
+		public void write(PacketBuffer buffer, Long value) {
+			buffer.writeVarLong(value);
+		}
+
+		@Override
+		public Long read(PacketBuffer buffer) {
+			return buffer.readVarLong();
+		}
+	};
+
+	/** 1.21 {@code OPTIONAL_COMPONENT} (an entity's custom name in 1.21's own Entity). */
+	public static final DataSerializer<Optional<net.minecraft.util.text.ITextComponent>> OPTIONAL_COMPONENT = new Serializer<Optional<net.minecraft.util.text.ITextComponent>>() {
+		@Override
+		public void write(PacketBuffer buffer, Optional<net.minecraft.util.text.ITextComponent> value) {
+			buffer.writeBoolean(value.isPresent());
+			if (value.isPresent()) {
+				buffer.writeTextComponent(value.get());
+			}
+		}
+
+		@Override
+		public Optional<net.minecraft.util.text.ITextComponent> read(PacketBuffer buffer) {
+			try {
+				return buffer.readBoolean() ? Optional.of(buffer.readTextComponent()) : Optional.empty();
+			} catch (java.io.IOException e) {
+				return Optional.empty();
+			}
+		}
+	};
+
+	/** 1.21 {@code PARTICLE}: a particle with its options, as 1.21 sends it. */
+	public static final DataSerializer<Object> PARTICLE = new Serializer<Object>() {
+		@Override
+		public void write(PacketBuffer buffer, Object value) {
+			io.github.xponer2.translator.util.particle.ParticleTypes.STREAM_CODEC.encode(friendly(buffer),
+					(io.github.xponer2.translator.util.particle.ParticleOptions) value);
+		}
+
+		@Override
+		public Object read(PacketBuffer buffer) {
+			return io.github.xponer2.translator.util.particle.ParticleTypes.STREAM_CODEC.decode(friendly(buffer));
+		}
+	};
+
+	/**
+	 * 1.21 {@code PARTICLES}: a list of them (a living entity's effect particles). Without it 1.21's own LivingEntity
+	 * didn't initialize (every mod code that named one of its constants failed: Supplementaries' flute).
+	 */
+	public static final DataSerializer<java.util.List<Object>> PARTICLES = new Serializer<java.util.List<Object>>() {
+		@Override
+		public void write(PacketBuffer buffer, java.util.List<Object> value) {
+			buffer.writeVarInt(value.size());
+			for (Object particle : value) {
+				PARTICLE.write(buffer, particle);
+			}
+		}
+
+		@Override
+		public java.util.List<Object> read(PacketBuffer buffer) throws java.io.IOException {
+			int size = buffer.readVarInt();
+			java.util.List<Object> particles = new java.util.ArrayList<>(Math.min(size, 64));
+			for (int i = 0; i < size; i++) {
+				particles.add(PARTICLE.read(buffer));
+			}
+			return particles;
+		}
+	};
+
+	/** 1.21 {@code QUATERNION}. */
+	public static final DataSerializer<org.joml.Quaternionf> QUATERNION = new Serializer<org.joml.Quaternionf>() {
+		@Override
+		public void write(PacketBuffer buffer, org.joml.Quaternionf value) {
+			buffer.writeFloat(value.x);
+			buffer.writeFloat(value.y);
+			buffer.writeFloat(value.z);
+			buffer.writeFloat(value.w);
+		}
+
+		@Override
+		public org.joml.Quaternionf read(PacketBuffer buffer) {
+			return new org.joml.Quaternionf(buffer.readFloat(), buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
+		}
+
+		@Override
+		public org.joml.Quaternionf copyValue(org.joml.Quaternionf value) {
+			return new org.joml.Quaternionf(value);
+		}
+	};
+
+	// 1.21's kinds of carried values, each by its class's STREAM_CODEC
+	public static final DataSerializer<Object> POSE = new Carried("net.minecraft.world.entity.Pose", false);
+	public static final DataSerializer<Object> CAT_VARIANT = new Carried("net.minecraft.world.entity.animal.CatVariant", false);
+	public static final DataSerializer<Object> FROG_VARIANT = new Carried("net.minecraft.world.entity.animal.FrogVariant", false);
+	public static final DataSerializer<Object> PAINTING_VARIANT = new Carried("net.minecraft.world.entity.decoration.PaintingVariant", false);
+	public static final DataSerializer<Object> ARMADILLO_STATE = new Carried("net.minecraft.world.entity.animal.armadillo.Armadillo$ArmadilloState", false);
+	public static final DataSerializer<Object> SNIFFER_STATE = new Carried("net.minecraft.world.entity.animal.sniffer.Sniffer$State", false);
+
+	private static RegistryFriendlyByteBuf friendly(PacketBuffer buffer) {
+		return buffer instanceof RegistryFriendlyByteBuf ? (RegistryFriendlyByteBuf) buffer : new RegistryFriendlyByteBuf(buffer);
+	}
+
 	private ExtraDataSerializers() {
 	}
 
 	/** Registers them with 1.12.2 (the pre-init, before any mod's: the same numbers on the server and the clients). */
 	public static void register() {
 		for (DataSerializer<?> serializer : new DataSerializer<?>[] {OPTIONAL_UNSIGNED_INT, VECTOR3, VILLAGER_DATA, OPTIONAL_GLOBAL_POS, WOLF_VARIANT, BLOCK_STATE,
-				OPTIONAL_STATE, OPTIONAL_POS, OPTIONAL_UUID}) {
+				OPTIONAL_STATE, OPTIONAL_POS, OPTIONAL_UUID, LONG, OPTIONAL_COMPONENT, PARTICLE, PARTICLES, QUATERNION, POSE, CAT_VARIANT, FROG_VARIANT,
+				PAINTING_VARIANT, ARMADILLO_STATE, SNIFFER_STATE}) {
 			DataSerializerDefaults.register(serializer);
 		}
 	}

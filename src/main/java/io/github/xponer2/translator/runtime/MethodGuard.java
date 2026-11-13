@@ -35,6 +35,7 @@ import xyz.wagyourtail.jvmdg.shade.asm.tree.FieldNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.FrameNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.InsnList;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode;
+import xyz.wagyourtail.jvmdg.shade.asm.tree.IntInsnNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.InvokeDynamicInsnNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.LabelNode;
 import xyz.wagyourtail.jvmdg.shade.asm.tree.LdcInsnNode;
@@ -591,6 +592,7 @@ final class MethodGuard {
 		}
 		changed |= this.addBridges(node);
 		changed |= this.addEntityInitBridge(node);
+		changed |= this.addPathFinderBridge(node);
 		changed |= this.addDefaultConstructor(node);
 		if (!isMixin(node)) {
 			changed |= this.implementAbstract(node);
@@ -841,6 +843,39 @@ final class MethodGuard {
 		bridge.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, DATA_BUILDER, "of", "(Lnet/minecraft/entity/Entity;)L" + DATA_BUILDER + ";", false));
 		bridge.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, node.name, "entityInit", "(L" + DATA_BUILDER + ";)V", false));
 		bridge.instructions.add(new InsnNode(Opcodes.RETURN));
+		bridge.maxStack = 2;
+		bridge.maxLocals = 1;
+		node.methods.add(bridge);
+		return true;
+	}
+
+	private static final String PATH_NAVIGATE = "net/minecraft/pathfinding/PathNavigate";
+	private static final String PATH_FINDER = "Lnet/minecraft/pathfinding/PathFinder;";
+
+	/**
+	 * A mod's path navigation makes its path finder with 1.21's {@code createPathFinder(maxVisitedNodes)}; 1.12.2's
+	 * PathNavigate asks the abstract {@code getPathFinder()} (in its constructor): a bridge calls the mod's with 1.21's
+	 * usual node budget. Supplementaries' boat navigation failed with an AbstractMethodError.
+	 */
+	private boolean addPathFinderBridge(ClassNode node) {
+		if ((node.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) != 0 || !this.extendsClass(node.name, PATH_NAVIGATE)) {
+			return false;
+		}
+		boolean creates = false;
+		for (MethodNode method : node.methods) {
+			if ("getPathFinder".equals(method.name) && ("()" + PATH_FINDER).equals(method.desc)) {
+				return false;
+			}
+			creates |= "createPathFinder".equals(method.name) && ("(I)" + PATH_FINDER).equals(method.desc);
+		}
+		if (!creates) {
+			return false;
+		}
+		var bridge = new MethodNode(Opcodes.ACC_PROTECTED, "getPathFinder", "()" + PATH_FINDER, null, null);
+		bridge.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		bridge.instructions.add(new IntInsnNode(Opcodes.SIPUSH, 768));
+		bridge.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, node.name, "createPathFinder", "(I)" + PATH_FINDER, false));
+		bridge.instructions.add(new InsnNode(Opcodes.ARETURN));
 		bridge.maxStack = 2;
 		bridge.maxLocals = 1;
 		node.methods.add(bridge);

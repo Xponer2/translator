@@ -411,3 +411,6 @@ C	net/minecraft/world/level/levelgen/structure/templatesystem/StructurePlaceSett
 C	net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate	net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate
 C	net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate$SimplePalette	net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate$SimplePalette
 C	net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate$StructureEntityInfo	net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate$StructureEntityInfo
+# 1.21's noises as they are (NormalNoise and the mods use them with 1.21's methods; 1.12.2's octave generators have others)
+C	net/minecraft/world/level/levelgen/synth/PerlinNoise	net/minecraft/world/level/levelgen/synth/PerlinNoise
+C	net/minecraft/world/level/levelgen/synth/ImprovedNoise	net/minecraft/world/level/levelgen/synth/ImprovedNoise

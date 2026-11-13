@@ -432,6 +432,85 @@ public final class EntityGapBridges {
 		}
 	}
 
+	/** The mob field of a 1.12.2 task (taskOwner, attacker, entity, ...): its first field of a living entity's type. */
+	private static final ClassValue<java.lang.reflect.Field> TASK_MOB = new ClassValue<java.lang.reflect.Field>() {
+		@Override
+		@javax.annotation.Nullable
+		protected java.lang.reflect.Field computeValue(Class<?> type) {
+			for (Class<?> current = type; current != null && current != Object.class; current = current.getSuperclass()) {
+				for (java.lang.reflect.Field field : current.getDeclaredFields()) {
+					if (!java.lang.reflect.Modifier.isStatic(field.getModifiers()) && net.minecraft.entity.EntityLiving.class.isAssignableFrom(field.getType())) {
+						try {
+							field.setAccessible(true);
+							return field;
+						} catch (RuntimeException e) {
+							return null;
+						}
+					}
+				}
+			}
+			return null;
+		}
+	};
+
+	/**
+	 * 1.21 {@code goal.mob} (read; TargetGoal, MeleeAttackGoal and others keep their mob so): the 1.12.2 task's own mob
+	 * field (taskOwner, attacker, ...). Twilight Forest's kobolds' target goal and the lich's goals read it.
+	 */
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.EntityLiving mob(net.minecraft.entity.ai.EntityAIBase task) {
+		java.lang.reflect.Field field = TASK_MOB.get(task.getClass());
+		try {
+			return field == null ? null : (net.minecraft.entity.EntityLiving) field.get(task);
+		} catch (IllegalAccessException e) {
+			return null;
+		}
+	}
+
+	/** 1.21 {@code mob.hasRestriction()}: 1.12.2's home (a mob kept near a place: Twilight Forest's naga at its courtyard). */
+	public static boolean hasRestriction(net.minecraft.entity.EntityCreature mob) {
+		return mob.hasHome();
+	}
+
+	/** 1.21 {@code mob.isWithinRestriction()} / {@code (pos)}: 1.12.2's home check. */
+	public static boolean isWithinRestriction(net.minecraft.entity.EntityCreature mob) {
+		return mob.isWithinHomeDistanceCurrentPosition();
+	}
+
+	public static boolean isWithinRestriction(net.minecraft.entity.EntityCreature mob, net.minecraft.util.math.BlockPos pos) {
+		return mob.isWithinHomeDistanceFromPosition(pos);
+	}
+
+	/** 1.21 {@code mob.getRestrictCenter()} / {@code getRestrictRadius()}: 1.12.2's home. */
+	public static net.minecraft.util.math.BlockPos getRestrictCenter(net.minecraft.entity.EntityCreature mob) {
+		return mob.getHomePosition();
+	}
+
+	public static float getRestrictRadius(net.minecraft.entity.EntityCreature mob) {
+		return mob.getMaximumHomeDistance();
+	}
+
+	private static final java.util.Map<net.minecraft.world.World, Object> PATH_TYPE_CACHES = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+	/** 1.21 {@code level.getPathTypeCache()}: one carried PathTypeCache per world (1.21's pathfinding contexts ask it). */
+	@javax.annotation.Nullable
+	public static Object getPathTypeCache(net.minecraft.world.WorldServer world) {
+		return PATH_TYPE_CACHES.computeIfAbsent(world, w -> {
+			try {
+				return Class.forName("net.minecraft.world.level.pathfinder.PathTypeCache", true, net.minecraft.launchwrapper.Launch.classLoader)
+						.getConstructor().newInstance();
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				io.github.xponer2.translator.runtime.RuntimeStubs.failed("PathTypeCache", e);
+				return null;
+			}
+		});
+	}
+
+	/** 1.21 {@code new PathFinder(nodeEvaluator, maxVisitedNodes)}: 1.12.2's has its own node budget. */
+	public static net.minecraft.pathfinding.PathFinder newPathFinder(net.minecraft.pathfinding.NodeProcessor nodes, int maxVisitedNodes) {
+		return new net.minecraft.pathfinding.PathFinder(nodes);
+	}
+
 	// --- 1.21 WrappedGoal: 1.12.2's task entry (the table maps it) ----------------------------------------------------
 
 	/**

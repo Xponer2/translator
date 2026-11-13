@@ -672,6 +672,13 @@ public final class EntityApiBridges {
 		return movement;
 	}
 
+	/** 1.21 {@code living.stopSleeping()}: a sleeping player wakes (Supplementaries' flute); 1.12.2's mobs don't sleep. */
+	public static void stopSleeping(EntityLivingBase living) {
+		if (living instanceof EntityPlayer player && player.isPlayerSleeping()) {
+			player.wakeUpPlayer(true, true, false);
+		}
+	}
+
 	/** 1.21 {@code living.canUseSlot(slot)}: every slot (1.21's default; a body slot only horses and wolves have). */
 	public static boolean canUseSlot(EntityLivingBase living, @Nullable EntityEquipmentSlot slot) {
 		return true;

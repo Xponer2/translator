@@ -161,6 +161,8 @@ public final class SelfTest {
 		final double y;
 		final double z;
 		final File file;
+		/** While a test takes the player away on purpose (a portal): not brought back, nothing noted. */
+		boolean away;
 		/** The automatic test's records on disk (resumed after a crash), null for a test by hand. */
 		File progress;
 
@@ -463,6 +465,10 @@ public final class SelfTest {
 
 		/** The player moved by what was tested (another dimension, a teleport): noted, back to where the test runs. */
 		private void bringBack() {
+			if (this.away) {
+				// a test that takes the player somewhere on purpose (a portal) brings them back itself
+				return;
+			}
 			if (this.player.dimension != this.dimension) {
 				if (this.current != null) {
 					this.current.problems.add("took the player to dimension " + this.player.dimension);
@@ -1126,7 +1132,130 @@ public final class SelfTest {
 				} else {
 					this.attempt("generate", () -> dimension.getChunkProvider().provideChunk(0, 0));
 				}
+				if ("twilightforest:twilight_forest".equals(id)) {
+					this.planTwilightPortal(type.getId());
+				}
 			});
+		}
+
+		/**
+		 * The Twilight Forest's way in, as a player makes it: a 2x2 pool of water ringed with grass (dirt below, flowers
+		 * on the ring), a diamond thrown in by the player; the portal has to form, and the player standing in it has to
+		 * arrive in the Twilight Forest (its biome there noted). Twilight Forest checks the items around each player.
+		 */
+		private void planTwilightPortal(int dimensionId) {
+			Block portal = ForgeRegistries.BLOCKS.getValue(new net.minecraft.util.ResourceLocation("twilightforest", "twilight_portal"));
+			if (portal == null || portal == Blocks.AIR) {
+				this.current.problems.add("portal: no block twilightforest:twilight_portal");
+				return;
+			}
+			Record record = this.current;
+			EnumFacing ahead = this.player.getHorizontalFacing();
+			EnumFacing side = ahead.rotateY();
+			BlockPos[] water = {this.cell, this.cell.offset(ahead), this.cell.offset(side), this.cell.offset(ahead).offset(side)};
+			java.util.List<BlockPos> area = new java.util.ArrayList<>();
+			for (int a = -1; a <= 2; a++) {
+				for (int b = -1; b <= 2; b++) {
+					area.add(this.cell.offset(ahead, a).offset(side, b));
+				}
+			}
+			this.attempt("portal: pool", () -> {
+				for (BlockPos pos : area) {
+					for (int dy = 0; dy < 4; dy++) {
+						this.world.setBlockState(pos.up(dy), Blocks.AIR.getDefaultState(), 2);
+					}
+					this.world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState(), 2);
+					this.world.setBlockState(pos, Blocks.GRASS.getDefaultState(), 2);
+					this.world.setBlockState(pos.up(), Blocks.RED_FLOWER.getDefaultState(), 2);
+				}
+				for (BlockPos pos : water) {
+					this.world.setBlockState(pos.up(), Blocks.AIR.getDefaultState(), 2);
+					this.world.setBlockState(pos, Blocks.WATER.getDefaultState(), 2);
+				}
+				EntityItem diamond = new EntityItem(this.world, this.cell.getX() + 0.5D, this.cell.getY() + 0.9D, this.cell.getZ() + 0.5D,
+						new ItemStack(net.minecraft.init.Items.DIAMOND));
+				diamond.setThrower(this.player.getName());
+				diamond.setPickupDelay(400);
+				this.world.spawnEntity(diamond);
+			});
+			Runnable cleanUp = () -> {
+				for (BlockPos pos : area) {
+					for (int dy = 0; dy < 4; dy++) {
+						this.world.setBlockState(pos.up(dy), Blocks.AIR.getDefaultState(), 2);
+					}
+					this.world.setBlockState(pos.down(), Blocks.STONE.getDefaultState(), 2);
+				}
+				for (EntityItem drop : this.world.getEntitiesWithinAABB(EntityItem.class, new AxisAlignedBB(this.cell).grow(4))) {
+					drop.setDead();
+				}
+			};
+			// the portal forms within 10 seconds, else the test says so
+			this.steps.addFirst(new Runnable() {
+				private int left = 200;
+
+				@Override
+				public void run() {
+					Run.this.current = record;
+					boolean formed = false;
+					for (BlockPos pos : water) {
+						formed |= Run.this.world.getBlockState(pos).getBlock() == portal;
+					}
+					if (formed) {
+						record.notes.add("portal formed from a diamond in a pool of water");
+						Run.this.enterTwilightPortal(record, dimensionId, cleanUp);
+					} else if (--this.left > 0) {
+						Run.this.steps.addFirst(this);
+					} else {
+						record.problems.add("portal: a diamond thrown into a 2x2 pool ringed with grass and flowers made no portal in 200 ticks");
+						cleanUp.run();
+					}
+				}
+			});
+		}
+
+		/** The player into the formed portal: has to arrive in the Twilight Forest within 30 seconds; then back. */
+		private void enterTwilightPortal(Record record, int dimensionId, Runnable cleanUp) {
+			this.away = true;
+			this.player.setPositionAndUpdate(this.cell.getX() + 0.5D, this.cell.getY(), this.cell.getZ() + 0.5D);
+			this.steps.addFirst(new Runnable() {
+				private int left = 600;
+
+				@Override
+				public void run() {
+					Run.this.current = record;
+					if (Run.this.player.dimension == dimensionId) {
+						BlockPos at = Run.this.player.getPosition();
+						net.minecraft.world.biome.Biome biome = Run.this.player.world.getBiome(at);
+						record.notes.add("the portal took the player to the Twilight Forest (" + at.getX() + " " + at.getY() + " " + at.getZ() + ", biome "
+								+ biome.getRegistryName() + ")");
+						if (biome.getRegistryName() == null || !"twilightforest".equals(biome.getRegistryName().getNamespace())) {
+							record.problems.add("twilight forest: the player arrived in the biome " + biome.getRegistryName() + ", not one of the mod's");
+						}
+						Run.this.comeBack(cleanUp);
+					} else if (--this.left > 0) {
+						if (Run.this.player.dimension == Run.this.dimension
+								&& Run.this.player.getDistanceSq(Run.this.cell.getX() + 0.5D, Run.this.cell.getY(), Run.this.cell.getZ() + 0.5D) > 1.0D) {
+							// stay in the portal
+							Run.this.player.setPositionAndUpdate(Run.this.cell.getX() + 0.5D, Run.this.cell.getY(), Run.this.cell.getZ() + 0.5D);
+						}
+						Run.this.steps.addFirst(this);
+					} else {
+						record.problems.add("portal: the player standing in it wasn't taken to the Twilight Forest in 600 ticks (in dimension "
+								+ Run.this.player.dimension + ")");
+						Run.this.comeBack(cleanUp);
+					}
+				}
+			});
+		}
+
+		/** Back to where the test runs after a portal test, the pool gone. */
+		private void comeBack(Runnable cleanUp) {
+			if (this.player.dimension != this.dimension) {
+				this.player.changeDimension(this.dimension, (world, entity, yaw) -> entity.setPositionAndUpdate(this.x, this.y, this.z));
+			}
+			this.player.setPositionAndUpdate(this.x, this.y, this.z);
+			cleanUp.run();
+			this.away = false;
 		}
 
 		private void planItem(Item item) {

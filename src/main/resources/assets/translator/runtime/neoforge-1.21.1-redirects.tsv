@@ -854,3 +854,6 @@ R	net/minecraft/client/renderer/block/model/ItemOverride	io/github/xponer2/trans
 R	net/minecraft/client/renderer/block/model/SimpleBakedModel$Builder	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
 R	net/minecraft/entity/ai/EntityAITasks$EntityAITaskEntry	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
 R	net/minecraft/entity/ai/EntityAIBase	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/pathfinding/PathFinder	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/entity/EntityCreature	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/EntityGapBridges

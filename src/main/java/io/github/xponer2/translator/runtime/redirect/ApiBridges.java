@@ -175,6 +175,15 @@ public final class ApiBridges {
 		return chunks.world.getPlayerChunkMap();
 	}
 
+	/**
+	 * 1.21 {@code chunkMap.generator} (read): the 1.21 generator the mods are given (WorldGapBridges.getGenerator;
+	 * Twilight Forest asks its sea level so).
+	 */
+	@javax.annotation.Nullable
+	public static Object generator(net.minecraft.server.management.PlayerChunkMap map) {
+		return io.github.xponer2.translator.world.DataFeatures.generator();
+	}
+
 	/** 1.21 {@code chunkMap.getPlayers(chunk, onlyOnEdge)}: the players the chunk is sent to (whole view, not only its edge). */
 	public static java.util.List<net.minecraft.entity.player.EntityPlayerMP> getPlayers(net.minecraft.server.management.PlayerChunkMap map,
 			net.minecraft.util.math.ChunkPos chunk, boolean onlyOnEdge) {
