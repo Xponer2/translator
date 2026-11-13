@@ -128,6 +128,11 @@ public final class SelfTest {
 		final List<String> notes = new ArrayList<>();
 		/** Written to the automatic test's records already. */
 		transient boolean kept;
+		/** When its test began (System.nanoTime) and the server tick then; how long it took, once the next one began. */
+		transient long startNanos = System.nanoTime();
+		transient long startTick;
+		long millis = -1;
+		long ticks = -1;
 
 		Record(String mod, String id, String kind) {
 			this.mod = mod;
@@ -527,13 +532,23 @@ public final class SelfTest {
 					+ ", ride cooldown " + cooldown;
 		}
 
+		/** The time the record's test took: until now (the next record begins, or the report is written). */
+		private void timed(@javax.annotation.Nullable Record record) {
+			if (record != null && record.millis < 0) {
+				record.millis = (System.nanoTime() - record.startNanos) / 1_000_000L;
+				record.ticks = this.world.getTotalWorldTime() - record.startTick;
+			}
+		}
+
 		private void begin(String id, String kind) {
+			this.timed(this.current);
 			if (this.current != null && !this.current.kept) {
 				this.current.kept = true;
 				this.keep(this.current);
 			}
 			int colon = id.indexOf(':');
 			this.current = new Record(colon > 0 ? id.substring(0, colon) : id, id, kind);
+			this.current.startTick = this.world.getTotalWorldTime();
 			this.records.add(this.current);
 			// the line before a crash names what caused it; the report so far survives one
 			LOGGER.info("Testing {} {}", kind, id);
@@ -1533,6 +1548,48 @@ public final class SelfTest {
 			LOGGER.info("Self-test: {} of {} fully working, report {}", ok, this.records.size(), this.file.getAbsolutePath());
 		}
 
+		/**
+		 * How long the test took, per mod and for the slowest blocks and items (the user: a test of over an hour is too
+		 * long; what is slow gets fixed). A block or item over SLOW_MILLIS is counted as slow.
+		 */
+		private void time(StringBuilder out) {
+			long total = 0;
+			int timed = 0;
+			Map<String, long[]> byMod = new TreeMap<>();
+			var slowest = new ArrayList<Record>();
+			for (Record record : this.records) {
+				long millis = record.millis >= 0 ? record.millis : record == this.current ? (System.nanoTime() - record.startNanos) / 1_000_000L : -1;
+				if (millis < 0) {
+					continue;
+				}
+				total += millis;
+				timed++;
+				long[] sum = byMod.computeIfAbsent(record.mod, k -> new long[2]);
+				sum[0] += millis;
+				sum[1]++;
+				if (record.millis >= 0) {
+					slowest.add(record);
+				}
+			}
+			if (timed == 0) {
+				return;
+			}
+			out.append("\n## Time\n\n");
+			out.append(String.format(java.util.Locale.ROOT, "%d blocks and items in %.1f min, %.2f s each on average.%n%n", timed, total / 60000.0, total / 1000.0 / timed));
+			byMod.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]))
+					.forEach(e -> out.append(String.format(java.util.Locale.ROOT, "- %s: %.1f min for %d (%.2f s each)%n", e.getKey(),
+							e.getValue()[0] / 60000.0, e.getValue()[1], e.getValue()[0] / 1000.0 / e.getValue()[1])));
+			slowest.sort((a, b) -> Long.compare(b.millis, a.millis));
+			long slow = slowest.stream().filter(r -> r.millis > SLOW_MILLIS).count();
+			out.append("\nSlowest (").append(slow).append(" over ").append(SLOW_MILLIS / 1000).append(" s):\n\n");
+			for (Record record : slowest.subList(0, Math.min(25, slowest.size()))) {
+				out.append(String.format(java.util.Locale.ROOT, "- %.1f s (%d ticks): %s %s%n", record.millis / 1000.0, record.ticks, record.kind, record.id));
+			}
+		}
+
+		/** A block or item whose test took longer than this is counted as slow in the report's time section. */
+		private static final long SLOW_MILLIS = 5000;
+
 		private String report(int ok) {
 			var out = new StringBuilder("# Translator self-test\n\n");
 			if (FMLCommonHandler.instance().getSide().isClient()) {
@@ -1556,6 +1613,7 @@ public final class SelfTest {
 			out.append("## Causes by blocks and items hit\n\n");
 			causes.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).limit(80)
 					.forEach(e -> out.append("- ").append(e.getValue()).append(": ").append(e.getKey()).append('\n'));
+			this.time(out);
 			if (!this.background.isEmpty()) {
 				out.append("\n## Background: unbridged calls on the client while the test ran (every frame or tick, not one block)\n\n");
 				this.background.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).limit(60)
