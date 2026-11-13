@@ -380,7 +380,10 @@ final class SelfTestClient {
 							// the server went on to the next item meanwhile (its menu closed, the cursor emptied): nothing to compare
 							boolean sameMenu = server.openContainer != null && server.openContainer.windowId == windowId;
 							if (sameMenu && !ItemStack.areItemStacksEqual(client, held)) {
-								run.addClientProblem(kind, id, "menu click didn't reach the server: the client holds " + client + ", the server " + held);
+								// what the server's menu says of it: whether it takes clicks now (a refused transaction stops them)
+								run.addClientProblem(kind, id, "menu click didn't reach the server: the client holds " + client + ", the server " + held
+										+ " (slot " + clicked.slotNumber + ", server menu " + server.openContainer.getClass().getSimpleName() + " takes clicks: "
+										+ server.openContainer.getCanCraft(server) + ")");
 							}
 							if (mc.currentScreen == screen) {
 								LAST_CLICK_TIME.setLong(screen, 0L);
