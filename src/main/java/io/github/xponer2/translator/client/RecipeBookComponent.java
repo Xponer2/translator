@@ -31,10 +31,28 @@ public class RecipeBookComponent extends GuiRecipeBook implements GuiEventListen
 	/** The 1.12.2 book was set up (a crafting grid): only then does it do anything. */
 	private boolean initialized;
 
+	// 1.21's fields the subclasses use (Farmer's Delight's cooking pot book sets up its ghost recipe with them)
+	/** The menu of the book (a 1.21 RecipeBookMenu, carried: its subclasses read it through a cast). */
+	@Nullable
+	protected Object menu;
+	protected Minecraft minecraft = Minecraft.getMinecraft();
+	protected final net.minecraft.client.gui.recipebook.GhostRecipe ghostRecipe = new net.minecraft.client.gui.recipebook.GhostRecipe();
+	@Nullable
+	protected net.minecraft.client.gui.GuiButtonToggle filterButton;
+
+	/**
+	 * 1.21 {@code placeRecipe(width, height, outputSlot, recipe, ingredients, maxAmount)} (PlaceRecipe): the ingredients
+	 * of a recipe laid out on the grid as ghost items; none in a closed book.
+	 */
+	public void placeRecipe(int width, int height, int outputSlot, @Nullable Object recipe, @Nullable java.util.Iterator<?> ingredients, int maxAmount) {
+	}
+
 	// --- 1.21 ---------------------------------------------------------------------------------------------------------
 
 	/** 1.21 {@code init(width, height, minecraft, widthTooNarrow, menu)}: the book of a 1.21 menu stays closed. */
 	public void init(int width, int height, Minecraft minecraft, boolean widthTooNarrow, Object menu) {
+		this.minecraft = minecraft;
+		this.menu = menu;
 	}
 
 	public void initVisuals() {

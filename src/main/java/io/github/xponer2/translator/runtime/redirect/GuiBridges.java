@@ -117,6 +117,28 @@ public final class GuiBridges {
 		return true;
 	}
 
+	/** 1.21 {@code ghostRecipe.setRecipe(holder)}: the recipe of the ghost items (1.12.2 keeps the recipe itself). */
+	public static void setRecipe(net.minecraft.client.gui.recipebook.GhostRecipe ghost, @javax.annotation.Nullable Object holder) {
+		Object recipe = holder instanceof io.github.xponer2.translator.recipe.RecipeHolder<?> recipeHolder ? recipeHolder.value() : holder;
+		if (recipe instanceof net.minecraft.item.crafting.IRecipe iRecipe) {
+			ghost.setRecipe(iRecipe);
+		}
+	}
+
+	/**
+	 * 1.21 {@code stateSwitchingButton.initTextureValues(sprites)}: the GUI sprites of the toggle (a recipe book's
+	 * filter); kept for its drawing.
+	 */
+	public static void initTextureValues(net.minecraft.client.gui.GuiButtonToggle button, @javax.annotation.Nullable io.github.xponer2.translator.client.WidgetSprites sprites) {
+		if (sprites != null) {
+			TOGGLE_SPRITES.put(button, sprites);
+		}
+	}
+
+	/** The sprites of the toggles a mod set them for. */
+	public static final java.util.Map<net.minecraft.client.gui.GuiButtonToggle, io.github.xponer2.translator.client.WidgetSprites> TOGGLE_SPRITES =
+			java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
 	/** 1.21 {@code options.mainHand()}: the main hand option over 1.12.2's field. */
 	public static io.github.xponer2.translator.client.OptionInstance<net.minecraft.util.EnumHandSide> mainHand(net.minecraft.client.settings.GameSettings options) {
 		return new io.github.xponer2.translator.client.OptionInstance<>(() -> options.mainHand, value -> options.mainHand = value);

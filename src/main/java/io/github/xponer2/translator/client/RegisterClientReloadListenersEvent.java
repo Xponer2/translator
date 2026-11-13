@@ -32,9 +32,7 @@ public class RegisterClientReloadListenersEvent extends Event {
 	/** A 1.21 listener (PreparableReloadListener, carried) into the 1.12.2 reloads. */
 	public void registerReloadListener(Object listener) {
 		if (listener != null) {
-			io.github.xponer2.translator.runtime.redirect.ResourceBridges.registerReloadListener(
-					(io.github.xponer2.translator.resources.ResourceManager.Client) io.github.xponer2.translator.resources.ResourceManager.client(),
-					listener);
+			io.github.xponer2.translator.runtime.redirect.ResourceBridges.registerAndRun(listener);
 		}
 	}
 }

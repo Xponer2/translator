@@ -803,3 +803,6 @@ R	net/minecraft/inventory/ContainerRepair	io/github/xponer2/translator/runtime/r
 R	net/minecraft/inventory/Container	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
 R	net/minecraft/client/gui/GuiNewChat	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
 R	net/minecraft/client/network/NetHandlerPlayClient	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+# a recipe book's ghost recipe and filter toggle of a 1.21 book (Farmer's Delight, the Aether, Refurbished Furniture)
+R	net/minecraft/client/gui/recipebook/GhostRecipe	io/github/xponer2/translator/runtime/redirect/GuiBridges
+R	net/minecraft/client/gui/GuiButtonToggle	io/github/xponer2/translator/runtime/redirect/GuiBridges

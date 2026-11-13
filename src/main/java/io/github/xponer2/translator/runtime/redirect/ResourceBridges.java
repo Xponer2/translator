@@ -21,9 +21,11 @@ import net.minecraft.client.resources.IResourceManagerReloadListener;
 
 /**
  * The client's 1.21 {@code ReloadableResourceManager} (= the Translator's client resource manager, R line):
- * {@code registerReloadListener} hooks a 1.21 listener into the 1.12.2 resource reloads. 1.12.2 runs a new listener
- * once right away, as the 1.21 game runs them at its first resource load (map mods build their HUD there, before a
- * world exists). Client only.
+ * {@code registerReloadListener} hooks a 1.21 listener into the 1.12.2 resource reloads. A listener of the
+ * registration event runs once right away, as the 1.21 game runs them at its first resource load (map mods build their
+ * HUD there, before a world exists); one a mod adds itself later runs at the next reload only, as in 1.21 (1.12.2 ran it
+ * at once: JourneyMap adds its mob icon listener after loading the icons, and the listener threw them away again, so
+ * no mob had an icon). Client only.
  */
 public final class ResourceBridges {
 	private ResourceBridges() {
@@ -35,6 +37,15 @@ public final class ResourceBridges {
 	 * SimpleJsonResourceReloadListeners of the mods) by its reload(...) with every stage run at once on this thread.
 	 */
 	public static void registerReloadListener(ResourceManager.Client manager, Object listener) {
+		register(listener, false);
+	}
+
+	/** A listener of the registration event: run once now too (the 1.21 game's first load). */
+	public static void registerAndRun(Object listener) {
+		register(listener, true);
+	}
+
+	private static void register(Object listener, boolean runNow) {
 		Method reload = find(listener.getClass());
 		Method preparable = reload == null ? findPreparable(listener.getClass()) : null;
 		if (reload == null && preparable == null) {
@@ -56,7 +67,18 @@ public final class ResourceBridges {
 				RuntimeStubs.failed(listener.getClass().getName() + (reload != null ? ".onResourceManagerReload" : ".reload"), cause);
 			}
 		};
-		((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(hook);
+		Object resources = Minecraft.getMinecraft().getResourceManager();
+		if (!runNow && resources instanceof net.minecraft.client.resources.SimpleReloadableResourceManager simple) {
+			try {
+				java.util.List<IResourceManagerReloadListener> listeners = net.minecraftforge.fml.common.ObfuscationReflectionHelper
+						.getPrivateValue(net.minecraft.client.resources.SimpleReloadableResourceManager.class, simple, "field_110546_b");
+				listeners.add(hook);
+				return;
+			} catch (RuntimeException e) {
+				// as 1.12.2 adds it, run once now
+			}
+		}
+		((IReloadableResourceManager) resources).registerReloadListener(hook);
 	}
 
 	/** 1.21 {@code PreparableReloadListener.reload(barrier, manager, prepareProfiler, applyProfiler, background, game)}. */
