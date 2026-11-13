@@ -564,6 +564,11 @@ public final class MiscBridges {
 		return entity.getHeldItemMainhand();
 	}
 
+	/** 1.21 {@code Container.getMaxStackSize()}'s default for a container that doesn't give it (Iron Furnaces' furnaces): 64. */
+	public static int getInventoryStackLimit(net.minecraft.inventory.IInventory inventory) {
+		return 64;
+	}
+
 	/** 1.21 {@code armor.getDefense()}: its armor points (JEI sorts armor by them). */
 	public static int getDefense(net.minecraft.item.ItemArmor armor) {
 		return armor.damageReduceAmount;

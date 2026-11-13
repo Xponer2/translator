@@ -402,7 +402,9 @@ final class ModChecks {
 				return;
 			}
 			JsonObject entry = pool.getAsJsonArray("entries").get(0).getAsJsonObject();
+			// an entry of air drops nothing in 1.21 either (Iron Furnaces' heater drops itself with its energy, by its own code)
 			if ("minecraft:item".equals(entry.has("type") ? entry.get("type").getAsString() : "") && plainConditions(entry)
+					&& !(entry.has("name") && "minecraft:air".equals(entry.get("name").getAsString()))
 					&& !entry.has("functions")) {
 				plain.add(new ResourceLocation(m.group(1), m.group(2)));
 			}

@@ -730,6 +730,10 @@ final class MethodGuard {
 			}
 			var stub = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, name, desc, null, null);
 			MethodInsnNode helper = this.helperFor(node.superName, name, desc);
+			if (helper == null && !entry.getValue().equals(node.superName)) {
+				// an interface's (IInventory's getInventoryStackLimit, a default in 1.21): its helper's 1.21 default
+				helper = this.helperFor(entry.getValue(), name, desc);
+			}
 			if (helper != null) {
 				// what a 1.12.2 superclass gives through a helper (1.21's level() of an entity is 1.12.2's field world):
 				// the stub returning null stood in for it, also for the mod's own calls (BOP's chest boats: null level)

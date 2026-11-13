@@ -301,7 +301,8 @@ public final class SelfTest {
 				record.notes.add(packages.isEmpty() ? "no classes of its own found" : "its code: " + String.join(", ", packages));
 				if (FMLCommonHandler.instance().getSide().isClient()) {
 					this.closeMenu();
-					this.waitFor(SelfTestClient.pressKeys(this, modId)::get, 20 * 90);
+					// one key after another, each waiting for a screen and its picture: JEI's 43 keys took longer than 90 s
+					this.waitFor(SelfTestClient.pressKeys(this, modId)::get, 20 * 240);
 				}
 			});
 		}
