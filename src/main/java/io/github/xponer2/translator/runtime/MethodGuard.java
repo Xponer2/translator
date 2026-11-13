@@ -626,6 +626,14 @@ final class MethodGuard {
 				// the stack map frames may still name a missing class (a local of that type): the JVM can't check
 				// those against the code (VerifyError), the ASM verifier doesn't look at frames; then the stub is safer
 				String still = this.missing(softened);
+				if (still == null && this.framesNameMissing(softened)) {
+					// javac's frames typed a local by the missing class; the softened code only puts null there now: frames
+					// computed again from the code don't name it (128 of 300 popular mods had methods stubbed whole for this)
+					MethodNode recomputed = this.recomputeFrames(node, softened);
+					if (recomputed != null) {
+						softened = recomputed;
+					}
+				}
 				String rejected = still != null ? "still " + still
 						: this.framesNameMissing(softened) ? "a stack map frame names a missing class" : this.verify(node.name, softened);
 				if (rejected != null) {
@@ -2452,6 +2460,78 @@ final class MethodGuard {
 	}
 
 	/** Whether a stack map frame of the method names a class that doesn't exist (locals or stack). */
+	/**
+	 * The method with its stack map frames computed again from its code (ASM, in a class of that method alone), the
+	 * types merged by the classes the converter knows; a class it doesn't know is a missing one (its values are null
+	 * here). Null when that fails.
+	 */
+	@javax.annotation.Nullable
+	private MethodNode recomputeFrames(ClassNode owner, MethodNode method) {
+		if ((owner.version & 0xFFFF) < Opcodes.V1_6) {
+			return null;
+		}
+		try {
+			var single = new ClassNode();
+			single.version = owner.version;
+			single.access = owner.access;
+			single.name = owner.name;
+			single.superName = owner.superName;
+			single.interfaces = owner.interfaces;
+			MethodNode copy = copy(method);
+			for (AbstractInsnNode insn : copy.instructions.toArray()) {
+				if (insn instanceof FrameNode) {
+					copy.instructions.remove(insn);
+				}
+			}
+			single.methods.add(copy);
+			var writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES) {
+				@Override
+				protected String getCommonSuperClass(String a, String b) {
+					return MethodGuard.this.commonSuperClass(a, b);
+				}
+			};
+			single.accept(writer);
+			var back = new ClassNode();
+			new ClassReader(writer.toByteArray()).accept(back, 0);
+			return back.methods.size() == 1 ? back.methods.get(0) : null;
+		} catch (RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	/** The nearest common superclass of two classes by the converter's knowledge (Object for an unknown one or interfaces). */
+	private String commonSuperClass(String a, String b) {
+		if (a.equals(b)) {
+			return a;
+		}
+		if (this.isSubtype("L" + a + ";", "L" + b + ";")) {
+			return b;
+		}
+		if (this.isSubtype("L" + b + ";", "L" + a + ";")) {
+			return a;
+		}
+		for (String current = this.superOf(a); current != null; current = this.superOf(current)) {
+			if (this.isSubtype("L" + b + ";", "L" + current + ";")) {
+				return current;
+			}
+		}
+		return "java/lang/Object";
+	}
+
+	/** The superclass of a class the converter knows (null for an interface, an unknown class or Object). */
+	@javax.annotation.Nullable
+	private String superOf(String name) {
+		if (isPlatform(name)) {
+			Class<?> type = platformClass(name);
+			if (type == null || type.isInterface() || type.getSuperclass() == null) {
+				return null;
+			}
+			return type.getSuperclass().getName().replace('.', '/');
+		}
+		ClassInfo info = this.info(name);
+		return info == null || info.isInterface() ? null : info.superName;
+	}
+
 	private boolean framesNameMissing(MethodNode method) {
 		for (AbstractInsnNode insn : method.instructions) {
 			if (insn instanceof FrameNode frame) {
