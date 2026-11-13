@@ -27,6 +27,7 @@ public final class TranslatorSplash {
 	private static final float HEIGHT = 75;
 	private static int texture = -1;
 	private static boolean off;
+	private static boolean logged;
 
 	private TranslatorSplash() {
 	}
@@ -42,6 +43,22 @@ public final class TranslatorSplash {
 			float x0 = 320 - WIDTH / 2;
 			float y1 = 240 + Display.getHeight() / 2f - 14;
 			float y0 = y1 - HEIGHT;
+			if (!logged) {
+				logged = true;
+				org.apache.logging.log4j.LogManager.getLogger("Translator").info("Loading screen banner at x {}..{}, y {}..{} (display {}x{}, texture {})",
+						x0, x0 + WIDTH, y0, y1, Display.getWidth(), Display.getHeight(), texture);
+			}
+			// the panel's colour under the texture: the banner shows even if its texture doesn't
+			GL11.glDisable(GL11.GL_TEXTURE_2D);
+			GL11.glDisable(GL11.GL_CULL_FACE);
+			GL11.glDisable(GL11.GL_DEPTH_TEST);
+			GL11.glColor4f(18 / 255f, 22 / 255f, 34 / 255f, 1);
+			GL11.glBegin(GL11.GL_QUADS);
+			GL11.glVertex2f(x0 + 4, y0 + 4);
+			GL11.glVertex2f(x0 + 4, y1 - 4);
+			GL11.glVertex2f(x0 + WIDTH - 4, y1 - 4);
+			GL11.glVertex2f(x0 + WIDTH - 4, y0 + 4);
+			GL11.glEnd();
 			GL11.glEnable(GL11.GL_TEXTURE_2D);
 			GL11.glEnable(GL11.GL_BLEND);
 			GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
