@@ -88,6 +88,15 @@ public final class TextureBridges {
 	}
 
 	/**
+	 * NeoForge {@code level.getModelDataManager()}: none on 1.12.2; its {@code getAt} (the X line above) reads the block
+	 * entity's model data without one (JourneyMap's block colors).
+	 */
+	@Nullable
+	public static net.neoforged.neoforge.client.model.data.ModelDataManager getModelDataManager(@Nullable Object world) {
+		return null;
+	}
+
+	/**
 	 * NeoForge {@code level.getModelDataManager().getAt(pos)}: what the block entity there tells its block's model, empty
 	 * when there is none. 1.12.2 has no manager (the receiver is whatever the call before gave, also null).
 	 */

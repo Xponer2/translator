@@ -568,3 +568,5 @@ X	net/minecraftforge/client/settings/KeyModifier	isKeyCodeModifier	(Lio/github/x
 X	net/minecraftforge/client/ClientCommandHandler	runCommand	(Ljava/lang/String;)Z	io/github/xponer2/translator/runtime/redirect/ClientGapBridges
 # Commons Compress 1.13 Lists.newArrayList() (1.12.2 ships 1.8)
 X	org/apache/commons/compress/utils/Lists	newArrayList	()Ljava/util/ArrayList;	io/github/xponer2/translator/runtime/redirect/MiscBridges
+# NeoForge's level.getModelDataManager(): none on 1.12.2 (getAt above works without one)
+X	net/minecraft/client/multiplayer/WorldClient	getModelDataManager	()Lnet/neoforged/neoforge/client/model/data/ModelDataManager;	io/github/xponer2/translator/client/TextureBridges	(Ljava/lang/Object;)Lnet/neoforged/neoforge/client/model/data/ModelDataManager;
