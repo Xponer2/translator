@@ -224,7 +224,9 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 		} else if (this.ownLightBlock) {
 			light = this.guarded("getLightBlock", () -> this.getLightBlock(state, world, pos), this.lightOpacity);
 		} else {
-			light = this.lightBlock.computeIfAbsent(state, key -> this.guarded("getLightBlock", () -> this.getLightBlock(key, null, null), this.lightOpacity));
+			// per state as 1.21 caches it: in an empty world at the origin (not null: a shape from the position failed)
+			light = this.lightBlock.computeIfAbsent(state, key -> this.guarded("getLightBlock",
+					() -> this.getLightBlock(key, io.github.xponer2.translator.world.EmptyBlockGetter.INSTANCE, BlockPos.ORIGIN), this.lightOpacity));
 		}
 		return light >= 15 ? 255 : light;
 	}
@@ -374,7 +376,8 @@ public class Block extends PropertiesBlock implements io.github.xponer2.translat
 	@SuppressWarnings("deprecation")
 	public boolean isOpaqueCube(IBlockState state) {
 		// asked by the 1.12.2 Block constructor before the properties are set
-		return super.isOpaqueCube(state) && Shapes.isFullBlock(() -> this.getShape(state, null, null, CollisionContext.empty()));
+		return super.isOpaqueCube(state) && Shapes.isFullBlock(() -> this.getShape(state, io.github.xponer2.translator.world.EmptyBlockGetter.INSTANCE, BlockPos.ORIGIN,
+				CollisionContext.empty()));
 	}
 
 	@Override

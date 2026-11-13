@@ -62,7 +62,14 @@ public abstract class Entity extends net.minecraft.entity.Entity {
 	/** 1.12.2's update is 1.21's tick; 1.21's base tick (super.tick()) is 1.12.2's. */
 	@Override
 	public void onUpdate() {
-		this.tick();
+		try {
+			this.tick();
+		} catch (RuntimeException | LinkageError e) {
+			// a part of the 1.21 game the Translator lacks, in a mod entity's tick: logged once, where it stopped the server
+			// (Iron's Spells' projectiles hitting the player); the entity goes, so it doesn't fail every tick
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".tick", e);
+			this.setDead();
+		}
 	}
 
 	public void tick() {

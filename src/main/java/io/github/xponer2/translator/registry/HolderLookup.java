@@ -17,6 +17,19 @@ import io.github.xponer2.translator.util.BuiltInRegistries;
  * {@link RegistryAccess#INSTANCE}, backed by {@link BuiltInRegistries}.
  */
 public interface HolderLookup {
+    /**
+     * 1.21 {@code HolderLookup<T>.listElements()} on a lookup typed as the bare interface (Moonlight's HolderRef): the
+     * registry's references (a Registry overrides it), none here.
+     */
+    default java.util.stream.Stream<?> listElements() {
+        return java.util.stream.Stream.empty();
+    }
+
+    /** 1.21 {@code HolderLookup<T>.listElementIds()}. */
+    default java.util.stream.Stream<?> listElementIds() {
+        return java.util.stream.Stream.empty();
+    }
+
     interface Provider {
         /** 1.21 {@code createSerializationContext(ops)}: the format with the registries (NBT and JSON codecs of items). */
         default <V> RegistryOps<V> createSerializationContext(com.mojang.serialization.DynamicOps<V> ops) {

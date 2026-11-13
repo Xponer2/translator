@@ -367,35 +367,52 @@ final class SelfTestClient {
 				MOUSE_CLICKED.invoke(screen, x, y, 0);
 				MOUSE_RELEASED.invoke(screen, x, y, 0);
 				ItemStack client = mc.player.inventory.getItemStack().copy();
-				// the server gets the packet on its own thread: looked at a moment later, on the client thread again
+				// the server gets the packet on its own thread, a busy one some ticks later (it fell behind while the test placed
+				// blocks: a fixed half second missed it and counted Iron's scroll forge, Macaw's chests as not reaching it):
+				// looked at every quarter second for up to three, on the client thread again
 				Thread later = new Thread(() -> {
-					try {
-						Thread.sleep(500L);
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-					}
-					mc.addScheduledTask(() -> {
+					boolean[] matched = new boolean[1];
+					for (int attempt = 0; attempt < 12 && !matched[0]; attempt++) {
 						try {
-							ItemStack held = server.inventory.getItemStack();
-							// the server went on to the next item meanwhile (its menu closed, the cursor emptied): nothing to compare
-							boolean sameMenu = server.openContainer != null && server.openContainer.windowId == windowId;
-							if (sameMenu && !ItemStack.areItemStacksEqual(client, held)) {
-								// what the server's menu says of it: whether it takes clicks now (a refused transaction stops them)
-								run.addClientProblem(kind, id, "menu click didn't reach the server: the client holds " + client + ", the server " + held
-										+ " (slot " + clicked.slotNumber + ", server menu " + server.openContainer.getClass().getSimpleName() + " takes clicks: "
-										+ server.openContainer.getCanCraft(server) + ")");
-							}
-							if (mc.currentScreen == screen) {
-								LAST_CLICK_TIME.setLong(screen, 0L);
-								MOUSE_CLICKED.invoke(screen, x, y, 0);
-								MOUSE_RELEASED.invoke(screen, x, y, 0);
-							}
-						} catch (Throwable t) {
-							run.addClientProblem(kind, id, "menu click check: " + SelfTest.describe(t));
-						} finally {
-							done.set(true);
+							Thread.sleep(250L);
+						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+							return;
 						}
-					});
+						boolean last = attempt == 11;
+						java.util.concurrent.CountDownLatch looked = new java.util.concurrent.CountDownLatch(1);
+						mc.addScheduledTask(() -> {
+							try {
+								ItemStack held = server.inventory.getItemStack();
+								// the server went on to the next item meanwhile (its menu closed, the cursor emptied): nothing to compare
+								boolean sameMenu = server.openContainer != null && server.openContainer.windowId == windowId;
+								matched[0] = !sameMenu || ItemStack.areItemStacksEqual(client, held);
+								if (!matched[0] && last) {
+									// what the server's menu says of it: whether it takes clicks now (a refused transaction stops them)
+									run.addClientProblem(kind, id, "menu click didn't reach the server: the client holds " + client + ", the server " + held
+											+ " (slot " + clicked.slotNumber + ", server menu " + server.openContainer.getClass().getSimpleName() + " takes clicks: "
+											+ server.openContainer.getCanCraft(server) + ")");
+								}
+								if ((matched[0] || last) && mc.currentScreen == screen) {
+									LAST_CLICK_TIME.setLong(screen, 0L);
+									MOUSE_CLICKED.invoke(screen, x, y, 0);
+									MOUSE_RELEASED.invoke(screen, x, y, 0);
+								}
+							} catch (Throwable t) {
+								run.addClientProblem(kind, id, "menu click check: " + SelfTest.describe(t));
+								matched[0] = true;
+							} finally {
+								looked.countDown();
+							}
+						});
+						try {
+							looked.await(5, java.util.concurrent.TimeUnit.SECONDS);
+						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+							return;
+						}
+					}
+					done.set(true);
 				}, "Translator self-test click check");
 				later.setDaemon(true);
 				later.start();

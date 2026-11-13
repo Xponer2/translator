@@ -385,13 +385,29 @@ public final class EntityType<T extends Entity> {
         return TYPES.computeIfAbsent(entry, EntityType::new);
     }
 
+    /** The types of the entity classes without a registration (players, a mod's subclass of a vanilla entity). */
+    private static final ClassValue<EntityType<?>> UNREGISTERED = new ClassValue<>() {
+        @Override
+        protected EntityType<?> computeValue(Class<?> type) {
+            return new EntityType<>(new ResourceLocation("minecraft",
+                    net.minecraft.entity.player.EntityPlayer.class.isAssignableFrom(type) ? "player" : "unknown"));
+        }
+    };
+
     /**
-     * The type of an entity, null for entities without a registration (players, ...).
+     * The type of an entity: its class's registration, else its nearest registered superclass's, else a type of its
+     * own (players). Never null: 1.21 code asks every entity's type (a projectile's hit asked the player's,
+     * entity.getType().is(tag), and the server crashed on the null).
      */
-    @Nullable
     public static EntityType<?> of(Entity entity) {
-        var entry = EntityRegistry.getEntry(entity.getClass());
-        return entry == null ? null : of(entry);
+        for (Class<?> type = entity.getClass(); type != null && Entity.class.isAssignableFrom(type); type = type.getSuperclass()) {
+            @SuppressWarnings("unchecked")
+            var entry = EntityRegistry.getEntry((Class<? extends Entity>) type);
+            if (entry != null) {
+                return of(entry);
+            }
+        }
+        return UNREGISTERED.get(entity.getClass());
     }
 
     @Nullable

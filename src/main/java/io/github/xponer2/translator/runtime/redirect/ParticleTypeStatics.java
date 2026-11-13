@@ -98,6 +98,26 @@ public final class ParticleTypeStatics {
 	public static final SimpleParticleType TRIAL_OMEN = of(EnumParticleTypes.SPELL_MOB);
 	public static final SimpleParticleType RAID_OMEN = of(EnumParticleTypes.SPELL_MOB);
 	public static final SimpleParticleType EGG_CRACK = of(EnumParticleTypes.ITEM_CRACK);
+	public static final SimpleParticleType FALLING_DRIPSTONE_WATER = of(EnumParticleTypes.DRIP_WATER);
+	public static final SimpleParticleType DRIPPING_DRIPSTONE_WATER = of(EnumParticleTypes.DRIP_WATER);
+	public static final SimpleParticleType FALLING_DRIPSTONE_LAVA = of(EnumParticleTypes.DRIP_LAVA);
+	public static final SimpleParticleType DRIPPING_DRIPSTONE_LAVA = of(EnumParticleTypes.DRIP_LAVA);
+	public static final SimpleParticleType FALLING_HONEY = of(EnumParticleTypes.DRIP_LAVA);
+	public static final SimpleParticleType LANDING_HONEY = of(EnumParticleTypes.DRIP_LAVA);
+	public static final SimpleParticleType FALLING_NECTAR = of(EnumParticleTypes.DRIP_LAVA);
+	public static final SimpleParticleType FALLING_SPORE_BLOSSOM = of(EnumParticleTypes.TOWN_AURA);
+	public static final SimpleParticleType DRIPPING_OBSIDIAN_TEAR = of(EnumParticleTypes.DRIP_WATER);
+	public static final SimpleParticleType FALLING_OBSIDIAN_TEAR = of(EnumParticleTypes.DRIP_WATER);
+	public static final SimpleParticleType LANDING_OBSIDIAN_TEAR = of(EnumParticleTypes.DRIP_WATER);
+	public static final SimpleParticleType GLOW_SQUID_INK = of(EnumParticleTypes.SMOKE_NORMAL);
+	public static final SimpleParticleType SCULK_CHARGE_POP = of(EnumParticleTypes.SMOKE_NORMAL);
+	public static final SimpleParticleType WHITE_SMOKE = of(EnumParticleTypes.SMOKE_NORMAL);
+	public static final SimpleParticleType DUST_PLUME = of(EnumParticleTypes.SMOKE_NORMAL);
+	public static final SimpleParticleType ITEM_COBWEB = of(EnumParticleTypes.ITEM_CRACK);
+	public static final SimpleParticleType INFESTED = of(EnumParticleTypes.SPELL_MOB);
+	public static final SimpleParticleType OMINOUS_SPAWNING = of(EnumParticleTypes.SPELL_WITCH);
+	public static final SimpleParticleType VAULT_CONNECTION = of(EnumParticleTypes.ENCHANTMENT_TABLE);
+	public static final SimpleParticleType TRIAL_SPAWNER_DETECTED_PLAYER_OMINOUS = of(EnumParticleTypes.FLAME);
 
 	// particles with options: the options carry the state, item or color
 	public static final io.github.xponer2.translator.runtime.mc.ParticleType<?> BLOCK = new io.github.xponer2.translator.runtime.mc.VanillaOptionType(
