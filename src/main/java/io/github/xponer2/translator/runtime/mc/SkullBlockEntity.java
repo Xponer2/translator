@@ -46,6 +46,38 @@ public class SkullBlockEntity extends TileEntitySkull {
 		return this.type;
 	}
 
+	/**
+	 * 1.21 {@code getOwnerProfile()}: the skull's player as the carried ResolvableProfile (1.12.2 keeps the GameProfile).
+	 * Twilight Forest's skull candles keep their head's owner when broken, picked and placed.
+	 */
+	@Nullable
+	public net.minecraft.world.item.component.ResolvableProfile getOwnerProfile() {
+		com.mojang.authlib.GameProfile profile = this.getPlayerProfile();
+		if (profile == null) {
+			return null;
+		}
+		try {
+			return (net.minecraft.world.item.component.ResolvableProfile) Class.forName("net.minecraft.world.item.component.ResolvableProfile", true,
+					net.minecraft.launchwrapper.Launch.classLoader).getConstructor(com.mojang.authlib.GameProfile.class).newInstance(profile);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	/** 1.21 {@code setOwner(profile)}: the carried ResolvableProfile's GameProfile as the skull's player. */
+	public void setOwner(@Nullable net.minecraft.world.item.component.ResolvableProfile owner) {
+		com.mojang.authlib.GameProfile profile = null;
+		if (owner != null) {
+			try {
+				Object found = owner.getClass().getMethod("gameProfile").invoke(owner);
+				profile = found instanceof com.mojang.authlib.GameProfile game ? game : null;
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				profile = null;
+			}
+		}
+		this.setPlayerProfile(profile);
+	}
+
 	/** Saved with its class's id; a class no type registered gets the type's id (1.12.2 threw "missing a mapping"). */
 	@Override
 	@SuppressWarnings("deprecation")
