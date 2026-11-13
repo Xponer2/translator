@@ -1426,6 +1426,22 @@ public final class MiscBridges {
 		return id;
 	}
 
+	/** 1.21 {@code server.createCommandSourceStack()}: the server's own command source (Chunky's console, Cobblemon's drops). */
+	@javax.annotation.Nullable
+	public static Object createCommandSourceStack(net.minecraft.server.MinecraftServer server) {
+		try {
+			return io.github.xponer2.translator.runtime.neoforge.ModCommands.source(server, server);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("MinecraftServer.createCommandSourceStack", e);
+			return null;
+		}
+	}
+
+	/** 1.21 {@code connection.getPlayer()}: the player of a server connection. */
+	public static net.minecraft.entity.player.EntityPlayerMP getPlayer(net.minecraft.network.NetHandlerPlayServer connection) {
+		return connection.player;
+	}
+
 	private static final ClassValue<java.lang.reflect.Method> SINK_ACCEPT = new ClassValue<java.lang.reflect.Method>() {
 		@Override
 		@javax.annotation.Nullable

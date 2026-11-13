@@ -588,3 +588,5 @@ E	net/minecraft/world/level/saveddata/maps/MapItemSavedData	io/github/xponer2/tr
 # 1.21 WrappedGoal (goalSelector.getAvailableGoals()): 1.12.2's task entry (priority, action, running), its goal through EntityGapBridges
 C	net/minecraft/world/entity/ai/goal/WrappedGoal	net/minecraft/entity/ai/EntityAITasks$EntityAITaskEntry
 R	net/minecraft/world/storage/MapDecoration	io/github/xponer2/translator/world/MapDecorations
+# 1.21 copy-to-clipboard text clicks: 1.12.2 has none, its chat input gets the text (to copy from there)
+F	net/minecraft/network/chat/ClickEvent$Action	COPY_TO_CLIPBOARD	SUGGEST_COMMAND
