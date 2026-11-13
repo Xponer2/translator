@@ -281,6 +281,18 @@ public final class SelfTest {
 						this.planModRun(mod.getModId());
 					}
 				}
+				// 1.12.2's own mobs: a mod (a mixin, a layer it adds to every living renderer) can stop their models from
+				// drawing, only the shadows showing (seen in a game with all the mods)
+				if (FMLCommonHandler.instance().getSide().isClient()) {
+					for (String mob : SelfTestClient.VANILLA_MOBS) {
+						if (!done.contains("entity " + mob)) {
+							this.steps.add(() -> {
+								this.begin(mob, "entity");
+								this.waitFor(SelfTestClient.checkVanillaMob(this, mob)::get, 40);
+							});
+						}
+					}
+				}
 			}
 			this.steps.add(this::finish);
 		}

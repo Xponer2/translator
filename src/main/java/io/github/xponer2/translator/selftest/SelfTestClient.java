@@ -562,6 +562,8 @@ final class SelfTestClient {
 				var render = mc.getRenderManager().getEntityClassRenderObject(type);
 				if (render == null || render.getClass() == net.minecraft.client.renderer.entity.RenderEntity.class) {
 					run.addClientProblem("entity", id, "renderer: none (drawn as a white box or not at all)");
+				} else if (net.minecraft.entity.EntityLivingBase.class.isAssignableFrom(type)) {
+					drawsModel(run, id, new net.minecraft.util.ResourceLocation(id));
 				}
 			} catch (Throwable t) {
 				run.addClientProblem("entity", id, "renderer: " + SelfTest.describe(t));
@@ -570,6 +572,98 @@ final class SelfTestClient {
 			}
 		});
 		return done;
+	}
+
+	/** The vanilla mobs whose models are checked in every report (a mod can break 1.12.2's own living renderers). */
+	static final String[] VANILLA_MOBS = {"minecraft:zombie", "minecraft:skeleton", "minecraft:creeper", "minecraft:spider", "minecraft:cow",
+			"minecraft:pig", "minecraft:sheep", "minecraft:chicken", "minecraft:villager", "minecraft:enderman"};
+
+	/** A vanilla mob's model drawn (the check above, for 1.12.2's own entities). */
+	static AtomicBoolean checkVanillaMob(SelfTest.Run run, String id) {
+		AtomicBoolean done = new AtomicBoolean();
+		Minecraft mc = Minecraft.getMinecraft();
+		mc.addScheduledTask(() -> {
+			try {
+				drawsModel(run, id, new net.minecraft.util.ResourceLocation(id));
+			} catch (Throwable t) {
+				run.addClientProblem("entity", id, "renderer: " + SelfTest.describe(t));
+			} finally {
+				done.set(true);
+			}
+		});
+		return done;
+	}
+
+	/**
+	 * Renders a new entity of the type into an empty 64x64 frame (no ground: a shadow alone draws nothing there) and
+	 * counts the pixels it drew: none means its model wasn't drawn (only the shadow shows in the world). The
+	 * renderer's own failure is noted as such.
+	 */
+	private static void drawsModel(SelfTest.Run run, String id, net.minecraft.util.ResourceLocation type) {
+		Minecraft mc = Minecraft.getMinecraft();
+		if (mc.world == null) {
+			return;
+		}
+		net.minecraft.entity.Entity entity = net.minecraft.entity.EntityList.createEntityByIDFromName(type, mc.world);
+		if (entity == null) {
+			return;
+		}
+		int size = 64;
+		var frame = new net.minecraft.client.shader.Framebuffer(size, size, true);
+		var manager = mc.getRenderManager();
+		boolean shadows = manager.isRenderShadow();
+		int drawn = 0;
+		Throwable failure = null;
+		frame.setFramebufferColor(0.0F, 0.0F, 0.0F, 0.0F);
+		frame.framebufferClear();
+		frame.bindFramebuffer(true);
+		net.minecraft.client.renderer.GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_PROJECTION);
+		net.minecraft.client.renderer.GlStateManager.pushMatrix();
+		net.minecraft.client.renderer.GlStateManager.loadIdentity();
+		float half = Math.max(entity.width, entity.height) * 0.75F + 0.25F;
+		net.minecraft.client.renderer.GlStateManager.ortho(-half, half, -0.1D, half * 2.0F - 0.1F, -50.0D, 50.0D);
+		net.minecraft.client.renderer.GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
+		net.minecraft.client.renderer.GlStateManager.pushMatrix();
+		net.minecraft.client.renderer.GlStateManager.loadIdentity();
+		try {
+			net.minecraft.client.renderer.GlStateManager.enableDepth();
+			net.minecraft.client.renderer.GlStateManager.enableTexture2D();
+			net.minecraft.client.renderer.GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+			net.minecraft.client.renderer.RenderHelper.enableStandardItemLighting();
+			manager.setRenderShadow(false);
+			entity.setPosition(0.0D, 0.0D, 0.0D);
+			entity.rotationYaw = 0.0F;
+			if (entity instanceof net.minecraft.entity.EntityLivingBase living) {
+				living.renderYawOffset = 0.0F;
+				living.rotationYawHead = 0.0F;
+			}
+			manager.renderEntity(entity, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, false);
+			java.nio.IntBuffer pixels = org.lwjgl.BufferUtils.createIntBuffer(size * size);
+			org.lwjgl.opengl.GL11.glReadPixels(0, 0, size, size, org.lwjgl.opengl.GL12.GL_BGRA, org.lwjgl.opengl.GL12.GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+			for (int i = 0; i < size * size; i++) {
+				if (pixels.get(i) >>> 24 != 0) {
+					drawn++;
+				}
+			}
+		} catch (Throwable t) {
+			failure = t;
+		} finally {
+			manager.setRenderShadow(shadows);
+			net.minecraft.client.renderer.RenderHelper.disableStandardItemLighting();
+			net.minecraft.client.renderer.GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_PROJECTION);
+			net.minecraft.client.renderer.GlStateManager.popMatrix();
+			net.minecraft.client.renderer.GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
+			net.minecraft.client.renderer.GlStateManager.popMatrix();
+			mc.getFramebuffer().bindFramebuffer(true);
+			frame.deleteFramebuffer();
+		}
+		if (failure != null) {
+			run.addClientProblem("entity", id, "renderer: " + SelfTest.describe(failure));
+		} else if (drawn == 0) {
+			run.addClientProblem("entity", id, "renderer: its model draws nothing (in the world only its shadow shows)");
+		} else {
+			run.addClientNote("entity", id, "model drawn (" + drawn + " of " + size * size + " pixels)");
+		}
 	}
 
 	/** A sprite with fully transparent pixels in its first frame (a tenth of them or more: the cut-out shape of a plant). */
