@@ -40,6 +40,8 @@ public class EditBox extends GuiTextField implements GuiEventListener, Renderabl
 	private ITextComponent message;
 	private boolean editable = true;
 	private boolean hovered;
+	/** 1.21's field (a mod's own box reads it: JourneyMap's text boxes), kept with the hover state. */
+	protected boolean isHovered;
 	@Nullable
 	private String suggestion;
 	@Nullable
@@ -199,6 +201,11 @@ public class EditBox extends GuiTextField implements GuiEventListener, Renderabl
 		return this.hovered;
 	}
 
+	/** 1.21 {@code getInnerWidth()}: the width the text has inside the border. */
+	public int getInnerWidth() {
+		return this.getWidth();
+	}
+
 	public boolean isHoveredOrFocused() {
 		return this.hovered || this.isFocused();
 	}
@@ -213,6 +220,7 @@ public class EditBox extends GuiTextField implements GuiEventListener, Renderabl
 	public void render(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
 		if (this.getVisible()) {
 			this.hovered = this.isMouseOver(mouseX, mouseY);
+			this.isHovered = this.hovered;
 			this.renderWidget(gfx, mouseX, mouseY, partialTick);
 		}
 	}

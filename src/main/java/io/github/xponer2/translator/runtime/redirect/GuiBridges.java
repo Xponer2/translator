@@ -102,6 +102,21 @@ public final class GuiBridges {
 		return java.util.Optional.empty();
 	}
 
+	/**
+	 * 1.21 {@code blockEntityRenderDispatcher.renderItem(blockEntity, pose, buffers, light, overlay)}: a block entity
+	 * drawn as an item in the current pose (the item renderers of Powah, Ars Nouveau, Iron's Spells, Supplementaries,
+	 * Twilight Forest draw their blocks' models so), through its 1.12.2 renderer as the item renderer draws chests.
+	 */
+	public static boolean renderItem(net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher dispatcher,
+			net.minecraft.tileentity.TileEntity blockEntity, Object pose, Object buffers, int light, int overlay) {
+		if (blockEntity == null || dispatcher.getRenderer(blockEntity) == null) {
+			return false;
+		}
+		io.github.xponer2.translator.client.MultiBufferSource.INSTANCE.endBatch();
+		dispatcher.render(blockEntity, 0.0D, 0.0D, 0.0D, Minecraft.getMinecraft().getRenderPartialTicks());
+		return true;
+	}
+
 	/** 1.21 {@code options.mainHand()}: the main hand option over 1.12.2's field. */
 	public static io.github.xponer2.translator.client.OptionInstance<net.minecraft.util.EnumHandSide> mainHand(net.minecraft.client.settings.GameSettings options) {
 		return new io.github.xponer2.translator.client.OptionInstance<>(() -> options.mainHand, value -> options.mainHand = value);

@@ -795,3 +795,11 @@ R	net/minecraft/block/state/IBlockState	io/github/xponer2/translator/runtime/red
 R	net/minecraft/potion/Potion	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
 R	net/minecraft/potion/PotionEffect	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
 R	net/minecraft/tileentity/TileEntityChest	io/github/xponer2/translator/runtime/redirect/ItemBlockApiBridges
+# batch 1 (JEI, JourneyMap, Iron's Spells): the camera's projection, keys, the anvil, the chat, the connection
+R	net/minecraft/client/renderer/EntityRenderer	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraftforge/client/settings/KeyModifier	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraftforge/client/event/RenderLivingEvent	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraft/inventory/ContainerRepair	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraft/inventory/Container	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraft/client/gui/GuiNewChat	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges
+R	net/minecraft/client/network/NetHandlerPlayClient	io/github/xponer2/translator/runtime/redirect/ClientWorldBridges

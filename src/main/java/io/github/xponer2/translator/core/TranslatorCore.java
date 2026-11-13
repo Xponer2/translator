@@ -38,7 +38,7 @@ public final class TranslatorCore implements IFMLLoadingPlugin {
 		return new String[] { SafeMixins.Installer.class.getName(), EnumExtender.class.getName(), AccessWidener.class.getName(),
 				BlockIdLimit.class.getName(), MenuClicks.class.getName(), ParticleFriction.class.getName(), SlotDrawing.class.getName(),
 				ModLootTables.class.getName(), TileEntityCreate.class.getName(), BufferBuilderBegin.class.getName(),
-				StateIdsTransformer.class.getName() };
+				StateIdsTransformer.class.getName(), AnyModelAngle.class.getName(), ModelTextureRefs.class.getName(), HeadLookGuard.class.getName() };
 	}
 
 	@Override

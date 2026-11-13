@@ -37,4 +37,15 @@ public class ChestBlock extends BlockChest {
 			super.getDrops(drops, world, pos, state, fortune);
 		}
 	}
+
+	/**
+	 * The layer the block is drawn in: the mod's choice or its model's render_type (a hedge of leaves, a door with
+	 * glass: drawn solid by the 1.12.2 class this one extends, their holes showed as a background), else 1.12.2's.
+	 */
+	@Override
+	@net.minecraftforge.fml.relauncher.SideOnly(net.minecraftforge.fml.relauncher.Side.CLIENT)
+	public net.minecraft.util.BlockRenderLayer getRenderLayer() {
+		net.minecraft.util.BlockRenderLayer layer = io.github.xponer2.translator.client.RenderLayers.of(this);
+		return layer != null ? layer : super.getRenderLayer();
+	}
 }

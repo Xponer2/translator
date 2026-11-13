@@ -267,4 +267,109 @@ public final class ClientWorldBridges {
 
 	public static void killFrustum(RenderGlobal renderer) {
 	}
+
+	// --- batch 1 (JEI, JourneyMap, Iron's Spells): the camera's projection, keys, the anvil, the chat, the connection --
+
+	@Nullable
+	private static java.lang.reflect.Method fovModifier;
+
+	/**
+	 * 1.21 {@code gameRenderer.getFov(camera, partialTick, useFovSetting)}: the view's field of view in degrees, 1.12.2's
+	 * own (its private getFOVModifier: the setting, sprinting, water). JourneyMap's waypoint beacons project with it.
+	 */
+	public static double getFov(net.minecraft.client.renderer.EntityRenderer renderer, @Nullable Object camera, float partialTick, boolean useFovSetting) {
+		try {
+			if (fovModifier == null) {
+				java.lang.reflect.Method found = null;
+				for (String name : new String[] {"func_78481_a", "getFOVModifier"}) {
+					try {
+						found = net.minecraft.client.renderer.EntityRenderer.class.getDeclaredMethod(name, float.class, boolean.class);
+						break;
+					} catch (NoSuchMethodException e) {
+						// the other name
+					}
+				}
+				if (found == null) {
+					return Minecraft.getMinecraft().gameSettings.fovSetting;
+				}
+				found.setAccessible(true);
+				fovModifier = found;
+			}
+			return ((Number) fovModifier.invoke(renderer, partialTick, useFovSetting)).doubleValue();
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return Minecraft.getMinecraft().gameSettings.fovSetting;
+		}
+	}
+
+	/** 1.21 {@code gameRenderer.getProjectionMatrix(fov)}: the perspective of the window, 1.21's near and far planes. */
+	public static org.joml.Matrix4f getProjectionMatrix(net.minecraft.client.renderer.EntityRenderer renderer, double fov) {
+		Minecraft minecraft = Minecraft.getMinecraft();
+		float far = Math.max(minecraft.gameSettings.renderDistanceChunks * 16 * 4.0F, 32.0F);
+		return new org.joml.Matrix4f().perspective((float) Math.toRadians(fov), (float) minecraft.displayWidth / Math.max(1, minecraft.displayHeight),
+				0.05F, far);
+	}
+
+	/** NeoForge {@code keyModifier.matches(key)}: the key is this modifier's (control, shift, alt). */
+	public static boolean matches(net.minecraftforge.client.settings.KeyModifier modifier, io.github.xponer2.translator.runtime.neoforge.InputConstants.Key key) {
+		return modifier.matches(key.lwjgl());
+	}
+
+	/** NeoForge {@code keyModifier.getCombinedName(key, defaultName)}: "Ctrl + K" as 1.12.2 names it. */
+	public static ITextComponent getCombinedName(net.minecraftforge.client.settings.KeyModifier modifier,
+			io.github.xponer2.translator.runtime.neoforge.InputConstants.Key key, @Nullable java.util.function.Supplier<?> defaultName) {
+		return new TextComponentString(modifier.getLocalizedComboName(key.lwjgl()));
+	}
+
+	/** NeoForge {@code renderLivingEvent.getPoseStack()} / {@code getMultiBufferSource()} / {@code getPartialTick()}. */
+	public static io.github.xponer2.translator.client.PoseStack getPoseStack(net.minecraftforge.client.event.RenderLivingEvent<?> event) {
+		return io.github.xponer2.translator.client.PoseStack.INSTANCE;
+	}
+
+	public static io.github.xponer2.translator.client.MultiBufferSource getMultiBufferSource(net.minecraftforge.client.event.RenderLivingEvent<?> event) {
+		return io.github.xponer2.translator.client.MultiBufferSource.INSTANCE;
+	}
+
+	public static float getPartialTick(net.minecraftforge.client.event.RenderLivingEvent<?> event) {
+		return event.getPartialRenderTick();
+	}
+
+	/**
+	 * 1.21 {@code new AnvilMenu(id, inventory)}: an anvil of the player (JEI makes one to price its anvil recipes), on
+	 * the client's world.
+	 */
+	public static net.minecraft.inventory.ContainerRepair newContainerRepair(int id, net.minecraft.entity.player.InventoryPlayer inventory) {
+		net.minecraft.inventory.ContainerRepair menu = new net.minecraft.inventory.ContainerRepair(inventory, inventory.player.world, inventory.player);
+		menu.windowId = id;
+		return menu;
+	}
+
+	/** 1.21 {@code anvilMenu.getCost()}: the levels the repair costs. */
+	public static int getCost(net.minecraft.inventory.ContainerRepair menu) {
+		return menu.maximumCost;
+	}
+
+	/** 1.21 {@code menu.slots}: the menu's slots, a live view of 1.12.2's list. */
+	public static net.minecraft.util.NonNullList<net.minecraft.inventory.Slot> slots(net.minecraft.inventory.Container menu) {
+		return new net.minecraft.util.NonNullList<net.minecraft.inventory.Slot>(menu.inventorySlots, null) {
+		};
+	}
+
+	/** 1.21 {@code chat.getClickedComponentStyleAt(x, y)}: the style of the chat text at the mouse (JEI's item links). */
+	@Nullable
+	public static net.minecraft.util.text.Style getClickedComponentStyleAt(net.minecraft.client.gui.GuiNewChat chat, double x, double y) {
+		ITextComponent component = chat.getChatComponent((int) x, (int) y);
+		return component != null ? component.getStyle() : null;
+	}
+
+	/** 1.21 {@code connection.serverBrand()}: the brand the server told (JEI asks whether the server runs it). */
+	@Nullable
+	public static String serverBrand(net.minecraft.client.network.NetHandlerPlayClient connection) {
+		return Minecraft.getMinecraft().player != null ? Minecraft.getMinecraft().player.getServerBrand() : null;
+	}
+
+	/** 1.21 {@code connection.postDisconnectScreen}: none here. */
+	@Nullable
+	public static GuiScreen postDisconnectScreen(net.minecraft.client.network.NetHandlerPlayClient connection) {
+		return null;
+	}
 }
