@@ -1234,6 +1234,11 @@ public final class LevelGapBridges {
 	 * Spells' areas grow, its ice spider's parts), applied as 1.12.2's setSize does; a mod entity without one keeps its
 	 * type's size.
 	 */
+	/** 1.21 {@code entity.reapplyPosition()}: its box again at its position (after a size change: the Knight Phantoms). */
+	public static void reapplyPosition(Entity entity) {
+		entity.setPosition(entity.posX, entity.posY, entity.posZ);
+	}
+
 	/** 1.21 {@code entity.dimensions} (read): its 1.12.2 size as a carried EntityDimensions. */
 	@Nullable
 	public static Object dimensions(Entity entity) {
