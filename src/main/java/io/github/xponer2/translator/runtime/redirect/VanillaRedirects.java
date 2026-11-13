@@ -346,7 +346,8 @@ public final class VanillaRedirects {
 	}
 
 	public static NBTBase save(ItemStack stack, io.github.xponer2.translator.registry.HolderLookup.Provider registries) {
-		return stack.writeToNBT(new NBTTagCompound());
+		// a stack a mod hasn't set yet (null) saves as empty, as 1.21's never-null stacks would
+		return (stack == null ? ItemStack.EMPTY : stack).writeToNBT(new NBTTagCompound());
 	}
 
 	public static java.util.Optional<ItemStack> parse(io.github.xponer2.translator.registry.HolderLookup.Provider registries, NBTBase tag) {

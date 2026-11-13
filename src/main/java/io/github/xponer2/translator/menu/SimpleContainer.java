@@ -58,4 +58,38 @@ public class SimpleContainer extends InventoryBasic {
 			this.removeInventoryChangeListener(wrapped);
 		}
 	}
+
+	/**
+	 * 1.21 {@code createTag(registries)}: the non-empty stacks as a list (1.21 keeps no slot numbers here). Supplementaries'
+	 * merchants and Twilight Forest's inventory carriers save their inventory with it.
+	 */
+	public net.minecraft.nbt.NBTTagList createTag(@javax.annotation.Nullable Object registries) {
+		var list = new net.minecraft.nbt.NBTTagList();
+		for (int i = 0; i < this.getSizeInventory(); i++) {
+			ItemStack stack = this.getStackInSlot(i);
+			if (!stack.isEmpty()) {
+				list.appendTag(stack.writeToNBT(new net.minecraft.nbt.NBTTagCompound()));
+			}
+		}
+		return list;
+	}
+
+	public net.minecraft.nbt.NBTTagList saveInventoryToNBT(@javax.annotation.Nullable Object registries) {
+		return this.createTag(registries);
+	}
+
+	/** 1.21 {@code fromTag(list, registries)}: the stacks back, each into the first slot it fits. */
+	public void fromTag(net.minecraft.nbt.NBTTagList list, @javax.annotation.Nullable Object registries) {
+		this.clear();
+		for (int i = 0; i < list.tagCount(); i++) {
+			ItemStack stack = new ItemStack(list.getCompoundTagAt(i));
+			if (!stack.isEmpty()) {
+				this.addItem(stack);
+			}
+		}
+	}
+
+	public void loadInventoryFromNBT(net.minecraft.nbt.NBTTagList list, @javax.annotation.Nullable Object registries) {
+		this.fromTag(list, registries);
+	}
 }
