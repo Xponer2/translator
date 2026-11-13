@@ -374,12 +374,19 @@ public final class WorldBridges {
 
 	// --- MinecraftServer ---------------------------------------------------------------------------------------------
 
+	/**
+	 * 1.21 {@code server.overworld()}: null while the worlds aren't loaded yet. The mods' data reload listeners run before
+	 * that (Supplementaries' faucet behaviours asked for it, and 1.12.2's getWorld tried to load the overworld and threw
+	 * "Cannot Hotload Dim").
+	 */
+	@javax.annotation.Nullable
 	public static WorldServer overworld(MinecraftServer server) {
-		return server.getWorld(0);
+		WorldServer loaded = net.minecraftforge.common.DimensionManager.getWorld(0);
+		return loaded != null ? loaded : server.worlds != null && server.worlds.length > 0 ? server.worlds[0] : null;
 	}
 
 	public static Iterable<WorldServer> getAllLevels(MinecraftServer server) {
-		return Arrays.asList(server.worlds);
+		return server.worlds == null ? java.util.Collections.emptyList() : Arrays.asList(server.worlds);
 	}
 
 	/** A folder of the save (1.21 LevelResource: its name, "." for the save's root). */
