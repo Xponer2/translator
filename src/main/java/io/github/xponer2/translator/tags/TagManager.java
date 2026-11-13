@@ -239,6 +239,13 @@ public final class TagManager {
     /**
      * The ids in a tag of any registry by the tag folder's name ("entity_type", "fluid"), nested tags included.
      */
+    /** Whether any data (vanilla, NeoForge, a mod) has a file for that tag. */
+    public static synchronized boolean defined(String type, ResourceLocation tag) {
+        readFiles();
+        var files = FILES.get(type);
+        return files != null && files.containsKey(tag);
+    }
+
     public static synchronized Set<ResourceLocation> ids(String type, ResourceLocation tag) {
         readFiles();
         var result = new java.util.LinkedHashSet<ResourceLocation>();

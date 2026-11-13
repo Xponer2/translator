@@ -348,6 +348,12 @@ public final class Codecs {
         }
     }
 
+    /** The item tag of a tag ingredient, null for any other (the self-test tells a tag no data defines from a broken one). */
+    @Nullable
+    public static ResourceLocation tagOf(Ingredient ingredient) {
+        return ingredient instanceof TagIngredient tagged ? tagged.tag : null;
+    }
+
     private static final class TagIngredient extends Ingredient {
         private final ResourceLocation tag;
         @Nullable

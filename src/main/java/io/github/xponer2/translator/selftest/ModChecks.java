@@ -203,7 +203,14 @@ final class ModChecks {
 						if (ingredient != Ingredient.EMPTY && ingredient.getMatchingStacks().length == 0 && ingredient.getClass() == Ingredient.class
 								|| ingredient != Ingredient.EMPTY && ingredient.getMatchingStacks().length == 0 && !ingredient.apply(ItemStack.EMPTY)
 										&& ingredient.getClass() != Ingredient.class) {
-							broken.add(entry.getKey().getPath() + " (ingredient " + index + ": " + ingredient.getClass().getSimpleName() + ")");
+							// a tag no data defines (c:ingots/silver, for another mod's metal): empty in 1.21 too without that mod
+							ResourceLocation tag = io.github.xponer2.translator.util.Codecs.tagOf(ingredient);
+							if (tag != null && !io.github.xponer2.translator.tags.TagManager.defined("item", tag)) {
+								index++;
+								continue;
+							}
+							broken.add(entry.getKey().getPath() + " (ingredient " + index + ": " + ingredient.getClass().getSimpleName()
+									+ (tag != null ? " #" + tag : "") + ")");
 							break;
 						}
 						index++;
