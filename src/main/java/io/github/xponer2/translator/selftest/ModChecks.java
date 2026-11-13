@@ -205,7 +205,8 @@ final class ModChecks {
 										&& ingredient.getClass() != Ingredient.class) {
 							// a tag no data defines (c:ingots/silver, for another mod's metal): empty in 1.21 too without that mod
 							ResourceLocation tag = io.github.xponer2.translator.util.Codecs.tagOf(ingredient);
-							if (tag != null && !io.github.xponer2.translator.tags.TagManager.defined("item", tag)) {
+							if (tag != null && (!io.github.xponer2.translator.tags.TagManager.defined("item", tag)
+									|| io.github.xponer2.translator.tags.TagManager.onlyOtherMods("item", tag))) {
 								index++;
 								continue;
 							}

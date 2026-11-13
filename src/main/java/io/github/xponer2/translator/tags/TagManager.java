@@ -239,6 +239,32 @@ public final class TagManager {
     /**
      * The ids in a tag of any registry by the tag folder's name ("entity_type", "fluid"), nested tags included.
      */
+    /**
+     * Whether the tag names only other mods' entries (a mod's c:ingots/silver for a metal it doesn't add): empty in 1.21
+     * too while none of them is installed. False for a tag with an entry of Minecraft or of a loaded mod.
+     */
+    public static synchronized boolean onlyOtherMods(String type, ResourceLocation tag) {
+        readFiles();
+        return onlyOtherMods(type, tag, 0);
+    }
+
+    private static boolean onlyOtherMods(String type, ResourceLocation tag, int depth) {
+        var files = FILES.get(type);
+        var entries = files == null ? null : files.get(tag);
+        if (entries == null || depth > 8) {
+            return true;
+        }
+        for (Entry entry : entries) {
+            var id = new ResourceLocation(entry.id);
+            if (entry.tag ? !onlyOtherMods(type, id, depth + 1)
+                    : "minecraft".equals(id.getNamespace()) || net.minecraftforge.fml.common.Loader.isModLoaded(id.getNamespace())
+                            || io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(id.getNamespace())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** Whether any data (vanilla, NeoForge, a mod) has a file for that tag. */
     public static synchronized boolean defined(String type, ResourceLocation tag) {
         readFiles();
