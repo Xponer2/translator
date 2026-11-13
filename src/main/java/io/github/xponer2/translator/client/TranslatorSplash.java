@@ -23,8 +23,6 @@ import org.lwjgl.opengl.GL11;
  * pixel, y down). Any failure turns it off: the loading screen is never broken by it.
  */
 public final class TranslatorSplash {
-	private static final float WIDTH = 360;
-	private static final float HEIGHT = 75;
 	private static int texture = -1;
 	private static boolean off;
 	private static boolean logged;
@@ -40,25 +38,29 @@ public final class TranslatorSplash {
 			if (texture < 0) {
 				texture = load();
 			}
-			float x0 = 320 - WIDTH / 2;
-			float y1 = 240 + Display.getHeight() / 2f - 14;
-			float y0 = y1 - HEIGHT;
+			// its own projection in window pixels: the splash leaves its matrices as its last drawing needed them
+			int w = Display.getWidth();
+			int h = Display.getHeight();
+			float width = Math.min(720, w * 0.5f);
+			float height = width * 150 / 720;
+			float x0 = (w - width) / 2;
+			float y1 = h - 12;
+			float y0 = y1 - height;
 			if (!logged) {
 				logged = true;
-				org.apache.logging.log4j.LogManager.getLogger("Translator").info("Loading screen banner at x {}..{}, y {}..{} (display {}x{}, texture {})",
-						x0, x0 + WIDTH, y0, y1, Display.getWidth(), Display.getHeight(), texture);
+				org.apache.logging.log4j.LogManager.getLogger("Translator").info("Loading screen banner at x {}..{}, y {}..{} of {}x{} (texture {})",
+						x0, x0 + width, y0, y1, w, h, texture);
 			}
-			// the panel's colour under the texture: the banner shows even if its texture doesn't
-			GL11.glDisable(GL11.GL_TEXTURE_2D);
+			GL11.glViewport(0, 0, w, h);
+			GL11.glMatrixMode(GL11.GL_PROJECTION);
+			GL11.glPushMatrix();
+			GL11.glLoadIdentity();
+			GL11.glOrtho(0, w, h, 0, -1, 1);
+			GL11.glMatrixMode(GL11.GL_MODELVIEW);
+			GL11.glPushMatrix();
+			GL11.glLoadIdentity();
 			GL11.glDisable(GL11.GL_CULL_FACE);
 			GL11.glDisable(GL11.GL_DEPTH_TEST);
-			GL11.glColor4f(18 / 255f, 22 / 255f, 34 / 255f, 1);
-			GL11.glBegin(GL11.GL_QUADS);
-			GL11.glVertex2f(x0 + 4, y0 + 4);
-			GL11.glVertex2f(x0 + 4, y1 - 4);
-			GL11.glVertex2f(x0 + WIDTH - 4, y1 - 4);
-			GL11.glVertex2f(x0 + WIDTH - 4, y0 + 4);
-			GL11.glEnd();
 			GL11.glEnable(GL11.GL_TEXTURE_2D);
 			GL11.glEnable(GL11.GL_BLEND);
 			GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -70,10 +72,14 @@ public final class TranslatorSplash {
 			GL11.glTexCoord2f(0, 1);
 			GL11.glVertex2f(x0, y1);
 			GL11.glTexCoord2f(1, 1);
-			GL11.glVertex2f(x0 + WIDTH, y1);
+			GL11.glVertex2f(x0 + width, y1);
 			GL11.glTexCoord2f(1, 0);
-			GL11.glVertex2f(x0 + WIDTH, y0);
+			GL11.glVertex2f(x0 + width, y0);
 			GL11.glEnd();
+			GL11.glMatrixMode(GL11.GL_PROJECTION);
+			GL11.glPopMatrix();
+			GL11.glMatrixMode(GL11.GL_MODELVIEW);
+			GL11.glPopMatrix();
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 			GL11.glDisable(GL11.GL_TEXTURE_2D);
 		} catch (Throwable t) {
