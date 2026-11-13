@@ -117,6 +117,63 @@ public final class StructureGeneration implements IWorldGenerator {
 		return level == null ? null : level.structureState;
 	}
 
+	/**
+	 * 1.21 {@code serverLevel.findNearestMapStructure(tag, pos, radius, skipKnown)}: the nearest chunk, within radius
+	 * chunks, where a structure of the tag would start by its set's placement and its biome (ring by ring around the
+	 * position, the first ring with one: what a compass or a map needs). 1.21's own search checks the chunks' structure
+	 * data too, which isn't here. Iron's Spells' wayward compass points to its catacombs so.
+	 */
+	@Nullable
+	public static synchronized BlockPos findNearest(WorldServer world, ResourceLocation tag, BlockPos from, int radius) {
+		Level level = level(world);
+		java.util.Set<ResourceLocation> wanted = io.github.xponer2.translator.tags.TagManager.ids("worldgen/structure", tag);
+		if (level == null || wanted.isEmpty()) {
+			return null;
+		}
+		var sets = new ArrayList<ModSet>();
+		var indices = new ArrayList<List<Integer>>();
+		for (ModSet set : level.sets) {
+			var matching = new ArrayList<Integer>();
+			for (int i = 0; i < set.structureIds.size(); i++) {
+				if (wanted.contains(set.structureIds.get(i))) {
+					matching.add(i);
+				}
+			}
+			if (!matching.isEmpty() && !set.broken) {
+				sets.add(set);
+				indices.add(matching);
+			}
+		}
+		if (sets.isEmpty()) {
+			return null;
+		}
+		int cx = from.getX() >> 4;
+		int cz = from.getZ() >> 4;
+		BlockPos best = null;
+		double bestDistance = Double.MAX_VALUE;
+		for (int r = 0; r <= Math.max(0, radius) && best == null; r++) {
+			for (int dx = -r; dx <= r; dx++) {
+				for (int dz = -r; dz <= r; dz++) {
+					if (Math.abs(dx) != r && Math.abs(dz) != r) {
+						continue; // inside: an earlier ring
+					}
+					int x = cx + dx;
+					int z = cz + dz;
+					for (int s = 0; s < sets.size(); s++) {
+						if (sets.get(s).wouldStart(level, x, z, indices.get(s))) {
+							double distance = (double) dx * dx + (double) dz * dz;
+							if (distance < bestDistance) {
+								bestDistance = distance;
+								best = new BlockPos(x * 16 + 8, world.getSeaLevel(), z * 16 + 8);
+							}
+						}
+					}
+				}
+			}
+		}
+		return best;
+	}
+
 	private static final Map<World, Object> MANAGERS = new java.util.WeakHashMap<>();
 
 	/**
@@ -428,6 +485,24 @@ public final class StructureGeneration implements IWorldGenerator {
 			}
 			this.starts.put(key, start);
 			return start;
+		}
+
+		/** Whether one of those structures of the set would start in that chunk: its placement there and its biome. */
+		boolean wouldStart(Level level, int x, int z, List<Integer> which) {
+			try {
+				if (!(Boolean) Reflect.method(this.placement, "isStructureChunk", 3).invoke(this.placement, level.structureState, x, z)) {
+					return false;
+				}
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				return false;
+			}
+			Biome here = level.world.getBiomeProvider().getBiome(new BlockPos(x * 16 + 8, 64, z * 16 + 8));
+			for (int index : which) {
+				if (this.valid.get(index).test(Holder.direct(here))) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		/** 1.21's choice among the set's structures (by weight, the next one when one doesn't fit there). */

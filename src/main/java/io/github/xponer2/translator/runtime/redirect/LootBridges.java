@@ -101,6 +101,16 @@ public final class LootBridges {
 		table.generateLootForPools(new Random(), context).forEach(consumer);
 	}
 
+	/** 1.21 {@code table.getRandomItems(params, random)} (the carried vault's display item: Iron's Spells' vaults). */
+	public static it.unimi.dsi.fastutil.objects.ObjectArrayList<ItemStack> getRandomItems(LootTable table, LootParams params, Random random) {
+		var items = new it.unimi.dsi.fastutil.objects.ObjectArrayList<ItemStack>();
+		LootContext context = context(params);
+		if (context != null) {
+			items.addAll(table.generateLootForPools(random, context));
+		}
+		return items;
+	}
+
 	public static it.unimi.dsi.fastutil.objects.ObjectArrayList<ItemStack> getRandomItems(LootTable table, LootParams params) {
 		return getRandomItems(table, params, new Random().nextLong());
 	}

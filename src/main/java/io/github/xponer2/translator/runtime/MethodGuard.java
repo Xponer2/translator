@@ -1419,6 +1419,26 @@ final class MethodGuard {
 						}
 					}
 				}
+				// a method reference to a method of an interface the receiver's 1.12.2 class doesn't implement
+				// (IBlockStateExtension::isPortalFrame: a 1.21 BlockState is one, 1.12.2's IBlockState isn't): the
+				// receiver class's stand-in, as a call on it gets. LambdaMetafactory refused it (BootstrapMethodError:
+				// Twilight Forest's ominous fire, every PortalShape)
+				if ("java/lang/invoke/LambdaMetafactory".equals(indy.bsm.getOwner()) && indy.bsmArgs.length > 2
+						&& indy.bsmArgs[1] instanceof Handle ref && ref.getTag() == Opcodes.H_INVOKEINTERFACE && indy.bsmArgs[2] instanceof Type instantiated
+						&& !isPlatform(ref.getOwner())) {
+					Type[] captured = Type.getArgumentTypes(indy.desc);
+					Type[] params = instantiated.getArgumentTypes();
+					Type receiver = captured.length > 0 ? captured[0] : params.length > 0 ? params[0] : null;
+					if (receiver != null && receiver.getSort() == Type.OBJECT && !receiver.getInternalName().equals(ref.getOwner())
+							&& !isPlatform(receiver.getInternalName()) && !this.isSubtype(receiver.getDescriptor(), "L" + ref.getOwner() + ";")) {
+						String[] found = this.findRedirect(receiver.getInternalName(), ref.getName(), ref.getDesc(), false);
+						if (found != null && (found.length < 3 || found[2] == null)) {
+							indy.bsmArgs[1] = new Handle(Opcodes.H_INVOKESTATIC, found[0], ref.getName(), found[1], false);
+							this.redirected.incrementAndGet();
+							changed = true;
+						}
+					}
+				}
 				// a method reference (Blocks.AIR::defaultBlockState) of a missing method: a reference to the stand-in
 				for (int i = 0; i < indy.bsmArgs.length; i++) {
 					if (indy.bsmArgs[i] instanceof Handle ctor && ctor.getTag() == Opcodes.H_NEWINVOKESPECIAL

@@ -1533,6 +1533,32 @@ public final class LevelGapBridges {
 		return io.github.xponer2.translator.world.StructureGeneration.startFor(chunk, structure);
 	}
 
+	/**
+	 * 1.21 {@code Entity.DATA_POSE}: 1.12.2 syncs no pose, so a key no entity has (id -1): the mods' "DATA_POSE.equals(key)"
+	 * in onSyncedDataUpdated is false. The carried Entity's own static initializer defines it with a serializer 1.12.2
+	 * lacks and threw (Iron's Spells' ice spider could not be made).
+	 */
+	public static final net.minecraft.network.datasync.DataParameter<Integer> DATA_POSE = new net.minecraft.network.datasync.DataParameter<>(-1,
+			net.minecraft.network.datasync.DataSerializers.VARINT);
+
+	/**
+	 * NeoForge {@code state.isPortalFrame(level, pos)}: the block's own answer when it has one (a mod block's override),
+	 * else obsidian (NeoForge's default). PortalShape names it as a method reference; Twilight Forest's fires light
+	 * portals by it.
+	 */
+	public static boolean isPortalFrame(IBlockState state, net.minecraft.world.IBlockAccess level, net.minecraft.util.math.BlockPos pos) {
+		net.minecraft.block.Block block = state.getBlock();
+		try {
+			java.lang.reflect.Method own = block.getClass().getMethod("isPortalFrame", IBlockState.class, net.minecraft.world.IBlockAccess.class,
+					net.minecraft.util.math.BlockPos.class);
+			return (Boolean) own.invoke(block, state, level, pos);
+		} catch (NoSuchMethodException e) {
+			return block == net.minecraft.init.Blocks.OBSIDIAN;
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return block == net.minecraft.init.Blocks.OBSIDIAN;
+		}
+	}
+
 	/** 1.21 {@code redstoneSide.isConnected()}: up or side (Supplementaries' gunpowder trail connects by it). */
 	public static boolean isConnected(Enum<?> side) {
 		// 1.12.2's EnumAttachPosition (UP, SIDE, NONE) is package-private where the Translator compiles
@@ -1564,6 +1590,13 @@ public final class LevelGapBridges {
 			}
 		}
 		return net.minecraft.world.EnumDifficulty.NORMAL;
+	}
+
+	/** 1.21 {@code serverLevel.findNearestMapStructure(tag, pos, radius, skipKnown)}: by the mods' structure sets. */
+	@javax.annotation.Nullable
+	public static net.minecraft.util.math.BlockPos findNearestMapStructure(net.minecraft.world.WorldServer world,
+			io.github.xponer2.translator.util.TagKey<?> tag, net.minecraft.util.math.BlockPos pos, int radius, boolean skipKnown) {
+		return io.github.xponer2.translator.world.StructureGeneration.findNearest(world, tag.location(), pos, radius);
 	}
 
 	/** 1.21 {@code chunkSource.getGeneratorState()}: the world's ChunkGeneratorStructureState (the mods' structure sets). */
