@@ -54,6 +54,47 @@ public abstract class BaseSpawner extends MobSpawnerBaseLogic {
 		}
 	}
 
+	/**
+	 * 1.21 {@code getOrCreateNextSpawnData(level, random, pos)}: what the spawner makes next, 1.12.2's spawn data as
+	 * 1.21's (the entity's data with its id). Twilight Forest's sinister spawners read it every spawn.
+	 */
+	@Nullable
+	public net.minecraft.world.level.SpawnData getOrCreateNextSpawnData(@Nullable World level, @Nullable java.util.Random random, @Nullable BlockPos pos) {
+		net.minecraft.nbt.NBTTagCompound entity = new net.minecraft.nbt.NBTTagCompound();
+		try {
+			net.minecraft.util.WeightedSpawnerEntity next = net.minecraftforge.fml.common.ObfuscationReflectionHelper.getPrivateValue(
+					MobSpawnerBaseLogic.class, this, "field_98282_f");
+			if (next != null) {
+				entity = next.getNbt();
+			}
+		} catch (RuntimeException e) {
+			// an empty spawn
+		}
+		try {
+			Class<?> type = Class.forName("net.minecraft.world.level.SpawnData", true, net.minecraft.launchwrapper.Launch.classLoader);
+			return (net.minecraft.world.level.SpawnData) type.getConstructor(net.minecraft.nbt.NBTTagCompound.class, java.util.Optional.class,
+					java.util.Optional.class).newInstance(entity, java.util.Optional.empty(), java.util.Optional.empty());
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("BaseSpawner.getOrCreateNextSpawnData", e);
+			return null;
+		}
+	}
+
+	/** 1.21 {@code setNextSpawnData(level, pos, data)}: 1.12.2's next spawn of that entity data. */
+	public void setNextSpawnData(@Nullable World level, @Nullable BlockPos pos, @Nullable net.minecraft.world.level.SpawnData data) {
+		if (data == null) {
+			return;
+		}
+		try {
+			Object entity = data.getClass().getMethod("getEntityToSpawn").invoke(data);
+			if (entity instanceof net.minecraft.nbt.NBTTagCompound tag) {
+				this.setNextSpawnData(new net.minecraft.util.WeightedSpawnerEntity(1, tag.copy()));
+			}
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("BaseSpawner.setNextSpawnData", e);
+		}
+	}
+
 	/** 1.21 {@code broadcastEvent(level, pos, id)}: what the mod's spawner implements. */
 	public void broadcastEvent(World level, BlockPos pos, int id) {
 	}
