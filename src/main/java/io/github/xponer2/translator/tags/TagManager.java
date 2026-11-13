@@ -341,8 +341,18 @@ public final class TagManager {
         java.io.File jar = io.github.xponer2.translator.runtime.Minecraft1211.clientJar();
         if (jar == null) {
             LOGGER.info("No Minecraft 1.21.1 jar found (-Dtranslator.minecraft=<jar>): only the vanilla tags the mods bring");
-            return;
+        } else {
+            readJar(jar, "vanilla 1.21.1");
         }
+        // NeoForge's own data: the common c: tags (c:foods/bread, c:crops/...) the mods' recipes take; without them
+        // Farmer's Delight's sandwiches and many more had an empty ingredient
+        java.io.File neoForge = io.github.xponer2.translator.runtime.ApiCarry.neoForgeJar();
+        if (neoForge != null) {
+            readJar(neoForge, "NeoForge");
+        }
+    }
+
+    private static void readJar(java.io.File jar, String what) {
         int count = 0;
         try (var zip = new java.util.zip.ZipFile(jar)) {
             for (var it = zip.entries(); it.hasMoreElements(); ) {
@@ -365,9 +375,9 @@ public final class TagManager {
                 }
             }
         } catch (IOException | RuntimeException e) {
-            LOGGER.error("Couldn't read the vanilla 1.21.1 tags of {}", jar, e);
+            LOGGER.error("Couldn't read the {} tags of {}", what, jar, e);
         }
-        LOGGER.info("Read {} vanilla 1.21.1 tag files from {}", count, jar);
+        LOGGER.info("Read {} {} tag files from {}", count, what, jar);
     }
 
     @SuppressWarnings("deprecation")

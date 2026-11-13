@@ -32,7 +32,7 @@ import java.util.zip.ZipOutputStream;
  * class it was compiled against. The classes the tables map (1.12.2 classes, Translator facades) stay mapped: they are
  * where the 1.21 code meets the 1.12.2 game.
  */
-final class ApiCarry {
+public final class ApiCarry {
 	/** CONSTANT_Utf8 "1.21.1": tag 1, length 6. */
 	private static final String VERSION_CONSTANT = "\u0001\0\u00061.21.1";
 
@@ -141,6 +141,12 @@ final class ApiCarry {
 			}
 		}
 		return null;
+	}
+
+	/** The player's NeoForge 1.21.1 universal jar (its data: the common c: tags), null when there is none. */
+	@javax.annotation.Nullable
+	public static File neoForgeJar() {
+		return newerNeoForge();
 	}
 
 	/**
