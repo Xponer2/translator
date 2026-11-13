@@ -70,24 +70,55 @@ public final class Conversion {
 	 * every mod, which takes minutes, and nothing else would show that the game is starting.
 	 */
 	static final class WindowSteps implements Steps {
+		private static final java.awt.Color BACK = new java.awt.Color(18, 22, 34);
+		private static final java.awt.Color TEXT = new java.awt.Color(200, 212, 238);
+		private static final java.awt.Color GOLD = new java.awt.Color(232, 178, 62);
 		private javax.swing.JFrame frame;
 		private javax.swing.JProgressBar bar;
 		private javax.swing.JLabel label;
 		private int step;
+		private final int total;
+		private final long started = System.nanoTime();
 
+		/**
+		 * The window of the conversion, in the Translator's look (its banner, a dark panel, a gold bar): it runs before
+		 * Minecraft opens its window, so it can't be part of the game's loading screen.
+		 */
 		WindowSteps(int total) {
+			this.total = Math.max(1, total);
 			try {
 				javax.swing.SwingUtilities.invokeAndWait(() -> {
-					this.frame = new javax.swing.JFrame("Translator: preparing the 1.21.1 mods");
-					this.label = new javax.swing.JLabel("Converting the 1.21.1 mods for Minecraft 1.12.2...");
-					this.bar = new javax.swing.JProgressBar(0, Math.max(1, total));
-					this.bar.setStringPainted(true);
-					var panel = new javax.swing.JPanel(new java.awt.BorderLayout(8, 8));
-					panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(12, 12, 12, 12));
-					panel.add(this.label, java.awt.BorderLayout.NORTH);
-					panel.add(this.bar, java.awt.BorderLayout.CENTER);
+					this.frame = new javax.swing.JFrame("Translator");
+					this.frame.setUndecorated(true);
+					var panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 10));
+					panel.setBackground(BACK);
+					panel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+							javax.swing.BorderFactory.createLineBorder(new java.awt.Color(78, 118, 196), 2),
+							javax.swing.BorderFactory.createEmptyBorder(12, 14, 14, 14)));
+					try (var in = Conversion.class.getResourceAsStream("/assets/translator/textures/gui/splash_banner.png")) {
+						if (in != null) {
+							java.awt.Image banner = javax.imageio.ImageIO.read(in).getScaledInstance(540, 113, java.awt.Image.SCALE_SMOOTH);
+							panel.add(new javax.swing.JLabel(new javax.swing.ImageIcon(banner)), java.awt.BorderLayout.NORTH);
+						}
+					} catch (java.io.IOException | RuntimeException e) {
+						// the window without its banner
+					}
+					this.label = new javax.swing.JLabel("Preparing the mods...");
+					this.label.setForeground(TEXT);
+					this.label.setFont(new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.PLAIN, 13));
+					this.bar = new javax.swing.JProgressBar(0, this.total);
+					this.bar.setUI(new javax.swing.plaf.basic.BasicProgressBarUI());
+					this.bar.setForeground(GOLD);
+					this.bar.setBackground(new java.awt.Color(40, 46, 64));
+					this.bar.setBorderPainted(false);
+					this.bar.setPreferredSize(new java.awt.Dimension(540, 14));
+					var bottom = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
+					bottom.setOpaque(false);
+					bottom.add(this.label, java.awt.BorderLayout.NORTH);
+					bottom.add(this.bar, java.awt.BorderLayout.SOUTH);
+					panel.add(bottom, java.awt.BorderLayout.SOUTH);
 					this.frame.setContentPane(panel);
-					this.frame.setSize(520, 110);
+					this.frame.pack();
 					this.frame.setLocationRelativeTo(null);
 					this.frame.setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
 					this.frame.setVisible(true);
@@ -101,9 +132,17 @@ public final class Conversion {
 		public void step(String name) {
 			if (this.frame != null) {
 				int value = ++this.step;
+				// the time left, from the pace so far
+				String left = "";
+				if (value > 1) {
+					double perStep = (System.nanoTime() - this.started) / 1e9 / value;
+					long seconds = Math.round(perStep * (this.total - value));
+					left = seconds >= 60 ? "  ·  about " + (seconds + 30) / 60 + " min left" : "  ·  about " + seconds + " s left";
+				}
+				String text = name + "   " + value + " / " + this.total + left;
 				javax.swing.SwingUtilities.invokeLater(() -> {
 					this.bar.setValue(value);
-					this.label.setText(name);
+					this.label.setText(text);
 				});
 			}
 		}
