@@ -36,6 +36,7 @@ public final class SplashBanner implements IClassTransformer {
 			io.github.xponer2.translator.client.TranslatorSplash.draw();
 		} catch (Throwable t) {
 			off = true;
+			org.apache.logging.log4j.LogManager.getLogger("Translator").warn("The loading screen banner is off", t);
 		}
 	}
 
@@ -62,6 +63,7 @@ public final class SplashBanner implements IClassTransformer {
 		if (!changed) {
 			return basicClass;
 		}
+		org.apache.logging.log4j.LogManager.getLogger("Translator").info("Loading screen banner added to {}", transformedName);
 		// a call that takes and leaves nothing on the stack: no frames to compute
 		var writer = new ClassWriter(0);
 		node.accept(writer);

@@ -61,6 +61,7 @@ public final class TranslatorSplash {
 			GL11.glDisable(GL11.GL_TEXTURE_2D);
 		} catch (Throwable t) {
 			off = true;
+			org.apache.logging.log4j.LogManager.getLogger("Translator").warn("The loading screen banner is off", t);
 		}
 	}
 
