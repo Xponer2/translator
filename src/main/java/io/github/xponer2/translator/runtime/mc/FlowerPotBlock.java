@@ -74,6 +74,31 @@ public class FlowerPotBlock extends Block {
 		return this.getPotted();
 	}
 
+	/** The empty vanilla pot as this class (not a registered block): its addPlant is the shared table above. */
+	@Nullable
+	private static volatile FlowerPotBlock vanillaPot;
+
+	/**
+	 * A cast to this class (the converter calls this for {@code (FlowerPotBlock) x}): 1.12.2's own flower pot is no
+	 * FlowerPotBlock, yet the mods cast {@code Blocks.FLOWER_POT} to add their potted plants (Aether's common setup
+	 * stopped at it, Supplementaries' pots too): for it, a stand-in of the empty vanilla pot.
+	 */
+	@Nullable
+	public static FlowerPotBlock translatorCast(@Nullable Object value) {
+		if (value == null || value instanceof FlowerPotBlock) {
+			return (FlowerPotBlock) value;
+		}
+		if (value instanceof net.minecraft.block.BlockFlowerPot) {
+			FlowerPotBlock pot = vanillaPot;
+			if (pot == null) {
+				pot = new FlowerPotBlock(null, () -> net.minecraft.init.Blocks.AIR, BlockProperties.of());
+				vanillaPot = pot;
+			}
+			return pot;
+		}
+		throw new ClassCastException(value.getClass().getName() + " cannot be cast to " + FlowerPotBlock.class.getName());
+	}
+
 	public void addPlant(net.minecraft.util.ResourceLocation plant, java.util.function.Supplier<? extends net.minecraft.block.Block> pot) {
 		PLANTS.put(plant, pot);
 	}

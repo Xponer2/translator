@@ -1129,6 +1129,16 @@ final class MethodGuard {
 			}
 			// 1.21 items and blocks are ItemLikes, 1.12.2 ones aren't (the Translator's are): no cast to it (an interface
 			// parameter takes any object), and asItem() through ItemLike.item(Object), which knows 1.12.2 items and blocks
+			// a cast to a Translator class that says how 1.12.2's own objects are one (translatorCast: the vanilla flower
+			// pot as a FlowerPotBlock, which the mods cast Blocks.FLOWER_POT to)
+			if (insn instanceof TypeInsnNode facadeCast && facadeCast.getOpcode() == Opcodes.CHECKCAST
+					&& facadeCast.desc.startsWith("io/github/xponer2/translator/")
+					&& this.hasMember(facadeCast.desc, "translatorCast", "(Ljava/lang/Object;)L" + facadeCast.desc + ";", true)) {
+				method.instructions.set(facadeCast, new MethodInsnNode(Opcodes.INVOKESTATIC, facadeCast.desc, "translatorCast",
+						"(Ljava/lang/Object;)L" + facadeCast.desc + ";", false));
+				changed = true;
+				continue;
+			}
 			if (insn instanceof TypeInsnNode cast && cast.getOpcode() == Opcodes.CHECKCAST && ITEM_LIKE.equals(cast.desc)) {
 				method.instructions.remove(cast);
 				changed = true;
