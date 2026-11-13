@@ -77,7 +77,16 @@ public final class ParticleCodec {
 		Registry registry = BuiltInRegistries.byKey(Registries.PARTICLE_TYPE);
 		ResourceLocation id = type == null ? null : registry.getKey(type);
 		if (id == null) {
-			throw new IllegalArgumentException("A particle of an unregistered type: " + options);
+			// a carried 1.21 vanilla particle (its type is 1.21's own): the nearest 1.12.2 particle, so the mod's packet
+			// still goes (Twilight Forest's wall trophies send dust; the whole packet failed)
+			buffer.writeResourceLocation(LEGACY);
+			String name = options.getClass().getSimpleName();
+			EnumParticleTypes legacy = name.startsWith("Dust") ? EnumParticleTypes.REDSTONE
+					: name.startsWith("Sculk") || name.startsWith("Shriek") ? EnumParticleTypes.SPELL_MOB
+					: EnumParticleTypes.SUSPENDED;
+			buffer.writeVarInt(legacy.getParticleID());
+			buffer.writeVarInt(0);
+			return;
 		}
 		buffer.writeResourceLocation(id);
 		if (type != options) {
