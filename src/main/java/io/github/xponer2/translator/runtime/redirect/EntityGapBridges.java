@@ -361,6 +361,74 @@ public final class EntityGapBridges {
 	public static void recreateFromPacket(Entity entity, Object packet) {
 	}
 
+	/**
+	 * 1.21 {@code new ClientboundAddEntityPacket(entity, serverEntity, data)}: 1.12.2's spawn packet of the entity with
+	 * that data (the converter's spawn bridge sends the data with FML's spawn message).
+	 */
+	public static net.minecraft.network.play.server.SPacketSpawnObject newSPacketSpawnObject(Entity entity, @javax.annotation.Nullable Object serverEntity,
+			int data) {
+		return new net.minecraft.network.play.server.SPacketSpawnObject(entity, 0, data);
+	}
+
+	/** 1.21 {@code new ClientboundAddEntityPacket(entity, data, pos)} (a hanging entity's: its facing and block). */
+	public static net.minecraft.network.play.server.SPacketSpawnObject newSPacketSpawnObject(Entity entity, int data, net.minecraft.util.math.BlockPos pos) {
+		return new net.minecraft.network.play.server.SPacketSpawnObject(entity, 0, data, pos);
+	}
+
+	public static net.minecraft.network.play.server.SPacketSpawnObject newSPacketSpawnObject(Entity entity, @javax.annotation.Nullable Object serverEntity) {
+		return new net.minecraft.network.play.server.SPacketSpawnObject(entity, 0, 0);
+	}
+
+	/**
+	 * The data a mod's entity puts in its 1.21 spawn packet ({@code getAddEntityPacket}: a falling block's state, a
+	 * painting's variant), for FML's spawn message (bridge the converter adds); 0 when it has none or fails.
+	 */
+	public static int spawnPacketData(Object entity) {
+		try {
+			java.lang.reflect.Method method = SPAWN_PACKET.get(entity.getClass());
+			Object packet = method == null ? null : method.invoke(entity, (Object) null);
+			return packet instanceof net.minecraft.network.play.server.SPacketSpawnObject spawn ? spawn.getData() : 0;
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(entity.getClass().getName() + ".getAddEntityPacket", e);
+			return 0;
+		}
+	}
+
+	/** On the client: the mod's own {@code recreateFromPacket} with a spawn packet of that data. */
+	public static void recreateFromSpawnData(Object entity, int data) {
+		try {
+			java.lang.reflect.Method method = RECREATE.get(entity.getClass());
+			if (method != null && entity instanceof Entity self) {
+				method.invoke(entity, new net.minecraft.network.play.server.SPacketSpawnObject(self, 0, data));
+			}
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(entity.getClass().getName() + ".recreateFromPacket", e.getCause());
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(entity.getClass().getName() + ".recreateFromPacket", e);
+		}
+	}
+
+	private static final ClassValue<java.lang.reflect.Method> SPAWN_PACKET = ownMethod("getAddEntityPacket");
+	private static final ClassValue<java.lang.reflect.Method> RECREATE = ownMethod("recreateFromPacket");
+
+	private static ClassValue<java.lang.reflect.Method> ownMethod(String name) {
+		return new ClassValue<java.lang.reflect.Method>() {
+			@Override
+			@javax.annotation.Nullable
+			protected java.lang.reflect.Method computeValue(Class<?> type) {
+				for (Class<?> current = type; current != null && current != Object.class; current = current.getSuperclass()) {
+					for (java.lang.reflect.Method method : current.getDeclaredMethods()) {
+						if (method.getName().equals(name) && method.getParameterCount() == 1 && !java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
+							method.setAccessible(true);
+							return method;
+						}
+					}
+				}
+				return null;
+			}
+		};
+	}
+
 	/** 1.21 {@code entity.getClassification(forSpawnCount)}: the 1.12.2 creature type the entity is (null: none). */
 	@javax.annotation.Nullable
 	public static net.minecraft.entity.EnumCreatureType getClassification(Entity entity, boolean forSpawnCount) {

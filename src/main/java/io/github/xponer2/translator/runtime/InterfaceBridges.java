@@ -35,6 +35,11 @@ final class InterfaceBridges {
 	private static final String POS = "Lnet/minecraft/util/math/BlockPos;";
 	private static final String STATE = "Lnet/minecraft/block/state/IBlockState;";
 	private static final String RANDOM = "Ljava/util/Random;";
+	private static final String COMPLEX_SPAWN = "net/neoforged/neoforge/entity/IEntityWithComplexSpawn";
+	private static final String ADDITIONAL_SPAWN = "net/minecraftforge/fml/common/registry/IEntityAdditionalSpawnData";
+	private static final String FRIENDLY = "io/github/xponer2/translator/network/RegistryFriendlyByteBuf";
+	private static final String NETTY = "io/netty/buffer/ByteBuf";
+	private static final String SPAWNS = "io/github/xponer2/translator/runtime/redirect/EntityGapBridges";
 
 	private InterfaceBridges() {
 	}
@@ -44,11 +49,16 @@ final class InterfaceBridges {
 		String[] interfaces = reader.getInterfaces();
 		boolean fluid = false;
 		boolean growable = false;
+		boolean spawn = false;
 		for (String itf : interfaces) {
 			fluid |= FLUID_HANDLER.equals(itf) || FLUID_HANDLER_ITEM.equals(itf);
 			growable |= GROWABLE.equals(itf);
+			spawn |= COMPLEX_SPAWN.equals(itf);
 		}
-		if (!(fluid || growable) || (reader.getAccess() & Opcodes.ACC_INTERFACE) != 0) {
+		// a 1.21 entity that reads its spawn packet's data (recreateFromPacket): bridged below unless it sends its own
+		boolean packet = !spawn && (reader.getAccess() & Opcodes.ACC_INTERFACE) == 0
+				&& new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1).contains("recreateFromPacket");
+		if (!(fluid || growable || spawn || packet) || (reader.getAccess() & Opcodes.ACC_INTERFACE) != 0) {
 			return bytes;
 		}
 		var node = new ClassNode();
@@ -68,6 +78,42 @@ final class InterfaceBridges {
 					"(Lnet/minecraft/world/WorldServer;" + RANDOM + POS + STATE + ")V", true);
 			changed |= self(node, "canUseBonemeal", "(" + WORLD + RANDOM + POS + STATE + ")Z", "isBonemealSuccess", "(" + WORLD + RANDOM + POS + STATE + ")Z",
 					false);
+		}
+		if (spawn) {
+			// NeoForge's IEntityWithComplexSpawn (the entity's own data sent with its spawn, through a registry friendly
+			// buffer) as Forge's IEntityAdditionalSpawnData, which 1.12.2's FML spawn message writes and reads: the
+			// mods' entities came to the client without it (Iron's Spells' spells and bosses, Create's contraptions and
+			// seats, Twilight Forest's chain blocks)
+			boolean wrote = spawnData(node, "writeSpawnData");
+			boolean read = spawnData(node, "readSpawnData");
+			if ((wrote || read) && !node.interfaces.contains(ADDITIONAL_SPAWN)) {
+				node.interfaces.add(ADDITIONAL_SPAWN);
+			}
+			changed |= wrote || read;
+		}
+		if (packet && declares(node, "recreateFromPacket", "(Lnet/minecraft/network/play/server/SPacketSpawnObject;)V")
+				&& !node.interfaces.contains(ADDITIONAL_SPAWN)) {
+			// the data of 1.21's spawn packet (a falling block's state, a painting's variant: Twilight Forest's falling ice,
+			// thrown blocks and magic paintings) with FML's spawn message, read back by the entity's recreateFromPacket
+			var write = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, "writeSpawnData", "(L" + NETTY + ";)V", null, null);
+			write.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+			write.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+			write.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, SPAWNS, "spawnPacketData", "(Ljava/lang/Object;)I", false));
+			write.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, NETTY, "writeInt", "(I)L" + NETTY + ";", false));
+			write.instructions.add(new InsnNode(Opcodes.POP));
+			write.instructions.add(new InsnNode(Opcodes.RETURN));
+			var read = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, "readSpawnData", "(L" + NETTY + ";)V", null, null);
+			read.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+			read.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+			read.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, NETTY, "readInt", "()I", false));
+			read.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, SPAWNS, "recreateFromSpawnData", "(Ljava/lang/Object;I)V", false));
+			read.instructions.add(new InsnNode(Opcodes.RETURN));
+			if (!declares(node, "writeSpawnData", "(L" + NETTY + ";)V") && !declares(node, "readSpawnData", "(L" + NETTY + ";)V")) {
+				node.methods.add(write);
+				node.methods.add(read);
+				node.interfaces.add(ADDITIONAL_SPAWN);
+				changed = true;
+			}
 		}
 		if (!changed) {
 			return bytes;
@@ -121,6 +167,44 @@ final class InterfaceBridges {
 		}
 		node.methods.add(method);
 		return true;
+	}
+
+	/**
+	 * {@code name(ByteBuf)} (Forge's) calling the class's {@code name(RegistryFriendlyByteBuf)} (NeoForge's) on the
+	 * buffer wrapped, when the class declares the NeoForge one and not the Forge one.
+	 */
+	private static boolean spawnData(ClassNode node, String name) {
+		String own = "(L" + FRIENDLY + ";)V";
+		String forge = "(L" + NETTY + ";)V";
+		boolean declares = false;
+		for (MethodNode method : node.methods) {
+			if (method.name.equals(name) && method.desc.equals(forge)) {
+				return false;
+			}
+			declares |= method.name.equals(name) && method.desc.equals(own) && (method.access & Opcodes.ACC_STATIC) == 0;
+		}
+		if (!declares) {
+			return false;
+		}
+		var method = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, name, forge, null, null);
+		method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode(Opcodes.NEW, FRIENDLY));
+		method.instructions.add(new InsnNode(Opcodes.DUP));
+		method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+		method.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, FRIENDLY, "<init>", forge, false));
+		method.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, node.name, name, own, false));
+		method.instructions.add(new InsnNode(Opcodes.RETURN));
+		node.methods.add(method);
+		return true;
+	}
+
+	private static boolean declares(ClassNode node, String name, String desc) {
+		for (MethodNode method : node.methods) {
+			if (method.name.equals(name) && method.desc.equals(desc) && (method.access & Opcodes.ACC_STATIC) == 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** A public method {name desc} calling the helper's {helperName (Object this, args)}, unless the class has it. */

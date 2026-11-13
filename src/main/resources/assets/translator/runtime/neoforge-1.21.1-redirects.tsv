@@ -858,3 +858,4 @@ R	net/minecraft/pathfinding/PathFinder	io/github/xponer2/translator/runtime/redi
 R	net/minecraft/entity/EntityCreature	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
 R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
 R	net/minecraft/world/BossInfoServer	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
+R	net/minecraft/network/play/server/SPacketSpawnObject	io/github/xponer2/translator/runtime/redirect/EntityGapBridges

@@ -1426,6 +1426,16 @@ public final class MiscBridges {
 		return id;
 	}
 
+	/** 1.21 {@code Block.getId(state)}: 1.12.2's state id (the client decodes it with stateById; a falling block's spawn). */
+	public static int getId(net.minecraft.block.state.IBlockState state) {
+		return net.minecraft.block.Block.getStateId(state);
+	}
+
+	/** 1.21 {@code Block.stateById(id)}: 1.12.2's state of that id. */
+	public static net.minecraft.block.state.IBlockState stateById(int id) {
+		return net.minecraft.block.Block.getStateById(id);
+	}
+
 	public static int getId(net.minecraft.util.ObjectIntIdentityMap<Object> map, Object value) {
 		return map.get(value);
 	}
