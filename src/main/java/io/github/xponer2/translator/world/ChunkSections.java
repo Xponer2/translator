@@ -55,7 +55,6 @@ public final class ChunkSections {
 	/** The chunk of the sections of live chunks (weakly: a section doesn't keep its chunk loaded). */
 	private static final Map<ExtendedBlockStorage, WeakReference<Chunk>> LIVE = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<Biome, Holder<Biome>> HOLDERS = Collections.synchronizedMap(new IdentityHashMap<>());
-	private static final Map<Registry<?>, ObjectIntIdentityMap<Object>> HOLDER_IDS = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<Registry<?>, Codec<BlockStateContainer>> BIOME_CODECS = Collections.synchronizedMap(new WeakHashMap<>());
 	@Nullable
 	private static Field sectionData;
@@ -269,18 +268,80 @@ public final class ChunkSections {
 	 * 1.21 {@code registry.asHolderIdMap()}: the registry's holders by their order in it (a 1.12.2 id map, which the
 	 * AccessWidener makes a 1.21 IdMap).
 	 */
-	@SuppressWarnings("unchecked")
 	public static io.github.xponer2.translator.registry.IdMap<Object> asHolderIdMap(Registry<?> registry) {
-		return (io.github.xponer2.translator.registry.IdMap<Object>) (Object) holderIds(registry);
+		return new LiveHolderIds(registry);
 	}
 
-	private static ObjectIntIdentityMap<Object> holderIds(Registry<?> registry) {
-		return HOLDER_IDS.computeIfAbsent(registry, r -> {
-			var map = new ObjectIntIdentityMap<Object>();
-			int[] id = {0};
-			r.listElements().forEach(holder -> map.put(holder, id[0]++));
-			return map;
-		});
+	/**
+	 * A registry's holders by their order in it, read live and found by key: a cached map made before a data pack
+	 * registry was filled (wolf variants) was empty, and a holder made again was another object than the one put in.
+	 * A spawning Twilight Forest wolf took the server down ("Can't find id for wolf_variant pale").
+	 */
+	private static final class LiveHolderIds implements io.github.xponer2.translator.registry.IdMap<Object> {
+		private final Registry<Object> registry;
+
+		@SuppressWarnings("unchecked")
+		LiveHolderIds(Registry<?> registry) {
+			this.registry = (Registry<Object>) registry;
+		}
+
+		private java.util.List<net.minecraft.util.ResourceLocation> keys() {
+			return new java.util.ArrayList<>(this.registry.keySet());
+		}
+
+		@Override
+		public int getId(@Nullable Object value) {
+			if (value == null) {
+				return DEFAULT;
+			}
+			var keys = this.keys();
+			if (value instanceof io.github.xponer2.translator.registry.Holder<?> holder) {
+				var key = holder.unwrapKey();
+				if (key.isPresent()) {
+					int id = keys.indexOf(key.get().location());
+					if (id >= 0) {
+						return id;
+					}
+				}
+				try {
+					value = holder.value();
+				} catch (RuntimeException e) {
+					return DEFAULT;
+				}
+			}
+			for (int id = 0; id < keys.size(); id++) {
+				if (this.registry.get(keys.get(id)) == value) {
+					return id;
+				}
+			}
+			return DEFAULT;
+		}
+
+		@Override
+		@Nullable
+		public Object byId(int id) {
+			var keys = this.keys();
+			if (id < 0 || id >= keys.size()) {
+				return null;
+			}
+			var location = keys.get(id);
+			return new io.github.xponer2.translator.registry.Registry.Reference<>(
+					io.github.xponer2.translator.registry.ResourceKey.create(this.registry.key(), location), this.registry.get(location));
+		}
+
+		@Override
+		public int size() {
+			return this.registry.keySet().size();
+		}
+
+		@Override
+		public java.util.Iterator<Object> iterator() {
+			var holders = new java.util.ArrayList<Object>();
+			for (int id = 0; id < this.size(); id++) {
+				holders.add(this.byId(id));
+			}
+			return holders.iterator();
+		}
 	}
 
 	/** 1.21 {@code idMapper.byId(id)} called on the class (the table has it on the interface): null for an unknown id. */

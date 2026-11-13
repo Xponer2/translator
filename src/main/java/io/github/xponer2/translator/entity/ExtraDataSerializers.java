@@ -289,27 +289,44 @@ public final class ExtraDataSerializers {
 			return codec;
 		}
 
+		private boolean reported;
+
+		/**
+		 * The value is written first into a buffer of its own, after a marker: a codec that throws (a registry entry with
+		 * no id yet: Twilight Forest's wolf variants) writes the marker alone and the reader gets none. It took the
+		 * server down in the spawn packet of the entity.
+		 */
 		@Override
 		public void write(PacketBuffer buffer, Object value) {
 			RegistryFriendlyByteBuf friendly = buffer instanceof RegistryFriendlyByteBuf ? (RegistryFriendlyByteBuf) buffer : new RegistryFriendlyByteBuf(buffer);
+			Object present = value;
 			if (this.optional) {
-				Optional<?> present = (Optional<?>) value;
-				friendly.writeBoolean(present.isPresent());
-				if (present.isPresent()) {
-					this.codec().encode(friendly, present.get());
-				}
+				present = ((Optional<?>) value).orElse(null);
+			}
+			if (present == null) {
+				friendly.writeBoolean(false);
 				return;
 			}
-			this.codec().encode(friendly, value);
+			var scratch = new RegistryFriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+			try {
+				this.codec().encode(scratch, present);
+			} catch (RuntimeException | LinkageError e) {
+				if (!this.reported) {
+					this.reported = true;
+					io.github.xponer2.translator.runtime.RuntimeStubs.failed("writing entity data of " + this.owner, e);
+				}
+				friendly.writeBoolean(false);
+				return;
+			}
+			friendly.writeBoolean(true);
+			friendly.writeBytes(scratch);
 		}
 
 		@Override
 		public Object read(PacketBuffer buffer) {
 			RegistryFriendlyByteBuf friendly = buffer instanceof RegistryFriendlyByteBuf ? (RegistryFriendlyByteBuf) buffer : new RegistryFriendlyByteBuf(buffer);
-			if (this.optional) {
-				return friendly.readBoolean() ? Optional.ofNullable(this.codec().decode(friendly)) : Optional.empty();
-			}
-			return this.codec().decode(friendly);
+			Object value = friendly.readBoolean() ? this.codec().decode(friendly) : null;
+			return this.optional ? Optional.ofNullable(value) : value;
 		}
 	}
 }
