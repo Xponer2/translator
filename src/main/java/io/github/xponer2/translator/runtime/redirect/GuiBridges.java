@@ -212,16 +212,21 @@ public final class GuiBridges {
 	/**
 	 * 1.21 {@code new ShulkerBoxScreen(menu, inventory, title)} (a constructor reference in MenuScreens.register):
 	 * 1.12.2's shulker box screen on that menu. Supplementaries registers its screens so, and the whole registration was
-	 * skipped for the missing constructor: none of its menus had a screen.
+	 * skipped for the missing constructor: none of its menus had a screen. The menu is the 1.21 one
+	 * ({@link io.github.xponer2.translator.menu.ShulkerBoxMenu}) or 1.12.2's.
 	 */
-	public static net.minecraft.client.gui.inventory.GuiShulkerBox newGuiShulkerBox(net.minecraft.inventory.ContainerShulkerBox menu,
+	public static net.minecraft.client.gui.inventory.GuiShulkerBox newGuiShulkerBox(net.minecraft.inventory.Container menu,
 			net.minecraft.entity.player.InventoryPlayer inventory, net.minecraft.util.text.ITextComponent title) {
 		net.minecraft.inventory.IInventory box = null;
-		try {
-			box = net.minecraftforge.fml.common.ObfuscationReflectionHelper.getPrivateValue(net.minecraft.inventory.ContainerShulkerBox.class, menu,
-					"field_190899_a");
-		} catch (RuntimeException e) {
-			// a box of the title's name
+		if (menu instanceof io.github.xponer2.translator.menu.ShulkerBoxMenu shulker) {
+			box = shulker.inventory;
+		} else if (menu instanceof net.minecraft.inventory.ContainerShulkerBox) {
+			try {
+				box = net.minecraftforge.fml.common.ObfuscationReflectionHelper.getPrivateValue(net.minecraft.inventory.ContainerShulkerBox.class,
+						(net.minecraft.inventory.ContainerShulkerBox) menu, "field_190899_a");
+			} catch (RuntimeException e) {
+				// a box of the title's name
+			}
 		}
 		if (box == null) {
 			box = new net.minecraft.inventory.InventoryBasic(title.getFormattedText(), false, 27);

@@ -40,11 +40,25 @@ public class FlowerPotBlock extends Block {
 			new java.util.concurrent.ConcurrentHashMap<>();
 	@Nullable
 	private final java.util.function.Supplier<? extends net.minecraft.block.Block> content;
+	@Nullable
+	private final java.util.function.Supplier<FlowerPotBlock> emptyPot;
 
 	public FlowerPotBlock(@Nullable java.util.function.Supplier<FlowerPotBlock> emptyPot, java.util.function.Supplier<? extends net.minecraft.block.Block> plant,
 			BlockProperties properties) {
 		super(properties.noOcclusion());
 		this.content = plant;
+		this.emptyPot = emptyPot;
+	}
+
+	/** NeoForge {@code isEmpty()}: no plant in the pot (Twilight Forest's special pots take a plant when empty). */
+	public boolean isEmpty() {
+		return this.getPotted() == net.minecraft.init.Blocks.AIR;
+	}
+
+	/** NeoForge {@code getEmptyPot()}: the pot without its plant (this one when it has none named). */
+	public FlowerPotBlock getEmptyPot() {
+		FlowerPotBlock empty = this.emptyPot == null ? null : this.emptyPot.get();
+		return empty == null ? this : empty;
 	}
 
 	public FlowerPotBlock(net.minecraft.block.Block plant, BlockProperties properties) {

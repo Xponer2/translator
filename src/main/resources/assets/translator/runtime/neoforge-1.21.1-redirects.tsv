@@ -65,6 +65,7 @@ R	io/github/xponer2/translator/item/Tier	io/github/xponer2/translator/item/Tiers
 R	com/mojang/serialization/DataResult	io/github/xponer2/translator/runtime/redirect/DfuRedirects
 R	com/mojang/serialization/Codec	io/github/xponer2/translator/runtime/redirect/DfuRedirects
 R	com/mojang/serialization/MapCodec	io/github/xponer2/translator/runtime/redirect/DfuRedirects
+R	com/mojang/serialization/MapCodec	io/github/xponer2/translator/runtime/redirect/MapCodecRedirects
 R	com/mojang/datafixers/util/Either	io/github/xponer2/translator/runtime/redirect/DfuRedirects
 R	net/minecraft/client/Minecraft	io/github/xponer2/translator/runtime/redirect/ClientRedirects
 R	net/minecraft/client/gui/FontRenderer	io/github/xponer2/translator/runtime/redirect/ClientRedirects

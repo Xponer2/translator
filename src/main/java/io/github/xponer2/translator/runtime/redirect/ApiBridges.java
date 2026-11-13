@@ -201,13 +201,53 @@ public final class ApiBridges {
 		return world.profiler;
 	}
 
-	/** 1.21 {@code state.getMenuProvider(level, pos)}: the block entity there when it opens a menu. */
+	/**
+	 * 1.21 {@code state.getMenuProvider(level, pos)}: the block's own (a mod block that opens a menu without a block entity:
+	 * Iron's Spells' arcane anvil, Twilight Forest's uncrafting table; they opened nothing, the menu was null), else the
+	 * block entity there when it opens a menu (1.21's default). A block's own that asks its super is given the default.
+	 */
 	@javax.annotation.Nullable
 	public static io.github.xponer2.translator.menu.MenuProvider getMenuProvider(net.minecraft.block.state.IBlockState state, World world,
 			net.minecraft.util.math.BlockPos pos) {
+		java.lang.reflect.Method own = OWN_MENU_PROVIDER.get(state.getBlock().getClass());
+		if (own != null && !IN_MENU_PROVIDER.get()) {
+			IN_MENU_PROVIDER.set(true);
+			try {
+				Object provider = own.invoke(state.getBlock(), state, world, pos);
+				if (provider instanceof io.github.xponer2.translator.menu.MenuProvider menu) {
+					return menu;
+				}
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				// its own failed: the block entity's, as 1.21's default
+			} finally {
+				IN_MENU_PROVIDER.set(false);
+			}
+		}
 		var tile = world.getTileEntity(pos);
 		return tile instanceof io.github.xponer2.translator.menu.MenuProvider provider ? provider : null;
 	}
+
+	private static final ThreadLocal<Boolean> IN_MENU_PROVIDER = ThreadLocal.withInitial(() -> false);
+
+	/** A block class's own getMenuProvider(state, level, pos) (a 1.21.1 mod's override), null when it has none. */
+	private static final ClassValue<java.lang.reflect.Method> OWN_MENU_PROVIDER = new ClassValue<java.lang.reflect.Method>() {
+		@Override
+		protected java.lang.reflect.Method computeValue(Class<?> type) {
+			for (Class<?> current = type; current != null && current != net.minecraft.block.Block.class; current = current.getSuperclass()) {
+				try {
+					java.lang.reflect.Method method = current.getDeclaredMethod("getMenuProvider", net.minecraft.block.state.IBlockState.class, World.class,
+							net.minecraft.util.math.BlockPos.class);
+					method.setAccessible(true);
+					return method;
+				} catch (NoSuchMethodException e) {
+					// its superclass
+				} catch (RuntimeException | LinkageError e) {
+					return null;
+				}
+			}
+			return null;
+		}
+	};
 
 	/** 1.21 {@code level.tickRateManager()}: 1.12.2 always ticks at 20 a second. */
 	public static io.github.xponer2.translator.world.TickRateManager tickRateManager(World world) {

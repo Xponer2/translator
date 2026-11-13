@@ -51,6 +51,7 @@ public final class MenuScreens {
 				MenuType.GENERIC_9x4, MenuType.GENERIC_9x5, MenuType.GENERIC_9x6)) {
 			register(type, ChestScreen::new);
 		}
+		register(MenuType.SHULKER_BOX, io.github.xponer2.translator.runtime.redirect.GuiBridges::newGuiShulkerBox);
 		MinecraftForge.EVENT_BUS.post(new RegisterMenuScreensEvent());
 	}
 

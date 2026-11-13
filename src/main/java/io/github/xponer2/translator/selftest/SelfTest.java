@@ -594,7 +594,13 @@ public final class SelfTest {
 				if (block.hasTileEntity(state)) {
 					TileEntity te = this.world.getTileEntity(this.cell);
 					if (te == null) {
-						this.current.problems.add("block entity: none made");
+						if (this.noneFor121(block, state)) {
+							// its own newBlockEntity gives none for this state (Supplementaries' bamboo spikes have one only
+							// when tipped): 1.21 makes none either
+							this.current.notes.add("block entity: none for this state (its newBlockEntity gives none)");
+						} else {
+							this.current.problems.add("block entity: none made");
+						}
 					} else {
 						this.current.notes.add("block entity " + te.getClass().getSimpleName());
 						this.attempt("block entity save/load", () -> {
@@ -849,6 +855,18 @@ public final class SelfTest {
 		 * a tree, plants around).
 		 */
 		/** 1.12.2's canUseBonemeal (1.21's isBonemealSuccess) said yes at least once in 60 tries. */
+		/** Whether a 1.21.1 mod's block makes no block entity for this state itself (its newBlockEntity gives null). */
+		private boolean noneFor121(Block block, IBlockState state) {
+			if (!(block instanceof io.github.xponer2.translator.block.EntityBlock entityBlock)) {
+				return false;
+			}
+			try {
+				return entityBlock.newBlockEntity(this.cell, state) == null;
+			} catch (RuntimeException | LinkageError e) {
+				return false;
+			}
+		}
+
 		/**
 		 * Whether 1.21 keeps the block when the block under it is gone: its own updateShape (a 1.21.1 mod's block), told
 		 * that the block below is air now, gives its state back unchanged. A bush breaks there, a plain block doesn't.

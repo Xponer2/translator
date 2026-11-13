@@ -90,3 +90,4 @@ E	net/minecraft/world/item/ArrowItem	io/github/xponer2/translator/runtime/mc/Arr
 E	net/minecraft/client/gui/screens/ChatScreen	io/github/xponer2/translator/client/ChatScreen
 S	net/minecraft/client/renderer/PostChain	io/github/xponer2/translator/client/PostChain
 S	net/minecraft/world/level/BaseSpawner	io/github/xponer2/translator/runtime/mc/BaseSpawner
+S	net/minecraft/world/level/block/piston/PistonMovingBlockEntity	io/github/xponer2/translator/runtime/mc/PistonMovingBlockEntity
