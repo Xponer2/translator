@@ -95,6 +95,15 @@ public final class ClientRedirects {
 		return 0.0F;
 	}
 
+	/** 1.21 {@code humanoidModel.getHead()} (HeadedModel) on a 1.12.2 biped: its head as a 1.21 part (Supplementaries' jarred head layer). */
+	public static io.github.xponer2.translator.client.model.ModelPart getHead(net.minecraft.client.model.ModelBiped model) {
+		return io.github.xponer2.translator.client.model.ModelPart.of(model.bipedHead);
+	}
+
+	/** A write of it (Twilight Forest's first person gloves reset it): nothing to keep. */
+	public static void swimAmount(net.minecraft.client.model.ModelBiped model, float value) {
+	}
+
 	/** 1.21 {@code blockEntityRenderDispatcher.camera}: the game's camera. */
 	public static io.github.xponer2.translator.client.Camera camera(net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher dispatcher) {
 		return io.github.xponer2.translator.client.Camera.main();

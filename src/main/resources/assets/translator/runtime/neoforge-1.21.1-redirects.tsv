@@ -810,3 +810,11 @@ R	net/minecraft/world/DifficultyInstance	io/github/xponer2/translator/runtime/re
 R	net/minecraft/block/BlockRedstoneWire$EnumAttachPosition	io/github/xponer2/translator/runtime/redirect/LevelGapBridges
 # 1.21 BaseSpawner members whose 1.12.2 counterparts take other arguments or are private (Twilight Forest spawners)
 R	net/minecraft/tileentity/MobSpawnerBaseLogic	io/github/xponer2/translator/runtime/redirect/SpawnerBridges
+# animation frames of a texture (Moonlight's texture making); the 1.21 uses 1.12.2 has no pose for: the nearest one
+R	net/minecraft/client/resources/data/AnimationMetadataSection	io/github/xponer2/translator/runtime/redirect/GuiBridges
+F	net/minecraft/world/item/UseAnim	SPEAR	BOW
+F	net/minecraft/world/item/UseAnim	CROSSBOW	BOW
+F	net/minecraft/world/item/UseAnim	SPYGLASS	NONE
+F	net/minecraft/world/item/UseAnim	TOOT_HORN	NONE
+F	net/minecraft/world/item/UseAnim	BRUSH	NONE
+R	net/minecraft/client/gui/inventory/GuiShulkerBox	io/github/xponer2/translator/runtime/redirect/GuiBridges

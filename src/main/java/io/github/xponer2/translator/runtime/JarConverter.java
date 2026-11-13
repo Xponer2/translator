@@ -439,7 +439,9 @@ final class JarConverter {
 	 */
 	private static final java.util.Set<String> MIXABLE = new java.util.HashSet<>(java.util.Arrays.asList(
 			"io/github/xponer2/translator/client/DynamicTexture",
-			"io/github/xponer2/translator/client/NativeImage"));
+			"io/github/xponer2/translator/client/NativeImage",
+			// Moonlight's text size of a model part (its PartDefinition mixin casts every baked part to it)
+			"io/github/xponer2/translator/client/model/ModelPart"));
 
 	/**
 	 * A mixin config for Mixin on 1.12.2 (MixinBooter): Java 8 like the converted classes, no refmap (the annotations

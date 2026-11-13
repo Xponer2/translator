@@ -180,6 +180,58 @@ public final class GuiBridges {
 		return io.github.xponer2.translator.client.GuiSpriteManager.INSTANCE;
 	}
 
+	/** 1.21 {@code options.sensitivity()}: the mouse sensitivity option over 1.12.2's field (Supplementaries' selectable item HUD). */
+	public static io.github.xponer2.translator.client.OptionInstance<Double> sensitivity(net.minecraft.client.settings.GameSettings options) {
+		return new io.github.xponer2.translator.client.OptionInstance<>(() -> (double) options.mouseSensitivity, value -> options.mouseSensitivity = value.floatValue());
+	}
+
+	/**
+	 * 1.21 {@code animationSection.forEachFrame(output)}: each frame of the animation with its time (Moonlight's texture
+	 * making reads the frames of an animated texture so). The output is the carried FrameOutput (accept(index, time)).
+	 */
+	public static void forEachFrame(net.minecraft.client.resources.data.AnimationMetadataSection section, Object output) {
+		java.lang.reflect.Method accept;
+		try {
+			accept = output.getClass().getMethod("accept", int.class, int.class);
+			accept.setAccessible(true);
+		} catch (NoSuchMethodException | RuntimeException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("AnimationMetadataSection.forEachFrame", e);
+			return;
+		}
+		try {
+			for (int i = 0; i < section.getFrameCount(); i++) {
+				accept.invoke(output, section.getFrameIndex(i), section.getFrameTimeSingle(i));
+			}
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("AnimationMetadataSection.forEachFrame", e.getCause());
+		} catch (IllegalAccessException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("AnimationMetadataSection.forEachFrame", e);
+		}
+	}
+
+	/**
+	 * 1.21 {@code new ShulkerBoxScreen(menu, inventory, title)} (a constructor reference in MenuScreens.register):
+	 * 1.12.2's shulker box screen on that menu. Supplementaries registers its screens so, and the whole registration was
+	 * skipped for the missing constructor: none of its menus had a screen.
+	 */
+	public static net.minecraft.client.gui.inventory.GuiShulkerBox newGuiShulkerBox(net.minecraft.inventory.ContainerShulkerBox menu,
+			net.minecraft.entity.player.InventoryPlayer inventory, net.minecraft.util.text.ITextComponent title) {
+		net.minecraft.inventory.IInventory box = null;
+		try {
+			box = net.minecraftforge.fml.common.ObfuscationReflectionHelper.getPrivateValue(net.minecraft.inventory.ContainerShulkerBox.class, menu,
+					"field_190899_a");
+		} catch (RuntimeException e) {
+			// a box of the title's name
+		}
+		if (box == null) {
+			box = new net.minecraft.inventory.InventoryBasic(title.getFormattedText(), false, 27);
+		}
+		var screen = new net.minecraft.client.gui.inventory.GuiShulkerBox(inventory, box);
+		// the mod's menu (its window id and slots), not the one the 1.12.2 screen made for itself
+		screen.inventorySlots = menu;
+		return screen;
+	}
+
 	@javax.annotation.Nullable
 	public static Object getLastInputType(Minecraft minecraft) {
 		return CarriedBridges.constant("net.minecraft.client.InputType", "MOUSE");

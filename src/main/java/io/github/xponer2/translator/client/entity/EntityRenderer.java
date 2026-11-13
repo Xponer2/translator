@@ -77,6 +77,36 @@ public abstract class EntityRenderer<T extends Entity> extends Render<T> {
 		return this.getFontRendererFromRenderManager();
 	}
 
+	/**
+	 * 1.21 {@code renderNameTag(entity, name, poseStack, buffers, light, partialTick)}: the name over the entity, in the
+	 * current pose (the entity's origin). 1.12.2's name tag comes here (renderName), so a mod's override of it is the
+	 * one drawn (Supplementaries' jarred and pickle players), and a mod's super call draws 1.12.2's label.
+	 */
+	protected void renderNameTag(T entity, net.minecraft.util.text.ITextComponent name, PoseStack poseStack, MultiBufferSource buffers, int light,
+			float partialTick) {
+		this.renderLivingLabel(entity, name.getFormattedText(), 0.0D, 0.0D, 0.0D, 64);
+	}
+
+	@Override
+	protected void renderName(T entity, double x, double y, double z) {
+		if (!this.canRenderName(entity)) {
+			return;
+		}
+		int depth = PoseStack.depth();
+		GlStateManager.pushMatrix();
+		try {
+			GlStateManager.translate(x, y, z);
+			this.renderNameTag(entity, entity.getDisplayName(), PoseStack.INSTANCE, MultiBufferSource.INSTANCE, entity.getBrightnessForRender(),
+					net.minecraft.client.Minecraft.getMinecraft().getRenderPartialTicks());
+			MultiBufferSource.INSTANCE.endBatch();
+		} catch (RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed(this.getClass().getName() + ".renderNameTag", e);
+		} finally {
+			PoseStack.restore(depth);
+			GlStateManager.popMatrix();
+		}
+	}
+
 	/** 1.21 {@code shouldShowName}: 1.12.2's name tag rule. */
 	public boolean shouldShowName(T entity) {
 		return super.canRenderName(entity);

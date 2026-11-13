@@ -83,11 +83,18 @@ final class MethodGuard {
 	 * the 1.21.1 code of a static method or field the 1.12.2 / Translator class lacks.
 	 */
 	private String shadowWith(String owner, String name, String desc, boolean method) {
-		for (String original : this.originals.apply(owner)) {
-			ClassInfo info = this.info(ApiCarry.SHADOW + original);
-			if (info != null && (method ? info.methods : info.fields).contains(name + " " + desc)) {
-				return ApiCarry.SHADOW + original;
+		// the owner, then its superclasses: a static member reached through a mod's subclass (Twilight Forest's
+		// FieryArmorModel.createMesh is HumanoidModel's) is its vanilla ancestor's, as Java resolves it
+		String at = owner;
+		for (int depth = 0; at != null && depth < 32; depth++) {
+			for (String original : this.originals.apply(at)) {
+				ClassInfo info = this.info(ApiCarry.SHADOW + original);
+				if (info != null && (method ? info.methods : info.fields).contains(name + " " + desc)) {
+					return ApiCarry.SHADOW + original;
+				}
 			}
+			ClassInfo info = this.info(at);
+			at = info == null ? null : info.superName;
 		}
 		return null;
 	}

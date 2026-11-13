@@ -169,6 +169,14 @@ public final class ClientGapBridges {
 	}
 
 	/** 1.21 {@code renderTarget.clear(onMac)}. */
+	/**
+	 * 1.21 {@code renderTarget.enableStencil()}: 1.12.2's gives back whether it could (FBOs and the stencil bits); the
+	 * call failed as 1.12.2's returns a value, and Supplementaries' whole client setup was skipped.
+	 */
+	public static void enableStencil(Framebuffer framebuffer) {
+		framebuffer.enableStencil();
+	}
+
 	public static void clear(Framebuffer framebuffer, boolean onMac) {
 		framebuffer.framebufferClear();
 	}

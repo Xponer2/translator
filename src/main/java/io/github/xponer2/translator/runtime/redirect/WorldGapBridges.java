@@ -645,6 +645,11 @@ public final class WorldGapBridges {
 	// --- profiler -------------------------------------------------------------------------------------------------------
 
 	/** 1.12.2's profiler has no tick bounds. */
+	/** 1.21 {@code profiler.popPush(name)}: the next section (Supplementaries' slingshot outline). */
+	public static void popPush(net.minecraft.profiler.Profiler profiler, String name) {
+		profiler.endStartSection(name);
+	}
+
 	public static void startTick(net.minecraft.profiler.Profiler profiler) {
 	}
 

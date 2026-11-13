@@ -61,16 +61,30 @@ public final class EnumExtender implements IClassTransformer {
 		/** {class, field} of an EnumProxy, or {class, method} of a static (int, Class) -> Object method */
 		final String[] source;
 		final boolean proxy;
+		/** made with a 1.12.2 constructor: the mod's own extension its arguments come from */
+		final Extension original;
+		/** per 1.12.2 argument: the mod's argument of that type, ORDINAL, or -1 for none */
+		final int[] from;
 
 		public Extension(String enumName, String name, String parameters, List<Object> constants, String[] source, boolean proxy) {
+			this(enumName, name, parameters, constants, source, proxy, null, null);
+		}
+
+		Extension(String enumName, String name, String parameters, List<Object> constants, String[] source, boolean proxy, Extension original,
+				int[] from) {
 			this.enumName = enumName;
 			this.name = name;
 			this.parameters = parameters;
 			this.constants = constants;
 			this.source = source;
 			this.proxy = proxy;
+			this.original = original;
+			this.from = from;
 		}
 	}
+
+	/** A 1.12.2 constructor's int the mod gives none for: the constant's ordinal (1.12.2's boat types are numbered so). */
+	private static final int ORDINAL = -2;
 
 	public static void register(Extension extension) {
 		EXTENSIONS.computeIfAbsent(extension.enumName.replace('/', '.'), k -> new ArrayList<>()).add(extension);
@@ -136,9 +150,31 @@ public final class EnumExtender implements IClassTransformer {
 				}
 				// a 1.12.2 enum now (ItemDisplayContext is TransformType): its own constructor, the rest left empty;
 				// the constant exists, the 1.21 data of it is lost
-				LOGGER.warn("Enum constant {}.{} made with the 1.12.2 constructor {} (its 1.21 arguments are left out)", self, extension.name, fewest.desc);
-				extension = new Extension(extension.enumName, extension.name, "(" + fewest.desc.substring("(Ljava/lang/String;I".length()),
-						new ArrayList<>(), null, false);
+				// the constructor's arguments are the mod's arguments of the same types, in order (Twilight Forest's boat
+				// types: their name; it was null, and building the vanilla model layers failed on the boats for every mod)
+				String older = "(" + fewest.desc.substring("(Ljava/lang/String;I".length());
+				Type[] olderTypes = Type.getArgumentTypes(older);
+				Type[] newerTypes = Type.getArgumentTypes(extension.parameters);
+				int[] from = new int[olderTypes.length];
+				boolean[] used = new boolean[newerTypes.length];
+				boolean ordinal = false;
+				for (int i = 0; i < olderTypes.length; i++) {
+					from[i] = -1;
+					for (int j = 0; j < newerTypes.length; j++) {
+						if (!used[j] && newerTypes[j].equals(olderTypes[i])) {
+							from[i] = j;
+							used[j] = true;
+							break;
+						}
+					}
+					if (from[i] == -1 && olderTypes[i].getSort() == Type.INT && !ordinal) {
+						from[i] = ORDINAL;
+						ordinal = true;
+					}
+				}
+				LOGGER.warn("Enum constant {}.{} made with the 1.12.2 constructor {} (from the 1.21 arguments of the same types)", self, extension.name,
+						fewest.desc);
+				extension = new Extension(extension.enumName, extension.name, older, new ArrayList<>(), null, false, extension, from);
 			}
 			node.fields.add(new FieldNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_ENUM, extension.name, "L" + self + ";", null, null));
 			added.add(extension);
@@ -180,7 +216,13 @@ public final class EnumExtender implements IClassTransformer {
 			code.add(new LdcInsnNode(count + k));
 			Type[] types = Type.getArgumentTypes(extension.parameters);
 			for (int i = 0; i < types.length; i++) {
-				code.add(argument(extension, i, types[i]));
+				if (extension.from != null && extension.from[i] >= 0) {
+					code.add(argument(extension.original, extension.from[i], types[i]));
+				} else if (extension.from != null && extension.from[i] == ORDINAL) {
+					code.add(new LdcInsnNode(count + k));
+				} else {
+					code.add(argument(extension, i, types[i]));
+				}
 			}
 			code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, self, "<init>", constructor, false));
 			code.add(new FieldInsnNode(Opcodes.PUTSTATIC, self, extension.name, "L" + self + ";"));
