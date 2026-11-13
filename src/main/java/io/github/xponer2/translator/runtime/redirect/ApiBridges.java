@@ -237,8 +237,13 @@ public final class ApiBridges {
 
 	// --- entities and players ----------------------------------------------------------------------------------------
 
+	/**
+	 * 1.21 {@code blockPosition()}: the block the entity's feet are in (its position floored). 1.12.2's getPosition adds
+	 * half a block up: a seat entity 0.7 above its chair was in the air above it, so it went away at once and nobody
+	 * could sit (Macaw's chairs, sofas); anything of a mod that looks at the block of an entity was one block off.
+	 */
 	public static BlockPos blockPosition(Entity entity) {
-		return entity.getPosition();
+		return new BlockPos(entity.posX, entity.posY, entity.posZ);
 	}
 
 	public static float getYRot(Entity entity) {

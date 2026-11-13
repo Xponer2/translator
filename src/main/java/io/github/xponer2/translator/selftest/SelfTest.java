@@ -476,9 +476,21 @@ public final class SelfTest {
 				}
 				this.player.dismountRidingEntity();
 				this.player.setPositionAndUpdate(this.x, this.y, this.z);
+				// 1.12.2 (as 1.21) lets a rider board again only 60 ticks after getting off: the next seat tested would
+				// not seat the player, and pass untested
+				try {
+					net.minecraftforge.fml.common.ObfuscationReflectionHelper.setPrivateValue(net.minecraft.entity.Entity.class, this.player, 0, "field_184245_j");
+				} catch (RuntimeException e) {
+					// the next seat waits
+				}
 			} else if (this.player.getDistanceSq(this.x, this.y, this.z) > 4) {
 				if (this.current != null) {
 					this.current.problems.add("moved the player " + (int) Math.sqrt(this.player.getDistanceSq(this.x, this.y, this.z)) + " blocks");
+					// what is where the player ended up (a seat entity left without its rider, a teleport), for the fix
+					String why = this.movedBy();
+					if (!this.current.notes.contains(why)) {
+						this.current.notes.add(why);
+					}
 				}
 				this.player.setPositionAndUpdate(this.x, this.y, this.z);
 			}
@@ -487,6 +499,26 @@ public final class SelfTest {
 					this.current.problems.add("killed the player");
 				}
 			}
+		}
+
+		/** The entities next to the player (seats), its ride cooldown and the last vehicle it rode. */
+		private String movedBy() {
+			var names = new java.util.TreeSet<String>();
+			for (net.minecraft.entity.Entity entity : this.player.world.getEntitiesWithinAABBExcludingEntity(this.player,
+					this.player.getEntityBoundingBox().grow(1.5D))) {
+				var key = net.minecraft.entity.EntityList.getKey(entity);
+				names.add((key == null ? entity.getClass().getSimpleName() : key.toString())
+						+ (entity.isDead ? " dead" : "") + (entity.isBeingRidden() ? " ridden" : ""));
+			}
+			int cooldown = -1;
+			try {
+				cooldown = net.minecraftforge.fml.common.ObfuscationReflectionHelper.getPrivateValue(net.minecraft.entity.Entity.class, this.player, "field_184245_j");
+			} catch (RuntimeException e) {
+				// unknown
+			}
+			return "moved: at " + (int) Math.floor(this.player.posX) + " " + String.format(java.util.Locale.ROOT, "%.1f", this.player.posY) + " "
+					+ (int) Math.floor(this.player.posZ) + ", near " + (names.isEmpty() ? "nothing" : String.join(" / ", names))
+					+ ", ride cooldown " + cooldown;
 		}
 
 		private void begin(String id, String kind) {
