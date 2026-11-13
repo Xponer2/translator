@@ -16,6 +16,29 @@ some screens are still incomplete. A mod can load and still miss parts of its be
 The normal game uses obfuscated (SRG) names, so running original 1.21.1 jars there doesn't work yet. Ports built on
 the Translator work in both.
 
+## Goal and roadmap
+
+**The goal:** run mods of **any version on any lower version** of Minecraft, and **mix versions** in one game: a
+target version *x* with any number of mods made for versions above it, e.g. 1.12.2 with mods for 1.13, 1.16, 1.21
+and later, all together. 1.12.2 is the first target, not the last: lower targets come later too.
+
+**The route:** a ladder of small steps down between neighbouring versions (… → 1.21 → 1.20 → … → *x*). Each mod
+enters the ladder at its own version and steps down to the target; the target is where the ladder stops. A new
+Minecraft version adds one step at the top, an older target one step at the bottom. Each step is the API difference
+of two neighbouring versions, taken from the official mappings and the loaders' porting notes.
+
+| Stage | What | State |
+|---|---|---|
+| 1 | The tools every step uses: the jar converter, the 1.21.1 classes carried from the player's own game, the bridges, a fast in-game self-test, an offline ranking of the missing API over hundreds of mods | ✅ done, improved as we go |
+| 2 | **First (long) step: NeoForge 1.21.1 → 1.12.2**, closed by the missing API ranked over the 300 most popular 1.21.1 mods | 🔨 **now** (see the numbers below) |
+| 3 | Mods for 1.13–1.20 lifted up to 1.21.1 (mostly renames), so they run on 1.12.2 through stage 2 | ⬜ next |
+| 4 | Small steps down from the top (newer versions → 1.21 → 1.20 → …): every step opens one more target version | ⬜ planned |
+| 5 | Fabric mods, targets below 1.12.2 | ⬜ planned |
+
+**Where stage 2 is:** 99.4% of the API references of the tested mods are bridged (the missing ones are listed under
+[What is left to bridge](#what-is-left-to-bridge)); the table below shows each mod's state in the self-test. Twilight
+Forest passes 97% of its blocks and items, Supplementaries 96%.
+
 ## Mods
 
 <!-- mods:start -->
