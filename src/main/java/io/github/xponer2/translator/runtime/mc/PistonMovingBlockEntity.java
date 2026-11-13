@@ -62,6 +62,11 @@ public class PistonMovingBlockEntity extends TileEntityPiston {
 		return this.type;
 	}
 
+	/** 1.21 {@code isValidBlockState(state)}: any state (1.12.2 doesn't tie block entities to blocks). */
+	public boolean isValidBlockState(IBlockState state) {
+		return true;
+	}
+
 	/** 1.21 load: 1.12.2's piston data (what a mod's own load adds comes after its super call). */
 	protected void loadAdditional(NBTTagCompound tag, HolderLookup.Provider registries) {
 		super.readFromNBT(tag);

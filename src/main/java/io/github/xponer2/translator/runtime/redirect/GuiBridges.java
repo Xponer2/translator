@@ -215,6 +215,12 @@ public final class GuiBridges {
 	 * skipped for the missing constructor: none of its menus had a screen. The menu is the 1.21 one
 	 * ({@link io.github.xponer2.translator.menu.ShulkerBoxMenu}) or 1.12.2's.
 	 */
+	public static net.minecraft.client.gui.inventory.GuiShulkerBox newGuiShulkerBox(io.github.xponer2.translator.menu.ShulkerBoxMenu menu,
+			net.minecraft.entity.player.InventoryPlayer inventory, net.minecraft.util.text.ITextComponent title) {
+		return newGuiShulkerBox((net.minecraft.inventory.Container) menu, inventory, title);
+	}
+
+	/** The same for any menu (1.12.2's shulker box menu: its box by reflection). */
 	public static net.minecraft.client.gui.inventory.GuiShulkerBox newGuiShulkerBox(net.minecraft.inventory.Container menu,
 			net.minecraft.entity.player.InventoryPlayer inventory, net.minecraft.util.text.ITextComponent title) {
 		net.minecraft.inventory.IInventory box = null;
