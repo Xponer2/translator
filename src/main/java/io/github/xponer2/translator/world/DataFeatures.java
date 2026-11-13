@@ -126,7 +126,7 @@ public final class DataFeatures {
 		}
 	}
 
-	private static synchronized void bootstrap() {
+	public static synchronized void bootstrap() {
 		if (bootstrapped) {
 			return;
 		}

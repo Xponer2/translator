@@ -108,9 +108,22 @@ public final class DataStructures {
 			}
 			return value.orElse(null);
 		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
-			report(kind[0] + " " + id, e.toString());
+			report(kind[0] + " " + id, where(e));
 			return null;
 		}
+	}
+
+	/** An exception with the first frame of a mod or of the Translator (a bare NullPointerException says nothing). */
+	static String where(Throwable e) {
+		Throwable cause = e instanceof java.lang.reflect.InvocationTargetException && e.getCause() != null ? e.getCause() : e;
+		for (StackTraceElement frame : cause.getStackTrace()) {
+			String type = frame.getClassName();
+			if (!type.startsWith("java.") && !type.startsWith("sun.") && !type.startsWith("com.mojang.serialization.")
+					&& !type.startsWith("com.mojang.datafixers.")) {
+				return cause + " at " + frame;
+			}
+		}
+		return cause.toString();
 	}
 
 	/** The structure sets of the 1.21.1 mods (not Minecraft's own: 1.12.2 generates its own villages, temples, ...). */
@@ -209,7 +222,7 @@ public final class DataStructures {
 		}
 	}
 
-	static synchronized void bootstrap() {
+	public static synchronized void bootstrap() {
 		if (bootstrapped) {
 			return;
 		}

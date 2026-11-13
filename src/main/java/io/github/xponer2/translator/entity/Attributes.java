@@ -82,6 +82,46 @@ public final class Attributes {
 		return BY_NAME.computeIfAbsent(name, key -> Holder.direct(new Attribute(null, key, 0.0D)));
 	}
 
+	/**
+	 * The attributes above in {@code minecraft:attribute} under their 1.21.1 ids (generic.max_health, ...): the mods' data
+	 * names them so, and nothing had registered them (Iron's Spells' upgrade orbs: "Unknown registry key in
+	 * minecraft:attribute: minecraft:generic.max_health"). Before the mods register their own.
+	 */
+	public static void registerVanilla() {
+		var registry = io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.ATTRIBUTE);
+		if (!(registry instanceof io.github.xponer2.translator.registry.MappedRegistry<?> found)) {
+			return;
+		}
+		@SuppressWarnings("unchecked")
+		var mapped = (io.github.xponer2.translator.registry.MappedRegistry<Object>) found;
+		Object[][] vanilla = {
+				{"generic.max_health", MAX_HEALTH}, {"generic.follow_range", FOLLOW_RANGE}, {"generic.knockback_resistance", KNOCKBACK_RESISTANCE},
+				{"generic.movement_speed", MOVEMENT_SPEED}, {"generic.flying_speed", FLYING_SPEED}, {"generic.attack_damage", ATTACK_DAMAGE},
+				{"generic.attack_speed", ATTACK_SPEED}, {"generic.armor", ARMOR}, {"generic.armor_toughness", ARMOR_TOUGHNESS}, {"generic.luck", LUCK},
+				{"generic.step_height", STEP_HEIGHT}, {"generic.safe_fall_distance", SAFE_FALL_DISTANCE},
+				{"generic.fall_damage_multiplier", FALL_DAMAGE_MULTIPLIER}, {"generic.gravity", GRAVITY}, {"generic.jump_strength", JUMP_STRENGTH},
+				{"generic.scale", SCALE}, {"generic.attack_knockback", ATTACK_KNOCKBACK}, {"generic.oxygen_bonus", OXYGEN_BONUS},
+				{"generic.max_absorption", MAX_ABSORPTION}, {"generic.burning_time", BURNING_TIME},
+				{"generic.explosion_knockback_resistance", EXPLOSION_KNOCKBACK_RESISTANCE}, {"generic.movement_efficiency", MOVEMENT_EFFICIENCY},
+				{"generic.water_movement_efficiency", WATER_MOVEMENT_EFFICIENCY}, {"player.entity_interaction_range", ENTITY_INTERACTION_RANGE},
+				{"player.block_interaction_range", BLOCK_INTERACTION_RANGE}, {"player.sweeping_damage_ratio", SWEEPING_DAMAGE_RATIO},
+				{"player.mining_efficiency", MINING_EFFICIENCY}, {"player.block_break_speed", BLOCK_BREAK_SPEED},
+				{"player.submerged_mining_speed", SUBMERGED_MINING_SPEED}, {"player.sneaking_speed", SNEAKING_SPEED},
+		};
+		for (Object[] entry : vanilla) {
+			put(mapped, new net.minecraft.util.ResourceLocation("minecraft", (String) entry[0]), (Holder<?>) entry[1]);
+		}
+		put(mapped, new net.minecraft.util.ResourceLocation("neoforge", "swim_speed"), SWIM_SPEED);
+		put(mapped, new net.minecraft.util.ResourceLocation("neoforge", "creative_flight"), CREATIVE_FLIGHT);
+	}
+
+	private static void put(io.github.xponer2.translator.registry.MappedRegistry<Object> registry, net.minecraft.util.ResourceLocation id, Holder<?> holder) {
+		// one attribute under two 1.21 ids (both interaction ranges are Forge's reach): the first id
+		if (!registry.hasEntry(id) && registry.getKey(holder.value()) == null) {
+			registry.register(id, holder.value());
+		}
+	}
+
 	private static Holder<Attribute> forge(net.minecraft.entity.ai.attributes.IAttribute attribute) {
 		return Holder.direct(new Attribute(attribute, attribute.getName(), attribute.getDefaultValue()));
 	}

@@ -68,15 +68,34 @@ public final class DataPackRegistries {
 		}
 	}
 
-	/** Reads the files of every registry named so far. */
+	/**
+	 * Reads the files of every registry named so far, together: an entry may name another entry of its own registry or of
+	 * another one read here (Twilight Forest's biome layers stack on each other, its chunk blankets name structures), so
+	 * the files are decoded in passes until a pass reads none more (1.21's loader binds such references later; here
+	 * what one names is read first). The vanilla kinds the files name by id (block state providers, structure types, ...)
+	 * are loaded before.
+	 */
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public static synchronized void loadAll() {
 		if (loaded) {
 			return;
 		}
 		loaded = true;
+		bootstrapKinds();
+		List<Pending> pending = new ArrayList<>();
 		for (var entry : new ArrayList<>(REGISTRIES.entrySet())) {
-			load((ResourceKey) entry.getKey(), (Codec) entry.getValue());
+			pending.addAll(read((ResourceKey) entry.getKey(), (Codec) entry.getValue()));
+		}
+		decode(pending);
+	}
+
+	/** The vanilla kinds a file names by id: 1.21's Bootstrap loads them before any data. */
+	private static void bootstrapKinds() {
+		try {
+			io.github.xponer2.translator.world.DataFeatures.bootstrap();
+			io.github.xponer2.translator.world.DataStructures.bootstrap();
+		} catch (RuntimeException | LinkageError e) {
+			LOGGER.warn("Couldn't load the 1.21 kinds the data pack registries name: {}", e.toString());
 		}
 	}
 
@@ -84,10 +103,34 @@ public final class DataPackRegistries {
 		return "minecraft".equals(registry.getNamespace()) ? registry.getPath() : registry.getNamespace() + "/" + registry.getPath();
 	}
 
-	@SuppressWarnings("unchecked")
+	/** A file of a registry not read yet. */
+	private static final class Pending {
+		final ResourceKey<?> key;
+		final Codec<Object> codec;
+		final MappedRegistry<Object> registry;
+		final ResourceLocation id;
+		final JsonElement json;
+		String error = "not read";
+
+		Pending(ResourceKey<?> key, Codec<Object> codec, MappedRegistry<Object> registry, ResourceLocation id, JsonElement json) {
+			this.key = key;
+			this.codec = codec;
+			this.registry = registry;
+			this.id = id;
+			this.json = json;
+		}
+	}
+
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	private static <T> void load(ResourceKey<Registry<T>> key, Codec<T> codec) {
+		bootstrapKinds();
+		decode((List) read(key, codec));
+	}
+
+	/** The files of a registry, in a stable order (a registry's ids keep the same order from game to game). */
+	@SuppressWarnings("unchecked")
+	private static <T> List<Pending> read(ResourceKey<Registry<T>> key, Codec<T> codec) {
 		String dir = "/" + dir(key.location()) + "/";
-		// the files by id, in a stable order (a registry's ids keep the same order from game to game)
 		Map<ResourceLocation, JsonElement> files = new TreeMap<>(java.util.Comparator.comparing(ResourceLocation::toString));
 		RuntimeMods.forEachData((path, bytes) -> {
 			int slash = path.indexOf('/');
@@ -110,35 +153,70 @@ public final class DataPackRegistries {
 		Registry<T> registry = BuiltInRegistries.byKey(key);
 		if (!(registry instanceof MappedRegistry)) {
 			LOGGER.warn("The data pack registry {} isn't one the Translator fills ({})", key.location(), registry);
-			return;
+			return Collections.emptyList();
 		}
-		MappedRegistry<T> mapped = (MappedRegistry<T>) registry;
-		var ops = RegistryOps.create(JsonOps.INSTANCE, RegistryAccess.INSTANCE);
-		List<String> failed = new ArrayList<>();
-		int read = 0;
+		List<Pending> pending = new ArrayList<>();
 		for (var file : files.entrySet()) {
-			ResourceLocation id = file.getKey();
-			JsonElement json = file.getValue();
-			if (mapped.hasEntry(id) || !conditionsMet(json)) {
-				continue;
+			if (!((MappedRegistry<T>) registry).hasEntry(file.getKey()) && conditionsMet(file.getValue())) {
+				pending.add(new Pending(key, (Codec<Object>) codec, (MappedRegistry<Object>) registry, file.getKey(), file.getValue()));
 			}
-			try {
-				DataResult<T> result = codec.parse(ops, json);
-				var value = result.result();
-				if (value.isPresent()) {
-					mapped.register(id, value.get());
-					read++;
-				} else {
-					failed.add(id + ": " + result.error().map(DataResult.PartialResult::message).orElse("no value"));
+		}
+		if (pending.isEmpty()) {
+			LOGGER.info("Data pack registry {}: no files in the mods", key.location());
+		}
+		return pending;
+	}
+
+	/** The files decoded in passes, each pass those whose references are there now; then what is left is logged. */
+	private static void decode(List<Pending> pending) {
+		var ops = RegistryOps.create(JsonOps.INSTANCE, RegistryAccess.INSTANCE);
+		Map<ResourceKey<?>, int[]> counts = new LinkedHashMap<>();
+		for (Pending file : pending) {
+			counts.putIfAbsent(file.key, new int[1]);
+		}
+		List<Pending> left = new ArrayList<>(pending);
+		boolean progress = true;
+		while (progress && !left.isEmpty()) {
+			progress = false;
+			for (var iterator = left.iterator(); iterator.hasNext(); ) {
+				Pending file = iterator.next();
+				try {
+					DataResult<Object> result = file.codec.parse(ops, file.json);
+					var value = result.result();
+					if (value.isPresent()) {
+						file.registry.register(file.id, value.get());
+						counts.get(file.key)[0]++;
+						iterator.remove();
+						progress = true;
+					} else {
+						file.error = result.error().map(DataResult.PartialResult::message).orElse("no value");
+					}
+				} catch (RuntimeException | LinkageError e) {
+					file.error = describe(e);
 				}
-			} catch (RuntimeException | LinkageError e) {
-				failed.add(id + ": " + e);
 			}
 		}
-		LOGGER.info("Data pack registry {}: {} entries from the mods' files", key.location(), read);
-		for (String why : failed.subList(0, Math.min(failed.size(), 20))) {
-			LOGGER.warn("Data pack registry {}: couldn't read {}", key.location(), why);
+		for (var count : counts.entrySet()) {
+			LOGGER.info("Data pack registry {}: {} entries from the mods' files", count.getKey().location(), count.getValue()[0]);
+			int shown = 0;
+			for (Pending file : left) {
+				if (file.key.equals(count.getKey()) && shown++ < 20) {
+					LOGGER.warn("Data pack registry {}: couldn't read {}: {}", count.getKey().location(), file.id, file.error);
+				}
+			}
 		}
+	}
+
+	/** An exception with where it came from: the first frame of a mod or of the Translator (an NPE says nothing else). */
+	private static String describe(Throwable e) {
+		for (StackTraceElement frame : e.getStackTrace()) {
+			String type = frame.getClassName();
+			if (!type.startsWith("java.") && !type.startsWith("sun.") && !type.startsWith("com.mojang.serialization.")
+					&& !type.startsWith("com.mojang.datafixers.")) {
+				return e + " at " + frame;
+			}
+		}
+		return e.toString();
 	}
 
 	private static boolean conditionsMet(JsonElement json) {

@@ -60,6 +60,8 @@ public final class Translator {
 		io.github.xponer2.translator.world.BlockIds.raiseLimit();
 		// the 1.21 entity data serializers 1.12.2 lacks: numbered before any mod's, the same on both sides
 		io.github.xponer2.translator.entity.ExtraDataSerializers.register();
+		// the vanilla attributes under their 1.21.1 ids (the mods' data names them), before the mods register theirs
+		io.github.xponer2.translator.entity.Attributes.registerVanilla();
 		// 1.21 damage containers (original damage) and LivingDamageEvent.Post
 		io.github.xponer2.translator.runtime.neoforge.DamageContainer.Hooks.register();
 		if (!net.minecraftforge.fml.common.Loader.isModLoaded("jeid") && !net.minecraftforge.fml.common.Loader.isModLoaded("reid")) {
