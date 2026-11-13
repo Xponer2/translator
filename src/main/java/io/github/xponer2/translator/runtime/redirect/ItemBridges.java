@@ -116,6 +116,45 @@ public final class ItemBridges {
 		return item.onItemRightClick(world, player, hand);
 	}
 
+	// 1.21 methods of any item, through 1.12.2's own (the Translator's items route those to their 1.21 methods): called
+	// on a vanilla item they were cast to the Translator's Item and threw (Supplementaries' lunch basket, which asks
+	// every item stack put into it for its use animation)
+
+	public static net.minecraft.item.EnumAction getUseAnimation(Item item, ItemStack stack) {
+		return item.getItemUseAction(stack);
+	}
+
+	public static int getUseDuration(Item item, ItemStack stack, @javax.annotation.Nullable EntityLivingBase entity) {
+		return item.getMaxItemUseDuration(stack);
+	}
+
+	public static boolean isFoil(Item item, ItemStack stack) {
+		return item.hasEffect(stack);
+	}
+
+	public static void releaseUsing(Item item, ItemStack stack, World world, EntityLivingBase entity, int timeLeft) {
+		item.onPlayerStoppedUsing(stack, world, entity, timeLeft);
+	}
+
+	public static void onUseTick(Item item, World world, EntityLivingBase entity, ItemStack stack, int remaining) {
+		item.onUsingTick(stack, entity, remaining);
+	}
+
+	public static net.minecraft.util.EnumActionResult interactLivingEntity(Item item, ItemStack stack, EntityPlayer player, EntityLivingBase target,
+			EnumHand hand) {
+		return item.itemInteractionForEntity(stack, player, target, hand) ? net.minecraft.util.EnumActionResult.SUCCESS : net.minecraft.util.EnumActionResult.PASS;
+	}
+
+	public static boolean overrideStackedOnOther(Item item, ItemStack stack, net.minecraft.inventory.Slot slot, io.github.xponer2.translator.menu.ClickAction action,
+			EntityPlayer player) {
+		return item instanceof io.github.xponer2.translator.runtime.mc.Item own && own.overrideStackedOnOther(stack, slot, action, player);
+	}
+
+	public static boolean overrideOtherStackedOnMe(Item item, ItemStack stack, ItemStack other, net.minecraft.inventory.Slot slot,
+			io.github.xponer2.translator.menu.ClickAction action, EntityPlayer player, io.github.xponer2.translator.menu.SlotAccess access) {
+		return item instanceof io.github.xponer2.translator.runtime.mc.Item own && own.overrideOtherStackedOnMe(stack, other, slot, action, player, access);
+	}
+
 	public static ItemStack finishUsingItem(Item item, ItemStack stack, World world, EntityLivingBase entity) {
 		return item.onItemUseFinish(stack, world, entity);
 	}
