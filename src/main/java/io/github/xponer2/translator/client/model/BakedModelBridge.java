@@ -49,10 +49,15 @@ public interface BakedModelBridge extends IBakedModel {
 		return data;
 	}
 
+	/**
+	 * 1.12.2's quads: the mod's, without a missing one. A quad the mod couldn't make (a part of 1.21 the Translator
+	 * lacked) is a null in its list, which crashed the chunk being built ("Tesselating block model": Twilight Forest's
+	 * coronation carpet); a model that throws draws nothing. Either way the game goes on.
+	 */
 	@Override
 	default List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, long rand) {
 		try {
-			return this.getQuads(state, side, new Random(rand), modelData(state), null);
+			return withoutNulls(this.getQuads(state, side, new Random(rand), modelData(state), null), this.getClass());
 		} catch (RuntimeException | LinkageError e) {
 			// a part of 1.21 the model needs and the Translator lacks: nothing drawn, the game goes on
 			if (GeometryLoaders.reportOnce(this.getClass())) {
@@ -60,6 +65,26 @@ public interface BakedModelBridge extends IBakedModel {
 			}
 			return java.util.Collections.emptyList();
 		}
+	}
+
+	/** The list without null quads (and an empty one for none); the model's class reported once. */
+	static List<BakedQuad> withoutNulls(@Nullable List<BakedQuad> quads, Class<?> model) {
+		if (quads == null) {
+			return java.util.Collections.emptyList();
+		}
+		if (!quads.contains(null)) {
+			return quads;
+		}
+		if (GeometryLoaders.reportOnce(model)) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.missing(model.getName() + ".getQuads (a null quad, left out)");
+		}
+		var kept = new java.util.ArrayList<BakedQuad>(quads.size());
+		for (BakedQuad quad : quads) {
+			if (quad != null) {
+				kept.add(quad);
+			}
+		}
+		return kept;
 	}
 
 	/** The model data a block put on its extended state (the Translator's blocks: their block entity's data). */

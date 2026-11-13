@@ -213,7 +213,38 @@ public final class ModelBakeBridges {
 	/** NeoForge {@code builder.build(renderTypes)}: the model (1.12.2's draws each block layer its own way). */
 	public static net.minecraft.client.renderer.block.model.IBakedModel build(net.minecraft.client.renderer.block.model.SimpleBakedModel.Builder builder,
 			@Nullable Object renderTypes) {
-		return builder.makeBakedModel();
+		return withoutNullQuads(builder.makeBakedModel());
+	}
+
+	/**
+	 * The model again without null quads, if it has any (a quad a mod's geometry couldn't bake): 1.12.2's chunk builder
+	 * crashed on one.
+	 */
+	static net.minecraft.client.renderer.block.model.IBakedModel withoutNullQuads(net.minecraft.client.renderer.block.model.IBakedModel model) {
+		var general = model.getQuads(null, null, 0L);
+		boolean nulls = general.contains(null);
+		var faces = new java.util.EnumMap<net.minecraft.util.EnumFacing, java.util.List<net.minecraft.client.renderer.block.model.BakedQuad>>(
+				net.minecraft.util.EnumFacing.class);
+		for (var side : net.minecraft.util.EnumFacing.values()) {
+			var quads = model.getQuads(null, side, 0L);
+			nulls |= quads.contains(null);
+			faces.put(side, quads);
+		}
+		if (!nulls) {
+			return model;
+		}
+		java.util.function.UnaryOperator<java.util.List<net.minecraft.client.renderer.block.model.BakedQuad>> clean = quads -> {
+			var kept = new java.util.ArrayList<net.minecraft.client.renderer.block.model.BakedQuad>(quads.size());
+			for (var quad : quads) {
+				if (quad != null) {
+					kept.add(quad);
+				}
+			}
+			return kept;
+		};
+		faces.replaceAll((side, quads) -> clean.apply(quads));
+		return new net.minecraft.client.renderer.block.model.SimpleBakedModel(clean.apply(general), faces, model.isAmbientOcclusion(), model.isGui3d(),
+				model.getParticleTexture(), model.getItemCameraTransforms(), model.getOverrides());
 	}
 
 	static boolean uvLocked(@Nullable Object state) {
