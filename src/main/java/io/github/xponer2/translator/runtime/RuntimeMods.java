@@ -313,6 +313,8 @@ public final class RuntimeMods {
 		} catch (Throwable t) {
 			LOGGER.error("NewRegistryEvent failed", t);
 		}
+		// and the registries they fill from their data files (Moonlight's soft fluids)
+		io.github.xponer2.translator.registry.DataPackRegistries.fire();
 		Conversion.release();
 	}
 

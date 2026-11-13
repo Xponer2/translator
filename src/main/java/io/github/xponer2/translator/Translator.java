@@ -112,6 +112,8 @@ public final class Translator {
 		CapabilityAttacher.registerAll();
 		// every registry filled (DeferredRegisters too): baked once more, as NeoForge does after registration
 		io.github.xponer2.translator.registry.RegistryCallbacks.bakeAll();
+		// the mods' data pack registries, from their files (which name the items and blocks registered now)
+		io.github.xponer2.translator.registry.DataPackRegistries.loadAll();
 		// the mods' living entity types get their attributes (their entities apply them when made)
 		io.github.xponer2.translator.entity.EntityAttributeCreationEvent.fire();
 		// and their natural spawns (NeoForge biome modifiers)

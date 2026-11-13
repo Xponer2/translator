@@ -16818,3 +16818,4 @@ f	zoom	cameraZoom
 f	zoomX	cameraYaw
 f	zoomY	cameraPitch
 f	zza	forwardSpeed
+C	net/minecraft/advancements/critereon/MinMaxBounds	io/github/xponer2/translator/advancement/MinMaxBounds

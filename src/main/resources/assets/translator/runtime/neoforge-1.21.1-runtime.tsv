@@ -570,3 +570,5 @@ X	net/minecraftforge/client/ClientCommandHandler	runCommand	(Ljava/lang/String;)
 X	org/apache/commons/compress/utils/Lists	newArrayList	()Ljava/util/ArrayList;	io/github/xponer2/translator/runtime/redirect/MiscBridges
 # NeoForge's level.getModelDataManager(): none on 1.12.2 (getAt above works without one)
 X	net/minecraft/client/multiplayer/WorldClient	getModelDataManager	()Lnet/neoforged/neoforge/client/model/data/ModelDataManager;	io/github/xponer2/translator/client/TextureBridges	(Ljava/lang/Object;)Lnet/neoforged/neoforge/client/model/data/ModelDataManager;
+C	net/neoforged/neoforge/registries/DataPackRegistryEvent	io/github/xponer2/translator/registry/DataPackRegistryEvent
+C	net/neoforged/neoforge/registries/DataPackRegistryEvent$NewRegistry	io/github/xponer2/translator/registry/DataPackRegistryEvent$NewRegistry
