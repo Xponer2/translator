@@ -24,4 +24,9 @@ public final class BoatTypeBridges {
 	public static boolean isRaft(EntityBoat.Type type) {
 		return false;
 	}
+
+	/** 1.21 {@code boatType.getPlanks()}: the planks block (1.12.2 has one, its wood a property). */
+	public static net.minecraft.block.Block getPlanks(net.minecraft.entity.item.EntityBoat.Type type) {
+		return net.minecraft.init.Blocks.PLANKS;
+	}
 }

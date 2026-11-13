@@ -672,6 +672,19 @@ public final class EntityApiBridges {
 		return movement;
 	}
 
+	/** 1.21 {@code entity.closerThan(other, distance)}: their positions nearer than that. */
+	public static boolean closerThan(Entity entity, Entity other, double distance) {
+		return entity.getDistanceSq(other) < distance * distance;
+	}
+
+	/** 1.21 {@code entity.closerThan(other, horizontal, vertical)}: within both. */
+	public static boolean closerThan(Entity entity, Entity other, double horizontal, double vertical) {
+		double dx = other.posX - entity.posX;
+		double dy = other.posY - entity.posY;
+		double dz = other.posZ - entity.posZ;
+		return dx * dx + dz * dz < horizontal * horizontal && dy * dy < vertical * vertical;
+	}
+
 	/** 1.21 {@code entity.getTypeName()}: its type's name (Twilight Forest's boss bars show it). */
 	public static net.minecraft.util.text.ITextComponent getTypeName(Entity entity) {
 		var type = io.github.xponer2.translator.registry.EntityType.of(entity);
