@@ -907,6 +907,8 @@ final class MethodGuard {
 	}
 
 	private static final String ITEM_LIKE = "io/github/xponer2/translator/util/ItemLike";
+	private static final String ATTACHMENT_HOLDER = "net/neoforged/neoforge/attachment/IAttachmentHolder";
+	private static final String ATTACHMENT_HOLDERS = "io/github/xponer2/translator/util/AttachmentHolders";
 	/**
 	 * A mod method with the name and descriptor of a final 1.12.2 method of a superclass (AE2's own getRegistryName next
 	 * to Forge's final one, Create's fireImmune that is the final isImmuneToFire now): the JVM refuses the whole class.
@@ -1094,6 +1096,37 @@ final class MethodGuard {
 			// parameter takes any object), and asItem() through ItemLike.item(Object), which knows 1.12.2 items and blocks
 			if (insn instanceof TypeInsnNode cast && cast.getOpcode() == Opcodes.CHECKCAST && ITEM_LIKE.equals(cast.desc)) {
 				method.instructions.remove(cast);
+				changed = true;
+				continue;
+			}
+			// NeoForge's data attachment holders: 1.12.2's entities, block entities, worlds and chunks hold attachments
+			// (util.Attachments) but aren't IAttachmentHolders. An instanceof asks AttachmentHolders.isHolder, a cast goes
+			// (an interface takes any object), the interface's calls go to its helpers with the holder first (Moonlight's
+			// attachments threw "is not an attachment holder": Supplementaries' soap, its slingshot and quiver data)
+			if (insn instanceof TypeInsnNode holderType && ATTACHMENT_HOLDER.equals(holderType.desc)
+					&& (holderType.getOpcode() == Opcodes.INSTANCEOF || holderType.getOpcode() == Opcodes.CHECKCAST)) {
+				if (holderType.getOpcode() == Opcodes.INSTANCEOF) {
+					method.instructions.set(holderType, new MethodInsnNode(Opcodes.INVOKESTATIC, ATTACHMENT_HOLDERS, "isHolder", "(Ljava/lang/Object;)Z", false));
+				} else {
+					method.instructions.remove(holderType);
+				}
+				changed = true;
+				continue;
+			}
+			if (insn instanceof MethodInsnNode holderCall && ATTACHMENT_HOLDER.equals(holderCall.owner) && holderCall.getOpcode() == Opcodes.INVOKEINTERFACE) {
+				StringBuilder desc = new StringBuilder("(Ljava/lang/Object;");
+				for (Type ignored : Type.getArgumentTypes(holderCall.desc)) {
+					desc.append("Ljava/lang/Object;");
+				}
+				Type returned = Type.getReturnType(holderCall.desc);
+				desc.append(')').append(returned.getSort() == Type.OBJECT && !"java/util/Optional".equals(returned.getInternalName())
+						? "Ljava/lang/Object;" : returned.getDescriptor());
+				var helper = new MethodInsnNode(Opcodes.INVOKESTATIC, ATTACHMENT_HOLDERS, holderCall.name, desc.toString(), false);
+				method.instructions.set(holderCall, helper);
+				if (returned.getSort() == Type.OBJECT && !"java/lang/Object".equals(returned.getInternalName())
+						&& !"java/util/Optional".equals(returned.getInternalName())) {
+					method.instructions.insert(helper, new TypeInsnNode(Opcodes.CHECKCAST, returned.getInternalName()));
+				}
 				changed = true;
 				continue;
 			}

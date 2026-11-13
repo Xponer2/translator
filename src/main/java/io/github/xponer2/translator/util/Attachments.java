@@ -62,6 +62,12 @@ public final class Attachments {
 		}
 	}
 
+	/** Whether the holder has any attachment. */
+	public static boolean any(Object holder) {
+		var values = VALUES.get(holder);
+		return values != null && !values.isEmpty();
+	}
+
 	public static boolean has(Object holder, Object type) {
 		var values = VALUES.get(holder);
 		return values != null && values.containsKey(type(type));
