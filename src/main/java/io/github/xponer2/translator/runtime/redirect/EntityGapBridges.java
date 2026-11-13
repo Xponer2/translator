@@ -467,6 +467,67 @@ public final class EntityGapBridges {
 		}
 	}
 
+	private static final java.lang.reflect.Field ATTACK_TICK = melee("attackTick", "field_75439_d");
+
+	@javax.annotation.Nullable
+	private static java.lang.reflect.Field melee(String mcp, String srg) {
+		for (String name : new String[] {mcp, srg}) {
+			try {
+				java.lang.reflect.Field field = net.minecraft.entity.ai.EntityAIAttackMelee.class.getDeclaredField(name);
+				field.setAccessible(true);
+				return field;
+			} catch (NoSuchFieldException | RuntimeException e) {
+				// the other name
+			}
+		}
+		return null;
+	}
+
+	private static int attackTick(net.minecraft.entity.ai.EntityAIAttackMelee goal) {
+		try {
+			return ATTACK_TICK == null ? 0 : ATTACK_TICK.getInt(goal);
+		} catch (IllegalAccessException e) {
+			return 0;
+		}
+	}
+
+	/** 1.21 {@code meleeGoal.resetAttackCooldown()}: 20 ticks to the next hit (as 1.12.2 after one). */
+	public static void resetAttackCooldown(net.minecraft.entity.ai.EntityAIAttackMelee goal) {
+		try {
+			if (ATTACK_TICK != null) {
+				ATTACK_TICK.setInt(goal, 20);
+			}
+		} catch (IllegalAccessException e) {
+			// no cooldown kept
+		}
+	}
+
+	/** 1.21 {@code meleeGoal.getTicksUntilNextAttack()} / {@code isTimeToAttack()} / {@code getAttackInterval()}. */
+	public static int getTicksUntilNextAttack(net.minecraft.entity.ai.EntityAIAttackMelee goal) {
+		return attackTick(goal);
+	}
+
+	public static boolean isTimeToAttack(net.minecraft.entity.ai.EntityAIAttackMelee goal) {
+		return attackTick(goal) <= 0;
+	}
+
+	public static int getAttackInterval(net.minecraft.entity.ai.EntityAIAttackMelee goal) {
+		return 20;
+	}
+
+	/**
+	 * 1.21 {@code meleeGoal.canPerformAttack(target)}: its time, within reach (1.12.2's attack reach of the mob) and
+	 * in sight (Twilight Forest's goals that throw a rider ask it).
+	 */
+	public static boolean canPerformAttack(net.minecraft.entity.ai.EntityAIAttackMelee goal, @javax.annotation.Nullable net.minecraft.entity.EntityLivingBase target) {
+		net.minecraft.entity.EntityLiving mob = mob(goal);
+		if (target == null || mob == null || !isTimeToAttack(goal)) {
+			return false;
+		}
+		double reach = mob.width * 2.0F * mob.width * 2.0F + target.width;
+		return mob.getDistanceSq(target.posX, target.getEntityBoundingBox().minY, target.posZ) <= reach && mob.getEntitySenses().canSee(target);
+	}
+
 	/** 1.21 {@code mob.hasRestriction()}: 1.12.2's home (a mob kept near a place: Twilight Forest's naga at its courtyard). */
 	public static boolean hasRestriction(net.minecraft.entity.EntityCreature mob) {
 		return mob.hasHome();

@@ -34,8 +34,12 @@ public class DamageSource extends net.minecraft.util.DamageSource {
 	@Nullable
 	private final Vec3d position;
 
+	@Nullable
+	private final Holder<?> typeHolder;
+
 	public DamageSource(Holder<?> type, @Nullable Entity direct, @Nullable Entity causing, @Nullable Vec3d position) {
 		super(name(type));
+		this.typeHolder = type;
 		this.direct = direct;
 		this.causing = causing;
 		this.position = position;
@@ -55,6 +59,13 @@ public class DamageSource extends net.minecraft.util.DamageSource {
 
 	public DamageSource(Holder<?> type) {
 		this(type, null, null, null);
+	}
+
+	/** 1.21 {@code type()}: the damage type it was made of (the carried DamageType of the registry), null without one. */
+	@Nullable
+	public net.minecraft.world.damagesource.DamageType type() {
+		Object value = this.typeHolder == null ? null : this.typeHolder.value();
+		return value instanceof net.minecraft.world.damagesource.DamageType type ? type : null;
 	}
 
 	private static String name(@Nullable Holder<?> type) {

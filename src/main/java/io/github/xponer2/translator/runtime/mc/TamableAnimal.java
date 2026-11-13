@@ -33,6 +33,11 @@ public abstract class TamableAnimal extends net.minecraft.entity.passive.EntityT
 		}
 	}
 
+	/** 1.21 {@code setTame(tame, applyTamingSideEffects)}: 1.12.2's tamed flag (it applies no side effects). */
+	public void setTame(boolean tame, boolean applyTamingSideEffects) {
+		this.setTamed(tame);
+	}
+
 	public EntityType<?> getType() {
 		return this.type;
 	}

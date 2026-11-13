@@ -672,6 +672,37 @@ public final class EntityApiBridges {
 		return movement;
 	}
 
+	/** 1.21 {@code entity.getTypeName()}: its type's name (Twilight Forest's boss bars show it). */
+	public static net.minecraft.util.text.ITextComponent getTypeName(Entity entity) {
+		var type = io.github.xponer2.translator.registry.EntityType.of(entity);
+		if (type != null) {
+			try {
+				return type.getDescription();
+			} catch (RuntimeException e) {
+				// the entity's own name below
+			}
+		}
+		return new net.minecraft.util.text.TextComponentString(entity.getName());
+	}
+
+	/** 1.21 {@code entity.getDefaultLootTable()} (a mod's super call): its type's table, entities/<name>. */
+	@SuppressWarnings("unchecked")
+	public static ResourceKey<LootTable> getDefaultLootTable(Entity entity) {
+		return (ResourceKey<LootTable>) (ResourceKey<?>) io.github.xponer2.translator.registry.EntityType.of(entity).getDefaultLootTable();
+	}
+
+	/** 1.21 {@code mob.checkSpawnRules(level, spawnType)}: 1.12.2's getCanSpawnHere. */
+	public static boolean checkSpawnRules(EntityLiving mob, @Nullable Object level, @Nullable Object spawnType) {
+		return mob.getCanSpawnHere();
+	}
+
+	/** 1.21 {@code bossEvent.removeAllPlayers()}: every player it is shown to. */
+	public static void removeAllPlayers(net.minecraft.world.BossInfoServer boss) {
+		for (EntityPlayerMP player : new ArrayList<>(boss.getPlayers())) {
+			boss.removePlayer(player);
+		}
+	}
+
 	/** 1.21 {@code living.stopSleeping()}: a sleeping player wakes (Supplementaries' flute); 1.12.2's mobs don't sleep. */
 	public static void stopSleeping(EntityLivingBase living) {
 		if (living instanceof EntityPlayer player && player.isPlayerSleeping()) {
