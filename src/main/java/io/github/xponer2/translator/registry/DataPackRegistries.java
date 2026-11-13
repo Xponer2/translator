@@ -82,11 +82,82 @@ public final class DataPackRegistries {
 		}
 		loaded = true;
 		bootstrapKinds();
+		addVanilla();
 		List<Pending> pending = new ArrayList<>();
 		for (var entry : new ArrayList<>(REGISTRIES.entrySet())) {
 			pending.addAll(read((ResourceKey) entry.getKey(), (Codec) entry.getValue()));
 		}
 		decode(pending);
+	}
+
+	/**
+	 * 1.21's own data pack registries the mods add to and read (their types are carried): registry, entry class, the
+	 * class whose {@code bootstrap(context)} makes the vanilla entries (1.21 writes its data with it).
+	 */
+	private static final String[][] VANILLA = {
+			{"damage_type", "net.minecraft.world.damagesource.DamageType", "net.minecraft.world.damagesource.DamageTypes"},
+			{"wolf_variant", "net.minecraft.world.entity.animal.WolfVariant", "net.minecraft.world.entity.animal.WolfVariants"},
+	};
+
+	/**
+	 * The vanilla data pack registries: the vanilla entries from 1.21's bootstrap, then the mods' files like any other
+	 * (Twilight Forest's damage types expired, frozen, hydra_mortar, axing; its hostile, mist and winter wolves are the
+	 * vanilla pale wolf). No mod announces them, so they stayed empty: "Missing element".
+	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	private static void addVanilla() {
+		for (String[] vanilla : VANILLA) {
+			ResourceKey key = ResourceKey.createRegistryKey(new ResourceLocation("minecraft", vanilla[0]));
+			try {
+				Codec<?> codec = (Codec<?>) Class.forName(vanilla[1], true, net.minecraft.launchwrapper.Launch.classLoader).getField("DIRECT_CODEC")
+						.get(null);
+				REGISTRIES.putIfAbsent(key, codec);
+				Registry<?> registry = BuiltInRegistries.byKey(key);
+				if (registry instanceof MappedRegistry mapped && mapped.keySet().isEmpty()) {
+					bootstrap(vanilla[2], key, mapped);
+					LOGGER.info("Data pack registry {}: {} vanilla entries", key.location(), mapped.keySet().size());
+				}
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				LOGGER.warn("Data pack registry {}: no vanilla entries ({})", key.location(), io.github.xponer2.translator.world.DataStructures.where(e));
+			}
+		}
+	}
+
+	/**
+	 * Runs a carried {@code bootstrap(BootstrapContext)}: what it registers goes into the registry (each entry as it
+	 * comes, so a failure late in it keeps the ones before), what it looks up is the Translator's registries.
+	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	private static void bootstrap(String owner, ResourceKey<?> key, MappedRegistry registry) throws ReflectiveOperationException {
+		ClassLoader loader = net.minecraft.launchwrapper.Launch.classLoader;
+		Class<?> contextType = Class.forName("net.minecraft.data.worldgen.BootstrapContext", true, loader);
+		Object context = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[] {contextType}, (proxy, method, args) -> {
+			switch (method.getName()) {
+				case "register": {
+					ResourceKey entry = (ResourceKey) args[0];
+					if (!registry.hasEntry(entry.location())) {
+						registry.register(entry.location(), args[1]);
+					}
+					return new Registry.Reference(entry, args[1]);
+				}
+				case "lookup":
+					return BuiltInRegistries.byKey((ResourceKey) args[0]);
+				case "registryLookup":
+					return java.util.Optional.ofNullable(BuiltInRegistries.byKey((ResourceKey) args[0]));
+				case "equals":
+					return proxy == args[0];
+				case "hashCode":
+					return System.identityHashCode(proxy);
+				default:
+					return "BootstrapContext[" + key.location() + "]";
+			}
+		});
+		try {
+			Class.forName(owner, true, loader).getMethod("bootstrap", contextType).invoke(null, context);
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			LOGGER.warn("Data pack registry {}: the vanilla bootstrap stopped at {} entries: {}", key.location(), registry.keySet().size(),
+					io.github.xponer2.translator.world.DataStructures.where(e.getCause()));
+		}
 	}
 
 	/** The vanilla kinds a file names by id: 1.21's Bootstrap loads them before any data. */

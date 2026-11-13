@@ -101,6 +101,11 @@ public final class DataDimensions {
 		return data != null ? data.effects : null;
 	}
 
+	/** The 1.12.2 dimension ids of the mods' dimensions. */
+	public static java.util.Set<Integer> ids() {
+		return java.util.Collections.unmodifiableSet(BY_ID.keySet());
+	}
+
 	/** Registers the mods' dimensions (init: the biomes are registered by then). */
 	public static void registerAll() {
 		var dimensions = new LinkedHashMap<ResourceLocation, JsonObject>();

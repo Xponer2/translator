@@ -844,3 +844,5 @@ R	net/minecraft/client/renderer/ItemModelMesher	io/github/xponer2/translator/run
 R	net/minecraft/client/renderer/block/model/FaceBakery	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
 R	net/minecraft/client/renderer/block/model/ItemOverride	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
 R	net/minecraft/client/renderer/block/model/SimpleBakedModel$Builder	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
+R	net/minecraft/entity/ai/EntityAITasks$EntityAITaskEntry	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
+R	net/minecraft/entity/ai/EntityAIBase	io/github/xponer2/translator/runtime/redirect/EntityGapBridges

@@ -1515,8 +1515,14 @@ final class MethodGuard {
 					Type[] captured = Type.getArgumentTypes(indy.desc);
 					Type[] own = i == 1 && indy.bsmArgs.length > 2 && indy.bsmArgs[2] instanceof Type used ? used.getArgumentTypes() : new Type[0];
 					Type receiverType = captured.length > 0 ? captured[0] : own.length > 0 ? own[0] : null;
-					if (i == 1 && indy.bsmArgs[i] instanceof Handle ext && ext.getTag() == Opcodes.H_INVOKEINTERFACE
-							&& ext.getOwner().startsWith("net/neoforged/neoforge/common/extensions/") && receiverType != null
+					// The same for a method reference whose receiver's class (as the tables map it) isn't of the method's class at
+					// all: 1.21's SpawnerData is 1.12.2's SpawnListEntry, no WeightedEntry.IntrusiveBase, and
+					// IntrusiveBase::getWeight in its codec failed to link (every structure with spawns didn't read)
+					boolean foreign = i == 1 && indy.bsmArgs[i] instanceof Handle virtual
+							&& (virtual.getTag() == Opcodes.H_INVOKEVIRTUAL || virtual.getTag() == Opcodes.H_INVOKEINTERFACE) && receiverType != null
+							&& receiverType.getSort() == Type.OBJECT && this.info(receiverType.getInternalName()) != null && this.info(virtual.getOwner()) != null;
+					if (i == 1 && indy.bsmArgs[i] instanceof Handle ext && (ext.getTag() == Opcodes.H_INVOKEINTERFACE
+							&& ext.getOwner().startsWith("net/neoforged/neoforge/common/extensions/") || foreign) && receiverType != null
 							&& receiverType.getSort() == Type.OBJECT) {
 						String receiver = receiverType.getInternalName();
 						if (!this.isSubtype("L" + receiver + ";", "L" + ext.getOwner() + ";")) {
@@ -1567,7 +1573,7 @@ final class MethodGuard {
 			if (found != null) {
 				var redirect = new MethodInsnNode(Opcodes.INVOKESTATIC, found[0], call.name, found[1], false);
 				method.instructions.set(call, redirect);
-				if (found.length > 2 && found[2] != null) {
+				if (found.length > 2 && found[2] != null && !typeTestedNext(redirect)) {
 					method.instructions.insert(redirect, new TypeInsnNode(Opcodes.CHECKCAST, found[2]));
 				}
 				this.redirected.incrementAndGet();
@@ -1731,6 +1737,19 @@ final class MethodGuard {
 	 * The static stand-in for a method the class lacks: {helper class, its descriptor}, or null. Instance methods get
 	 * the receiver as the first parameter, typed as the class (or supertype) the helper is registered for.
 	 */
+	/**
+	 * Whether the value a call leaves is only type-tested or cast by the mod's own next instruction (INSTANCEOF,
+	 * CHECKCAST): a helper's wider result needs no cast back to the call's type then. A goal of a vanilla 1.12.2 task is
+	 * no carried 1.21 Goal: {@code wrappedGoal.getGoal() instanceof MeleeAttackGoal} failed on the cast before the test.
+	 */
+	private static boolean typeTestedNext(AbstractInsnNode call) {
+		AbstractInsnNode next = call.getNext();
+		while (next instanceof LabelNode || next instanceof xyz.wagyourtail.jvmdg.shade.asm.tree.LineNumberNode) {
+			next = next.getNext();
+		}
+		return next instanceof TypeInsnNode type && (type.getOpcode() == Opcodes.INSTANCEOF || type.getOpcode() == Opcodes.CHECKCAST);
+	}
+
 	private String[] findRedirect(String callOwner, String name, String callDesc, boolean isStatic) {
 		var todo = new java.util.ArrayDeque<String>();
 		var seen = new java.util.HashSet<String>();

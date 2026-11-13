@@ -224,6 +224,7 @@ C	net/minecraft/world/entity/monster/Evoker$EvokerSummonSpellGoal	net/minecraft/
 C	net/minecraft/world/entity/monster/Evoker$EvokerWololoSpellGoal	net/minecraft/world/entity/monster/Evoker$EvokerWololoSpellGoal
 C	net/minecraft/world/entity/monster/Ghast	net/minecraft/world/entity/monster/Ghast
 C	net/minecraft/world/entity/monster/Ghast$GhastLookGoal	net/minecraft/world/entity/monster/Ghast$GhastLookGoal
+C	net/minecraft/world/entity/monster/Ghast$GhastMoveControl	net/minecraft/world/entity/monster/Ghast$GhastMoveControl
 C	net/minecraft/world/entity/monster/Ghast$GhastShootFireballGoal	net/minecraft/world/entity/monster/Ghast$GhastShootFireballGoal
 C	net/minecraft/world/entity/monster/Ghast$RandomFloatAroundGoal	net/minecraft/world/entity/monster/Ghast$RandomFloatAroundGoal
 C	net/minecraft/world/entity/monster/Guardian	net/minecraft/world/entity/monster/Guardian

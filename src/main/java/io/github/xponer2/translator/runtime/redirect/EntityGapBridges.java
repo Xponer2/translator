@@ -432,6 +432,99 @@ public final class EntityGapBridges {
 		}
 	}
 
+	// --- 1.21 WrappedGoal: 1.12.2's task entry (the table maps it) ----------------------------------------------------
+
+	/**
+	 * 1.21 {@code wrappedGoal.getGoal()}: the mod's carried Goal, or the 1.12.2 task (a vanilla goal the tables map:
+	 * Twilight Forest's swarm spiders take the spider's melee attack out by {@code getGoal() instanceof
+	 * MeleeAttackGoal}).
+	 */
+	public static Object getGoal(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		return entry.action instanceof CarriedGoal carried ? carried.goal : entry.action;
+	}
+
+	public static int getPriority(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		return entry.priority;
+	}
+
+	public static boolean isRunning(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		return entry.using;
+	}
+
+	public static boolean canUse(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		return entry.action.shouldExecute();
+	}
+
+	public static boolean canContinueToUse(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		return entry.action.shouldContinueExecuting();
+	}
+
+	public static void start(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		entry.action.startExecuting();
+	}
+
+	public static void stop(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		entry.action.resetTask();
+	}
+
+	public static void tick(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		entry.action.updateTask();
+	}
+
+	public static boolean isInterruptable(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		return entry.action.isInterruptible();
+	}
+
+	/** 1.21 {@code canBeReplacedBy(other)}: interruptable and of a lower priority (a higher number). */
+	public static boolean canBeReplacedBy(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry,
+			net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry other) {
+		return entry.action.isInterruptible() && other.priority < entry.priority;
+	}
+
+	/** 1.21 {@code wrappedGoal.getFlags()}: the task's mutex bits as 1.21 flags. */
+	public static java.util.EnumSet<?> getFlags(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
+		return getFlags(entry.action);
+	}
+
+	// --- a 1.12.2 task with 1.21 Goal methods (a mod's goal on a vanilla goal the tables map) -----------------------
+
+	/**
+	 * 1.21 {@code goal.setFlags(flags)}: MOVE, LOOK, JUMP as 1.12.2's mutex bits (1, 2, 4; TARGET as 1.12.2's target
+	 * tasks: 1). Twilight Forest's towerwood borer's hiding goal set its flags so.
+	 */
+	public static void setFlags(net.minecraft.entity.ai.EntityAIBase task, @javax.annotation.Nullable java.util.Set<?> flags) {
+		int bits = 0;
+		if (flags != null) {
+			for (Object flag : flags) {
+				String name = ((Enum<?>) flag).name();
+				bits |= "MOVE".equals(name) || "TARGET".equals(name) ? 1 : "LOOK".equals(name) ? 2 : "JUMP".equals(name) ? 4 : 0;
+			}
+		}
+		task.setMutexBits(bits);
+	}
+
+	/** 1.21 {@code goal.getFlags()}: the task's mutex bits as the carried Goal.Flag values. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static java.util.EnumSet<?> getFlags(net.minecraft.entity.ai.EntityAIBase task) {
+		try {
+			Class flagType = Class.forName("net.minecraft.world.entity.ai.goal.Goal$Flag", true, net.minecraft.launchwrapper.Launch.classLoader);
+			java.util.EnumSet flags = java.util.EnumSet.noneOf(flagType);
+			int bits = task.getMutexBits();
+			if ((bits & 1) != 0) {
+				flags.add(Enum.valueOf(flagType, "MOVE"));
+			}
+			if ((bits & 2) != 0) {
+				flags.add(Enum.valueOf(flagType, "LOOK"));
+			}
+			if ((bits & 4) != 0) {
+				flags.add(Enum.valueOf(flagType, "JUMP"));
+			}
+			return flags;
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return java.util.EnumSet.noneOf(java.util.concurrent.TimeUnit.class);
+		}
+	}
+
 	/** A carried 1.21 Goal as a 1.12.2 task: canUse, canContinueToUse, start, stop, tick, its flags as mutex bits. */
 	private static final class CarriedGoal extends net.minecraft.entity.ai.EntityAIBase {
 		private static final java.lang.invoke.MethodHandle CAN_USE = handle("canUse", boolean.class);

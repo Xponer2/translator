@@ -84,12 +84,16 @@ final class WorldChecks {
 		sample(new BiomeProvider(overworld), biomes);
 		// the Nether and the End (the mods' biomes of them are placed there): loaded when they were unloaded meanwhile
 		// (no player in them), else their biomes were counted as nowhere
-		for (int id : new int[] {-1, 1}) {
+		// and the mods' own dimensions (the Twilight Forest's biomes are placed only there)
+		var dimensions = new java.util.ArrayList<Integer>(java.util.Arrays.asList(-1, 1));
+		dimensions.addAll(io.github.xponer2.translator.world.DataDimensions.ids());
+		for (int id : dimensions) {
 			if (DimensionManager.isDimensionRegistered(id) && DimensionManager.getWorld(id) == null) {
 				try {
 					DimensionManager.initDimension(id);
-				} catch (RuntimeException e) {
-					// that dimension can't load here: its biomes stay unsampled
+				} catch (RuntimeException | LinkageError e) {
+					// that dimension can't load here: its biomes stay unsampled, and the log says why
+					org.apache.logging.log4j.LogManager.getLogger("Translator Self-Test").warn("Dimension {} couldn't load for the biome check", id, e);
 				}
 			}
 		}

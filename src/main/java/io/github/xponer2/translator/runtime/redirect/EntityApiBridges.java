@@ -672,6 +672,59 @@ public final class EntityApiBridges {
 		return movement;
 	}
 
+	/** 1.21 {@code living.canUseSlot(slot)}: every slot (1.21's default; a body slot only horses and wolves have). */
+	public static boolean canUseSlot(EntityLivingBase living, @Nullable EntityEquipmentSlot slot) {
+		return true;
+	}
+
+	/** 1.21 {@code entity.deflection(projectile)}: none (1.21's default; breezes and the like deflect, 1.12.2 has none). */
+	@Nullable
+	public static Object deflection(Entity entity, @Nullable Object projectile) {
+		try {
+			return CarriedBridges.carried("net.minecraft.world.entity.projectile.ProjectileDeflection").getField("NONE").get(null);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	/**
+	 * 1.21 {@code mob.isSunBurnTick()}: by day on the server, in bright sky light, by chance as the light is brighter,
+	 * when not wet (Twilight Forest's and Supplementaries' undead burn as skeletons do).
+	 */
+	public static boolean isSunBurnTick(EntityLiving mob) {
+		World world = mob.world;
+		if (world == null || world.isRemote || !world.isDaytime()) {
+			return false;
+		}
+		float brightness = mob.getBrightness();
+		BlockPos pos = mob.getRidingEntity() instanceof net.minecraft.entity.item.EntityBoat
+				? new BlockPos(mob.posX, Math.round(mob.posY), mob.posZ).up()
+				: new BlockPos(mob.posX, Math.round(mob.posY), mob.posZ);
+		return brightness > 0.5F && mob.getRNG().nextFloat() * 30.0F < (brightness - 0.4F) * 2.0F && !mob.isWet() && world.canSeeSky(pos);
+	}
+
+	/** 1.21 {@code level.getRaidAt(pos)}: 1.12.2 has no raids. */
+	@Nullable
+	public static Object getRaidAt(WorldServer world, @Nullable BlockPos pos) {
+		return null;
+	}
+
+	/** 1.21 {@code level.isRaided(pos)}: no raids in 1.12.2. */
+	public static boolean isRaided(WorldServer world, @Nullable BlockPos pos) {
+		return false;
+	}
+
+	/** 1.21 {@code spiderGroupData.effect} (read; a Holder in 1.21, a Potion in 1.12.2): the effect as a holder. */
+	@Nullable
+	public static io.github.xponer2.translator.registry.Holder<?> effect(net.minecraft.entity.monster.EntitySpider.GroupData data) {
+		return data.effect == null ? null : io.github.xponer2.translator.registry.Holder.direct(data.effect);
+	}
+
+	/** Writing it (Twilight Forest's hedge spiders give their own effects). */
+	public static void effect(net.minecraft.entity.monster.EntitySpider.GroupData data, @Nullable io.github.xponer2.translator.registry.Holder<?> effect) {
+		data.effect = effect != null && effect.value() instanceof net.minecraft.potion.Potion potion ? potion : null;
+	}
+
 	// --- Entity: 1.21 fields 1.12.2 hasn't ------------------------------------------------------------------------------
 
 	private static final Map<Entity, boolean[]> FLAGS = Collections.synchronizedMap(new WeakHashMap<>());

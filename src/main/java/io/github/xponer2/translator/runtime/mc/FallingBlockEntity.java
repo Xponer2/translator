@@ -49,6 +49,14 @@ public abstract class FallingBlockEntity extends net.minecraft.entity.item.Entit
 		}
 	}
 
+	/**
+	 * 1.21 {@code callOnBrokenAfterFall(block, pos)}: a 1.21 Fallable block is told it broke on landing (Supplementaries'
+	 * falling ash).
+	 */
+	public void callOnBrokenAfterFall(net.minecraft.block.Block block, net.minecraft.util.math.BlockPos pos) {
+		FallingBlock.broken(block, this.world, pos, this);
+	}
+
 	/** Gives a falling block without a block sand (1.21's default), which 1.12.2's update reads. */
 	public static void withDefaultBlock(net.minecraft.entity.item.EntityFallingBlock entity) {
 		if (entity.getBlock() != null) {

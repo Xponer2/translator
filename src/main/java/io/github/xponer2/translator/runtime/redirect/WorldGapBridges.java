@@ -214,6 +214,17 @@ public final class WorldGapBridges {
 				maxCount);
 	}
 
+	/** The same with a Weight (the constructor 1.21's SpawnerData codec makes its entries with). */
+	public static net.minecraft.world.biome.Biome.SpawnListEntry newBiome_SpawnListEntry(io.github.xponer2.translator.registry.EntityType<?> type,
+			io.github.xponer2.translator.util.random.Weight weight, int minCount, int maxCount) {
+		return newBiome_SpawnListEntry(type, weight.asInt(), minCount, maxCount);
+	}
+
+	/** 1.21 {@code spawnerData.getWeight()}: the entry's weight. */
+	public static io.github.xponer2.translator.util.random.Weight getWeight(net.minecraft.world.biome.Biome.SpawnListEntry entry) {
+		return io.github.xponer2.translator.util.random.Weight.of(entry.itemWeight);
+	}
+
 	/** 1.21 {@code spawnerData.type}: the type of the entry's entity class (null for one without a registration). */
 	@javax.annotation.Nullable
 	public static io.github.xponer2.translator.registry.EntityType<?> type(net.minecraft.world.biome.Biome.SpawnListEntry entry) {

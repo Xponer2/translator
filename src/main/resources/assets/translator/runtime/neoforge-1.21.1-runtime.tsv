@@ -585,3 +585,5 @@ R	io/github/xponer2/translator/registry/Registry$Reference	io/github/xponer2/tra
 R	io/github/xponer2/translator/registry/Holder	io/github/xponer2/translator/registry/HolderOwners
 R	io/github/xponer2/translator/util/particle/ParticleOptions	io/github/xponer2/translator/util/particle/ParticleCodec
 E	net/minecraft/world/level/saveddata/maps/MapItemSavedData	io/github/xponer2/translator/world/MapItemSavedData
+# 1.21 WrappedGoal (goalSelector.getAvailableGoals()): 1.12.2's task entry (priority, action, running), its goal through EntityGapBridges
+C	net/minecraft/world/entity/ai/goal/WrappedGoal	net/minecraft/entity/ai/EntityAITasks$EntityAITaskEntry
