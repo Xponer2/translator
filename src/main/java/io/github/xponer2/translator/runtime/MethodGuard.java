@@ -357,6 +357,22 @@ final class MethodGuard {
 				for (String target : targets) {
 					missing |= this.info(target) != null && !this.hasMember(target, field.name, field.desc, false);
 				}
+				// the target's one field of that type, under its 1.12.2 name (a mixin's "minecraft" is 1.12.2's "mc"): the
+				// shadow and the mixin's uses of it take that name
+				String same = missing && targets.size() == 1 ? this.onlyFieldOfType(targets.get(0), field.desc) : null;
+				if (same != null && !same.equals(field.name) && node.fields.stream().noneMatch(other -> other.name.equals(same))) {
+					String old = field.name;
+					for (MethodNode method : node.methods) {
+						for (AbstractInsnNode insn : method.instructions) {
+							if (insn instanceof FieldInsnNode use && use.owner.equals(node.name) && use.name.equals(old) && use.desc.equals(field.desc)) {
+								use.name = same;
+							}
+						}
+					}
+					field.name = same;
+					changed = true;
+					continue;
+				}
 				if (missing) {
 					annotations.removeIf(annotation -> SHADOW.equals(annotation.desc) || FINAL.equals(annotation.desc)
 							|| MUTABLE.equals(annotation.desc));
@@ -368,6 +384,26 @@ final class MethodGuard {
 			}
 		}
 		return changed;
+	}
+
+	/** The name of the class's only field (declared there) of that type; null for none or more than one. */
+	@javax.annotation.Nullable
+	private String onlyFieldOfType(String owner, String desc) {
+		ClassInfo info = this.info(owner);
+		if (info == null) {
+			return null;
+		}
+		String found = null;
+		for (String member : info.fields) {
+			int space = member.indexOf(' ');
+			if (space > 0 && member.substring(space + 1).equals(desc)) {
+				if (found != null) {
+					return null;
+				}
+				found = member.substring(0, space);
+			}
+		}
+		return found;
 	}
 
 	private static final String SHADOW = "Lorg/spongepowered/asm/mixin/Shadow;";

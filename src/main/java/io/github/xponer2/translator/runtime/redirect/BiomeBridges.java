@@ -32,6 +32,16 @@ public final class BiomeBridges {
 
 	/** 1.21 {@code shouldFreeze(level, pos)}: water there turns to ice (cold here, at an edge of the water, little light). */
 	/** 1.21 {@code biome.hasPrecipitation()}: rain or snow falls there (Twilight Forest's weather renderer). */
+	/**
+	 * 1.21 {@code biome.getPrecipitationAt(pos)}: none where it doesn't rain or snow, snow where it is cold enough
+	 * there, else rain (the carried Biome.Precipitation; 12 of 300 popular mods ask it: Ambient Sounds, Cobblemon).
+	 */
+	@javax.annotation.Nullable
+	public static Object getPrecipitationAt(Biome biome, net.minecraft.util.math.BlockPos pos) {
+		String kind = !biome.canRain() && !biome.getEnableSnow() ? "NONE" : biome.getTemperature(pos) < 0.15F ? "SNOW" : "RAIN";
+		return CarriedBridges.constant("net.minecraft.world.level.biome.Biome$Precipitation", kind);
+	}
+
 	public static boolean hasPrecipitation(Biome biome) {
 		return biome.canRain() || biome.getEnableSnow();
 	}

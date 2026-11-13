@@ -1426,6 +1426,53 @@ public final class MiscBridges {
 		return id;
 	}
 
+	private static final ClassValue<java.lang.reflect.Method> SINK_ACCEPT = new ClassValue<java.lang.reflect.Method>() {
+		@Override
+		@javax.annotation.Nullable
+		protected java.lang.reflect.Method computeValue(Class<?> type) {
+			for (java.lang.reflect.Method method : type.getMethods()) {
+				if ("accept".equals(method.getName()) && method.getParameterCount() == 3 && method.getParameterTypes()[0] == int.class
+						&& method.getParameterTypes()[2] == int.class && method.getReturnType() == boolean.class) {
+					method.setAccessible(true);
+					return method;
+				}
+			}
+			return null;
+		}
+	};
+
+	/**
+	 * 1.21 {@code formattedCharSequence.accept(sink)} (FormattedCharSequence is the text component here): each
+	 * character of the text with its style, by its index, until the sink says stop (Iceberg's tooltips, Easy Anvils;
+	 * 15 of 300 popular mods).
+	 */
+	public static boolean accept(net.minecraft.util.text.ITextComponent text, @javax.annotation.Nullable Object sink) {
+		java.lang.reflect.Method accept = sink == null ? null : SINK_ACCEPT.get(sink.getClass());
+		if (accept == null) {
+			return true;
+		}
+		int index = 0;
+		try {
+			for (net.minecraft.util.text.ITextComponent part : text) {
+				String content = part.getUnformattedComponentText();
+				net.minecraft.util.text.Style style = part.getStyle();
+				for (int i = 0; i < content.length(); ) {
+					int codePoint = content.codePointAt(i);
+					if (!(Boolean) accept.invoke(sink, index++, style, codePoint)) {
+						return false;
+					}
+					i += Character.charCount(codePoint);
+				}
+			}
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("FormattedCharSequence.accept", e.getCause());
+			return false;
+		} catch (IllegalAccessException e) {
+			return false;
+		}
+		return true;
+	}
+
 	/** 1.21 {@code Block.getId(state)}: 1.12.2's state id (the client decodes it with stateById; a falling block's spawn). */
 	public static int getId(net.minecraft.block.state.IBlockState state) {
 		return net.minecraft.block.Block.getStateId(state);
