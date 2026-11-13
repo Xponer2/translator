@@ -146,6 +146,9 @@ public final class AutoTest {
 				if (mc.player != null && mc.world != null && mc.currentScreen == null) {
 					if (this.ticks > 100) {
 						LOGGER.info("Running /translatortest");
+						// the debug screen on: the minimap mods hide behind it (Xaero's, JourneyMap). With the self-test
+						// placing and breaking blocks at its pace they redrew their map all the time and the game lagged
+						mc.gameSettings.showDebugInfo = true;
 						mc.player.sendChatMessage("/translatortest");
 						this.state = 2;
 						this.ticks = 0;
