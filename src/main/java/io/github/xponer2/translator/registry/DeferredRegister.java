@@ -43,6 +43,8 @@ public class DeferredRegister<T> {
     private final ResourceKey<? extends Registry<T>> registryKey;
     private final String namespace;
     private final Map<DeferredHolder<T, ? extends T>, Supplier<? extends T>> entries = new LinkedHashMap<>();
+    /** Entries of a data registry that couldn't be made (skipped once: every later look-up of the holder asked again). */
+    private final java.util.Set<ResourceLocation> failed = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private boolean registered;
     /** The registry's event has registered the entries: later ones would never be registered (NeoForge throws then). */
     private boolean seenRegisterEvent;
@@ -301,7 +303,7 @@ public class DeferredRegister<T> {
     }
 
     private <I extends T> void resolve(MappedRegistry<T> registry, DeferredHolder<T, I> holder) {
-        if (holder.isBound()) {
+        if (holder.isBound() || this.failed.contains(holder.getId())) {
             return;
         }
         I value;
@@ -313,7 +315,15 @@ public class DeferredRegister<T> {
             if (!io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(this.namespace)) {
                 throw e;
             }
+            this.failed.add(holder.getId());
             io.github.xponer2.translator.runtime.RuntimeMods.skipped(holder.getId(), e);
+            return;
+        }
+        if (value == null) {
+            // its supplier can't run on 1.12.2 yet: skipped once, not registered (a null in the registry made every
+            // later look-up register it again: "Duplicate id supplementaries:lumisene" 309 times)
+            this.failed.add(holder.getId());
+            io.github.xponer2.translator.runtime.RuntimeMods.skipped(holder.getId(), new IllegalStateException("the entry is null"));
             return;
         }
         try {

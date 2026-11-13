@@ -50,6 +50,9 @@ public final class MappedRegistry<T> implements Registry<T> {
     }
 
     public synchronized T register(ResourceLocation location, T value) {
+        if (value == null) {
+            throw new IllegalStateException("A null entry for " + location + " in " + this.key.location());
+        }
         if (this.byLocation.containsKey(location)) {
             throw new IllegalStateException("Duplicate id " + location + " in " + this.key.location());
         }
