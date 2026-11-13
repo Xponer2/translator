@@ -209,14 +209,7 @@ public final class DataPackRegistries {
 
 	/** An exception with where it came from: the first frame of a mod or of the Translator (an NPE says nothing else). */
 	private static String describe(Throwable e) {
-		for (StackTraceElement frame : e.getStackTrace()) {
-			String type = frame.getClassName();
-			if (!type.startsWith("java.") && !type.startsWith("sun.") && !type.startsWith("com.mojang.serialization.")
-					&& !type.startsWith("com.mojang.datafixers.")) {
-				return e + " at " + frame;
-			}
-		}
-		return e.toString();
+		return io.github.xponer2.translator.world.DataStructures.where(e);
 	}
 
 	private static boolean conditionsMet(JsonElement json) {

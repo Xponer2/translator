@@ -114,16 +114,23 @@ public final class DataStructures {
 	}
 
 	/** An exception with the first frame of a mod or of the Translator (a bare NullPointerException says nothing). */
+	private static boolean own(StackTraceElement frame) {
+		String type = frame.getClassName();
+		return !type.startsWith("java.") && !type.startsWith("sun.") && !type.startsWith("com.mojang.serialization.")
+				&& !type.startsWith("com.mojang.datafixers.");
+	}
+
 	public static String where(Throwable e) {
 		Throwable cause = e instanceof java.lang.reflect.InvocationTargetException && e.getCause() != null ? e.getCause() : e;
-		for (StackTraceElement frame : cause.getStackTrace()) {
-			String type = frame.getClassName();
-			if (!type.startsWith("java.") && !type.startsWith("sun.") && !type.startsWith("com.mojang.serialization.")
-					&& !type.startsWith("com.mojang.datafixers.")) {
-				return cause + " at " + frame;
+		StackTraceElement[] frames = cause.getStackTrace();
+		// where it was thrown, when that is in a library (a codec of DataFixerUpper given a null): the frame itself
+		String thrown = frames.length > 0 && !own(frames[0]) ? " in " + frames[0] : "";
+		for (StackTraceElement frame : frames) {
+			if (own(frame)) {
+				return cause + thrown + " at " + frame;
 			}
 		}
-		return cause.toString();
+		return cause + thrown;
 	}
 
 	/** The structure sets of the 1.21.1 mods (not Minecraft's own: 1.12.2 generates its own villages, temples, ...). */

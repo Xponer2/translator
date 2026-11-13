@@ -54,6 +54,8 @@ public final class Attributes {
 	public static final Holder<Attribute> MOVEMENT_EFFICIENCY = Holder.direct(new Attribute(null, "generic.movement_efficiency", 0.0D));
 	public static final Holder<Attribute> WATER_MOVEMENT_EFFICIENCY = Holder.direct(new Attribute(null, "generic.water_movement_efficiency", 0.0D));
 	public static final Holder<Attribute> SWEEPING_DAMAGE_RATIO = Holder.direct(new Attribute(null, "player.sweeping_damage_ratio", 0.0D));
+	/** The zombies' reinforcements chance: 1.12.2's own (EntityZombie keeps it protected). */
+	public static final Holder<Attribute> SPAWN_REINFORCEMENTS_CHANCE = forge(zombieReinforcements());
 	/** NeoForge's creative flight: the player's allowFlying capability in 1.12.2. */
 	public static final Holder<Attribute> CREATIVE_FLIGHT = Holder.direct(new Attribute(null, "neoforge.creative_flight", 0.0D));
 
@@ -107,6 +109,7 @@ public final class Attributes {
 				{"player.block_interaction_range", BLOCK_INTERACTION_RANGE}, {"player.sweeping_damage_ratio", SWEEPING_DAMAGE_RATIO},
 				{"player.mining_efficiency", MINING_EFFICIENCY}, {"player.block_break_speed", BLOCK_BREAK_SPEED},
 				{"player.submerged_mining_speed", SUBMERGED_MINING_SPEED}, {"player.sneaking_speed", SNEAKING_SPEED},
+				{"zombie.spawn_reinforcements", SPAWN_REINFORCEMENTS_CHANCE},
 		};
 		for (Object[] entry : vanilla) {
 			put(mapped, new net.minecraft.util.ResourceLocation("minecraft", (String) entry[0]), (Holder<?>) entry[1]);
@@ -119,6 +122,16 @@ public final class Attributes {
 		// one attribute under two 1.21 ids (both interaction ranges are Forge's reach): the first id
 		if (!registry.hasEntry(id) && registry.getKey(holder.value()) == null) {
 			registry.register(id, holder.value());
+		}
+	}
+
+	private static net.minecraft.entity.ai.attributes.IAttribute zombieReinforcements() {
+		try {
+			return net.minecraftforge.fml.common.ObfuscationReflectionHelper.getPrivateValue(net.minecraft.entity.monster.EntityZombie.class, null,
+					"field_110186_bp");
+		} catch (RuntimeException e) {
+			return new net.minecraft.entity.ai.attributes.RangedAttribute(null, "zombie.spawnReinforcements", 0.0D, 0.0D, 1.0D)
+					.setDescription("Spawn Reinforcements Chance");
 		}
 	}
 

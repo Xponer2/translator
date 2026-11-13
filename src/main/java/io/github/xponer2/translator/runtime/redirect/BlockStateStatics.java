@@ -56,6 +56,9 @@ public final class BlockStateStatics {
 			return DataResult.error("Not a block name: " + data.getFirst());
 		}
 		IBlockState state = byName(id);
+		if (state == null && "minecraft".equals(id.getNamespace())) {
+			state = standIn(id);
+		}
 		if (state == null) {
 			return DataResult.error("Unknown block " + id);
 		}
@@ -117,6 +120,30 @@ public final class BlockStateStatics {
 		}
 		Block block = ForgeRegistries.BLOCKS.containsKey(id) ? ForgeRegistries.BLOCKS.getValue(id) : null;
 		return block == null ? null : block.getDefaultState();
+	}
+
+	private static final java.util.Set<ResourceLocation> STOOD_IN = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+	/**
+	 * A 1.21 vanilla block 1.12.2 hasn't at all, in data (Twilight Forest's camp tent has a decorated pot): the nearest
+	 * 1.12.2 block, else air, so the rest of the file still reads. Said once per block.
+	 */
+	private static IBlockState standIn(ResourceLocation id) {
+		Block block = switch (id.getPath()) {
+			case "decorated_pot" -> Blocks.FLOWER_POT;
+			case "crafter" -> Blocks.DROPPER;
+			case "trial_spawner", "vault" -> Blocks.MOB_SPAWNER;
+			case "heavy_core" -> Blocks.IRON_BLOCK;
+			case "suspicious_sand" -> Blocks.SAND;
+			case "suspicious_gravel" -> Blocks.GRAVEL;
+			case "chiseled_bookshelf" -> Blocks.BOOKSHELF;
+			default -> Blocks.AIR;
+		};
+		if (STOOD_IN.add(id)) {
+			org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").info("1.12.2 has no block {}: {} in the 1.21.1 data", id,
+					block.getRegistryName());
+		}
+		return block.getDefaultState();
 	}
 
 	/** The properties (by name and value name) on the state, those its block has. */

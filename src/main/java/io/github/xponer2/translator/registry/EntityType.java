@@ -429,6 +429,50 @@ public final class EntityType<T extends Entity> {
                 ? new ResourceLocation("minecraft", "empty") : new ResourceLocation(id.getNamespace(), "entities/" + id.getPath()));
     }
 
+    /**
+     * 1.21 {@code getBaseClass()}: the class of its entities (Twilight Forest's structure hints check their mob is a
+     * Mob with it while their structures are read: dark tower, labyrinth).
+     */
+    @SuppressWarnings("unchecked")
+    public Class<? extends T> getBaseClass() {
+        if (this.entry == null && this.factory != null) {
+            Class<? extends Entity> found = entityClass(this);
+            if (found != null) {
+                return (Class<? extends T>) found;
+            }
+        }
+        return this.getEntityClass();
+    }
+
+    /** 1.21 {@code toShortString()}: the path of its id. */
+    public String toShortString() {
+        ResourceLocation id = getKey(this);
+        return id == null ? "unregistered" : id.getPath();
+    }
+
+    /** 1.21 {@code updateInterval()}: the ticks between its position updates. */
+    public int updateInterval() {
+        return this.updateInterval;
+    }
+
+    /** 1.21 {@code clientTrackingRange()}: in chunks. */
+    public int clientTrackingRange() {
+        return this.trackingRange;
+    }
+
+    /**
+     * 1.21 {@code isBlockDangerous(state)}: fire, lava, magma, cacti and the like hurt it unless it is immune to fire
+     * (for those) or to the block.
+     */
+    public boolean isBlockDangerous(net.minecraft.block.state.IBlockState state) {
+        net.minecraft.block.Block block = state.getBlock();
+        if (!this.fireImmune && (block == net.minecraft.init.Blocks.FIRE || block == net.minecraft.init.Blocks.MAGMA
+                || block == net.minecraft.init.Blocks.LAVA || block == net.minecraft.init.Blocks.FLOWING_LAVA)) {
+            return true;
+        }
+        return block == net.minecraft.init.Blocks.CACTUS || block == net.minecraft.init.Blocks.WEB;
+    }
+
     @SuppressWarnings("unchecked")
     public Class<? extends T> getEntityClass() {
         return this.entry == null ? (Class<? extends T>) Entity.class : (Class<? extends T>) this.entry.getEntityClass();
