@@ -840,3 +840,7 @@ X	net/minecraft/util/text/ITextComponent$Serializer	toJson	(Lnet/minecraft/util/
 X	net/minecraft/util/text/ITextComponent$Serializer	componentToJson	(Lnet/minecraft/util/text/ITextComponent;Lio/github/xponer2/translator/registry/HolderLookup$Provider;)Ljava/lang/String;	io/github/xponer2/translator/text/ComponentJson
 # 1.21 itemModelShaper.getItemModel(item)
 R	net/minecraft/client/renderer/ItemModelMesher	io/github/xponer2/translator/runtime/redirect/GuiBridges
+# 1.21 faceBakery.bakeQuad(...): 1.12.2's makeBakedQuad
+R	net/minecraft/client/renderer/block/model/FaceBakery	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
+R	net/minecraft/client/renderer/block/model/ItemOverride	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges
+R	net/minecraft/client/renderer/block/model/SimpleBakedModel$Builder	io/github/xponer2/translator/runtime/redirect/ModelBakeBridges

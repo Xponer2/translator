@@ -238,8 +238,37 @@ public final class GeometryLoaders implements ICustomModelLoader {
 		}
 	}
 
-	/** A plain deserialization context (the loaders read their own json; nested objects by Gson's defaults). */
-	private static final JsonDeserializationContext CONTEXT = context();
+	/**
+	 * The deserialization context the loaders read with: 1.12.2's own model Gson, which reads a model (BlockModel is
+	 * ModelBlock), its elements, faces, transforms and overrides; other objects by Gson's defaults. A plain one gave a
+	 * mod's loader nothing for a nested model (Moonlight's custom loader: Supplementaries' jars, faucets, goblets,
+	 * blackboards, flower boxes and timber frames were missing models).
+	 */
+	private static final JsonDeserializationContext CONTEXT = modelContext();
+
+	private static JsonDeserializationContext modelContext() {
+		com.google.gson.Gson models = null;
+		for (java.lang.reflect.Field field : ModelBlock.class.getDeclaredFields()) {
+			if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) && field.getType() == com.google.gson.Gson.class) {
+				try {
+					field.setAccessible(true);
+					models = (com.google.gson.Gson) field.get(null);
+				} catch (ReflectiveOperationException | RuntimeException e) {
+					// the plain context
+				}
+			}
+		}
+		if (models == null) {
+			return context();
+		}
+		com.google.gson.Gson gson = models;
+		return new JsonDeserializationContext() {
+			@Override
+			public <T> T deserialize(com.google.gson.JsonElement json, java.lang.reflect.Type type) {
+				return gson.fromJson(json, type);
+			}
+		};
+	}
 
 	private static final class Marker {
 	}
@@ -469,8 +498,8 @@ public final class GeometryLoaders implements ICustomModelLoader {
 		parents(model, 0);
 	}
 
-	private static void parents(ModelBlock model, int depth) {
-		if (model.parent == null && model.getParentLocation() != null) {
+	private static void parents(@Nullable ModelBlock model, int depth) {
+		if (model != null && model.parent == null && model.getParentLocation() != null) {
 			model.parent = load(model.getParentLocation(), depth + 1);
 		}
 	}

@@ -31,6 +31,16 @@ public final class BiomeBridges {
 	}
 
 	/** 1.21 {@code shouldFreeze(level, pos)}: water there turns to ice (cold here, at an edge of the water, little light). */
+	/** 1.21 {@code biome.hasPrecipitation()}: rain or snow falls there (Twilight Forest's weather renderer). */
+	public static boolean hasPrecipitation(Biome biome) {
+		return biome.canRain() || biome.getEnableSnow();
+	}
+
+	/** 1.21 {@code biome.warmEnoughToRain(pos)}: rain rather than snow at that height (1.12.2's 0.15 threshold). */
+	public static boolean warmEnoughToRain(Biome biome, BlockPos pos) {
+		return biome.getTemperature(pos) >= 0.15F;
+	}
+
 	public static boolean shouldFreeze(Biome biome, World world, BlockPos pos) {
 		return world.canBlockFreeze(pos, true);
 	}

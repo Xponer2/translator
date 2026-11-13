@@ -49,6 +49,16 @@ public abstract class EntityRenderer<T extends Entity> extends Render<T> {
 
 	@Override
 	public void doRender(T entity, double x, double y, double z, float entityYaw, float partialTicks) {
+		try {
+			// 1.12.2 draws the shadow by its field: the 1.21 renderer's own size (from its first size each frame, so a
+			// renderer scaling super's doesn't grow it frame by frame)
+			if (Float.isNaN(this.shadowBase)) {
+				this.shadowBase = this.shadowSize;
+			}
+			this.shadowSize = this.getShadowRadius(entity);
+		} catch (RuntimeException | LinkageError e) {
+			// the field as it is
+		}
 		int depth = PoseStack.depth();
 		GlStateManager.pushMatrix();
 		try {
@@ -67,6 +77,14 @@ public abstract class EntityRenderer<T extends Entity> extends Render<T> {
 			GlStateManager.popMatrix();
 		}
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);
+	}
+
+	/** The shadow's size the renderer was made with (its 1.21 shadowRadius), before a frame's own. */
+	private float shadowBase = Float.NaN;
+
+	/** 1.21 {@code getShadowRadius(entity)}: the shadow's size (a mod's renderer scales it: Twilight Forest's lich). */
+	protected float getShadowRadius(T entity) {
+		return Float.isNaN(this.shadowBase) ? this.shadowSize : this.shadowBase;
 	}
 
 	public Vec3d getRenderOffset(T entity, float partialTick) {

@@ -38,6 +38,12 @@ public final class SpawnerBridges {
 	 * done here with the world given.
 	 */
 	@SuppressWarnings("unchecked")
+	/** 1.21 {@code spawner.getOrCreateDisplayEntity(level, pos)}: the spinning mob in the cage (Twilight Forest's sinister spawner). */
+	@javax.annotation.Nullable
+	public static net.minecraft.entity.Entity getOrCreateDisplayEntity(MobSpawnerBaseLogic logic, World world, BlockPos pos) {
+		return logic.getCachedEntity();
+	}
+
 	public static void delay(MobSpawnerBaseLogic logic, World world, BlockPos pos) {
 		int min = getInt(logic, "field_98283_g");
 		int max = getInt(logic, "field_98293_h");

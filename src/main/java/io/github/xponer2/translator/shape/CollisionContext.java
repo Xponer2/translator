@@ -40,6 +40,23 @@ public interface CollisionContext {
 		return this.getEntity() instanceof net.minecraft.entity.EntityLivingBase living && living.getHeldItemMainhand().getItem() == item;
 	}
 
+	/**
+	 * 1.21 {@code isAbove(shape, pos, canAscend)}: the entity asking stands above the shape's top at that block (blocks
+	 * solid from above only: Supplementaries' bubble block asked every tick and failed). None asking: not above.
+	 */
+	default boolean isAbove(VoxelShape shape, net.minecraft.util.math.BlockPos pos, boolean canAscend) {
+		Entity entity = this.getEntity();
+		return entity != null && entity.posY > pos.getY() + shape.max(net.minecraft.util.EnumFacing.Axis.Y) - 1.0E-5F;
+	}
+
+	/**
+	 * 1.21 {@code canStandOnFluid(above, fluid)}: whether the entity asking walks on that fluid (a strider on lava); no
+	 * 1.12.2 entity does (Supplementaries' finite liquid blocks ask for their collision shape).
+	 */
+	default boolean canStandOnFluid(io.github.xponer2.translator.util.FluidState above, io.github.xponer2.translator.util.FluidState fluid) {
+		return false;
+	}
+
 	/** 1.21 {@code isDescending()}: the entity asking sneaks (it goes down through scaffolding). */
 	default boolean isDescending() {
 		return this.getEntity() != null && this.getEntity().isSneaking();

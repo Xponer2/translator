@@ -78,6 +78,19 @@ public class SkullBlockEntity extends TileEntitySkull {
 		this.setPlayerProfile(profile);
 	}
 
+	/**
+	 * 1.21 {@code getAnimation(partialTick)}: the skull's mouth animation (a dragon head powered by redstone), 1.12.2's
+	 * animation progress. Supplementaries' enderman skull and the skull renderers animate by it.
+	 */
+	public float getAnimation(float partialTick) {
+		return this.getAnimationProgress(partialTick);
+	}
+
+	/** The same on a 1.12.2 skull (the static form the tables call with the skull first). */
+	public static float getAnimation(TileEntitySkull skull, float partialTick) {
+		return skull.getAnimationProgress(partialTick);
+	}
+
 	/** Saved with its class's id; a class no type registered gets the type's id (1.12.2 threw "missing a mapping"). */
 	@Override
 	@SuppressWarnings("deprecation")

@@ -19,6 +19,9 @@ import net.minecraft.item.ItemBoat;
 public class BoatItem extends ItemBoat {
 	public BoatItem(boolean hasChest, EntityBoat.Type type, ItemProperties properties) {
 		super(type == null ? EntityBoat.Type.OAK : type);
+		// 1.12.2's boat names itself boat.<type>: the mod's registry name gives the 1.21 key (item.<mod>.<id>), as for
+		// any item (Twilight Forest's boats showed "item.boat.twilightforest:canopy")
+		this.setTranslationKey("null");
 		properties.applyTo(this);
 	}
 

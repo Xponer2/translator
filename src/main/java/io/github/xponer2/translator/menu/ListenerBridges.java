@@ -48,4 +48,16 @@ public final class ListenerBridges {
 	public static void sendWindowProperty(IContainerListener listener, AbstractContainerMenu menu, int id, int value) {
 		dataChanged(listener, menu, id, value);
 	}
+
+	/**
+	 * 1.12.2's {@code sendAllContents(menu, items)} on a 1.21 listener (a mod's screen listening to its menu:
+	 * Supplementaries' presents and cannon): 1.21 has no such call, its listeners get the changes one by one. Nothing,
+	 * without the "not run" warning each listener gave.
+	 */
+	public static void sendAllContents(IContainerListener listener, net.minecraft.inventory.Container menu, net.minecraft.util.NonNullList<ItemStack> items) {
+	}
+
+	/** 1.12.2's {@code sendAllWindowProperties(menu, inventory)} on a 1.21 listener: the same. */
+	public static void sendAllWindowProperties(IContainerListener listener, net.minecraft.inventory.Container menu, net.minecraft.inventory.IInventory inventory) {
+	}
 }

@@ -186,4 +186,24 @@ public class VoxelShape {
 	public double max(net.minecraft.util.EnumFacing.Axis axis) {
 		return this.isEmpty() ? Double.NEGATIVE_INFINITY : axis == net.minecraft.util.EnumFacing.Axis.X ? this.bounds().maxX : axis == net.minecraft.util.EnumFacing.Axis.Y ? this.bounds().maxY : this.bounds().maxZ;
 	}
+
+	/**
+	 * 1.21 {@code max(axis, primary, secondary)}: the highest point along the axis of the boxes over that point of the
+	 * other two axes (in their order: for Y, X then Z), negative infinity where none is (Twilight Forest's rain finds
+	 * the ground of a column so: no rain splashes and sounds without it).
+	 */
+	public double max(net.minecraft.util.EnumFacing.Axis axis, double primary, double secondary) {
+		double best = Double.NEGATIVE_INFINITY;
+		for (net.minecraft.util.math.AxisAlignedBB box : this.toAabbs()) {
+			boolean over = switch (axis) {
+				case X -> box.minY <= primary && primary < box.maxY && box.minZ <= secondary && secondary < box.maxZ;
+				case Y -> box.minX <= primary && primary < box.maxX && box.minZ <= secondary && secondary < box.maxZ;
+				case Z -> box.minX <= primary && primary < box.maxX && box.minY <= secondary && secondary < box.maxY;
+			};
+			if (over) {
+				best = Math.max(best, axis == net.minecraft.util.EnumFacing.Axis.X ? box.maxX : axis == net.minecraft.util.EnumFacing.Axis.Y ? box.maxY : box.maxZ);
+			}
+		}
+		return best;
+	}
 }

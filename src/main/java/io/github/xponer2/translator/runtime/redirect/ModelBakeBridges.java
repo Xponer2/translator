@@ -157,6 +157,65 @@ public final class ModelBakeBridges {
 		return ModelRotation.X0_Y0;
 	}
 
+	/**
+	 * 1.21 {@code faceBakery.bakeQuad(from, to, face, sprite, direction, state, rotation, shade)}: 1.12.2's
+	 * makeBakedQuad with the state's rotation and uv lock. Mods bake their own quads with it (Twilight Forest's force
+	 * field, giant blocks and patches; NeoForge's element faces of the custom geometries): it was left out, the quad was
+	 * null and the model failed.
+	 */
+	public static net.minecraft.client.renderer.block.model.BakedQuad bakeQuad(net.minecraft.client.renderer.block.model.FaceBakery bakery,
+			org.joml.Vector3f from, org.joml.Vector3f to, net.minecraft.client.renderer.block.model.BlockPartFace face,
+			net.minecraft.client.renderer.texture.TextureAtlasSprite sprite, net.minecraft.util.EnumFacing direction, @Nullable Object state,
+			@Nullable net.minecraft.client.renderer.block.model.BlockPartRotation rotation, boolean shade) {
+		return bakery.makeBakedQuad(new org.lwjgl.util.vector.Vector3f(from.x, from.y, from.z), new org.lwjgl.util.vector.Vector3f(to.x, to.y, to.z),
+				face, sprite, direction, transformation(state), rotation, uvLocked(state), shade);
+	}
+
+	/**
+	 * 1.21 {@code new ItemOverride(model, predicates)}: 1.12.2's override of that model when the item properties are at
+	 * least the values (Supplementaries makes its rope arrow and tattered book overrides so; they were left out). A
+	 * predicate is the carried ItemOverride.Predicate record, read by its property() and value().
+	 */
+	public static net.minecraft.client.renderer.block.model.ItemOverride newItemOverride(ResourceLocation model, @Nullable java.util.List<?> predicates) {
+		var values = new java.util.LinkedHashMap<ResourceLocation, Float>();
+		for (Object predicate : predicates == null ? java.util.Collections.emptyList() : predicates) {
+			try {
+				Object property = method(predicate.getClass(), "property").invoke(predicate);
+				Object value = method(predicate.getClass(), "value").invoke(predicate);
+				if (property instanceof ResourceLocation location && value instanceof Float number) {
+					values.put(location, number);
+				}
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				// a predicate this can't read is left out
+			}
+		}
+		return new net.minecraft.client.renderer.block.model.ItemOverride(model, values);
+	}
+
+	/**
+	 * 1.21 {@code new SimpleBakedModel.Builder(ambientOcclusion, blockLight, gui3d, transforms, overrides)}: 1.12.2's
+	 * builder of those (its constructor of them is private). NeoForge's IModelBuilder makes the models of the custom
+	 * geometries with it (Twilight Forest's traveller's gear items were models without faces: invisible).
+	 */
+	public static net.minecraft.client.renderer.block.model.SimpleBakedModel.Builder newSimpleBakedModel_Builder(boolean ambientOcclusion,
+			boolean blockLight, boolean gui3d, net.minecraft.client.renderer.block.model.ItemCameraTransforms transforms,
+			net.minecraft.client.renderer.block.model.ItemOverrideList overrides) {
+		try {
+			var constructor = net.minecraft.client.renderer.block.model.SimpleBakedModel.Builder.class.getDeclaredConstructor(boolean.class, boolean.class,
+					net.minecraft.client.renderer.block.model.ItemCameraTransforms.class, net.minecraft.client.renderer.block.model.ItemOverrideList.class);
+			constructor.setAccessible(true);
+			return constructor.newInstance(ambientOcclusion, gui3d, transforms, overrides);
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("SimpleBakedModel.Builder isn't as expected", e);
+		}
+	}
+
+	/** NeoForge {@code builder.build(renderTypes)}: the model (1.12.2's draws each block layer its own way). */
+	public static net.minecraft.client.renderer.block.model.IBakedModel build(net.minecraft.client.renderer.block.model.SimpleBakedModel.Builder builder,
+			@Nullable Object renderTypes) {
+		return builder.makeBakedModel();
+	}
+
 	static boolean uvLocked(@Nullable Object state) {
 		if (state instanceof ModelRotation || state == null) {
 			return false;

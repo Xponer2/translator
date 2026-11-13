@@ -135,6 +135,15 @@ public final class ClientRedirects {
 		return io.github.xponer2.translator.client.model.ModelPart.of(model.bipedHead);
 	}
 
+	/** 1.21 {@code connection.getOnlinePlayerIds()}: the ids of the players in the tab list (Supplementaries' name suggestions). */
+	public static java.util.Collection<java.util.UUID> getOnlinePlayerIds(net.minecraft.client.network.NetHandlerPlayClient connection) {
+		var ids = new java.util.LinkedHashSet<java.util.UUID>();
+		for (var info : connection.getPlayerInfoMap()) {
+			ids.add(info.getGameProfile().getId());
+		}
+		return ids;
+	}
+
 	/** A write of it (Twilight Forest's first person gloves reset it): nothing to keep. */
 	public static void swimAmount(net.minecraft.client.model.ModelBiped model, float value) {
 	}
