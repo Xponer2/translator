@@ -1,0 +1,39 @@
+name: Crash
+description: The game crashes or freezes with 1.21.1 mods.
+labels: ["crash"]
+body:
+  - type: input
+    id: translator
+    attributes:
+      label: Translator version
+      placeholder: v244
+    validations:
+      required: true
+  - type: input
+    id: forge
+    attributes:
+      label: Minecraft and Forge version
+      placeholder: 1.12.2, Forge 14.23.5.2860
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: 1.21.1 mods
+      description: The 1.21.1 mods in the game, with their versions. The 1.12.2 mods too, if there are any.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: When does it crash? At startup, when loading a world, when using a block or item...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Drag in `logs/latest.log` and the crash report from `crash-reports/` (or a link to them on a paste site).
+    validations:
+      required: true

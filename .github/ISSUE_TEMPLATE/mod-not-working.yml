@@ -1,0 +1,36 @@
+name: Mod doesn't work
+description: A 1.21.1 mod loads but some of it doesn't work (blocks, items, screens, world generation, rendering...).
+labels: ["mod support"]
+body:
+  - type: input
+    id: mod
+    attributes:
+      label: Mod and version
+      placeholder: Supplementaries 4.0.2
+    validations:
+      required: true
+  - type: input
+    id: translator
+    attributes:
+      label: Translator version
+      placeholder: v244
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What doesn't work
+      description: What you did, what you expected, what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Logs and reports
+      description: |
+        Drag in what you have:
+        - `logs/latest.log`
+        - the self-test report from `translator/selftest/` (run `/translatortest <modid>` in a creative world)
+        - the mod's `translator/cache/<mod>-….stubbed.txt` (the calls the Translator doesn't have yet)
+    validations:
+      required: false

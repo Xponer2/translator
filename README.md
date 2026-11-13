@@ -303,6 +303,11 @@ runs it on 1.12.2:
 
 Needs a JDK 21 to run Gradle. The jar is in `build/libs`.
 
+## Contributing
+
+Help is very welcome, from testing mods to small code tasks: see [CONTRIBUTING.md](CONTRIBUTING.md). Found a crash or
+a mod that doesn't work? [Open an issue](https://github.com/Xponer2/translator/issues/new/choose).
+
 ## License
 
 [PolyForm Noncommercial License 1.0.0](LICENSE), © Xponer2.
