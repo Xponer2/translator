@@ -860,3 +860,4 @@ R	net/minecraft/world/WorldServer	io/github/xponer2/translator/runtime/redirect/
 R	net/minecraft/world/BossInfoServer	io/github/xponer2/translator/runtime/redirect/EntityApiBridges
 R	net/minecraft/network/play/server/SPacketSpawnObject	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
 X	net/minecraft/util/WeightedRandom	getTotalWeight	(Ljava/util/List;)I	io/github/xponer2/translator/runtime/redirect/RandomSourceBridges
+X	net/minecraft/block/state/IBlockState	getValue	(Lnet/minecraft/block/properties/IProperty;)Ljava/lang/Comparable;	io/github/xponer2/translator/runtime/redirect/VanillaRedirects	(Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/properties/IProperty;)Ljava/lang/Comparable;

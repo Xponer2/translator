@@ -144,6 +144,29 @@ public final class VanillaRedirects {
 		return value == null || !state.getPropertyKeys().contains(property) ? state : state.withProperty(property, value);
 	}
 
+	/**
+	 * 1.21 {@code getValue(property)} (X line): a property 1.12.2's block hasn't (a chest's type, waterlogged) reads as
+	 * its default (false, the first value, the lowest number) instead of throwing. 1.21's vanilla blocks have them:
+	 * Supplementaries' wrench on a chest read its type and threw.
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static Comparable getValue(IBlockState state, net.minecraft.block.properties.IProperty property) {
+		if (state.getPropertyKeys().contains(property)) {
+			return state.getValue(property);
+		}
+		if (property.getValueClass() == Boolean.class) {
+			return Boolean.FALSE;
+		}
+		Comparable lowest = null;
+		for (Object value : property.getAllowedValues()) {
+			Comparable candidate = (Comparable) value;
+			if (lowest == null || (candidate instanceof Integer && candidate.compareTo(lowest) < 0)) {
+				lowest = candidate;
+			}
+		}
+		return lowest;
+	}
+
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	public static boolean hasProperty(IBlockState state, net.minecraft.block.properties.IProperty property) {
 		return state.getPropertyKeys().contains(property);
