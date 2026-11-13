@@ -952,13 +952,18 @@ public final class SelfTest {
 			if (!grew[0] && !sapling) {
 				// on the soils a plant may need to grow on (a huge mushroom grows on dirt or mycelium, as in 1.21, not on
 				// the stone the test first put under it)
+				// (a 3x3 floor of it: a plant that spreads to its neighbours, as Supplementaries' wild flax on sand, needs
+				// that ground there too; the floor is stone again after)
 				IBlockState[] soils = {Blocks.GRASS.getDefaultState(), Blocks.DIRT.getDefaultState(), Blocks.MYCELIUM.getDefaultState(),
-						Blocks.DIRT.getDefaultState().withProperty(net.minecraft.block.BlockDirt.VARIANT, net.minecraft.block.BlockDirt.DirtType.PODZOL)};
+						Blocks.DIRT.getDefaultState().withProperty(net.minecraft.block.BlockDirt.VARIANT, net.minecraft.block.BlockDirt.DirtType.PODZOL),
+						Blocks.SAND.getDefaultState()};
 				for (IBlockState soil : soils) {
 					if (grew[0] || this.world.getBlockState(this.cell.down()) == soil) {
 						continue;
 					}
-					this.world.setBlockState(this.cell.down(), soil, 2 | 16);
+					for (BlockPos floor : BlockPos.getAllInBox(this.cell.add(-1, -1, -1), this.cell.add(1, -1, 1))) {
+						this.world.setBlockState(floor, soil, 2 | 16);
+					}
 					this.world.setBlockState(this.cell, state, 2 | 16);
 					long onSoil = this.region();
 					this.attempt("bone meal", () -> {
@@ -968,6 +973,11 @@ public final class SelfTest {
 							grew[0] = this.region() != onSoil;
 						}
 					});
+					for (BlockPos floor : BlockPos.getAllInBox(this.cell.add(-1, -1, -1), this.cell.add(1, -1, 1))) {
+						if (!floor.equals(this.cell.down())) {
+							this.world.setBlockState(floor, Blocks.STONE.getDefaultState(), 2 | 16);
+						}
+					}
 					if (grew[0]) {
 						this.current.notes.add("grows with bone meal on " + soil.getBlock().getRegistryName());
 						return;
