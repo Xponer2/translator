@@ -1234,6 +1234,37 @@ public final class LevelGapBridges {
 	 * Spells' areas grow, its ice spider's parts), applied as 1.12.2's setSize does; a mod entity without one keeps its
 	 * type's size.
 	 */
+	/** 1.21 {@code entity.dimensions} (read): its 1.12.2 size as a carried EntityDimensions. */
+	@Nullable
+	public static Object dimensions(Entity entity) {
+		return getDimensions(entity, null);
+	}
+
+	/**
+	 * 1.21 {@code entity.dimensions = size} (1.12.2's Entity has no such field): its 1.12.2 size, as setSize makes it.
+	 * Twilight Forest's part entities (the Snow Queen's ice shields, the Hydra's heads) set their size so in their
+	 * constructors, and kept 1.12.2's 0.6 x 1.8.
+	 */
+	public static void dimensions(Entity entity, @Nullable Object dimensions) {
+		if (dimensions == null) {
+			return;
+		}
+		float width;
+		float height;
+		try {
+			width = ((Number) dimensions.getClass().getMethod("width").invoke(dimensions)).floatValue();
+			height = ((Number) dimensions.getClass().getMethod("height").invoke(dimensions)).floatValue();
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return;
+		}
+		if (width != entity.width || height != entity.height) {
+			entity.width = width;
+			entity.height = height;
+			AxisAlignedBB box = entity.getEntityBoundingBox();
+			entity.setEntityBoundingBox(new AxisAlignedBB(box.minX, box.minY, box.minZ, box.minX + width, box.minY + height, box.minZ + width));
+		}
+	}
+
 	public static void refreshDimensions(Entity entity) {
 		java.lang.reflect.Method own = OWN_DIMENSIONS.get(entity.getClass());
 		float width;

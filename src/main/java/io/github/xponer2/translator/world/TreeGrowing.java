@@ -80,16 +80,49 @@ public final class TreeGrowing {
 			return false;
 		}
 		WorldGenAbstractTree tree = tree(feature, rand, false);
-		if (tree == null) {
-			return false;
-		}
 		world.setBlockState(at, Blocks.AIR.getDefaultState(), 4);
-		if (tree.generate(world, rand, at)) {
+		if (tree != null ? tree.generate(world, rand, at) : placeFeature(feature, world, at, rand)) {
 			return true;
 		}
 		world.setBlockState(at, sapling, 4);
 		return false;
 	}
+
+	/**
+	 * A mod's tree of its own feature type (no 1.12.2 tree is made of it: Twilight Forest's tree of time, miner's tree):
+	 * its configured feature placed by its own 1.21.1 code, as a mod's bone meal places one. Logged once when it throws.
+	 */
+	static boolean placeFeature(ResourceLocation feature, World world, BlockPos at, Random random) {
+		if ("minecraft".equals(feature.getNamespace())) {
+			return false;
+		}
+		var registry = io.github.xponer2.translator.util.BuiltInRegistries.byKey(
+				io.github.xponer2.translator.registry.ResourceKey.<Object>createRegistryKey(new ResourceLocation("worldgen/configured_feature")));
+		Object configured = registry.get(feature);
+		Object generator = DataFeatures.generator();
+		if (configured == null || generator == null) {
+			return false;
+		}
+		try {
+			for (java.lang.reflect.Method method : configured.getClass().getMethods()) {
+				if (method.getName().equals("place") && method.getParameterCount() == 4) {
+					return Boolean.TRUE.equals(method.invoke(configured, world, generator, random, at));
+				}
+			}
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			if (FAILED.add(feature)) {
+				org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").warn("The tree feature {} failed: {}", feature,
+						DataStructures.where(e.getCause()));
+			}
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			if (FAILED.add(feature)) {
+				org.apache.logging.log4j.LogManager.getLogger("Translator Runtime").warn("The tree feature {} failed: {}", feature, e.toString());
+			}
+		}
+		return false;
+	}
+
+	private static final java.util.Set<ResourceLocation> FAILED = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
 	/** The (not 2x2) tree a grower names, without growing it (the self-test). */
 	@Nullable

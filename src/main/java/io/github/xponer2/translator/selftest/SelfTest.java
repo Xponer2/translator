@@ -632,7 +632,11 @@ public final class SelfTest {
 							// a 1.21 plant may go a few ticks later: GrowingPlantBlock schedules the tick that breaks it
 							// (BOP's high grass and lumaloop, vines), as 1.21 does
 							this.afterTicks(() -> this.world.getBlockState(this.cell).getBlock() != block, 5, gone -> {
-								if (!gone) {
+								if (!gone && this.keptBy121(block)) {
+									// its own 1.21 updateShape keeps it without the block under it (Twilight Forest's berry
+									// bushes are plain blocks, not bushes): 1.21 leaves it there too
+									this.current.notes.add("survive: stays without the block under it, as its 1.21 updateShape says");
+								} else if (!gone) {
 									this.current.problems.add("survive: stays when the block it stands on is gone");
 								}
 								this.breakAndClear(block);
@@ -813,6 +817,52 @@ public final class SelfTest {
 		 * a tree, plants around).
 		 */
 		/** 1.12.2's canUseBonemeal (1.21's isBonemealSuccess) said yes at least once in 60 tries. */
+		/**
+		 * Whether 1.21 keeps the block when the block under it is gone: its own updateShape (a 1.21.1 mod's block), told
+		 * that the block below is air now, gives its state back unchanged. A bush breaks there, a plain block doesn't.
+		 */
+		private boolean keptBy121(Block block) {
+			if (!(block instanceof io.github.xponer2.translator.runtime.mc.Block)) {
+				return false;
+			}
+			IBlockState state = this.world.getBlockState(this.cell);
+			try {
+				java.lang.reflect.Method update = io.github.xponer2.translator.runtime.mc.Block.class.getDeclaredMethod("updateShape", IBlockState.class,
+						EnumFacing.class, IBlockState.class, net.minecraft.world.World.class, BlockPos.class, BlockPos.class);
+				update.setAccessible(true);
+				return update.invoke(block, state, EnumFacing.DOWN, Blocks.AIR.getDefaultState(), this.world, this.cell, this.cell.down()) == state;
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				return false;
+			}
+		}
+
+		/**
+		 * Why a sapling grew no tree: its grower's class and what its own growTree did once more (false, or what it threw,
+		 * and where): Twilight Forest's hollow oak grows a structure by its own grower.
+		 */
+		private String growerTrace(Block block, IBlockState state) {
+			Object grower = ((io.github.xponer2.translator.runtime.mc.SaplingBlock) block).translatorTreeGrower();
+			if (grower == null) {
+				return " (no tree grower)";
+			}
+			String result;
+			try {
+				java.lang.reflect.Method grow = null;
+				for (java.lang.reflect.Method method : grower.getClass().getMethods()) {
+					if (method.getName().equals("growTree") && method.getParameterCount() == 5) {
+						grow = method;
+					}
+				}
+				result = grow == null ? "no growTree" : "growTree gave " + grow.invoke(grower, this.world, io.github.xponer2.translator.world.DataFeatures.generator(), this.cell,
+						state, this.world.rand);
+			} catch (java.lang.reflect.InvocationTargetException e) {
+				result = "growTree threw " + io.github.xponer2.translator.world.DataStructures.where(e.getCause());
+			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+				result = "growTree: " + e;
+			}
+			return " (grower " + grower.getClass().getName() + ": " + result + ")";
+		}
+
 		private boolean bonemealSucceeds(net.minecraft.block.IGrowable growable) {
 			boolean[] yes = new boolean[1];
 			this.attempt("bone meal: success chance", () -> {
@@ -873,7 +923,8 @@ public final class SelfTest {
 				// isBonemealSuccess answered no every time, so nothing was meant to grow
 				this.current.notes.add("bone meal: the block refuses it (isBonemealSuccess false in 60 tries)");
 			} else if (!grew[0]) {
-				this.current.problems.add(sapling ? "sapling: no tree in 60 uses of bone meal" : "bone meal: nothing grew in 60 uses (canGrow said it can)");
+				this.current.problems.add(sapling ? "sapling: no tree in 60 uses of bone meal" + this.growerTrace(block, state)
+						: "bone meal: nothing grew in 60 uses (canGrow said it can)");
 			} else if (sapling) {
 				Block[] expected = io.github.xponer2.translator.world.TreeInfo.saplingTree(
 						((io.github.xponer2.translator.runtime.mc.SaplingBlock) block).translatorTreeGrower());

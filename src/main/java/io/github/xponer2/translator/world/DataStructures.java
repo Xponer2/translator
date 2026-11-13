@@ -114,7 +114,7 @@ public final class DataStructures {
 	}
 
 	/** An exception with the first frame of a mod or of the Translator (a bare NullPointerException says nothing). */
-	static String where(Throwable e) {
+	public static String where(Throwable e) {
 		Throwable cause = e instanceof java.lang.reflect.InvocationTargetException && e.getCause() != null ? e.getCause() : e;
 		for (StackTraceElement frame : cause.getStackTrace()) {
 			String type = frame.getClassName();
