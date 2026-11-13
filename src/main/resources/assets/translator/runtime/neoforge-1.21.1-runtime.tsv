@@ -584,3 +584,4 @@ R	io/github/xponer2/translator/registry/Registry	io/github/xponer2/translator/re
 R	io/github/xponer2/translator/registry/Registry$Reference	io/github/xponer2/translator/registry/HolderOwners
 R	io/github/xponer2/translator/registry/Holder	io/github/xponer2/translator/registry/HolderOwners
 R	io/github/xponer2/translator/util/particle/ParticleOptions	io/github/xponer2/translator/util/particle/ParticleCodec
+E	net/minecraft/world/level/saveddata/maps/MapItemSavedData	io/github/xponer2/translator/world/MapItemSavedData

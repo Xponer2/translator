@@ -397,7 +397,31 @@ public final class WorldApiBridges {
 
 	/** 1.21 {@code level.setMapData(id, data)}: saved as 1.12.2's {@code map_<id>}. */
 	public static void setMapData(World world, Object id, MapData data) {
-		world.setData("map_" + mapId(id), data);
+		String name = "map_" + mapId(id);
+		if (!name.equals(data.mapName)) {
+			// a 1.21 map data has no name of its own (the Translator's MapItemSavedData is made as map_new): 1.12.2
+			// saves it under its name
+			try {
+				var field = net.minecraft.world.storage.WorldSavedData.class.getDeclaredField("field_76190_i");
+				field.setAccessible(true);
+				var modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
+				modifiers.setAccessible(true);
+				modifiers.setInt(field, field.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
+				field.set(data, name);
+			} catch (ReflectiveOperationException | RuntimeException e) {
+				try {
+					var field = net.minecraft.world.storage.WorldSavedData.class.getDeclaredField("mapName");
+					field.setAccessible(true);
+					var modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
+					modifiers.setAccessible(true);
+					modifiers.setInt(field, field.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
+					field.set(data, name);
+				} catch (ReflectiveOperationException | RuntimeException again) {
+					// saved under its own name
+				}
+			}
+		}
+		world.setData(name, data);
 	}
 
 	/** 1.21 {@code level.getMapData(id)}. */
