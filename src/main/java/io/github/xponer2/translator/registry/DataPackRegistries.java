@@ -104,8 +104,47 @@ public final class DataPackRegistries {
 	 * (Twilight Forest's damage types expired, frozen, hydra_mortar, axing; its hostile, mist and winter wolves are the
 	 * vanilla pale wolf). No mod announces them, so they stayed empty: "Missing element".
 	 */
+	/**
+	 * 1.21's banner patterns are 1.12.2's BannerPattern enum (the tables map it): its constants under their 1.21 ids
+	 * (minecraft:stripe_downleft is STRIPE_DOWNLEFT: Aether's creative tab with a banner was skipped), the mods' pattern
+	 * files new constants (their textures aren't where 1.12.2's banners look).
+	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	private static void addBannerPatterns() {
+		ResourceKey key = ResourceKey.createRegistryKey(new ResourceLocation("minecraft", "banner_pattern"));
+		REGISTRIES.putIfAbsent(key, BANNER_PATTERN);
+		Registry<?> registry = BuiltInRegistries.byKey(key);
+		if (registry instanceof MappedRegistry mapped && mapped.keySet().isEmpty()) {
+			for (net.minecraft.tileentity.BannerPattern pattern : net.minecraft.tileentity.BannerPattern.values()) {
+				mapped.register(new ResourceLocation("minecraft", pattern.getFileName()), pattern);
+			}
+		}
+	}
+
+	private static final Codec<net.minecraft.tileentity.BannerPattern> BANNER_PATTERN = com.mojang.serialization.codecs.RecordCodecBuilder.create(
+			instance -> instance.group(io.github.xponer2.translator.util.Codecs.RESOURCE_LOCATION.fieldOf("asset_id").forGetter(
+					pattern -> new ResourceLocation(pattern.getFileName())), Codec.STRING.fieldOf("translation_key").forGetter(
+							pattern -> "block.minecraft.banner." + pattern.getFileName())).apply(instance, DataPackRegistries::bannerPattern));
+
+	/** A mod's banner pattern: the 1.12.2 constant of that asset, a new one for a new asset. */
+	private static synchronized net.minecraft.tileentity.BannerPattern bannerPattern(ResourceLocation asset, String translationKey) {
+		String file = "minecraft".equals(asset.getNamespace()) ? asset.getPath() : asset.getNamespace() + "_" + asset.getPath().replace('/', '_');
+		for (net.minecraft.tileentity.BannerPattern pattern : net.minecraft.tileentity.BannerPattern.values()) {
+			if (pattern.getFileName().equals(file)) {
+				return pattern;
+			}
+		}
+		return net.minecraftforge.common.util.EnumHelper.addEnum(net.minecraft.tileentity.BannerPattern.class,
+				file.toUpperCase(java.util.Locale.ROOT), new Class<?>[] {String.class, String.class}, file, "t" + Integer.toHexString(asset.hashCode()));
+	}
+
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	private static void addVanilla() {
+		try {
+			addBannerPatterns();
+		} catch (RuntimeException | LinkageError e) {
+			LOGGER.warn("Data pack registry minecraft:banner_pattern: no entries ({})", e.toString());
+		}
 		for (String[] vanilla : VANILLA) {
 			ResourceKey key = ResourceKey.createRegistryKey(new ResourceLocation("minecraft", vanilla[0]));
 			try {
