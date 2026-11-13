@@ -45,6 +45,17 @@ public abstract class RandomizableContainerBlockEntity extends BaseContainerBloc
 		this.lootTableSeed = seed;
 	}
 
+	/** 1.21 {@code getLootTable()}: the key of the loot table that fills it when first opened, null when none. */
+	@Nullable
+	public ResourceKey<?> getLootTable() {
+		return this.lootTable == null ? null : ResourceKey.create(ResourceKey.createRegistryKey(new ResourceLocation("loot_table")), this.lootTable);
+	}
+
+	/** 1.21 {@code getLootTableSeed()}. */
+	public long getLootTableSeed() {
+		return this.lootTableSeed;
+	}
+
 	public void setLootTable(@Nullable ResourceKey<?> table) {
 		this.setLootTable(table, 0L);
 	}

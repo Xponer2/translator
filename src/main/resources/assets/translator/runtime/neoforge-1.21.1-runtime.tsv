@@ -578,3 +578,7 @@ M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	tick()	updateTask
 M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	stop()	resetTask
 M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	canUse()	shouldExecute
 M	net/minecraft/world/entity/ai/goal/MeleeAttackGoal	canContinueToUse()	shouldContinueExecuting
+R	io/github/xponer2/translator/registry/Registry	io/github/xponer2/translator/registry/HolderOwners
+R	io/github/xponer2/translator/registry/Registry$Reference	io/github/xponer2/translator/registry/HolderOwners
+R	io/github/xponer2/translator/registry/Holder	io/github/xponer2/translator/registry/HolderOwners
+R	io/github/xponer2/translator/util/particle/ParticleOptions	io/github/xponer2/translator/util/particle/ParticleCodec

@@ -35,6 +35,20 @@ public abstract class FallingBlockEntity extends net.minecraft.entity.item.Entit
 		withDefaultBlock(this);
 	}
 
+	/**
+	 * 1.21 {@code setHurtsEntities(damagePerDistance, max)}: 1.12.2 has only setHurtEntities(boolean) (anvils' values);
+	 * the amounts are its private fallHurtAmount and fallHurtMax.
+	 */
+	public void setHurtsEntities(float damagePerDistance, int max) {
+		this.setHurtEntities(true);
+		try {
+			net.minecraftforge.fml.common.ObfuscationReflectionHelper.setPrivateValue(net.minecraft.entity.item.EntityFallingBlock.class, this, damagePerDistance, "field_145816_i");
+			net.minecraftforge.fml.common.ObfuscationReflectionHelper.setPrivateValue(net.minecraft.entity.item.EntityFallingBlock.class, this, max, "field_145815_h");
+		} catch (RuntimeException e) {
+			// the 1.12.2 amounts (anvils') stay
+		}
+	}
+
 	/** Gives a falling block without a block sand (1.21's default), which 1.12.2's update reads. */
 	public static void withDefaultBlock(net.minecraft.entity.item.EntityFallingBlock entity) {
 		if (entity.getBlock() != null) {

@@ -56,9 +56,12 @@ public class RegistryOps<T> implements DynamicOps<T> {
 		return this.registries.lookup(key);
 	}
 
-	/** 1.21's holder owner check: 1.12.2 has one set of registries, every holder belongs. */
+	/**
+	 * 1.21's holder owner check: 1.12.2 has one set of registries, every holder belongs. The carried HolderOwner of the
+	 * registry (RegistryFixedCodec casts it to one: the registries themselves failed the cast).
+	 */
 	public <E> Optional<Object> owner(ResourceKey<? extends Registry<? extends E>> key) {
-		return Optional.of(this.registries);
+		return Optional.of(HolderOwners.of(key));
 	}
 
 	public DynamicOps<T> delegate() {

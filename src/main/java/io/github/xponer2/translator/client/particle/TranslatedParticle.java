@@ -42,6 +42,9 @@ import io.github.xponer2.translator.client.VertexConsumer;
 public abstract class TranslatedParticle extends Particle {
 	private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger("Translator Runtime");
 
+	/** The particle classes whose render failed (logged once each). */
+	private static final java.util.Set<Class<?>> FAILED_CLASSES = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
+
 	/** The 1.21 render of a particle class (render, or renderParticle when the table renamed it). */
 	private static final ClassValue<MethodHandle> RENDER = new ClassValue<>() {
 		@Override
@@ -159,10 +162,15 @@ public abstract class TranslatedParticle extends Particle {
 		}
 		io.github.xponer2.translator.client.BufferVertexConsumer consumer = VertexConsumer.raw(target);
 		try {
-			render.invokeExact(this, consumer, camera, partialTicks);
+			// the handle's exact type: the consumer as the 1.21 VertexConsumer (as BufferVertexConsumer every particle of
+			// the mods failed with WrongMethodTypeException, and logged it each frame: the game froze on its log)
+			render.invokeExact(this, (VertexConsumer) consumer, camera, partialTicks);
 		} catch (Throwable e) {
 			this.failed = true;
-			LOGGER.warn("A particle of {} isn't drawn", this.getClass().getName(), e);
+			// once per particle class: a failing particle is made again and again
+			if (FAILED_CLASSES.add(this.getClass())) {
+				LOGGER.warn("A particle of {} isn't drawn", this.getClass().getName(), e);
+			}
 		} finally {
 			consumer.endVertices();
 			if (own) {

@@ -52,7 +52,9 @@ public final class ResourceBridges {
 			RuntimeStubs.missing("ReloadableResourceManager.registerReloadListener (" + listener.getClass().getName() + ": no reload method)");
 			return;
 		}
+		java.util.concurrent.atomic.AtomicBoolean ran = new java.util.concurrent.atomic.AtomicBoolean();
 		IResourceManagerReloadListener hook = resources -> {
+			ran.set(true);
 			try {
 				if (reload != null) {
 					reload.invoke(listener, ResourceManager.client());
@@ -73,12 +75,59 @@ public final class ResourceBridges {
 				java.util.List<IResourceManagerReloadListener> listeners = net.minecraftforge.fml.common.ObfuscationReflectionHelper
 						.getPrivateValue(net.minecraft.client.resources.SimpleReloadableResourceManager.class, simple, "field_110546_b");
 				listeners.add(hook);
+				if (!Minecraft.getMinecraft().isCallingFromMinecraftThread() || Minecraft.getMinecraft().currentScreen == null
+						&& Minecraft.getMinecraft().world == null) {
+					// added while the game still loads (GeckoLib's model cache, from its mod's constructor): 1.21 runs
+					// it at its first resource load, which on 1.12.2 may be over by then; run once the game has
+					// loaded unless a reload ran it (every GeckoLib model was missing: "Unable to find model")
+					Pending.add(() -> {
+						if (!ran.get()) {
+							hook.onResourceManagerReload(Minecraft.getMinecraft().getResourceManager());
+						}
+					});
+				}
 				return;
 			} catch (RuntimeException e) {
 				// as 1.12.2 adds it, run once now
 			}
 		}
 		((IReloadableResourceManager) resources).registerReloadListener(hook);
+	}
+
+	/** The listeners added while the game loaded, run (if no reload did) on the first client tick after it loaded. */
+	public static final class Pending {
+		private static final java.util.List<Runnable> TASKS = new java.util.ArrayList<>();
+		private static boolean listening;
+
+		private Pending() {
+		}
+
+		static synchronized void add(Runnable task) {
+			TASKS.add(task);
+			if (!listening) {
+				listening = true;
+				net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(new Pending());
+			}
+		}
+
+		@net.minecraftforge.fml.common.eventhandler.SubscribeEvent
+		public void onTick(net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent event) {
+			Minecraft minecraft = Minecraft.getMinecraft();
+			if (event.phase != net.minecraftforge.fml.common.gameevent.TickEvent.Phase.END
+					|| !(minecraft.currentScreen instanceof net.minecraft.client.gui.GuiMainMenu) && minecraft.world == null) {
+				return;
+			}
+			java.util.List<Runnable> tasks;
+			synchronized (Pending.class) {
+				tasks = new java.util.ArrayList<>(TASKS);
+				TASKS.clear();
+				listening = false;
+			}
+			net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(this);
+			for (Runnable task : tasks) {
+				task.run();
+			}
+		}
 	}
 
 	/** 1.21 {@code PreparableReloadListener.reload(barrier, manager, prepareProfiler, applyProfiler, background, game)}. */

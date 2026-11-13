@@ -74,6 +74,21 @@ public class BlockEntityType<T extends TileEntity> implements RegistrationCallba
     public static final BlockEntityType<TileEntity> BLAST_FURNACE = carried("blast_furnace", "BlastFurnaceBlockEntity");
     public static final BlockEntityType<TileEntity> CONDUIT = carried("conduit", "ConduitBlockEntity");
     public static final BlockEntityType<TileEntity> JIGSAW = carried("jigsaw", "JigsawBlockEntity");
+    /**
+     * 1.21 FURNACE, the type the carried FurnaceBlockEntity gives its super constructor: a mod's furnace extends it and
+     * has a type of its own (Twilight Forest's cinder furnace; with it null the block entity wasn't made). Not
+     * registered: 1.12.2's own furnace keeps the id minecraft:furnace.
+     */
+    public static final BlockEntityType<TileEntity> FURNACE = unregistered("furnace");
+
+    private static BlockEntityType<TileEntity> unregistered(String name) {
+        var type = new BlockEntityType<TileEntity>((pos, state) -> {
+            throw new UnsupportedOperationException("Translator: a 1.21 " + name + " block entity is made by its block");
+        }, java.util.Collections.emptySet());
+        type.id = new ResourceLocation(name);
+        type.anyBlock = true;
+        return type;
+    }
 
     private static BlockEntityType<TileEntity> carried(String name, String className) {
         var type = new BlockEntityType<TileEntity>((pos, state) -> {

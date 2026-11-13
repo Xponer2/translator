@@ -16,6 +16,9 @@ import net.minecraft.util.EnumParticleTypes;
  * 1.21 particle types that 1.12.2 has (nearest 1.12.2 particle where the name changed).
  */
 public final class ParticleTypes {
+	/** 1.21 {@code STREAM_CODEC}: any particle with its type ({@link ParticleCodec}). */
+	public static final io.github.xponer2.translator.network.StreamCodec<io.github.xponer2.translator.network.RegistryFriendlyByteBuf, ParticleOptions> STREAM_CODEC =
+			io.github.xponer2.translator.network.StreamCodec.of(ParticleCodec::encode, ParticleCodec::decode);
 	public static final ParticleOptions SMOKE = new LegacyParticleOptions(EnumParticleTypes.SMOKE_NORMAL);
 	public static final ParticleOptions LARGE_SMOKE = new LegacyParticleOptions(EnumParticleTypes.SMOKE_LARGE);
 	public static final ParticleOptions FLAME = new LegacyParticleOptions(EnumParticleTypes.FLAME);

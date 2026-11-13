@@ -46,6 +46,14 @@ public abstract class FallingBlock extends Block {
 	protected void onStartFalling(net.minecraft.entity.item.EntityFallingBlock entity) {
 	}
 
+	/**
+	 * 1.21 {@code getDelayAfterPlace()}: the ticks before a placed or moved block falls (2; Supplementaries' ash, sacks
+	 * and urns override it).
+	 */
+	protected int getDelayAfterPlace() {
+		return 2;
+	}
+
 	public int getDustColor(IBlockState state, IBlockAccess level, BlockPos pos) {
 		return -16777216;
 	}
@@ -53,13 +61,13 @@ public abstract class FallingBlock extends Block {
 	@Override
 	public void onBlockAdded(World world, BlockPos pos, IBlockState state) {
 		super.onBlockAdded(world, pos, state);
-		world.scheduleUpdate(pos, this, 2);
+		world.scheduleUpdate(pos, this, this.getDelayAfterPlace());
 	}
 
 	@Override
 	@SuppressWarnings("deprecation")
 	public void neighborChanged(IBlockState state, World world, BlockPos pos, net.minecraft.block.Block block, BlockPos from) {
-		world.scheduleUpdate(pos, this, 2);
+		world.scheduleUpdate(pos, this, this.getDelayAfterPlace());
 	}
 
 	/** 1.21 FallingBlock.tick: falls when the block below lets it (a mod's tick override calls this through super). */
