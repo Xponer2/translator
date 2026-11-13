@@ -443,6 +443,18 @@ public final class EntityGapBridges {
 		return entry.action instanceof CarriedGoal carried ? carried.goal : entry.action;
 	}
 
+	/** The task list a WrappedGoal made by a mod belongs to (1.12.2's entries are inner objects of one). */
+	private static final net.minecraft.entity.ai.EntityAITasks DETACHED = new net.minecraft.entity.ai.EntityAITasks(null);
+
+	/**
+	 * 1.21 {@code new WrappedGoal(priority, goal)}: a 1.12.2 task entry of the goal (a carried goal through the same
+	 * adapter addGoal gives it). Ars Nouveau lists its mobs' goals so (41 sites).
+	 */
+	public static net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry newEntityAITasks_EntityAITaskEntry(int priority, Object goal) {
+		net.minecraft.entity.ai.EntityAIBase task = goal instanceof net.minecraft.entity.ai.EntityAIBase base ? base : GOALS.computeIfAbsent(goal, CarriedGoal::new);
+		return DETACHED.new EntityAITaskEntry(priority, task);
+	}
+
 	public static int getPriority(net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry entry) {
 		return entry.priority;
 	}
