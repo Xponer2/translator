@@ -235,6 +235,17 @@ final class ModRemapper extends Remapper {
 		return false;
 	}
 
+	/**
+	 * The table's own name of a 1.21 method of that 1.21 class (its M row), whatever the 1.12.2 method's descriptor:
+	 * a reflective accessor calls it with its arguments converted (Mouse Tweaks' findSlot(double, double) is
+	 * GuiContainer's getSlotAtPosition(int, int)). Null without a row.
+	 */
+	@javax.annotation.Nullable
+	String tableMethodName(String owner, String name, String desc) {
+		Map<String, String> members = this.table.methods.get(owner);
+		return members == null ? null : members.get(RemapTable.methodKey(name, desc));
+	}
+
 	private String member(String owner, String name, String desc, boolean method) {
 		var todo = new ArrayDeque<String>();
 		var seen = new HashSet<String>();

@@ -157,8 +157,53 @@ public final class GeometryLoaders implements ICustomModelLoader {
 		}
 		boolean flipGas = json.has("flip_gas") && json.get("flip_gas").getAsBoolean();
 		boolean tint = !json.has("apply_tint") || json.get("apply_tint").getAsBoolean();
-		return new net.minecraftforge.client.model.ModelDynBucket(new ResourceLocation("forge", "items/bucket_base"),
+		IModel bucket = new net.minecraftforge.client.model.ModelDynBucket(new ResourceLocation("forge", "items/bucket_base"),
 				new ResourceLocation("forge", "items/bucket_fluid"), new ResourceLocation("forge", "items/bucket_cover"), fluid, flipGas, tint);
+		return held(bucket);
+	}
+
+	/**
+	 * The model held as an item is (Forge's "forge:default-item" transforms: in hand, on the ground, in a frame): a
+	 * dynamic bucket on its own has none, so a mod's fluid bucket was drawn at full size in the hand (huge in third
+	 * person). Forge's own bucket gets them from its blockstate file.
+	 */
+	private static IModel held(IModel model) {
+		var transforms = net.minecraftforge.client.model.ForgeBlockStateV1.Transforms.get("forge:default-item").orElse(null);
+		if (transforms == null) {
+			return model;
+		}
+		return new IModel() {
+			@Override
+			public Collection<ResourceLocation> getDependencies() {
+				return model.getDependencies();
+			}
+
+			@Override
+			public Collection<ResourceLocation> getTextures() {
+				return model.getTextures();
+			}
+
+			@Override
+			public IBakedModel bake(net.minecraftforge.common.model.IModelState state, net.minecraft.client.renderer.vertex.VertexFormat format,
+					Function<ResourceLocation, net.minecraft.client.renderer.texture.TextureAtlasSprite> textures) {
+				return model.bake(state, format, textures);
+			}
+
+			@Override
+			public net.minecraftforge.common.model.IModelState getDefaultState() {
+				return transforms;
+			}
+
+			@Override
+			public IModel process(com.google.common.collect.ImmutableMap<String, String> data) {
+				return held(model.process(data));
+			}
+
+			@Override
+			public IModel retexture(com.google.common.collect.ImmutableMap<String, String> textures) {
+				return held(model.retexture(textures));
+			}
+		};
 	}
 
 	// --- the json, with its parents' textures and display ---------------------------------------------------------------

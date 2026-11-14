@@ -870,3 +870,14 @@ C	net/minecraft/world/entity/projectile/Projectile	net/minecraft/entity/Entity
 I	net/minecraft/world/entity/projectile/Projectile	io/github/xponer2/translator/runtime/redirect/ProjectileBridges	isProjectile
 R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/ProjectileBridges
 X	net/minecraft/client/Minecraft	getBlockRendererDispatcher	()Lnet/minecraft/client/renderer/BlockRendererDispatcher;	io/github/xponer2/translator/runtime/redirect/ClientRedirects	(Lnet/minecraft/client/Minecraft;)Lnet/minecraft/client/renderer/BlockRendererDispatcher;
+# 1.21 AbstractContainerScreen is 1.12.2 GuiContainer (the screens of the mods extend the facade, S line): a chest's or the
+# inventory's screen is a container screen as in 1.21, for JEI's overlay, Mouse Tweaks and every check of the kind
+C	net/minecraft/client/gui/screens/inventory/AbstractContainerScreen	net/minecraft/client/gui/inventory/GuiContainer
+M	net/minecraft/client/gui/screens/inventory/AbstractContainerScreen	findSlot(double,double)	getSlotAtPosition
+R	net/minecraft/client/gui/inventory/GuiContainer	io/github/xponer2/translator/runtime/redirect/ContainerScreenBridges
+# NeoForge's ModLoader posts a mod bus event once per mod container; every mod's bus is the one Forge bus here (posted once)
+X	net/neoforged/fml/ModLoader	postEvent	(Lnet/minecraftforge/fml/common/eventhandler/Event;)V	io/github/xponer2/translator/runtime/neoforge/ModLoaderBridges
+X	net/neoforged/fml/ModLoader	postEventWithReturn	(Lnet/minecraftforge/fml/common/eventhandler/Event;)Lnet/minecraftforge/fml/common/eventhandler/Event;	io/github/xponer2/translator/runtime/neoforge/ModLoaderBridges
+X	net/neoforged/fml/ModLoader	postEventWrapContainerInModOrder	(Lnet/minecraftforge/fml/common/eventhandler/Event;)V	io/github/xponer2/translator/runtime/neoforge/ModLoaderBridges
+X	net/neoforged/fml/ModLoader	postEventWithWrapInModOrder	(Lnet/minecraftforge/fml/common/eventhandler/Event;Ljava/util/function/BiConsumer;Ljava/util/function/BiConsumer;)V	io/github/xponer2/translator/runtime/neoforge/ModLoaderBridges
+X	net/neoforged/fml/ModLoader	runEventGenerator	(Ljava/util/function/Function;)V	io/github/xponer2/translator/runtime/neoforge/ModLoaderBridges

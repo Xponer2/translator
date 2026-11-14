@@ -154,6 +154,10 @@ final class AccessorMixins {
 				try {
 					if (invoker && !"<init>".equals(name)) {
 						names.add(remapper.mapMethodName(target, name, method.desc));
+						String row = remapper.tableMethodName(target, name, method.desc);
+						if (row != null) {
+							names.add(row);
+						}
 					} else if (!invoker) {
 						Type field = type.getArgumentTypes().length == 0 ? type.getReturnType() : type.getArgumentTypes()[0];
 						names.add(remapper.mapFieldName(target, name, field.getDescriptor()));

@@ -102,7 +102,7 @@ public final class AccessorBridge {
 				report(owner, names, null);
 				return null;
 			}
-			return method.invoke(Modifier.isStatic(method.getModifiers()) ? null : target, args);
+			return method.invoke(Modifier.isStatic(method.getModifiers()) ? null : target, coerce(method.getParameterTypes(), args));
 		} catch (java.lang.reflect.InvocationTargetException e) {
 			Throwable cause = e.getCause();
 			if (cause instanceof RuntimeException runtime) {
@@ -117,6 +117,30 @@ public final class AccessorBridge {
 			report(owner, names, e);
 			return null;
 		}
+	}
+
+	/**
+	 * The arguments as the method's parameter types take them: a 1.21 invoker passes doubles where 1.12.2's method takes
+	 * ints (Mouse Tweaks' findSlot(double, double) is GuiContainer's getSlotAtPosition(int, int)).
+	 */
+	private static Object[] coerce(Class<?>[] types, Object[] args) {
+		Object[] out = args;
+		for (int i = 0; i < types.length && i < args.length; i++) {
+			Class<?> type = types[i];
+			if (!type.isPrimitive() || !(args[i] instanceof Number number)) {
+				continue;
+			}
+			Object value = type == int.class ? (Object) number.intValue() : type == long.class ? (Object) number.longValue()
+					: type == float.class ? (Object) number.floatValue() : type == double.class ? (Object) number.doubleValue()
+					: type == short.class ? (Object) number.shortValue() : type == byte.class ? (Object) number.byteValue() : args[i];
+			if (value != args[i]) {
+				if (out == args) {
+					out = args.clone();
+				}
+				out[i] = value;
+			}
+		}
+		return out;
 	}
 
 	// the accessor's primitive results: a field the Translator class lacks reads as 0 / false until set
