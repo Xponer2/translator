@@ -43,6 +43,11 @@ public final class SingleVariantModels {
 	public void onModels(ModelRegistryEvent event) {
 		for (Block block : ForgeRegistries.BLOCKS) {
 			var id = block.getRegistryName();
+			if (id != null && block instanceof io.github.xponer2.translator.runtime.mc.LiquidBlock) {
+				// a mod's fluid: drawn by its fluid model, not by the variants of its blockstate (a particle texture)
+				FluidModels.map(block);
+				continue;
+			}
 			if (id == null || !Translator.isPortedMod(id.getNamespace()) || block.getBlockState().getProperties().isEmpty()) {
 				continue;
 			}

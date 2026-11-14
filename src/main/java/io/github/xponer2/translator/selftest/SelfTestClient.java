@@ -275,6 +275,9 @@ final class SelfTestClient {
 						}
 					} else if (usesMissingSprite(model, mc)) {
 						run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: faces with the missing texture (purple and black)");
+					} else if (noHandTransforms(model) && !undisplayedIn121(item.getRegistryName())) {
+						run.addClientProblem("item", String.valueOf(item.getRegistryName()),
+								"item model: no display transforms (drawn at full size in the hand, on the ground, in item frames)");
 					}
 				} catch (Throwable t) {
 					run.addClientProblem("item", String.valueOf(item.getRegistryName()), "item model: " + SelfTest.describe(t));
@@ -287,6 +290,15 @@ final class SelfTestClient {
 						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "block model: missing (purple and black)");
 					} else if (usesMissingSprite(model, mc)) {
 						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "block model: faces with the missing texture (purple and black)");
+					}
+					if (block instanceof net.minecraftforge.fluids.BlockFluidBase) {
+						// a mod's fluid as it is drawn placed (its source block): no pixels means it is invisible in the world
+						int drawn = blockPixels(block.getDefaultState());
+						if (drawn == 0) {
+							run.addClientProblem("block", String.valueOf(block.getRegistryName()), "fluid: draws nothing once placed (invisible in the world)");
+						} else {
+							run.addClientNote("block", String.valueOf(block.getRegistryName()), "fluid drawn (" + drawn + " of 1024 pixels)");
+						}
 					}
 				} catch (Throwable t) {
 					run.addClientProblem("block", String.valueOf(block.getRegistryName()), "block model: " + SelfTest.describe(t));
@@ -765,6 +777,96 @@ final class SelfTestClient {
 		} catch (Throwable t) {
 			run.addClientProblem("item", id, what + ": " + SelfTest.describe(t));
 		}
+	}
+
+	/** No transform in the hand (third and first person) nor on the ground: the model is drawn at its full size there. */
+	private static boolean noHandTransforms(IBakedModel model) {
+		for (var type : new net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType[] {
+				net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType.THIRD_PERSON_RIGHT_HAND,
+				net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType.FIRST_PERSON_RIGHT_HAND,
+				net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType.GROUND}) {
+			if (model.handlePerspective(type).getRight() != null) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Whether the mod's own item model (its JSON and its parents) has no display transforms anywhere: then 1.21 draws it
+	 * at full size too. False when one has them or a file of the chain can't be read (a NeoForge parent).
+	 */
+	static boolean undisplayedIn121(@Nullable net.minecraft.util.ResourceLocation id) {
+		if (id == null) {
+			return false;
+		}
+		net.minecraft.client.resources.IResourceManager resources = Minecraft.getMinecraft().getResourceManager();
+		String model = id.getNamespace() + ":item/" + id.getPath();
+		for (int depth = 0; depth < 16 && model != null; depth++) {
+			var location = new net.minecraft.util.ResourceLocation(model);
+			if (location.getPath().startsWith("builtin/")) {
+				return true;
+			}
+			com.google.gson.JsonObject json;
+			try (var resource = resources.getResource(new net.minecraft.util.ResourceLocation(location.getNamespace(), "models/" + location.getPath() + ".json"));
+					var reader = new java.io.InputStreamReader(resource.getInputStream(), java.nio.charset.StandardCharsets.UTF_8)) {
+				json = new com.google.gson.JsonParser().parse(reader).getAsJsonObject();
+			} catch (java.io.IOException | RuntimeException e) {
+				return false;
+			}
+			if (json.has("display")) {
+				return false;
+			}
+			model = json.has("parent") ? json.get("parent").getAsString() : null;
+		}
+		return model == null;
+	}
+
+	/**
+	 * The block state drawn alone (as a placed block of it looks, the model's faces in the block atlas) into an empty
+	 * 32x32 frame, seen from above at an angle: the pixels it drew.
+	 */
+	private static int blockPixels(IBlockState state) {
+		Minecraft mc = Minecraft.getMinecraft();
+		int size = 32;
+		var frame = new net.minecraft.client.shader.Framebuffer(size, size, true);
+		int drawn = 0;
+		frame.setFramebufferColor(0.0F, 0.0F, 0.0F, 0.0F);
+		frame.framebufferClear();
+		frame.bindFramebuffer(true);
+		net.minecraft.client.renderer.GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_PROJECTION);
+		net.minecraft.client.renderer.GlStateManager.pushMatrix();
+		net.minecraft.client.renderer.GlStateManager.loadIdentity();
+		net.minecraft.client.renderer.GlStateManager.ortho(-1.0D, 1.0D, -1.0D, 1.0D, -10.0D, 10.0D);
+		net.minecraft.client.renderer.GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
+		net.minecraft.client.renderer.GlStateManager.pushMatrix();
+		net.minecraft.client.renderer.GlStateManager.loadIdentity();
+		try {
+			net.minecraft.client.renderer.GlStateManager.enableDepth();
+			net.minecraft.client.renderer.GlStateManager.enableTexture2D();
+			net.minecraft.client.renderer.GlStateManager.disableLighting();
+			net.minecraft.client.renderer.GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+			net.minecraft.client.renderer.GlStateManager.rotate(30.0F, 1.0F, 0.0F, 0.0F);
+			net.minecraft.client.renderer.GlStateManager.rotate(45.0F, 0.0F, 1.0F, 0.0F);
+			net.minecraft.client.renderer.GlStateManager.translate(-0.5F, -0.5F, -0.5F);
+			mc.getTextureManager().bindTexture(net.minecraft.client.renderer.texture.TextureMap.LOCATION_BLOCKS_TEXTURE);
+			mc.getBlockRendererDispatcher().renderBlockBrightness(state, 1.0F);
+			java.nio.IntBuffer pixels = org.lwjgl.BufferUtils.createIntBuffer(size * size);
+			org.lwjgl.opengl.GL11.glReadPixels(0, 0, size, size, org.lwjgl.opengl.GL12.GL_BGRA, org.lwjgl.opengl.GL12.GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+			for (int i = 0; i < size * size; i++) {
+				if (pixels.get(i) >>> 24 != 0) {
+					drawn++;
+				}
+			}
+		} finally {
+			net.minecraft.client.renderer.GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_PROJECTION);
+			net.minecraft.client.renderer.GlStateManager.popMatrix();
+			net.minecraft.client.renderer.GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
+			net.minecraft.client.renderer.GlStateManager.popMatrix();
+			mc.getFramebuffer().bindFramebuffer(true);
+			frame.deleteFramebuffer();
+		}
+		return drawn;
 	}
 
 	private static boolean emptyAllSides(IBakedModel model) {
