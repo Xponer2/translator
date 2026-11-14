@@ -504,12 +504,27 @@ public final class RuntimeResourcePack implements IResourcePack {
 		}
 	}
 
+	/**
+	 * The vanilla texture names of a model, at every depth: the models inside it (NeoForge's separate_transforms base
+	 * and perspectives, composite children) name textures too. Only the top ones renamed, Twilight Forest's giant
+	 * tools and giant blocks were the missing texture in hand and in the inventory.
+	 */
 	private static JsonElement model(JsonElement json) {
-		if (json.isJsonObject() && json.getAsJsonObject().has("textures") && json.getAsJsonObject().get("textures").isJsonObject()) {
-			JsonObject textures = json.getAsJsonObject().getAsJsonObject("textures");
-			for (Map.Entry<String, JsonElement> entry : textures.entrySet()) {
-				if (entry.getValue().isJsonPrimitive()) {
-					entry.setValue(new JsonPrimitive(texture(entry.getValue().getAsString())));
+		if (json.isJsonArray()) {
+			for (JsonElement element : json.getAsJsonArray()) {
+				model(element);
+			}
+		} else if (json.isJsonObject()) {
+			for (Map.Entry<String, JsonElement> entry : json.getAsJsonObject().entrySet()) {
+				JsonElement value = entry.getValue();
+				if ("textures".equals(entry.getKey()) && value.isJsonObject()) {
+					for (Map.Entry<String, JsonElement> texture : value.getAsJsonObject().entrySet()) {
+						if (texture.getValue().isJsonPrimitive()) {
+							texture.setValue(new JsonPrimitive(texture(texture.getValue().getAsString())));
+						}
+					}
+				} else if (value.isJsonObject() || value.isJsonArray()) {
+					model(value);
 				}
 			}
 		}

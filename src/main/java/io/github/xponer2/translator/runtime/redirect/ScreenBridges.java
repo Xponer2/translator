@@ -229,12 +229,22 @@ public final class ScreenBridges {
 		return Minecraft.getMinecraft().gameSettings.showDebugProfilerChart;
 	}
 
-	/** A sprite of the blocks atlas by its 1.21 name (block/stone is blocks/stone on 1.12.2). */
+	/**
+	 * A sprite of the blocks atlas by its 1.21 name. Vanilla's block/stone is blocks/stone on 1.12.2; a mod's textures
+	 * keep their 1.21 folders (block/, item/) here: renamed too, Twilight Forest's traveller's gear and every other mod
+	 * sprite asked for so (Material.sprite(), the atlas getters) was the missing texture.
+	 */
 	public static net.minecraft.client.renderer.texture.TextureAtlasSprite getSprite(net.minecraft.client.renderer.texture.TextureMap atlas,
 			ResourceLocation sprite) {
 		String path = sprite.getPath().startsWith("block/") ? "blocks/" + sprite.getPath().substring(6)
 				: sprite.getPath().startsWith("item/") ? "items/" + sprite.getPath().substring(5) : sprite.getPath();
-		return atlas.getAtlasSprite(sprite.getNamespace() + ":" + path);
+		boolean vanilla = "minecraft".equals(sprite.getNamespace());
+		var missing = atlas.getMissingSprite();
+		var first = atlas.getAtlasSprite(vanilla ? sprite.getNamespace() + ":" + path : sprite.toString());
+		if (first != missing || path.equals(sprite.getPath())) {
+			return first;
+		}
+		return atlas.getAtlasSprite(vanilla ? sprite.toString() : sprite.getNamespace() + ":" + path);
 	}
 
 	public static ResourceLocation location(net.minecraft.client.renderer.texture.TextureMap atlas) {

@@ -60,7 +60,7 @@ public final class AtlasTextures {
 			var entries = Collections.list(zip.entries());
 			for (var entry : entries) {
 				var name = entry.getName();
-				if (name.startsWith("assets/") && name.endsWith("/atlases/blocks.json")) {
+				if (name.startsWith("assets/") && foldedAtlas(name)) {
 					try (var in = zip.getInputStream(entry); var reader = new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8)) {
 						var json = new com.google.gson.JsonParser().parse(reader).getAsJsonObject();
 						for (var source : json.getAsJsonArray("sources")) {
@@ -107,6 +107,28 @@ public final class AtlasTextures {
 			Translator.LOGGER.warn("Couldn't list the textures of {}", jar.getName(), e);
 		}
 		return added;
+	}
+
+	/**
+	 * Whether the sources of that atlas file go into the blocks atlas: blocks.json, and the other atlases (1.12.2 has
+	 * one): a mod's own (Twilight Forest's magic paintings, Mekanism's robit skins: TextureAtlasHolders) and what the
+	 * mods add to 1.21's chests, shulker boxes and shields, which the mods look up as Materials of those sheets. Not
+	 * the GUI, particle, effect and map icon sprites: those are drawn from their own textures.
+	 */
+	static boolean foldedAtlas(String name) {
+		int folder = name.indexOf("/atlases/");
+		if (folder < 0 || !name.endsWith(".json")) {
+			return false;
+		}
+		switch (name.substring(folder + "/atlases/".length(), name.length() - ".json".length())) {
+			case "gui":
+			case "particles":
+			case "mob_effects":
+			case "map_decorations":
+				return false;
+			default:
+				return true;
+		}
 	}
 
 	private static void register(TextureMap map, String namespace, String folder) {

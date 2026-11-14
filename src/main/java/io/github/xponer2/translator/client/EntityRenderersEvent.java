@@ -87,11 +87,31 @@ public class EntityRenderersEvent extends Event {
 
 	/** NeoForge: skull models of the mods' skull types (1.12.2's skulls are its own). */
 	public static class CreateSkullModels extends EntityRenderersEvent {
+		@javax.annotation.Nullable
+		private final com.google.common.collect.ImmutableMap.Builder<Object, Object> skulls;
+
+		public CreateSkullModels() {
+			this.skulls = null;
+		}
+
+		/**
+		 * NeoForge's {@code new CreateSkullModels(builder, modelSet)}, posted by the carried SkullBlockRenderer as it
+		 * makes the skull models: the mods' skull models go into its map. Without it the skull models weren't made.
+		 */
+		@SuppressWarnings("unchecked")
+		public CreateSkullModels(com.google.common.collect.ImmutableMap.Builder<?, ?> skulls,
+				io.github.xponer2.translator.client.model.EntityModelSet modelSet) {
+			this.skulls = (com.google.common.collect.ImmutableMap.Builder<Object, Object>) skulls;
+		}
+
 		public io.github.xponer2.translator.client.model.EntityModelSet getEntityModelSet() {
 			return io.github.xponer2.translator.client.model.EntityModelSet.INSTANCE;
 		}
 
 		public void registerSkullModel(Object type, Object model) {
+			if (this.skulls != null && type != null && model != null) {
+				this.skulls.put(type, model);
+			}
 		}
 	}
 

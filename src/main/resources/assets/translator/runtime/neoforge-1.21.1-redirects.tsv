@@ -400,6 +400,7 @@ R	net/minecraft/client/Minecraft	io/github/xponer2/translator/runtime/redirect/G
 R	net/minecraft/client/renderer/tileentity/TileEntityRendererDispatcher	io/github/xponer2/translator/runtime/redirect/GuiBridges
 R	net/minecraft/client/renderer/block/model/ItemTransformVec3f	io/github/xponer2/translator/runtime/redirect/ModelBridges
 C	net/minecraft/client/gui/GuiSpriteManager	io/github/xponer2/translator/client/GuiSpriteManager
+C	net/minecraft/client/resources/TextureAtlasHolder	io/github/xponer2/translator/client/TextureAtlasHolder
 R	net/minecraftforge/client/event/RenderLivingEvent	io/github/xponer2/translator/runtime/redirect/GuiBridges
 R	net/minecraft/client/renderer/texture/TextureAtlasSprite	io/github/xponer2/translator/runtime/redirect/GuiBridges
 # stale lines of the carried table (generated on v81, before the mob classes were mapped): these 1.21 classes have a
@@ -868,3 +869,4 @@ X	net/minecraft/block/state/IBlockState	getValue	(Lnet/minecraft/block/propertie
 C	net/minecraft/world/entity/projectile/Projectile	net/minecraft/entity/Entity
 I	net/minecraft/world/entity/projectile/Projectile	io/github/xponer2/translator/runtime/redirect/ProjectileBridges	isProjectile
 R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/ProjectileBridges
+X	net/minecraft/client/Minecraft	getBlockRendererDispatcher	()Lnet/minecraft/client/renderer/BlockRendererDispatcher;	io/github/xponer2/translator/runtime/redirect/ClientRedirects	(Lnet/minecraft/client/Minecraft;)Lnet/minecraft/client/renderer/BlockRendererDispatcher;

@@ -55,11 +55,19 @@ public final class ForgeRegistryWrapper<T extends IForgeRegistryEntry<T>> implem
 
     @Nullable
     @Override
+    @SuppressWarnings("unchecked")
     public T get(@Nullable ResourceLocation location) {
         if (location != null && !this.registry.containsKey(location)) {
             var alias = Aliases.get(this.key.location(), location);
             if (alias != null) {
                 location = alias;
+            } else if (this.registry == net.minecraftforge.fml.common.registry.ForgeRegistries.ITEMS) {
+                // a flattened 1.21 vanilla id (minecraft:dragon_head is the skull with meta 5): its 1.12.2 item. Air
+                // for it failed Supplementaries' mob head effects ("cannot have AIR item")
+                var flattened = io.github.xponer2.translator.util.ItemIds.item(location);
+                if (flattened != null) {
+                    return (T) flattened;
+                }
             }
         }
         return location == null || !this.registry.containsKey(location) ? this.defaultValue() : this.registry.getValue(location);

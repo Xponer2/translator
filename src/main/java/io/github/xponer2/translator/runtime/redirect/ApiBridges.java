@@ -91,8 +91,9 @@ public final class ApiBridges {
 		}
 	}
 
+	/** 1.21 {@code level.dimension()}: a world without its provider yet (JourneyMap asked while the world went away) is the overworld. */
 	public static ResourceKey<World> dimension(World world) {
-		return dimensionKey(world.provider.getDimension());
+		return dimensionKey(world == null || world.provider == null ? 0 : world.provider.getDimension());
 	}
 
 	/** 1.21 {@code mapData.dimension} (a level key; 1.12.2's field is the dimension id): maps of Supplementaries, Moonlight, TF. */

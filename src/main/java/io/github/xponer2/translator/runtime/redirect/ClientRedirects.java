@@ -300,15 +300,38 @@ public final class ClientRedirects {
 	/** A sprite of an atlas by its 1.21 name (block/stone is blocks/stone on 1.12.2). */
 	public static java.util.function.Function<net.minecraft.util.ResourceLocation, net.minecraft.client.renderer.texture.TextureAtlasSprite> getTextureAtlas(
 			Minecraft minecraft, net.minecraft.util.ResourceLocation atlas) {
-		return sprite -> {
-			String path = sprite.getPath().startsWith("block/") ? "blocks/" + sprite.getPath().substring(6)
-					: sprite.getPath().startsWith("item/") ? "items/" + sprite.getPath().substring(5) : sprite.getPath();
-			return minecraft.getTextureMapBlocks().getAtlasSprite(sprite.getNamespace() + ":" + path);
-		};
+		return sprite -> ScreenBridges.getSprite(minecraft.getTextureMapBlocks(), sprite);
+	}
+
+	private static net.minecraft.client.renderer.BlockRendererDispatcher earlyBlockRenderer;
+
+	/**
+	 * 1.21 {@code getBlockRenderer()}. 1.12.2 makes its dispatcher after the first model bake, and models made in it
+	 * ask for it there (Supplementaries' rope knot and sign post models take its block model shapes: null, they
+	 * failed and those blocks were drawn as their bare json). Until then, one over the same block model shapes.
+	 */
+	public static net.minecraft.client.renderer.BlockRendererDispatcher getBlockRendererDispatcher(Minecraft minecraft) {
+		var dispatcher = minecraft.getBlockRendererDispatcher();
+		if (dispatcher != null) {
+			return dispatcher;
+		}
+		if (earlyBlockRenderer == null) {
+			try {
+				net.minecraft.client.renderer.block.model.ModelManager models = net.minecraftforge.fml.common.ObfuscationReflectionHelper
+						.getPrivateValue(Minecraft.class, minecraft, "field_175617_aL");
+				if (models != null && minecraft.getBlockColors() != null) {
+					earlyBlockRenderer = new net.minecraft.client.renderer.BlockRendererDispatcher(models.getBlockModelShapes(), minecraft.getBlockColors());
+				}
+			} catch (RuntimeException e) {
+				return null;
+			}
+		}
+		return earlyBlockRenderer;
 	}
 
 	public static net.minecraft.client.renderer.block.model.ModelManager getModelManager(Minecraft minecraft) {
-		return minecraft.getBlockRendererDispatcher().getBlockModelShapes().getModelManager();
+		var dispatcher = getBlockRendererDispatcher(minecraft);
+		return dispatcher == null ? null : dispatcher.getBlockModelShapes().getModelManager();
 	}
 
 	public static net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher getBlockEntityRenderDispatcher(Minecraft minecraft) {

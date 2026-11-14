@@ -48,13 +48,31 @@ public class PoseStack {
         }
     }
 
-    /** Pops the matrices pushed since the stack had that depth; how many there were. */
+    /**
+     * Pops the matrices pushed since the stack had that depth; how many there were. Never more than GL's model view
+     * stack holds: a pop of a matrix something else already popped was "1284: Stack underflow" every frame (the HUD
+     * of the player's game, lagging until F3 hid it).
+     */
     public static int restore(int to) {
+        if (depth <= to) {
+            return 0;
+        }
+        int mode = org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MATRIX_MODE);
+        if (mode != org.lwjgl.opengl.GL11.GL_MODELVIEW) {
+            GlStateManager.matrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
+        }
+        int held = org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MODELVIEW_STACK_DEPTH) - 1;
         int popped = 0;
         while (depth > to) {
-            GlStateManager.popMatrix();
+            if (held > 0) {
+                GlStateManager.popMatrix();
+                held--;
+                popped++;
+            }
             depth--;
-            popped++;
+        }
+        if (mode != org.lwjgl.opengl.GL11.GL_MODELVIEW) {
+            GlStateManager.matrixMode(mode);
         }
         return popped;
     }

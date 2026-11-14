@@ -205,6 +205,9 @@ public final class ForgeBus implements IEventBus {
 			ModContainer owner = InterModProcessEvent.class.isAssignableFrom(type) || InterModEnqueueEvent.class.isAssignableFrom(type)
 					? ModLoadingContext.get().getActiveContainer() : null;
 			IEventListener listener = event -> {
+				if (!forThisMod(event)) {
+					return;
+				}
 				if (receiveCanceled || !event.isCancelable() || !event.isCanceled()) {
 					ModContainer previous = owner == null ? null : ModLoadingContext.get().getActiveContainer();
 					if (owner != null) {
@@ -237,5 +240,18 @@ public final class ForgeBus implements IEventBus {
 		} catch (ReflectiveOperationException | RuntimeException e) {
 			LOGGER.error("Can't listen to {}: {}", type.getName(), e.toString());
 		}
+	}
+
+	/**
+	 * Whether a 1.12.2 event is one the 1.21 mods get: 1.12.2 posts DrawBlockHighlightEvent for whatever the cursor is on
+	 * (an entity, nothing), 1.21's RenderHighlightEvent.Block is a block's only. A mod's outline code read the block of a
+	 * miss: a null position and a NullPointerException in several mods each frame.
+	 */
+	private static boolean forThisMod(Event event) {
+		// by name: the event is a client class, and this bus runs on a dedicated server too
+		if ("net.minecraftforge.client.event.DrawBlockHighlightEvent".equals(event.getClass().getName())) {
+			return io.github.xponer2.translator.client.ClientEventFilters.blockHighlight(event);
+		}
+		return true;
 	}
 }

@@ -416,11 +416,48 @@ public final class GeometryLoaders implements ICustomModelLoader {
 					return identity();
 				case "getRenderTypeHint":
 					return this.model.renderType;
+				case "getRenderType":
+					// a default method of NeoForge's context (NamedRenderTypeManager.get): a proxy runs none, null made
+					// Twilight Forest's connected texture and giant block models fail (castle doors, auroralized glass, giant
+					// leaves, their items)
+					return renderTypeGroup(args != null && args.length > 0 ? args[0] : null);
 				case "isComponentVisible":
 					return args[1];
 				default:
 					return objectMethod(this, method, args);
 			}
+		}
+	}
+
+	/**
+	 * NeoForge's {@code RenderTypeGroup} of a render type name (minecraft:solid, cutout, cutout_mipped, translucent):
+	 * the block, entity and fabulous entity types of it; the empty group for none.
+	 */
+	@Nullable
+	static Object renderTypeGroup(@Nullable Object name) {
+		try {
+			Class<?> group = Class.forName("net.neoforged.neoforge.client.RenderTypeGroup", true, GeometryLoaders.class.getClassLoader());
+			if (!(name instanceof ResourceLocation id)) {
+				return group.getField("EMPTY").get(null);
+			}
+			io.github.xponer2.translator.client.RenderType type = switch (id.getPath()) {
+				case "solid" -> io.github.xponer2.translator.client.RenderType.solid();
+				case "translucent", "tripwire" -> io.github.xponer2.translator.client.RenderType.translucent();
+				default -> io.github.xponer2.translator.client.RenderType.cutout();
+			};
+			for (var constructor : group.getConstructors()) {
+				if (constructor.getParameterCount() == 3) {
+					return constructor.newInstance(type, type, type);
+				}
+			}
+			for (var constructor : group.getConstructors()) {
+				if (constructor.getParameterCount() == 2) {
+					return constructor.newInstance(type, type);
+				}
+			}
+			return group.getField("EMPTY").get(null);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
 		}
 	}
 
@@ -442,8 +479,17 @@ public final class GeometryLoaders implements ICustomModelLoader {
 			case "getModelTextureGetter":
 				return (Function<Object, TextureAtlasSprite>) GeometryLoaders::sprite;
 			case "getModel":
-				// an UnbakedModel of 1.21 (the mods resolve their parts' parents through it: the Translator does)
-				return null;
+				// an UnbakedModel of 1.21: 1.12.2's json model of that location (the mods cast it to BlockModel, resolve
+				// its parents and bake it: Moonlight's nested models of Supplementaries' faucet, jar, goblet,
+				// blackboard, flower box and frames were null, "Found missing model" and drawn as nothing), the one
+				// missing model for none
+				if (args != null && args.length > 0 && args[0] instanceof ResourceLocation location) {
+					ModelBlock loaded = load(location);
+					if (loaded != null) {
+						return loaded;
+					}
+				}
+				return missingModel();
 			default:
 				return objectMethod(GeometryLoaders.class, method, args);
 		}
@@ -596,7 +642,13 @@ public final class GeometryLoaders implements ICustomModelLoader {
 
 	private static Object proxy(String carried, java.lang.reflect.InvocationHandler handler) throws ClassNotFoundException {
 		Class<?> type = Class.forName(carried, true, net.minecraft.launchwrapper.Launch.classLoader);
-		return Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler);
+		try {
+			// what the methods give back may be 1.12.2's objects standing for carried interfaces (ModelBaker.getModel)
+			return LenientProxy.create(type, handler);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			LOGGER.warn("No lenient proxy of {}: {}", carried, e.toString());
+			return Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler);
+		}
 	}
 
 	@Nullable
@@ -629,6 +681,17 @@ public final class GeometryLoaders implements ICustomModelLoader {
 			value = textures.get(value.substring(1));
 		}
 		return value;
+	}
+
+	private static ModelBlock missing;
+
+	/** The model of no file (ModelBaker.getModel of the missing model's location, and of every unknown one): one object. */
+	static synchronized ModelBlock missingModel() {
+		if (missing == null) {
+			missing = ModelBlock.deserialize("{}");
+			missing.name = "builtin/missing";
+		}
+		return missing;
 	}
 
 	/** A carried 1.21 Material of the blocks atlas. */

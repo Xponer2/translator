@@ -93,3 +93,6 @@ S	net/minecraft/client/renderer/PostChain	io/github/xponer2/translator/client/Po
 S	net/minecraft/world/level/BaseSpawner	io/github/xponer2/translator/runtime/mc/BaseSpawner
 S	net/minecraft/world/level/block/piston/PistonMovingBlockEntity	io/github/xponer2/translator/runtime/mc/PistonMovingBlockEntity
 S	net/minecraft/world/level/Explosion	io/github/xponer2/translator/runtime/mc/Explosion
+S	net/minecraft/client/gui/components/LerpingBossEvent	io/github/xponer2/translator/client/LerpingBossEvent
+S	net/minecraft/client/renderer/blockentity/ChestRenderer	io/github/xponer2/translator/client/ChestRenderer
+S	net/minecraft/client/renderer/blockentity/PistonHeadRenderer	io/github/xponer2/translator/client/PistonHeadRenderer

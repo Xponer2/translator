@@ -101,7 +101,28 @@ final class NeoForgeModels {
 					out.add(new ResourceLocation(texture));
 				}
 			}
+			nestedTextures(this.json, out);
 			return out;
+		}
+
+		/** The textures the models inside name (base, perspectives, children): stitched too. */
+		private static void nestedTextures(com.google.gson.JsonElement json, Collection<ResourceLocation> out) {
+			if (json.isJsonArray()) {
+				json.getAsJsonArray().forEach(element -> nestedTextures(element, out));
+			} else if (json.isJsonObject()) {
+				for (var entry : json.getAsJsonObject().entrySet()) {
+					var value = entry.getValue();
+					if ("textures".equals(entry.getKey()) && value.isJsonObject()) {
+						for (var texture : value.getAsJsonObject().entrySet()) {
+							if (texture.getValue().isJsonPrimitive() && !texture.getValue().getAsString().startsWith("#")) {
+								out.add(new ResourceLocation(texture.getValue().getAsString()));
+							}
+						}
+					} else if (!"elements".equals(entry.getKey()) && (value.isJsonObject() || value.isJsonArray())) {
+						nestedTextures(value, out);
+					}
+				}
+			}
 		}
 
 		@Override
