@@ -377,6 +377,15 @@ public final class SelfTest {
 			float hardness = state.getBlockHardness(this.world, this.cell);
 			float speed = tool.isEmpty() ? 1.0F : tool.getDestroySpeed(state);
 			float vanilla = speed / hardness / (state.getMaterial().isToolNotRequired() || tool.canHarvestBlock(state) ? 30.0F : 100.0F);
+			// 1.12.2's own penalties: a player off the ground (the test's player hovers between cells) or under water
+			// mines five times slower; the v246 full run read that as a mod's slowdown
+			if (!this.player.onGround) {
+				vanilla /= 5.0F;
+			}
+			if (this.player.isInsideOfMaterial(net.minecraft.block.material.Material.WATER)
+					&& !net.minecraft.enchantment.EnchantmentHelper.getAquaAffinityModifier(this.player)) {
+				vanilla /= 5.0F;
+			}
 			float[] strength = new float[1];
 			if (this.attempt(what + ": mining", () -> strength[0] = state.getPlayerRelativeBlockHardness(this.player, this.world, this.cell))) {
 				if (!(strength[0] > 0.0F)) {
