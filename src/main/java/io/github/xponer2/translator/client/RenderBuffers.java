@@ -27,4 +27,9 @@ public final class RenderBuffers {
     public MultiBufferSource crumblingBufferSource() {
         return MultiBufferSource.INSTANCE;
     }
+
+    /** The buffers of glowing entities' outlines (1.12.2 draws the outlines itself). */
+    public OutlineBufferSource outlineBufferSource() {
+        return OutlineBufferSource.INSTANCE;
+    }
 }

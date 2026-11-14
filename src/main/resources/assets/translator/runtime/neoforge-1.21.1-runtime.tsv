@@ -151,6 +151,10 @@ C	net/neoforged/neoforgespi/language/ModFileScanData$ClassData	io/github/xponer2
 C	com/mojang/blaze3d/vertex/PoseStack$Pose	io/github/xponer2/translator/client/PoseStack
 C	net/minecraft/client/renderer/MultiBufferSource$BufferSource	io/github/xponer2/translator/client/MultiBufferSource
 C	net/minecraft/client/renderer/RenderBuffers	io/github/xponer2/translator/client/RenderBuffers
+C	net/minecraft/client/renderer/OutlineBufferSource	io/github/xponer2/translator/client/OutlineBufferSource
+# 1.21's horse coat (an enum) as it is: the class table took 1.12.2's block model Variant of the same simple name
+# (the vanilla HorseRenderer a mod draws its horse with failed to load: an EnumMap of a class that isn't an enum)
+C	net/minecraft/world/entity/animal/horse/Variant	net/minecraft/world/entity/animal/horse/Variant
 C	net/minecraft/client/DeltaTracker	io/github/xponer2/translator/client/DeltaTracker
 C	net/minecraft/client/MouseHandler	io/github/xponer2/translator/client/MouseHandler
 # the 1.21 text field: a widget of the screen (constructor, responder, input events) on GuiTextField

@@ -28,9 +28,11 @@ public class MultiBufferSource {
     /**
      * 1.21 {@code new MultiBufferSource.BufferSource(sharedBuffer, fixedBuffers)}: a mod's own buffer source (its subclass
      * wraps the buffers: Patchouli's ghost multiblocks, GuideMe's scene export), batches of its own drawn when it ends
-     * them. As a final class it failed to load and the mods' classes with it.
+     * them. As a final class it failed to load and the mods' classes with it. Public: the API's own
+     * {@code MultiBufferSource.immediate(buffer)} makes one too (Ars Nouveau's GeckoLib renderers in their static
+     * fields: an IllegalAccessError left the Starbuncle, the familiars and the animated blocks without a renderer).
      */
-    protected MultiBufferSource(@javax.annotation.Nullable Object sharedBuffer, @javax.annotation.Nullable java.util.Map<?, ?> fixedBuffers) {
+    public MultiBufferSource(@javax.annotation.Nullable Object sharedBuffer, @javax.annotation.Nullable java.util.Map<?, ?> fixedBuffers) {
         SOURCES.add(this);
     }
 

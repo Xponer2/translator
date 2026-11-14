@@ -158,6 +158,11 @@ public class ModelPart extends ModelRenderer {
 		if (!this.showModel || this.isHidden || this.cubes.isEmpty() && this.children.isEmpty()) {
 			return;
 		}
+		if (buffer == null) {
+			// a caller whose own override takes the buffer (GeckoLib's armor renderer passes none) and couldn't run: the
+			// part is skipped, the rest of the entity is still drawn
+			return;
+		}
 		poseStack.pushPose();
 		try {
 			this.translateAndRotate(poseStack);
