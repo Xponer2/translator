@@ -285,6 +285,20 @@ public final class SelfTest {
 				if (!done.contains("vanilla minecraft:eating")) {
 					this.planVanillaBasics();
 				}
+				// the mods that change the interface: what they do, not only that they load (JEI, Mouse Tweaks and Controlling
+				// were "working" here and dead in the game; AppleSkin's HUD)
+				if (FMLCommonHandler.instance().getSide().isClient()) {
+					for (var mod : RuntimeMods.mods()) {
+						String modId = mod.getModId();
+						if (wanted(filter, modId) && !done.contains("mod " + modId + ":interface") && InterfaceChecks.wanted(modId)) {
+							this.steps.add(() -> {
+								this.begin(modId + ":interface", "mod");
+								this.closeMenu();
+								this.waitFor(InterfaceChecks.check(this, modId)::get, 20 * 60);
+							});
+						}
+					}
+				}
 				// 1.12.2's own mobs: a mod (a mixin, a layer it adds to every living renderer) can stop their models from
 				// drawing, only the shadows showing (seen in a game with all the mods)
 				if (FMLCommonHandler.instance().getSide().isClient()) {
@@ -1609,14 +1623,36 @@ public final class SelfTest {
 			this.testMenu(menu);
 		}
 
+		/** Set while the menu test goes on after the longer wait for a late screen. */
+		private boolean lateScreen;
+
 		private void testMenu(Container menu) {
 			if (this.player.openContainer != menu) {
+				return;
+			}
+			if (FMLCommonHandler.instance().getSide().isClient() && SelfTestClient.currentScreen() == null && !this.lateScreen) {
+				// not there in two seconds: up to eight more, to tell a slow screen (the first open of a mod's screen loads
+				// and converts its classes) from one that never comes (a screen problem); a late one is only noted
+				Record record = this.current;
+				long asked = this.world.getTotalWorldTime();
+				this.afterTicks(() -> SelfTestClient.currentScreen() != null || this.player.openContainer != menu, 160, seen -> {
+					this.current = record;
+					if (seen && SelfTestClient.currentScreen() != null) {
+						record.notes.add("its screen came late (" + (40 + this.world.getTotalWorldTime() - asked) + " ticks)");
+					}
+					this.lateScreen = true;
+					try {
+						this.testMenu(menu);
+					} finally {
+						this.lateScreen = false;
+					}
+				});
 				return;
 			}
 			if (FMLCommonHandler.instance().getSide().isClient()) {
 				String screen = SelfTestClient.currentScreen();
 				if (screen == null) {
-					this.current.problems.add("menu: the server opened " + menu.getClass().getSimpleName() + ", no screen on the client");
+					this.current.problems.add("menu: the server opened " + menu.getClass().getSimpleName() + ", no screen on the client in 10 s");
 				} else {
 					this.current.notes.add("screen " + screen);
 					// a player's clicks: the screen's own click code, then the packets to this menu

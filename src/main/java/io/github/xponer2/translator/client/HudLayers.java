@@ -86,6 +86,32 @@ public final class HudLayers {
 		}
 	}
 
+	/** The mods' layers by id: how often each drew without failing, which failed (the self-test checks them). */
+	private static final Map<String, Integer> DRAWS = new java.util.concurrent.ConcurrentHashMap<>();
+	private static final java.util.Set<String> REGISTERED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+	private static final java.util.Set<String> FAILED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+	/** The HUD layers a mod registered (ids). */
+	public static List<String> layersOf(String namespace) {
+		var out = new ArrayList<String>();
+		for (String id : REGISTERED) {
+			if (id.startsWith(namespace + ":")) {
+				out.add(id);
+			}
+		}
+		java.util.Collections.sort(out);
+		return out;
+	}
+
+	/** How often a layer drew without failing since the game started. */
+	public static int draws(String id) {
+		return DRAWS.getOrDefault(id, 0);
+	}
+
+	public static boolean failed(String id) {
+		return FAILED.contains(id);
+	}
+
 	/** The mod layers by the vanilla layer they follow, in the final order. */
 	private final Map<String, List<Layer>> groups = new LinkedHashMap<>();
 	/** The vanilla layers each 1.12.2 element stands for (experience is two). */
@@ -152,6 +178,7 @@ public final class HudLayers {
 					// a vanilla layer a mod replaced or wrapped: 1.12.2 still draws its own, the mod's goes after it
 				}
 				hud.groups.computeIfAbsent(after, ignored -> new ArrayList<>()).add(new Layer(id, drawn, after));
+				REGISTERED.add(id.toString());
 				count++;
 			}
 			MinecraftForge.EVENT_BUS.register(hud);
@@ -228,9 +255,11 @@ public final class HudLayers {
 			try {
 				this.render.invoke(layer.layer, gfx, DeltaTracker.INSTANCE);
 				gfx.flush();
+				DRAWS.merge(layer.id.toString(), 1, Integer::sum);
 			} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
 				Throwable cause = e instanceof java.lang.reflect.InvocationTargetException invocation && invocation.getCause() != null ? invocation.getCause() : e;
 				layer.failed = true;
+				FAILED.add(layer.id.toString());
 				io.github.xponer2.translator.runtime.RuntimeStubs.failed("the HUD layer " + layer.id, cause);
 			}
 		});
