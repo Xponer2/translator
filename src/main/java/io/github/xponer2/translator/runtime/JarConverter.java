@@ -230,7 +230,17 @@ final class JarConverter {
 			open.add(in);
 			var out = xyz.wagyourtail.jvmdg.util.Utils.openZipFileSystem(output.toPath(), true);
 			open.add(out);
-			ApiShader.shadeApis(FLAGS, prefix, in.getPath("/"), out.getPath("/"), roots, scanned.getFirst(), scanned.getSecond());
+			try {
+				ApiShader.shadeApis(FLAGS, prefix, in.getPath("/"), out.getPath("/"), roots, scanned.getFirst(), scanned.getSecond());
+			} catch (RuntimeException e) {
+				// the downgrader's reference graph fails on some jars (XaeroPlus: a NullPointerException inside it): the jar
+				// goes on without its Java 9+ API stubs shaded in (the guard leaves out what uses them) instead of not at all
+				Conversion.LOGGER.warn("{}: the Java API stubs couldn't be shaded in ({}), the jar goes on without them", input.getName(), e.toString());
+				out.close();
+				open.remove(out);
+				output.delete();
+				java.nio.file.Files.copy(input.toPath(), output.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			}
 		} finally {
 			for (int i = open.size() - 1; i >= 0; i--) {
 				open.get(i).close();

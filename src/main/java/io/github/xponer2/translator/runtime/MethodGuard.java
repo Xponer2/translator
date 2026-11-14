@@ -716,9 +716,35 @@ final class MethodGuard {
 		if (!changed) {
 			return bytes;
 		}
-		var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-		node.accept(writer);
-		return writer.toByteArray();
+		if ((node.version & 0xFFFF) < Opcodes.V1_6) {
+			// a class of Java 5 or older (a library spark shades) has no stack map frames, and ASM refuses to write the
+			// ones the guard's analysis left in it: the whole jar failed to convert
+			for (MethodNode method : node.methods) {
+				for (AbstractInsnNode insn : method.instructions.toArray()) {
+					if (insn instanceof FrameNode) {
+						method.instructions.remove(insn);
+					}
+				}
+			}
+		}
+		// a method that grew past the JVM's 64 KB with the conversion (Ender's Cataclysm's Ignis model animation, near the
+		// limit already) is stubbed and the class written again: the whole jar failed to convert
+		for (int attempt = 0;; attempt++) {
+			var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+			node.accept(writer);
+			try {
+				return writer.toByteArray();
+			} catch (xyz.wagyourtail.jvmdg.shade.asm.MethodTooLargeException e) {
+				if (attempt >= 16) {
+					throw e;
+				}
+				for (MethodNode method : node.methods) {
+					if (method.name.equals(e.getMethodName()) && method.desc.equals(e.getDescriptor())) {
+						this.stub(node.name, node.superName, method, "too large for the JVM after the conversion");
+					}
+				}
+			}
+		}
 	}
 
 	/**

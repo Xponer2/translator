@@ -110,7 +110,7 @@ final class ModRemapper extends Remapper {
 		}
 		// a Translator class the table names but the Translator doesn't have (yet): the 1.21.1 class is carried
 		int dollar = internalName.lastIndexOf('$');
-		if (dollar > 0 && !Character.isDigit(internalName.charAt(dollar + 1))) {
+		if (dollar > 0 && dollar + 1 < internalName.length() && !Character.isDigit(internalName.charAt(dollar + 1))) {
 			// (not an anonymous class: BlockPos$1 of 1.21 and BlockPos$1 of 1.12.2 have nothing in common)
 			// a nested class of a mapped class, when the target has it under the same name
 			String outer = internalName.substring(0, dollar);
