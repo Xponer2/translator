@@ -36,6 +36,9 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
  * </ul>
  */
 final class InterfaceChecks {
+	/** While a check runs: the automatic test leaves the screens it opens (the controls screen pauses the game). */
+	static volatile boolean running;
+
 	/** The mods with a check of their own (any mod with HUD layers gets the layer check). */
 	static final String[] MODS = {"appleskin", "jei", "controlling", "mousetweaks"};
 
@@ -48,7 +51,10 @@ final class InterfaceChecks {
 
 	static AtomicBoolean check(SelfTest.Run run, String modId) {
 		AtomicBoolean done = new AtomicBoolean();
-		Minecraft.getMinecraft().addScheduledTask(() -> MinecraftForge.EVENT_BUS.register(new Checker(run, modId, done)));
+		Minecraft.getMinecraft().addScheduledTask(() -> {
+			running = true;
+			MinecraftForge.EVENT_BUS.register(new Checker(run, modId, done));
+		});
 		return done;
 	}
 
@@ -143,16 +149,13 @@ final class InterfaceChecks {
 
 		private void planJei(Minecraft mc) {
 			Object[] runtime = new Object[1];
-			this.step(40, () -> {
+			this.step(60, () -> mc.displayGuiScreen(new net.minecraft.client.gui.inventory.GuiInventory(mc.player)));
+			this.step(0, () -> {
 				try {
 					runtime[0] = call(Class.forName("mezz.jei.common.Internal", true, net.minecraft.launchwrapper.Launch.classLoader), null, "getJeiRuntime");
 				} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
-					this.problem("JEI didn't start: no runtime (" + SelfTest.describe(e) + ")");
-				}
-				mc.displayGuiScreen(new net.minecraft.client.gui.inventory.GuiInventory(mc.player));
-			});
-			this.step(0, () -> {
-				if (runtime[0] == null) {
+					Throwable cause = e instanceof java.lang.reflect.InvocationTargetException i && i.getCause() != null ? i.getCause() : e;
+					this.problem("JEI didn't start: no runtime (" + SelfTest.describe(cause) + ")");
 					return;
 				}
 				try {
@@ -258,6 +261,7 @@ final class InterfaceChecks {
 			}
 			if (this.index >= this.steps.size() || Minecraft.getMinecraft().player == null) {
 				MinecraftForge.EVENT_BUS.unregister(this);
+				running = false;
 				this.done.set(true);
 				return;
 			}

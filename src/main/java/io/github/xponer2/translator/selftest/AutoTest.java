@@ -184,7 +184,7 @@ public final class AutoTest {
 					// a crash of the server thread: the client stays, showing it; the script starts the game again
 					LOGGER.error("Automatic self-test: the server stopped, quitting");
 					mc.shutdown();
-				} else if (mc.currentScreen != null && mc.currentScreen.doesGuiPauseGame()) {
+				} else if (mc.currentScreen != null && mc.currentScreen.doesGuiPauseGame() && !InterfaceChecks.running) {
 					// a screen that pauses the game (opened by a mod on the client) would stop the test
 					LOGGER.info("Closing {}: it pauses the game", mc.currentScreen.getClass().getName());
 					mc.displayGuiScreen(null);

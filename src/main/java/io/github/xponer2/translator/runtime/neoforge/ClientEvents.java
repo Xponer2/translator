@@ -32,6 +32,7 @@ public final class ClientEvents {
 
 	public static void register() {
 		MinecraftForge.EVENT_BUS.register(new Forwarder());
+		io.github.xponer2.translator.client.ScreenEvents.register();
 	}
 
 	public static void setup() {
@@ -61,12 +62,76 @@ public final class ClientEvents {
 			MinecraftForge.EVENT_BUS.post(new Key(KeyMapping.toGlfw(key), action));
 		}
 
+		/** The connection the mods were told about (LoggingIn posted for it), null when none. */
+		@javax.annotation.Nullable
+		private Object loggedIn;
+
+		/**
+		 * NeoForge's {@code ClientPlayerNetworkEvent.LoggingIn} and {@code RecipesUpdatedEvent} when the client player
+		 * first joins a world of a connection: JEI starts on these two (it never started: no item list, no recipes), and
+		 * other mods set up their client state on login. Posted once per connection (a respawn or a dimension change
+		 * makes a new player that joins again).
+		 */
+		@SubscribeEvent
+		public void onJoin(net.minecraftforge.event.entity.EntityJoinWorldEvent event) {
+			net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+			if (!event.getWorld().isRemote || event.getEntity() != mc.player || mc.getConnection() == null) {
+				return;
+			}
+			Object connection = mc.getConnection().getNetworkManager();
+			if (connection == this.loggedIn) {
+				return;
+			}
+			this.loggedIn = connection;
+			post("net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent$LoggingIn", mc.playerController, mc.player, connection);
+			post("net.neoforged.neoforge.client.event.RecipesUpdatedEvent", io.github.xponer2.translator.recipe.RecipeManager.get());
+		}
+
+		/** NeoForge's {@code ClientPlayerNetworkEvent.LoggingOut} when the client leaves the server. */
+		@SubscribeEvent
+		public void onLeave(net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+			net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+			Object connection = this.loggedIn;
+			if (connection == null) {
+				return;
+			}
+			this.loggedIn = null;
+			mc.addScheduledTask(() -> post("net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent$LoggingOut", mc.playerController, mc.player,
+					connection));
+		}
+
 		/** The Controls screen counts every key category: one without a registered key leaves an empty line it crashes on. */
 		@SubscribeEvent
 		public void onGuiOpen(net.minecraftforge.client.event.GuiOpenEvent event) {
 			if (event.getGui() instanceof net.minecraft.client.gui.GuiControls) {
 				KeyMapping.pruneCategories();
 			}
+		}
+	}
+
+	/** A carried NeoForge event made with the constructor that takes these arguments (nulls allowed), posted; failures logged once. */
+	private static void post(String eventClass, Object... args) {
+		try {
+			Class<?> type = Class.forName(eventClass, true, net.minecraft.launchwrapper.Launch.classLoader);
+			for (java.lang.reflect.Constructor<?> constructor : type.getConstructors()) {
+				Class<?>[] params = constructor.getParameterTypes();
+				if (params.length != args.length) {
+					continue;
+				}
+				boolean fits = true;
+				for (int i = 0; i < params.length && fits; i++) {
+					fits = args[i] == null ? !params[i].isPrimitive() : params[i].isInstance(args[i]);
+				}
+				if (fits) {
+					MinecraftForge.EVENT_BUS.post((Event) constructor.newInstance(args));
+					return;
+				}
+			}
+			io.github.xponer2.translator.runtime.RuntimeStubs.missing("the client event " + eventClass + " (no constructor for its arguments)");
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("the client event " + eventClass, e.getCause());
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			io.github.xponer2.translator.runtime.RuntimeStubs.failed("the client event " + eventClass, e);
 		}
 	}
 
