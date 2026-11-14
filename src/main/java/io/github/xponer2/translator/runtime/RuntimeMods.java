@@ -250,6 +250,7 @@ public final class RuntimeMods {
 			return;
 		}
 		io.github.xponer2.translator.runtime.neoforge.TickEvents.register();
+		net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.entity.AttributeSupplier.Joining());
 		io.github.xponer2.translator.runtime.neoforge.ItemEntityPickupEvent.register();
 		if (FMLEnvironment.dist == Side.CLIENT) {
 			io.github.xponer2.translator.runtime.neoforge.ClientEvents.register();

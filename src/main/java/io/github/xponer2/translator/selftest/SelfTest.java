@@ -281,6 +281,10 @@ public final class SelfTest {
 						this.planModRun(mod.getModId());
 					}
 				}
+				// 1.12.2's own basics, with every mod's listeners and mixins in the way: eating, drinking, mining, water
+				if (!done.contains("vanilla minecraft:eating")) {
+					this.planVanillaBasics();
+				}
 				// 1.12.2's own mobs: a mod (a mixin, a layer it adds to every living renderer) can stop their models from
 				// drawing, only the shadows showing (seen in a game with all the mods)
 				if (FMLCommonHandler.instance().getSide().isClient()) {
@@ -295,6 +299,129 @@ public final class SelfTest {
 				}
 			}
 			this.steps.add(this::finish);
+		}
+
+		/**
+		 * 1.12.2's own basics with every mod loaded, through the game's own paths (so the mods' events and mixins run):
+		 * eating bread, drinking milk, breaking blocks in survival, water poured from a bucket flowing. Any mod can break
+		 * them all: Artifacts' eating and drinking speed and Iron's library's mining speed read as 0 stopped every food,
+		 * drink and block broken in survival, and no test saw it.
+		 */
+		private void planVanillaBasics() {
+			this.steps.add(() -> this.vanillaUse("minecraft:eating", new ItemStack(net.minecraft.init.Items.BREAD), true));
+			this.steps.add(() -> this.vanillaUse("minecraft:drinking", new ItemStack(net.minecraft.init.Items.MILK_BUCKET), false));
+			this.steps.add(this::vanillaMining);
+			this.steps.add(this::vanillaWater);
+		}
+
+		/** A food or a drink used as a survival player uses it: its use starts, lasts as long as vanilla's, and does its thing. */
+		private void vanillaUse(String id, ItemStack stack, boolean food) {
+			this.begin(id, "vanilla");
+			this.closeMenu();
+			net.minecraft.world.GameType mode = this.player.interactionManager.getGameType();
+			int hunger = this.player.getFoodStats().getFoodLevel();
+			this.player.setGameType(net.minecraft.world.GameType.SURVIVAL);
+			try {
+				this.player.getFoodStats().setFoodLevel(10);
+				this.player.resetActiveHand();
+				this.player.setHeldItem(EnumHand.MAIN_HAND, stack);
+				int vanilla = stack.getMaxItemUseDuration();
+				this.attempt("start", () -> this.player.getHeldItemMainhand().useItemRightClick(this.world, this.player, EnumHand.MAIN_HAND));
+				if (!this.player.isHandActive()) {
+					this.current.problems.add("its use doesn't start: the hand only swings (a mod's listener of the use start, or a use time of 0 or less)");
+					return;
+				}
+				int ticks = this.player.getItemInUseCount();
+				if (ticks <= 0 || ticks > vanilla * 4) {
+					this.current.problems.add("its use takes " + ticks + " ticks (vanilla " + vanilla + ")");
+				}
+				ItemStack active = this.player.getActiveItemStack();
+				ItemStack[] result = new ItemStack[1];
+				if (this.attempt("finish", () -> result[0] = active.onItemUseFinish(this.world, this.player))) {
+					if (food && this.player.getFoodStats().getFoodLevel() <= 10) {
+						this.current.problems.add("eaten, but the hunger bar didn't fill (" + this.player.getFoodStats().getFoodLevel() + " of 20)");
+					}
+					if (!food && (result[0] == null || result[0].getItem() != net.minecraft.init.Items.BUCKET)) {
+						this.current.problems.add("drunk, but no empty bucket back (" + result[0] + ")");
+					}
+				}
+			} finally {
+				this.player.resetActiveHand();
+				this.player.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY);
+				this.player.getFoodStats().setFoodLevel(hunger);
+				this.player.setGameType(mode);
+			}
+		}
+
+		/** Blocks broken as a survival player breaks them: mining makes progress (about as fast as vanilla) and breaks them. */
+		private void vanillaMining() {
+			this.begin("minecraft:mining", "vanilla");
+			this.closeMenu();
+			this.clearCell();
+			net.minecraft.world.GameType mode = this.player.interactionManager.getGameType();
+			this.player.setGameType(net.minecraft.world.GameType.SURVIVAL);
+			try {
+				this.mine(Blocks.STONE.getDefaultState(), new ItemStack(net.minecraft.init.Items.IRON_PICKAXE), "stone with an iron pickaxe");
+				this.mine(Blocks.DIRT.getDefaultState(), ItemStack.EMPTY, "dirt by hand");
+				this.mine(Blocks.LOG.getDefaultState(), ItemStack.EMPTY, "a log by hand");
+			} finally {
+				this.player.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY);
+				this.player.setGameType(mode);
+				this.clearCell();
+			}
+		}
+
+		private void mine(IBlockState state, ItemStack tool, String what) {
+			this.world.setBlockState(this.cell, state, 3);
+			this.player.setHeldItem(EnumHand.MAIN_HAND, tool);
+			float hardness = state.getBlockHardness(this.world, this.cell);
+			float speed = tool.isEmpty() ? 1.0F : tool.getDestroySpeed(state);
+			float vanilla = speed / hardness / (state.getMaterial().isToolNotRequired() || tool.canHarvestBlock(state) ? 30.0F : 100.0F);
+			float[] strength = new float[1];
+			if (this.attempt(what + ": mining", () -> strength[0] = state.getPlayerRelativeBlockHardness(this.player, this.world, this.cell))) {
+				if (!(strength[0] > 0.0F)) {
+					this.current.problems.add(what + ": mining makes no progress (" + strength[0] + " a tick): it never breaks");
+				} else if (strength[0] < vanilla * 0.2F) {
+					this.current.problems.add(what + ": mining takes " + Math.round(1.0F / strength[0]) + " ticks (vanilla " + Math.round(1.0F / vanilla) + ")");
+				}
+			}
+			boolean[] broken = new boolean[1];
+			if (this.attempt(what + ": breaking", () -> broken[0] = this.player.interactionManager.tryHarvestBlock(this.cell))) {
+				if (!broken[0] || this.world.getBlockState(this.cell).getBlock() == state.getBlock()) {
+					this.current.problems.add(what + ": the player's breaking left it there");
+				}
+			}
+			this.world.setBlockState(this.cell, Blocks.AIR.getDefaultState(), 2 | 16);
+		}
+
+		/** Water poured from a bucket onto a floor: a source that flows out within three seconds. */
+		private void vanillaWater() {
+			this.begin("minecraft:water", "vanilla");
+			this.closeMenu();
+			for (int dx = -2; dx <= 2; dx++) {
+				for (int dz = -2; dz <= 2; dz++) {
+					this.world.setBlockState(this.cell.add(dx, -1, dz), Blocks.STONE.getDefaultState(), 2 | 16);
+					this.world.setBlockState(this.cell.add(dx, 0, dz), Blocks.AIR.getDefaultState(), 2 | 16);
+				}
+			}
+			boolean[] placed = new boolean[1];
+			this.attempt("pour", () -> placed[0] = ((net.minecraft.item.ItemBucket) net.minecraft.init.Items.WATER_BUCKET).tryPlaceContainedLiquid(this.player,
+					this.world, this.cell));
+			if (!placed[0] || this.world.getBlockState(this.cell).getMaterial() != net.minecraft.block.material.Material.WATER) {
+				this.current.problems.add("the bucket poured no water (" + this.world.getBlockState(this.cell) + ")");
+				return;
+			}
+			this.afterTicks(() -> this.world.getBlockState(this.cell.east()).getMaterial() == net.minecraft.block.material.Material.WATER
+					|| this.world.getBlockState(this.cell.west()).getMaterial() == net.minecraft.block.material.Material.WATER, 60, flowed -> {
+						if (!flowed) {
+							this.current.problems.add("the water doesn't flow (none beside the source in 60 ticks)");
+						}
+						for (int dx = -2; dx <= 2; dx++) {
+							for (int dz = -2; dz <= 2; dz++) {
+								this.world.setBlockState(this.cell.add(dx, 0, dz), Blocks.AIR.getDefaultState(), 2 | 16);
+							}
+						}
+					});
 		}
 
 		/**

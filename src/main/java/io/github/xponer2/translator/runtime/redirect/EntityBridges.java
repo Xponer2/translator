@@ -246,14 +246,18 @@ public final class EntityBridges {
 		return AttributeInstance.of(entity, attribute);
 	}
 
+	/**
+	 * 1.21 {@code entity.getAttributeValue(attribute)}; an attribute the entity lacks reads as its default (it was 0: a
+	 * mod multiplying or dividing by its own speed attribute stopped eating, drinking and mining).
+	 */
 	public static double getAttributeValue(EntityLivingBase entity, Holder<Attribute> attribute) {
 		var instance = AttributeInstance.of(entity, attribute);
-		return instance == null ? 0.0 : instance.getValue();
+		return instance == null ? attribute.value().getDefaultValue() : instance.getValue();
 	}
 
 	public static double getAttributeBaseValue(EntityLivingBase entity, Holder<Attribute> attribute) {
 		var instance = AttributeInstance.of(entity, attribute);
-		return instance == null ? 0.0 : instance.getBaseValue();
+		return instance == null ? attribute.value().getDefaultValue() : instance.getBaseValue();
 	}
 
 	public static boolean isDeadOrDying(EntityLivingBase entity) {

@@ -20,6 +20,7 @@ import io.github.xponer2.translator.registry.EntityType;
 import io.github.xponer2.translator.registry.Holder;
 
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.entity.ai.attributes.IAttribute;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 
@@ -98,6 +99,49 @@ public final class AttributeSupplier {
 			instance.setBaseValue(entry.getValue());
 		}
 		entity.setHealth(entity.getMaxHealth());
+	}
+
+	/**
+	 * The attributes mods add to a 1.12.2 entity's type (EntityAttributeModificationEvent: a player's eating, drinking
+	 * and mining speed from Artifacts and Iron's library), registered when the entity joins a world, at the value
+	 * given. The types the mods name (EntityType.PLAYER) are found by id: a 1.12.2 player has no registration, its
+	 * type is another object of the same id. Without this the player had none of them, they read as 0: every food
+	 * and drink took forever (duration / 0) and no block broke in survival (speed * 0).
+	 */
+	public static void addMissing(EntityLivingBase entity) {
+		ResourceLocation id = entity instanceof net.minecraft.entity.player.EntityPlayer ? PLAYER
+				: io.github.xponer2.translator.registry.EntityType.getKey(io.github.xponer2.translator.registry.EntityType.of(entity));
+		if (id == null) {
+			return;
+		}
+		for (var supplier : TYPES.entrySet()) {
+			if (!id.equals(io.github.xponer2.translator.registry.EntityType.getKey(supplier.getKey()))) {
+				continue;
+			}
+			for (var entry : supplier.getValue().values.entrySet()) {
+				Object value = entry.getKey().value();
+				IAttribute forge = value instanceof Attribute attribute ? attribute.forge() : value instanceof IAttribute plain ? plain : null;
+				if (forge != null && entity.getAttributeMap().getAttributeInstance(forge) == null) {
+					entity.getAttributeMap().registerAttribute(forge).setBaseValue(entry.getValue());
+				}
+			}
+		}
+	}
+
+	private static final ResourceLocation PLAYER = new ResourceLocation("minecraft", "player");
+
+	/** Registers {@link #addMissing} for every living entity that joins a world (both sides). */
+	public static final class Joining {
+		@net.minecraftforge.fml.common.eventhandler.SubscribeEvent(priority = net.minecraftforge.fml.common.eventhandler.EventPriority.HIGHEST)
+		public void onJoin(net.minecraftforge.event.entity.EntityJoinWorldEvent event) {
+			if (event.getEntity() instanceof EntityLivingBase living) {
+				try {
+					addMissing(living);
+				} catch (RuntimeException e) {
+					io.github.xponer2.translator.runtime.RuntimeStubs.failed("the attributes mods add to " + living.getClass().getName(), e);
+				}
+			}
+		}
 	}
 
 	/** 1.21 {@code AttributeSupplier.Builder}. */
