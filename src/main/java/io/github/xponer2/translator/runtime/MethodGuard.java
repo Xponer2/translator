@@ -668,16 +668,21 @@ final class MethodGuard {
 				// the stack map frames may still name a missing class (a local of that type): the JVM can't check
 				// those against the code (VerifyError), the ASM verifier doesn't look at frames; then the stub is safer
 				String still = this.missing(softened);
+				boolean recomputedFrames = false;
 				if (still == null && this.framesNameMissing(softened)) {
 					// javac's frames typed a local by the missing class; the softened code only puts null there now: frames
 					// computed again from the code don't name it (128 of 300 popular mods had methods stubbed whole for this)
 					MethodNode recomputed = this.recomputeFrames(node, softened);
 					if (recomputed != null) {
 						softened = recomputed;
+						recomputedFrames = true;
 					}
 				}
+				// frames computed from the code that still name a missing class (a parameter typed by it) are fine when the
+				// verifier never has to load it (97 of 300 popular mods had 1366 methods stubbed whole for this)
 				String rejected = still != null ? "still " + still
-						: this.framesNameMissing(softened) ? "a stack map frame names a missing class" : this.verify(node.name, softened);
+						: this.framesNameMissing(softened) && (!recomputedFrames || this.verifierNeedsMissing(node.name, node.superName, softened))
+								? "a stack map frame names a missing class" : this.verify(node.name, softened);
 				if (rejected != null) {
 					this.stubbed.add(node.name + "." + method.name + ": not softened (" + rejected + ")");
 				}
@@ -2574,6 +2579,83 @@ final class MethodGuard {
 		} catch (RuntimeException | LinkageError e) {
 			return null;
 		}
+	}
+
+	/**
+	 * Whether the JVM's verifier would have to load a class 1.12.2 lacks to check the method. Frames that merely name one
+	 * (a parameter typed by it, a local the frames keep) don't load it: the verifier loads a class only to check a value
+	 * of one type where another class is expected, and never for Object or an interface. So a value of a missing class
+	 * passed where Object or an interface goes, or kept as it is, is fine; one passed where another class is expected
+	 * (or anything expected as a missing class but that class itself or null) is not. Analysed with the converter's
+	 * knowledge of the classes (nothing is loaded); an analysis that fails counts as needing it.
+	 */
+	private boolean verifierNeedsMissing(String owner, @javax.annotation.Nullable String superName, MethodNode method) {
+		boolean[] needs = new boolean[1];
+		var verifier = new SimpleVerifier(Opcodes.ASM9, Type.getObjectType(owner), superName == null ? null : Type.getObjectType(superName), null, false) {
+			@Override
+			protected boolean isAssignableFrom(Type expected, Type actual) {
+				if (expected.equals(actual)) {
+					return true;
+				}
+				if (expected.getSort() == Type.ARRAY && actual.getSort() == Type.ARRAY) {
+					if (expected.getDimensions() == actual.getDimensions()) {
+						return this.isAssignableFrom(expected.getElementType(), actual.getElementType());
+					}
+					// an array of more dimensions is an Object[] (of arrays)
+					return expected.getElementType().getSort() == Type.OBJECT && expected.getDimensions() < actual.getDimensions()
+							&& "java/lang/Object".equals(expected.getElementType().getInternalName());
+				}
+				if (expected.getSort() != Type.OBJECT) {
+					return false;
+				}
+				String wanted = expected.getInternalName();
+				if ("java/lang/Object".equals(wanted)) {
+					return true;
+				}
+				if (actual.getSort() == Type.ARRAY) {
+					return "java/lang/Cloneable".equals(wanted) || "java/io/Serializable".equals(wanted);
+				}
+				if (actual.getSort() != Type.OBJECT) {
+					return false;
+				}
+				String given = actual.getInternalName();
+				boolean wantedThere = MethodGuard.this.exists(wanted);
+				if (!wantedThere || !MethodGuard.this.exists(given)) {
+					// an existing interface takes anything without loading it; otherwise the missing class is loaded
+					if (wantedThere && Boolean.TRUE.equals(MethodGuard.this.isInterface(wanted))) {
+						return true;
+					}
+					needs[0] = true;
+					return true;
+				}
+				return Boolean.TRUE.equals(MethodGuard.this.isInterface(wanted)) || MethodGuard.this.isSubtype(actual.getDescriptor(), expected.getDescriptor());
+			}
+
+			@Override
+			protected boolean isInterface(Type type) {
+				return type.getSort() == Type.OBJECT && Boolean.TRUE.equals(MethodGuard.this.isInterface(type.getInternalName()));
+			}
+
+			@Override
+			protected Type getSuperClass(Type type) {
+				if (type.getSort() != Type.OBJECT || "java/lang/Object".equals(type.getInternalName())) {
+					return null;
+				}
+				String parent = MethodGuard.this.superOf(type.getInternalName());
+				return Type.getObjectType(parent == null ? "java/lang/Object" : parent);
+			}
+
+			@Override
+			protected Class<?> getClass(Type type) {
+				throw new UnsupportedOperationException("no class is loaded by the converter's check: " + type);
+			}
+		};
+		try {
+			new Analyzer<>(verifier).analyze(owner, method);
+		} catch (AnalyzerException | RuntimeException e) {
+			return true;
+		}
+		return needs[0];
 	}
 
 	/** The nearest common superclass of two classes by the converter's knowledge (Object for an unknown one or interfaces). */
