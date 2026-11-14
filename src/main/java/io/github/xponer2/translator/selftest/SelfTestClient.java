@@ -291,6 +291,20 @@ final class SelfTestClient {
 					} else if (usesMissingSprite(model, mc)) {
 						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "block model: faces with the missing texture (purple and black)");
 					}
+					// what breaking it shows and sounds like: the particles take the model's particle texture, the sound is
+					// the block's own (a player saw mod flowers break with stone's sound and the wrong particles)
+					var particle = mc.getBlockRendererDispatcher().getBlockModelShapes().getTexture(block.getDefaultState());
+					if (model != missing && (particle == null || particle == mc.getTextureMapBlocks().getMissingSprite())) {
+						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "break particles: the missing texture (purple and black)");
+					}
+					var state = block.getDefaultState();
+					boolean plantLike = state.getMaterial() == net.minecraft.block.material.Material.PLANTS
+							|| state.getMaterial() == net.minecraft.block.material.Material.VINE || state.getMaterial() == net.minecraft.block.material.Material.LEAVES
+							|| state.getCollisionBoundingBox(mc.world, net.minecraft.util.math.BlockPos.ORIGIN) == Block.NULL_AABB
+									&& state.getBlockHardness(mc.world, net.minecraft.util.math.BlockPos.ORIGIN) == 0.0F;
+					if (plantLike && block.getSoundType(state, mc.world, net.minecraft.util.math.BlockPos.ORIGIN, null) == net.minecraft.block.SoundType.STONE) {
+						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "sound: a plant that sounds like stone when broken or walked on");
+					}
 					if (block instanceof net.minecraftforge.fluids.BlockFluidBase) {
 						// a mod's fluid as it is drawn placed (its source block): no pixels means it is invisible in the world
 						int drawn = blockPixels(block.getDefaultState());
