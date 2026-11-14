@@ -69,6 +69,35 @@ public final class Tesselation {
 
 	// --- BufferBuilder -----------------------------------------------------------------------------------------------
 
+	/** The buffers made for {@link #newBufferBuilder}, used again once drawn. */
+	private static final java.util.List<BufferBuilder> MADE = new java.util.ArrayList<>();
+
+	/**
+	 * 1.21 {@code new BufferBuilder(byteBufferBuilder, mode, format)}: a buffer begun in that mode and format. 1.21's
+	 * writes into the shared byte buffer, a 1.12.2 buffer has its own memory: the ones made here are used again once
+	 * their mesh is drawn (Xaero's maps make one per texture on every frame).
+	 */
+	public static BufferBuilder newBufferBuilder(@Nullable Object byteBuffer, Object mode, VertexFormat format) {
+		BufferBuilder buffer = null;
+		synchronized (MADE) {
+			for (BufferBuilder made : MADE) {
+				if (!BufferVertexConsumer.drawing(made)) {
+					buffer = made;
+					break;
+				}
+			}
+			if (buffer == null) {
+				buffer = new BufferBuilder(4096);
+				if (MADE.size() < 64) {
+					MADE.add(buffer);
+				}
+			}
+		}
+		VertexConsumer.into(buffer);
+		buffer.begin(glMode(mode), format);
+		return buffer;
+	}
+
 	public static VertexConsumer addVertex(BufferBuilder buffer, Object pose, float x, float y, float z) {
 		return VertexConsumer.into(buffer).addVertex(x, y, z);
 	}

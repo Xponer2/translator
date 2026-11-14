@@ -513,6 +513,11 @@ X	net/minecraft/world/level/chunk/storage/ChunkSerializer	makeBiomeCodec	(Lio/gi
 X	net/neoforged/neoforge/client/model/data/ModelDataManager	getAt	(Lnet/minecraft/util/math/BlockPos;)Lio/github/xponer2/translator/client/ModelData;	io/github/xponer2/translator/client/TextureBridges	(Ljava/lang/Object;Lnet/minecraft/util/math/BlockPos;)Lio/github/xponer2/translator/client/ModelData;
 # NeoForge's reflective method lookup, lenient about parameter types on the Translator's classes (ReflectionBridges)
 X	net/neoforged/fml/util/ObfuscationReflectionHelper	findMethod	(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;	io/github/xponer2/translator/runtime/redirect/ReflectionBridges
+X	net/neoforged/fml/util/ObfuscationReflectionHelper	findField	(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/reflect/Field;	io/github/xponer2/translator/runtime/redirect/ReflectionBridges
+# LWJGL 3 calls LWJGL 2 makes with other parameters (Xaero's maps: glMapBuffer of its pixel buffers), and the GL program
+# of a 1.21 shader (1.12.2 draws the mods' render types without one: program 0)
+R	org/lwjgl/opengl/GL15	io/github/xponer2/translator/runtime/redirect/GlBridges
+X	net/minecraft/client/renderer/ShaderInstance	getId	()I	io/github/xponer2/translator/runtime/redirect/GlBridges	(Ljava/lang/Object;)I
 # Registry.getOrThrow(key) of 1.21 gives the value (the holder one is HolderGetter's): a mod's call of it, by its descriptor
 X	io/github/xponer2/translator/registry/Registry	getOrThrow	(Lio/github/xponer2/translator/registry/ResourceKey;)Ljava/lang/Object;	io/github/xponer2/translator/registry/RegistryValues
 # ComponentUtils.updateForEntity of 1.21 resolves each part with 1.21's resolve, which 1.12.2's text hasn't (it gave null): the text as it is

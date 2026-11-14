@@ -39,6 +39,42 @@ public final class ReflectionBridges {
 		}
 	}
 
+	/**
+	 * NeoForge's {@code ObfuscationReflectionHelper.findField(owner, name)}: the field of that name, else the 1.12.2 field
+	 * the 1.21 name maps to on that class (Xaero's World Map looks up {@code Minecraft.mainRenderTarget}, 1.12.2's
+	 * framebuffer: its framebuffer class failed to load). NeoForge's exception when neither is there.
+	 */
+	public static java.lang.reflect.Field findField(Class<?> owner, String name) {
+		try {
+			java.lang.reflect.Field exact = owner.getDeclaredField(name);
+			exact.setAccessible(true);
+			return exact;
+		} catch (NoSuchFieldException missing) {
+			String mapped = io.github.xponer2.translator.runtime.FieldNames.of(owner, name);
+			if (mapped != null && !mapped.equals(name)) {
+				try {
+					java.lang.reflect.Field field = owner.getDeclaredField(mapped);
+					field.setAccessible(true);
+					return field;
+				} catch (NoSuchFieldException alsoMissing) {
+					// NeoForge's exception below
+				}
+			}
+			throw unableToFindField(missing);
+		}
+	}
+
+	/** NeoForge's {@code UnableToFindFieldException} (what a mod may catch), a plain one when it can't be made. */
+	private static RuntimeException unableToFindField(Exception cause) {
+		try {
+			Class<?> type = Class.forName("net.neoforged.fml.util.ObfuscationReflectionHelper$UnableToFindFieldException", true,
+					net.minecraft.launchwrapper.Launch.classLoader);
+			return (RuntimeException) type.getConstructor(Exception.class).newInstance(cause);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return new IllegalStateException(cause);
+		}
+	}
+
 	private static boolean takes(Class<?>[] declared, Class<?>[] asked) {
 		if (declared.length != asked.length) {
 			return false;
