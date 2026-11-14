@@ -53,6 +53,8 @@ public final class ClientSetup {
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.CreateSkullModels());
 		MinecraftForge.EVENT_BUS.post(new EntityRenderersEvent.AddLayers());
 		postClientExtensions();
+		// the mods' HUD layers (RegisterGuiLayersEvent), drawn with 1.12.2's HUD
+		HudLayers.register();
 	}
 
 	private static boolean extensionsPosted;

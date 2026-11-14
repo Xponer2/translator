@@ -148,6 +148,8 @@ R	net/minecraft/server/integrated/IntegratedServer	io/github/xponer2/translator/
 R	it/unimi/dsi/fastutil/objects/Object2IntMap	io/github/xponer2/translator/runtime/redirect/MiscBridges
 R	com/google/gson/JsonArray	io/github/xponer2/translator/runtime/redirect/MiscBridges
 R	net/minecraft/client/renderer/vertex/VertexFormatElement	io/github/xponer2/translator/runtime/redirect/ScreenBridges
+R	net/minecraft/client/gui/MapItemRenderer	io/github/xponer2/translator/runtime/redirect/ScreenBridges
+R	net/minecraft/client/renderer/color/ItemColors	io/github/xponer2/translator/runtime/redirect/ScreenBridges
 R	net/minecraft/client/resources/LanguageManager	io/github/xponer2/translator/runtime/redirect/ScreenBridges
 R	net/minecraft/client/renderer/RenderGlobal	io/github/xponer2/translator/runtime/redirect/ScreenBridges
 R	net/minecraftforge/client/event/RenderTooltipEvent	io/github/xponer2/translator/runtime/redirect/ScreenBridges
@@ -543,6 +545,7 @@ C	net/neoforged/neoforge/client/event/RegisterClientReloadListenersEvent	io/gith
 R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
 # the mods' arrow renderers on 1.12.2's, and the vanilla renderers they register built from the 1.21 context
 S	net/minecraft/client/renderer/entity/ArrowRenderer	io/github/xponer2/translator/client/entity/ArrowRenderer
+S	net/minecraft/client/renderer/entity/BoatRenderer	io/github/xponer2/translator/client/entity/BoatRenderer
 R	net/minecraft/client/renderer/entity/RenderFallingBlock	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
 R	net/minecraft/client/renderer/entity/RenderTippedArrow	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges
 R	net/minecraft/client/renderer/entity/RenderLightningBolt	io/github/xponer2/translator/runtime/redirect/EntityRenderBridges

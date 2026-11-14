@@ -43,6 +43,32 @@ public final class Window {
         return scaled().getScaleFactor();
     }
 
+    /**
+     * 1.21 {@code setGuiScale(scale)}: 1.12.2 draws its GUI in the scale of its own setting, worked out each frame; a
+     * mod setting one (as 1.21's resize does) changes nothing here, so every mod reads the scale drawn in.
+     */
+    public void setGuiScale(double scale) {
+    }
+
+    /** 1.21 {@code calculateScale(guiScale, forceUnicode)}: the largest scale up to that one the window fits at 320x240. */
+    public int calculateScale(int guiScale, boolean forceUnicode) {
+        int scale = 1;
+        int width = this.getWidth();
+        int height = this.getHeight();
+        while (scale != guiScale && scale < width && scale < height && width / (scale + 1) >= 320 && height / (scale + 1) >= 240) {
+            scale++;
+        }
+        if (forceUnicode && scale % 2 != 0) {
+            scale++;
+        }
+        return scale;
+    }
+
+    /** 1.21 {@code toggleFullScreen()}. */
+    public void toggleFullScreen() {
+        Minecraft.getMinecraft().toggleFullscreen();
+    }
+
     public int getWidth() {
         return Minecraft.getMinecraft().displayWidth;
     }

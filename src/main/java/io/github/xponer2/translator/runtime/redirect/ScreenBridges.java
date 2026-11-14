@@ -173,6 +173,61 @@ public final class ScreenBridges {
 		return io.github.xponer2.translator.client.OptionInstance.fixed(0.75D);
 	}
 
+	/**
+	 * 1.21 {@code screen.setTooltipForNextRenderPass(tooltip, positioner, override)} on any screen (Iceberg, Xaero's
+	 * claims screens): a screen of a 1.21 mod keeps it, a 1.12.2 screen shows it at the mouse after it is drawn.
+	 */
+	public static void setTooltipForNextRenderPass(GuiScreen screen, io.github.xponer2.translator.client.Tooltip tooltip, @Nullable Object positioner,
+			boolean override) {
+		if (screen instanceof io.github.xponer2.translator.client.Screen own) {
+			own.setTooltipForNextRenderPass(tooltip, positioner, override);
+		} else {
+			io.github.xponer2.translator.client.Tooltip.showAtMouse(tooltip, override);
+		}
+	}
+
+	/** The same with the tooltip's lines. */
+	public static void setTooltipForNextRenderPass(GuiScreen screen, java.util.List<?> lines, @Nullable Object positioner, boolean override) {
+		setTooltipForNextRenderPass(screen, io.github.xponer2.translator.client.Tooltip.ofLines(lines), positioner, override);
+	}
+
+	/**
+	 * 1.21 {@code entityRenderDispatcher.overrideCameraOrientation(rotation)}: the camera's look the name tags and
+	 * billboards drawn next face. 1.21's camera rotation is rotationYXZ(180 - yaw, -pitch, 0): 1.12.2's view yaw and
+	 * pitch of it (an entity drawn in a GUI gets the view yaw 180, as 1.12.2's own GUI entity drawing sets).
+	 */
+	public static void overrideCameraOrientation(net.minecraft.client.renderer.entity.RenderManager manager, org.joml.Quaternionf orientation) {
+		var angles = orientation.getEulerAnglesYXZ(new org.joml.Vector3f());
+		manager.setPlayerViewY(180.0F - (float) Math.toDegrees(angles.y));
+		manager.playerViewX = -(float) Math.toDegrees(angles.x);
+	}
+
+	/**
+	 * 1.21 {@code mapRenderer.render(poseStack, buffers, id, data, active, light)}: 1.12.2's map drawing in the pose
+	 * (0..128 as in 1.21); in an item frame ({@code active}) without the player markers.
+	 */
+	public static void render(net.minecraft.client.gui.MapItemRenderer maps, PoseStack poseStack, MultiBufferSource buffers, @Nullable Object id,
+			net.minecraft.world.storage.MapData data, boolean active, int light) {
+		if (data == null) {
+			return;
+		}
+		MultiBufferSource.INSTANCE.endBatch();
+		maps.renderMap(data, active);
+	}
+
+	/** 1.21 {@code itemColors.register(color, items...)} on the game's item colors (outside the color event). */
+	public static void register(net.minecraft.client.renderer.color.ItemColors colors, net.minecraft.client.renderer.color.IItemColor color,
+			io.github.xponer2.translator.util.ItemLike... items) {
+		var resolved = new java.util.ArrayList<net.minecraft.item.Item>();
+		for (var item : items) {
+			var asItem = item == null ? null : item.asItem();
+			if (asItem != null && asItem != net.minecraft.init.Items.AIR) {
+				resolved.add(asItem);
+			}
+		}
+		colors.registerItemColorHandler(color, resolved.toArray(new net.minecraft.item.Item[0]));
+	}
+
 	public static io.github.xponer2.translator.client.OptionInstance<Double> textBackgroundOpacity(net.minecraft.client.settings.GameSettings options) {
 		return io.github.xponer2.translator.client.OptionInstance.fixed(0.5D);
 	}

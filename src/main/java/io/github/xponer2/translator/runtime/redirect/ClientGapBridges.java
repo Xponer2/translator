@@ -203,6 +203,14 @@ public final class ClientGapBridges {
 	}
 
 	/** 1.21 {@code localPlayer.clientLevel}: the client world the player is in. */
+	/**
+	 * 1.21 {@code player.getWaterVision()}: how far the player sees under water, 0 out of it. 1.21 lets it grow over
+	 * the first seconds under water; 1.12.2 has no such time: full at once.
+	 */
+	public static float getWaterVision(net.minecraft.client.entity.EntityPlayerSP player) {
+		return player.isInsideOfMaterial(net.minecraft.block.material.Material.WATER) ? 1.0F : 0.0F;
+	}
+
 	public static net.minecraft.client.multiplayer.WorldClient clientLevel(net.minecraft.client.entity.EntityPlayerSP player) {
 		return (net.minecraft.client.multiplayer.WorldClient) player.world;
 	}

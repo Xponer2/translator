@@ -77,6 +77,38 @@ public class Tooltip {
         return this.narration;
     }
 
+    /**
+     * A tooltip a mod sets for a 1.12.2 screen (1.21 {@code setTooltipForNextRenderPass} on it): at the mouse, once the
+     * screen is drawn; one already set this frame stays unless the new one overrides it.
+     */
+    public static void showAtMouse(@Nullable Tooltip tooltip, boolean override) {
+        if (tooltip == null || !override && pending != null) {
+            return;
+        }
+        var mc = Minecraft.getMinecraft();
+        var scaled = new net.minecraft.client.gui.ScaledResolution(mc);
+        int x = org.lwjgl.input.Mouse.getX() * scaled.getScaledWidth() / Math.max(1, mc.displayWidth);
+        int y = scaled.getScaledHeight() - org.lwjgl.input.Mouse.getY() * scaled.getScaledHeight() / Math.max(1, mc.displayHeight) - 1;
+        show(tooltip, x, y);
+    }
+
+    /** The lines of a 1.21 tooltip list (components or formatted lines) as one tooltip. */
+    @Nullable
+    public static Tooltip ofLines(@Nullable List<?> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return null;
+        }
+        var joined = new TextComponentString("");
+        for (int i = 0; i < lines.size(); i++) {
+            if (i > 0) {
+                joined.appendText("\n");
+            }
+            Object line = lines.get(i);
+            joined.appendSibling(line instanceof ITextComponent component ? component : new TextComponentString(String.valueOf(line)));
+        }
+        return create(joined);
+    }
+
     /** A widget the mouse is over shows this tooltip once the screen is drawn (the last one of a frame wins). */
     static void show(Tooltip tooltip, int mouseX, int mouseY) {
         if (!listening) {

@@ -77,4 +77,22 @@ public final class EntityRenderBridges {
 	public static io.github.xponer2.translator.client.entity.PlayerRenderer getRenderer(net.minecraftforge.client.event.RenderPlayerEvent event) {
 		return io.github.xponer2.translator.client.entity.VanillaRendererView.of(event.getRenderer());
 	}
+
+	/** NeoForge {@code renderPlayerEvent.getPoseStack()}: the GL matrix (as RenderLivingEvent's). */
+	public static io.github.xponer2.translator.client.PoseStack getPoseStack(net.minecraftforge.client.event.RenderPlayerEvent event) {
+		return io.github.xponer2.translator.client.PoseStack.INSTANCE;
+	}
+
+	public static io.github.xponer2.translator.client.MultiBufferSource getMultiBufferSource(net.minecraftforge.client.event.RenderPlayerEvent event) {
+		return io.github.xponer2.translator.client.MultiBufferSource.INSTANCE;
+	}
+
+	public static float getPartialTick(net.minecraftforge.client.event.RenderPlayerEvent event) {
+		return event.getPartialRenderTick();
+	}
+
+	/** NeoForge {@code renderPlayerEvent.getPackedLight()}: the player's light. */
+	public static int getPackedLight(net.minecraftforge.client.event.RenderPlayerEvent event) {
+		return event.getEntityPlayer().getBrightnessForRender();
+	}
 }

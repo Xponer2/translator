@@ -601,6 +601,17 @@ public final class WorldGapBridges {
 		setField(net.minecraft.util.FoodStats.class, "field_75126_c", "foodExhaustionLevel", food, exhaustion);
 	}
 
+	/** 1.21 {@code foodData.getExhaustionLevel()} (AppleSkin's exhaustion bar and its sync of it). */
+	public static float getExhaustionLevel(net.minecraft.util.FoodStats food) {
+		try {
+			Float value = net.minecraftforge.fml.common.ObfuscationReflectionHelper.getPrivateValue(net.minecraft.util.FoodStats.class, food,
+					"field_75126_c");
+			return value == null ? 0.0F : value;
+		} catch (RuntimeException e) {
+			return 0.0F;
+		}
+	}
+
 	public static net.minecraft.nbt.NBTTagCompound save(net.minecraft.entity.ai.attributes.AttributeModifier modifier) {
 		return net.minecraft.entity.SharedMonsterAttributes.writeAttributeModifierToNBT(modifier);
 	}

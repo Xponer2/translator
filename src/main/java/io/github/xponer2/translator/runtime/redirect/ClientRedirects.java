@@ -303,6 +303,37 @@ public final class ClientRedirects {
 		return sprite -> ScreenBridges.getSprite(minecraft.getTextureMapBlocks(), sprite);
 	}
 
+	private static boolean reloading;
+
+	/**
+	 * 1.21 {@code reloadResourcePacks()}: 1.12.2's resource reload on the client thread, done when the future is.
+	 * One asked for while a reload runs (from a reload listener) is that one: done at once.
+	 */
+	public static java.util.concurrent.CompletableFuture<Void> reloadResourcePacks(Minecraft minecraft) {
+		var done = new java.util.concurrent.CompletableFuture<Void>();
+		Runnable reload = () -> {
+			if (reloading) {
+				done.complete(null);
+				return;
+			}
+			reloading = true;
+			try {
+				minecraft.refreshResources();
+				done.complete(null);
+			} catch (RuntimeException e) {
+				done.completeExceptionally(e);
+			} finally {
+				reloading = false;
+			}
+		};
+		if (minecraft.isCallingFromMinecraftThread()) {
+			reload.run();
+		} else {
+			minecraft.addScheduledTask(reload);
+		}
+		return done;
+	}
+
 	private static net.minecraft.client.renderer.BlockRendererDispatcher earlyBlockRenderer;
 
 	/**
@@ -397,6 +428,27 @@ public final class ClientRedirects {
 	public static net.minecraft.client.audio.PositionedSoundRecord newPositionedSoundRecord(net.minecraft.util.SoundEvent sound,
 			net.minecraft.util.SoundCategory category, float volume, float pitch, java.util.Random random, net.minecraft.util.math.BlockPos pos) {
 		return new net.minecraft.client.audio.PositionedSoundRecord(sound, category, volume, pitch, pos);
+	}
+
+	/** 1.21 {@code new SimpleSoundInstance(sound, source, volume, pitch, random, x, y, z)}: the sound at that place. */
+	public static net.minecraft.client.audio.PositionedSoundRecord newPositionedSoundRecord(net.minecraft.util.SoundEvent sound,
+			net.minecraft.util.SoundCategory category, float volume, float pitch, java.util.Random random, double x, double y, double z) {
+		return new net.minecraft.client.audio.PositionedSoundRecord(sound.getSoundName(), category, volume, pitch, false, 0,
+				net.minecraft.client.audio.ISound.AttenuationType.LINEAR, (float) x, (float) y, (float) z);
+	}
+
+	/**
+	 * 1.21 {@code new SimpleSoundInstance(id, source, volume, pitch, random, looping, delay, attenuation, x, y, z,
+	 * relative)} (Quark's ambient discs, Modern UI, Dynamic Trees, Sounds): 1.12.2's record of it; the attenuation
+	 * NONE is 1.12.2's NONE (heard the same everywhere, so a relative one too).
+	 */
+	public static net.minecraft.client.audio.PositionedSoundRecord newPositionedSoundRecord(net.minecraft.util.ResourceLocation sound, net.minecraft.util.SoundCategory category,
+			float volume, float pitch, java.util.Random random, boolean looping, int delay, Object attenuation, double x, double y, double z,
+			boolean relative) {
+		var type = attenuation != null && "NONE".equals(String.valueOf(attenuation)) ? net.minecraft.client.audio.ISound.AttenuationType.NONE
+				: net.minecraft.client.audio.ISound.AttenuationType.LINEAR;
+		return new net.minecraft.client.audio.PositionedSoundRecord(sound, category, volume, pitch, looping, delay, type, (float) x, (float) y,
+				(float) z);
 	}
 
 	// --- TextureAtlasSprite (SpriteContents is the sprite, neoforge-1.21.1-runtime.tsv) ---------------------------------

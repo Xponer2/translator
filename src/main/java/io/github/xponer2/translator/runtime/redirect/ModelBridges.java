@@ -63,6 +63,27 @@ public final class ModelBridges {
 		return joml(transform.scale);
 	}
 
+	/**
+	 * 1.21 {@code transform.apply(leftHand, poseStack)}: translation, rotation and scale of a display transform on the
+	 * pose (mirrored for the left hand), as 1.21 does. The item renderers that draw a model themselves (Iceberg's,
+	 * the mods built on it) had the call left out: their items were drawn untransformed.
+	 */
+	public static void apply(ItemTransformVec3f transform, boolean leftHand, PoseStack pose) {
+		if (transform == null || transform == ItemTransformVec3f.DEFAULT) {
+			return;
+		}
+		float x = transform.rotation.x;
+		float y = transform.rotation.y;
+		float z = transform.rotation.z;
+		if (leftHand) {
+			y = -y;
+			z = -z;
+		}
+		pose.translate((leftHand ? -1.0F : 1.0F) * transform.translation.x, transform.translation.y, transform.translation.z);
+		pose.mulPose(new org.joml.Quaternionf().rotationXYZ((float) Math.toRadians(x), (float) Math.toRadians(y), (float) Math.toRadians(z)));
+		pose.scale(transform.scale.x, transform.scale.y, transform.scale.z);
+	}
+
 	// --- 1.21 model calls on any model (the tables map Model and EntityModel to 1.12.2's ModelBase, so a mod's model,
 	// a 1.12.2 biped and the facades are one kind): the Translator's 1.21 models answer themselves, 1.12.2 models
 	// through their 1.12.2 methods
