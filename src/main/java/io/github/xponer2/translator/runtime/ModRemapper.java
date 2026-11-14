@@ -316,6 +316,11 @@ final class ModRemapper extends Remapper {
 			ClassInfo targetClass = this.target.get(mappedOwner);
 			if (targetClass != null) {
 				var reached = new ArrayDeque<String>();
+				// the other 1.21 classes the same 1.12.2 class stands for: Projectile is Entity here, so a projectile's
+				// tickCount is the 1.21 Entity's row (ticksExisted); it went missing in 160 places of Iron's spells
+				if (!mappedOwner.equals(current)) {
+					reached.addAll(this.table.namesOf(mappedOwner));
+				}
 				this.targetSupertypes(targetClass, reached, new HashSet<>());
 				for (String supertype : reached) {
 					if (!seen.contains(supertype) && !todo.contains(supertype)) {

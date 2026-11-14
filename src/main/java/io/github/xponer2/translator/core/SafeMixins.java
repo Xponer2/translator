@@ -139,8 +139,64 @@ final class SafeMixins implements IClassTransformer {
 			}
 			problem = problem + "; after repair: " + left;
 		}
+		// a callback of one mod that doesn't verify (Chat Heads' in the client's packet listener): that callback does
+		// nothing, the class keeps every other mixin. Leaving all out lost Xaero's map session (its maps drew other
+		// worlds' chunks and lagged) along with Chat Heads'
+		byte[] emptied = emptyBrokenCallbacks(repaired != null ? repaired : out, transformedName);
+		if (emptied != null) {
+			String left = verify(emptied);
+			if (left == null) {
+				left = unresolvedShadows(basicClass, emptied);
+			}
+			if (left == null) {
+				LOGGER.warn("Mixins into {}: {} (that callback does nothing, the other mixins stay)", transformedName, problem);
+				return emptied;
+			}
+			problem = problem + "; with the broken callbacks emptied: " + left;
+		}
 		LOGGER.error("Mixins into {} left out: with them the class doesn't load ({})", transformedName, problem);
 		return basicClass;
+	}
+
+	/**
+	 * The class with each @Inject callback Mixin merged into it ({@code handler$...}, returning void) that doesn't verify
+	 * made empty (it returns at once); null if there is none.
+	 */
+	static byte[] emptyBrokenCallbacks(byte[] bytes, String className) {
+		var node = new ClassNode();
+		try {
+			new ClassReader(bytes).accept(node, 0);
+		} catch (RuntimeException e) {
+			return null;
+		}
+		boolean changed = false;
+		for (MethodNode method : node.methods) {
+			if (method.instructions.size() == 0 || !method.name.startsWith("handler$") || !method.desc.endsWith(")V")) {
+				continue;
+			}
+			try {
+				new Analyzer<>(new BasicVerifier()).analyze(node.name, method);
+			} catch (AnalyzerException | RuntimeException e) {
+				method.instructions.clear();
+				method.tryCatchBlocks.clear();
+				method.localVariables = null;
+				method.visibleLocalVariableAnnotations = null;
+				method.invisibleLocalVariableAnnotations = null;
+				method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.RETURN));
+				changed = true;
+				LOGGER.warn("Mixin callback {}.{} doesn't verify on 1.12.2 ({}): it does nothing", className, method.name, e.getMessage());
+			}
+		}
+		if (!changed) {
+			return null;
+		}
+		var writer = new xyz.wagyourtail.jvmdg.shade.asm.ClassWriter(xyz.wagyourtail.jvmdg.shade.asm.ClassWriter.COMPUTE_MAXS);
+		try {
+			node.accept(writer);
+			return writer.toByteArray();
+		} catch (RuntimeException e) {
+			return null;
+		}
 	}
 
 	/**

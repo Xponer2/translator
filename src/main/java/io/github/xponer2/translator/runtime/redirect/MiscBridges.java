@@ -739,6 +739,32 @@ public final class MiscBridges {
 		return new net.minecraft.inventory.InventoryBasic("", false, size);
 	}
 
+	/**
+	 * 1.21 {@code container.createTag(registries)}: its stacks, the empty ones left out (a villager's or a mod mob's
+	 * inventory, saved by 1.21's InventoryCarrier: nothing was saved).
+	 */
+	public static net.minecraft.nbt.NBTTagList createTag(net.minecraft.inventory.InventoryBasic inventory, @javax.annotation.Nullable Object registries) {
+		var list = new net.minecraft.nbt.NBTTagList();
+		for (int i = 0; i < inventory.getSizeInventory(); i++) {
+			net.minecraft.item.ItemStack stack = inventory.getStackInSlot(i);
+			if (!stack.isEmpty()) {
+				list.appendTag(stack.writeToNBT(new net.minecraft.nbt.NBTTagCompound()));
+			}
+		}
+		return list;
+	}
+
+	/** 1.21 {@code container.fromTag(list, registries)}: emptied, then the saved stacks added. */
+	public static void fromTag(net.minecraft.inventory.InventoryBasic inventory, net.minecraft.nbt.NBTTagList list, @javax.annotation.Nullable Object registries) {
+		inventory.clear();
+		for (int i = 0; i < list.tagCount(); i++) {
+			net.minecraft.item.ItemStack stack = new net.minecraft.item.ItemStack(list.getCompoundTagAt(i));
+			if (!stack.isEmpty()) {
+				inventory.addItem(stack);
+			}
+		}
+	}
+
 	/** 1.21 {@code new SimpleContainer(ItemStack...)}: a container holding these stacks. */
 	public static net.minecraft.inventory.InventoryBasic newInventoryBasic(net.minecraft.item.ItemStack[] stacks) {
 		var inventory = new net.minecraft.inventory.InventoryBasic("", false, stacks.length);
@@ -2137,6 +2163,11 @@ public final class MiscBridges {
 	/** 1.21 {@code Direction.Plane.stream()}: its directions. */
 	public static java.util.stream.Stream<net.minecraft.util.EnumFacing> stream(net.minecraft.util.EnumFacing.Plane plane) {
 		return java.util.Arrays.stream(plane.facings());
+	}
+
+	/** 1.21 {@code Direction.Plane.length()}: how many directions (Supplementaries' boat path finder sizes arrays by it). */
+	public static int length(net.minecraft.util.EnumFacing.Plane plane) {
+		return plane.facings().length;
 	}
 
 	// --- text --------------------------------------------------------------------------------------------------------

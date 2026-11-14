@@ -2063,6 +2063,7 @@ final class MethodGuard {
 			return false;
 		}
 		String target = expected.substring(1, expected.length() - 1);
+		Class<?> platformTarget = isPlatform(target) ? platformClass(target) : null;
 		var todo = new java.util.ArrayDeque<String>();
 		var seen = new java.util.HashSet<String>();
 		todo.add(desc.substring(1, desc.length() - 1));
@@ -2070,6 +2071,14 @@ final class MethodGuard {
 			String current = todo.poll();
 			if (current.equals(target)) {
 				return true;
+			}
+			// a JDK class under a JDK supertype (an EnumSet is a Set: a helper taking the Set of 1.21's
+			// goal.setFlags(EnumSet) never matched, and the goals of Twilight Forest and 1.21 kept no flags)
+			if (platformTarget != null && isPlatform(current)) {
+				Class<?> platform = platformClass(current);
+				if (platform != null && platformTarget.isAssignableFrom(platform)) {
+					return true;
+				}
 			}
 			ClassInfo info = !seen.add(current) || isPlatform(current) ? null : this.info(current);
 			if (info != null) {

@@ -62,8 +62,12 @@ public final class DimensionDataStorage {
 		return data;
 	}
 
-	public void set(String name, SavedData data) {
-		data.rename(name);
+	/**
+	 * Stored under that name: a SavedData, or a mod's map data (Twilight Forest's maze and magic maps extend 1.21's
+	 * MapItemSavedData, here 1.12.2's MapData: a SavedData parameter didn't take them, the maps were never stored).
+	 */
+	public void set(String name, WorldSavedData data) {
+		SavedData.name(data, name);
 		this.storage.setData(name, data);
 	}
 

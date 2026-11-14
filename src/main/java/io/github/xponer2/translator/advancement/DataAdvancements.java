@@ -126,6 +126,17 @@ public final class DataAdvancements {
 		// 1.12.2's list takes the builders it loaded out of the map: the ids kept first
 		var ids = new java.util.ArrayList<>(builders.keySet());
 		list.loadAdvancements(builders);
+		// each tree laid out again, as 1.12.2's own reload does after loading (the client gets the positions with the
+		// advancements): without it every advancement of a mod's tab sat on one spot
+		for (Advancement root : list.getRoots()) {
+			if (root.getDisplay() != null) {
+				try {
+					net.minecraft.advancements.AdvancementTreeNode.layout(root);
+				} catch (RuntimeException e) {
+					LOGGER.warn("Couldn't lay out the advancement tab {}: {}", root.getId(), e.toString());
+				}
+			}
+		}
 		int loaded = 0;
 		for (ResourceLocation id : ids) {
 			if (list.getAdvancement(id) != null) {

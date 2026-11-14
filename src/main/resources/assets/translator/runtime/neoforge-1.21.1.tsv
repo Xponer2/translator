@@ -8960,7 +8960,6 @@ M	net/minecraft/world/entity/monster/Zombie	canBreakDoors()	isBreakDoorsTaskSet
 M	net/minecraft/world/entity/monster/Zombie	getSkull()	getSkullDrop
 M	net/minecraft/world/entity/monster/Zombie	getStepSound()	getStepSound
 M	net/minecraft/world/entity/monster/Zombie	isSunSensitive()	shouldBurnInDay
-M	net/minecraft/world/entity/monster/Zombie	randomizeReinforcementsChance()	applyEntityAttributes
 M	net/minecraft/world/entity/monster/Zombie	setCanBreakDoors(boolean)	setBreakDoorsAItask
 F	net/minecraft/world/entity/monster/Zombie$ZombieGroupData	isBaby	isChild
 F	net/minecraft/world/entity/monster/ZombieVillager	DATA_CONVERTING_ID	CONVERTING
@@ -9232,7 +9231,6 @@ F	net/minecraft/world/entity/projectile/FishingHook	timeUntilHooked	ticksCatchab
 F	net/minecraft/world/entity/projectile/FishingHook	timeUntilLured	ticksCaughtDelay
 M	net/minecraft/world/entity/projectile/ItemSupplier	getItem()	getPotion
 F	net/minecraft/world/entity/projectile/LargeFireball	explosionPower	explosionPower
-M	net/minecraft/world/entity/projectile/Projectile	onHit(net.minecraft.world.phys.HitResult)	onImpact
 M	net/minecraft/world/entity/projectile/Projectile	shoot(double,double,double,float,float)	shoot
 M	net/minecraft/world/entity/projectile/ProjectileUtil	rotateTowardsMovement(net.minecraft.world.entity.Entity,float)	rotateTowardsMovement
 F	net/minecraft/world/entity/projectile/ShulkerBullet	currentMoveDirection	direction
@@ -13752,7 +13750,6 @@ m	putUUID	setUniqueId
 m	quickMoveStack	transferStackInSlot
 m	randomSmallDoor	getRandomDoor
 m	randomizeAttributes	applyEntityAttributes
-m	randomizeReinforcementsChance	applyEntityAttributes
 m	readAdditionalSaveData	readEntityFromNBT
 m	readBlockPos	getPosFromTag
 m	readDate	readTime

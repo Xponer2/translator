@@ -80,6 +80,7 @@ E	net/minecraft/world/entity/animal/Sheep	io/github/xponer2/translator/runtime/m
 E	net/minecraft/world/entity/item/FallingBlockEntity	io/github/xponer2/translator/runtime/mc/FallingBlockEntity
 E	net/minecraft/world/entity/item/PrimedTnt	io/github/xponer2/translator/runtime/mc/PrimedTnt
 E	net/minecraft/world/entity/projectile/EvokerFangs	io/github/xponer2/translator/runtime/mc/EvokerFangs
+E	net/minecraft/world/entity/projectile/Projectile	io/github/xponer2/translator/runtime/mc/Projectile
 E	net/minecraft/world/entity/LightningBolt	io/github/xponer2/translator/runtime/mc/LightningBolt
 E	net/minecraft/world/level/block/entity/SkullBlockEntity	io/github/xponer2/translator/runtime/mc/SkullBlockEntity
 # 1.21 HurtByTargetGoal for the goals that extend it: 1.21's constructor (mob, ignored types), setAlertOthers

@@ -401,7 +401,7 @@ public final class EntityApiBridges {
 
 	/** 1.21 {@code entity.verticalCollisionBelow}: its last move hit ground below (1.12.2's onGround is just that). */
 	public static boolean verticalCollisionBelow(Entity entity) {
-		return entity.onGround;
+		return flag(entity, VERTICAL_BELOW) || entity.onGround;
 	}
 
 	// --- Entity: riding ------------------------------------------------------------------------------------------------
@@ -586,6 +586,28 @@ public final class EntityApiBridges {
 	/** 1.21 {@code tamable.isOrderedToSit()}. */
 	public static boolean isOrderedToSit(net.minecraft.entity.passive.EntityTameable tamable) {
 		return tamable.isSitting();
+	}
+
+	private static final Method HANDLE_EATING = method(net.minecraft.entity.passive.AbstractHorse.class, "handleEating", "func_190678_b", EntityPlayer.class,
+			ItemStack.class);
+
+	/**
+	 * 1.21 {@code horse.fedFood(player, stack)}: 1.12.2's eating of the horse (healing, growing, taming), the stack used up
+	 * when it ate (Supplementaries' sugar cube, a 1.21 horse or camel fed).
+	 */
+	public static net.minecraft.util.EnumActionResult fedFood(net.minecraft.entity.passive.AbstractHorse horse, EntityPlayer player, ItemStack stack) {
+		boolean ate = false;
+		try {
+			ate = HANDLE_EATING != null && Boolean.TRUE.equals(HANDLE_EATING.invoke(horse, player, stack));
+		} catch (InvocationTargetException e) {
+			RuntimeStubs.failed(horse.getClass().getName() + ".fedFood", e.getCause());
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			RuntimeStubs.failed(horse.getClass().getName() + ".fedFood", e);
+		}
+		if (ate && !player.capabilities.isCreativeMode) {
+			stack.shrink(1);
+		}
+		return ate || horse.world.isRemote ? net.minecraft.util.EnumActionResult.SUCCESS : net.minecraft.util.EnumActionResult.PASS;
 	}
 
 	private static final Field HORSE_CHEST = field(net.minecraft.entity.passive.AbstractHorse.class, "horseChest", "field_110296_bG");
@@ -828,6 +850,7 @@ public final class EntityApiBridges {
 	private static final Map<Entity, boolean[]> FLAGS = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final int WAS_ON_FIRE = 0;
 	private static final int MINOR_COLLISION = 1;
+	private static final int VERTICAL_BELOW = 2;
 
 	private static boolean flag(Entity entity, int index) {
 		boolean[] flags = FLAGS.get(entity);
@@ -840,7 +863,7 @@ public final class EntityApiBridges {
 			if (!value) {
 				return;
 			}
-			flags = new boolean[2];
+			flags = new boolean[3];
 			FLAGS.put(entity, flags);
 		}
 		flags[index] = value;
@@ -871,6 +894,22 @@ public final class EntityApiBridges {
 
 	public static void minorHorizontalCollision(Entity entity, boolean value) {
 		flag(entity, MINOR_COLLISION, value);
+	}
+
+	/**
+	 * 1.21 {@code entity.verticalCollisionBelow = value}: kept for the reads (Moonlight's projectiles, Supplementaries'
+	 * bombs, bricks, slimeballs, cannonballs and slingshot shots, set it in their own move and skipped the whole move).
+	 */
+	public static void verticalCollisionBelow(Entity entity, boolean value) {
+		flag(entity, VERTICAL_BELOW, value);
+	}
+
+	/** 1.21 {@code entity.wasInPowderSnow} (read): 1.12.2 has no powder snow. */
+	public static boolean wasInPowderSnow(Entity entity) {
+		return false;
+	}
+
+	public static void wasInPowderSnow(Entity entity, boolean value) {
 	}
 
 	private static final Own SHOW_VEHICLE_HEALTH = new Own("showVehicleHealth", 0);

@@ -157,6 +157,23 @@ public final class LevelGapBridges {
 		return offset(vec, by.getX(), by.getY(), by.getZ());
 	}
 
+	/** 1.21 {@code Vec3i.below()} / {@code above()} (a minecart's and a respawn anchor's offsets): one lower or higher. */
+	public static Vec3i below(Vec3i vec) {
+		return offset(vec, 0, -1, 0);
+	}
+
+	public static Vec3i below(Vec3i vec, int distance) {
+		return offset(vec, 0, -distance, 0);
+	}
+
+	public static Vec3i above(Vec3i vec) {
+		return offset(vec, 0, 1, 0);
+	}
+
+	public static Vec3i above(Vec3i vec, int distance) {
+		return offset(vec, 0, distance, 0);
+	}
+
 	/** 1.21 {@code pos.relative(axis, amount)}: moved along the axis. */
 	public static BlockPos relative(BlockPos pos, net.minecraft.util.EnumFacing.Axis axis, int amount) {
 		if (amount == 0) {
@@ -421,32 +438,14 @@ public final class LevelGapBridges {
 	// --- projectiles ---------------------------------------------------------------------------------------------------
 
 	/**
-	 * NeoForge {@code ProjectileImpactEvent.getProjectile()}: the projectile when it is a 1.21 one (the mods' projectiles
-	 * extend the carried 1.21 Projectile), null for 1.12.2's own (an arrow of the game isn't a 1.21 Projectile here). It
-	 * was always null: the mods' reactions to their own projectiles hitting (the Aether's darts, Iron's spells, Twilight
-	 * Forest's throwables) never ran.
+	 * NeoForge {@code ProjectileImpactEvent.getProjectile()}: the projectile, a mod's or 1.12.2's (Projectile maps to
+	 * Entity, so a 1.12.2 arrow is one, as in 1.21). It was always null: the mods' reactions to their own projectiles
+	 * hitting (the Aether's darts, Iron's spells, Twilight Forest's throwables) never ran.
 	 */
 	@Nullable
 	public static Object getProjectile(net.minecraftforge.event.entity.ProjectileImpactEvent event) {
 		Entity entity = event.getEntity();
-		Class<?> projectile = projectileClass();
-		return entity != null && projectile != null && projectile.isInstance(entity) ? entity : null;
-	}
-
-	private static volatile Class<?> projectile;
-	private static volatile boolean projectileLooked;
-
-	@Nullable
-	private static Class<?> projectileClass() {
-		if (!projectileLooked) {
-			try {
-				projectile = Class.forName("net.minecraft.world.entity.projectile.Projectile", false, net.minecraft.launchwrapper.Launch.classLoader);
-			} catch (ClassNotFoundException | LinkageError | RuntimeException e) {
-				projectile = null;
-			}
-			projectileLooked = true;
-		}
-		return projectile;
+		return ProjectileBridges.isProjectile(entity) ? entity : null;
 	}
 
 	// --- explosions, lightning ------------------------------------------------------------------------------------------
@@ -525,6 +524,20 @@ public final class LevelGapBridges {
 		net.minecraft.entity.item.EntityFallingBlock entity = new net.minecraft.entity.item.EntityFallingBlock(world);
 		io.github.xponer2.translator.runtime.mc.FallingBlockEntity.withDefaultBlock(entity);
 		return entity;
+	}
+
+	/**
+	 * {@code level.setBlock(pos, state, flags)} of the mods (1.12.2's setBlockState, forced here): a still liquid placed
+	 * with its neighbours told starts flowing, as 1.21's liquid block schedules its own tick when placed (1.12.2's still
+	 * water waits for a neighbour to change: the Aether's skyroot bucket poured water that never flowed). Worldgen sets
+	 * blocks without telling the neighbours, so lakes stay still.
+	 */
+	public static boolean setBlockState(World world, BlockPos pos, IBlockState state, int flags) {
+		boolean set = world.setBlockState(pos, state, flags);
+		if (set && (flags & 1) != 0 && !world.isRemote && state.getBlock() instanceof net.minecraft.block.BlockStaticLiquid) {
+			state.neighborChanged(world, pos, state.getBlock(), pos);
+		}
+		return set;
 	}
 
 	/**

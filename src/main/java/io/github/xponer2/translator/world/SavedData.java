@@ -46,8 +46,13 @@ public abstract class SavedData extends WorldSavedData {
 
 	/** The file name the data is saved under (data/<name>.dat). */
 	void rename(String name) {
+		name(this, name);
+	}
+
+	/** Names any 1.12.2 data (a mod's map data is a 1.12.2 MapData, made as map_new). */
+	static void name(WorldSavedData data, String name) {
 		try {
-			NAME.set(this, name);
+			NAME.set(data, name);
 		} catch (IllegalAccessException e) {
 			throw new IllegalStateException(e);
 		}

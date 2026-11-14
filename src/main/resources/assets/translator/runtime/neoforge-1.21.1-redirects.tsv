@@ -863,3 +863,8 @@ R	net/minecraft/world/BossInfoServer	io/github/xponer2/translator/runtime/redire
 R	net/minecraft/network/play/server/SPacketSpawnObject	io/github/xponer2/translator/runtime/redirect/EntityGapBridges
 X	net/minecraft/util/WeightedRandom	getTotalWeight	(Ljava/util/List;)I	io/github/xponer2/translator/runtime/redirect/RandomSourceBridges
 X	net/minecraft/block/state/IBlockState	getValue	(Lnet/minecraft/block/properties/IProperty;)Ljava/lang/Comparable;	io/github/xponer2/translator/runtime/redirect/VanillaRedirects	(Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/properties/IProperty;)Ljava/lang/Comparable;
+# 1.21 Projectile is 1.12.2 Entity (a bow's arrow is a 1.12.2 EntityArrow and a Projectile in 1.21); the projectiles that extend
+# it extend the facade (E line in the supers), instanceof is the projectiles of both, the calls on one go to the bridges
+C	net/minecraft/world/entity/projectile/Projectile	net/minecraft/entity/Entity
+I	net/minecraft/world/entity/projectile/Projectile	io/github/xponer2/translator/runtime/redirect/ProjectileBridges	isProjectile
+R	net/minecraft/entity/Entity	io/github/xponer2/translator/runtime/redirect/ProjectileBridges

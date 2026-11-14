@@ -144,6 +144,18 @@ public class EditBox extends GuiTextField implements GuiEventListener, Renderabl
 		this.setCursorPosition(position);
 	}
 
+	/**
+	 * 1.21 {@code moveCursorBy(delta, select)}: the cursor moved by that many characters (Controlling's key search box,
+	 * a Searchables box: its screen's init stopped on the missing method and the key binds screen stayed empty).
+	 */
+	public void moveCursorBy(int delta, boolean select) {
+		if (select) {
+			this.setSelectionPos(this.getCursorPosition() + delta);
+		} else {
+			this.moveCursorBy(delta);
+		}
+	}
+
 	public int getScreenX(int index) {
 		String text = this.getText();
 		return this.x + (this.getEnableBackgroundDrawing() ? 4 : 0) + this.font.getStringWidth(text.substring(0, Math.max(0, Math.min(index, text.length()))));

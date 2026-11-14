@@ -399,4 +399,22 @@ public class RegistryFriendlyByteBuf extends PacketBuffer {
         this.writeBoolean(value.isPresent());
         value.ifPresent(v -> writer.encode(this, v));
     }
+
+    /** 1.21 {@code writeIntIdList(ids)}: the count, then each id as a var int (Supplementaries' song notes, entity removals). */
+    public RegistryFriendlyByteBuf writeIntIdList(it.unimi.dsi.fastutil.ints.IntList ids) {
+        this.writeVarInt(ids.size());
+        for (int i = 0; i < ids.size(); i++) {
+            this.writeVarInt(ids.getInt(i));
+        }
+        return this;
+    }
+
+    public it.unimi.dsi.fastutil.ints.IntList readIntIdList() {
+        int size = this.readVarInt();
+        var ids = new it.unimi.dsi.fastutil.ints.IntArrayList(size);
+        for (int i = 0; i < size; i++) {
+            ids.add(this.readVarInt());
+        }
+        return ids;
+    }
 }
