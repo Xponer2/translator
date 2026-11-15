@@ -36,10 +36,43 @@ public class MultiBufferSource {
         SOURCES.add(this);
     }
 
+    /**
+     * The consumer of each render type asked for. Mods make render types as they draw (JourneyMap's minimap: a new one
+     * for every tile and label of every frame): kept here, they were 28,000 after five minutes, and every draw went
+     * through all of them (the game at a few frames a second, worse the longer it ran, better with F3 hiding the map).
+     * The ones without a started batch are let go when there are many; a draw looks at the started ones only.
+     */
     private final java.util.Map<RenderType, BufferVertexConsumer> consumers = new java.util.LinkedHashMap<>();
+    /** The consumers with a batch started since they were last drawn. */
+    private final java.util.Set<BufferVertexConsumer> active = new java.util.LinkedHashSet<>();
+    private static final int KEPT = 256;
 
     public VertexConsumer getBuffer(RenderType type) {
-        return this.consumers.computeIfAbsent(type, BufferVertexConsumer::new);
+        var consumer = this.consumers.get(type);
+        if (consumer == null) {
+            if (this.consumers.size() >= KEPT) {
+                this.consumers.values().removeIf(idle -> !this.active.contains(idle));
+            }
+            consumer = new BufferVertexConsumer(type, this);
+            this.consumers.put(type, consumer);
+        }
+        return consumer;
+    }
+
+    /** A consumer of this source started a batch (one that was let go and is written to again too). */
+    void started(BufferVertexConsumer consumer) {
+        this.active.add(consumer);
+    }
+
+    private BufferVertexConsumer[] takeActive(@javax.annotation.Nullable VertexConsumer except) {
+        var taken = new java.util.ArrayList<BufferVertexConsumer>(this.active.size());
+        for (var consumer : this.active) {
+            if (consumer != except) {
+                taken.add(consumer);
+            }
+        }
+        this.active.removeAll(taken);
+        return taken.toArray(new BufferVertexConsumer[0]);
     }
 
     /** Draws what the consumers got (the renderer adapters call it after each render, 1.21 endBatch). */
@@ -53,7 +86,10 @@ public class MultiBufferSource {
     }
 
     public void endBatch() {
-        for (var consumer : this.consumers.values()) {
+        if (this.active.isEmpty()) {
+            return;
+        }
+        for (var consumer : this.takeActive(null)) {
             try {
                 consumer.flush();
             } catch (RuntimeException e) {
@@ -67,10 +103,11 @@ public class MultiBufferSource {
 
     /** Draws the other started batches: they share the 1.12.2 Tessellator with the one starting. */
     void flushOthers(VertexConsumer starting) {
-        for (var consumer : this.consumers.values()) {
-            if (consumer != starting) {
-                consumer.flush();
-            }
+        if (this.active.isEmpty() || this.active.size() == 1 && this.active.contains(starting)) {
+            return;
+        }
+        for (var consumer : this.takeActive(starting)) {
+            consumer.flush();
         }
     }
 
@@ -88,6 +125,9 @@ public class MultiBufferSource {
     /** Every batch dropped and the shared Tessellator finished and emptied. */
     private void abandon() {
         for (var consumer : this.consumers.values()) {
+            consumer.abandon();
+        }
+        for (var consumer : this.takeActive(null)) {
             consumer.abandon();
         }
         var buffer = net.minecraft.client.renderer.Tessellator.getInstance().getBuffer();

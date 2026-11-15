@@ -80,9 +80,82 @@ public final class StyleCycles implements IClassTransformer {
 		guard.add(new FrameNode(Opcodes.F_SAME, 0, null, 0, null));
 		setParent.instructions.insert(guard);
 		setParent.maxStack = Math.max(setParent.maxStack, 2);
+		nullSafeHash(node);
 		var writer = new ClassWriter(0);
 		node.accept(writer);
 		return writer.toByteArray();
+	}
+
+	/**
+	 * 1.12.2's {@code Style.hashCode} reads every field of the style itself and throws on one left unset (null: the
+	 * parent's value counts). 1.21 components are values the mods hash (records with components in them, sets of item
+	 * stacks): Iron's Spellbooks' map data threw in JEI's start, which failed and ran again at every screen the player
+	 * opened (a freeze of seconds each time, JEI's list never there). The old hashCode runs, a null in it gives the
+	 * hash of the fields that are set.
+	 */
+	private static void nullSafeHash(ClassNode node) {
+		MethodNode hash = null;
+		for (MethodNode method : node.methods) {
+			if ("hashCode".equals(method.name) && "()I".equals(method.desc)) {
+				hash = method;
+			}
+		}
+		if (hash == null) {
+			return;
+		}
+		hash.name = "translator$hashCode";
+		hash.access = (hash.access & ~(Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PRIVATE;
+		var wrapper = new MethodNode(Opcodes.ACC_PUBLIC, "hashCode", "()I", null, null);
+		var start = new LabelNode();
+		var end = new LabelNode();
+		var handler = new LabelNode();
+		wrapper.instructions.add(start);
+		wrapper.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		wrapper.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, node.name, "translator$hashCode", "()I", false));
+		wrapper.instructions.add(end);
+		wrapper.instructions.add(new InsnNode(Opcodes.IRETURN));
+		wrapper.instructions.add(handler);
+		wrapper.instructions.add(new FrameNode(Opcodes.F_SAME1, 0, null, 1, new Object[] {"java/lang/NullPointerException"}));
+		wrapper.instructions.add(new InsnNode(Opcodes.POP));
+		wrapper.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+		wrapper.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/xponer2/translator/core/StyleCycles", "hash", "(Ljava/lang/Object;)I", false));
+		wrapper.instructions.add(new InsnNode(Opcodes.IRETURN));
+		wrapper.tryCatchBlocks.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.TryCatchBlockNode(start, end, handler, "java/lang/NullPointerException"));
+		wrapper.maxStack = 1;
+		wrapper.maxLocals = 1;
+		node.methods.add(wrapper);
+	}
+
+	private static volatile Field[] hashFields;
+
+	/** The hash of a style's own fields, nulls counted as 0 (its parent left out). */
+	public static int hash(Object style) {
+		Field[] fields = hashFields;
+		if (fields == null) {
+			var own = new java.util.ArrayList<Field>();
+			Field parent = parentField(style.getClass());
+			for (Field field : style.getClass().getDeclaredFields()) {
+				if (!java.lang.reflect.Modifier.isStatic(field.getModifiers()) && !field.equals(parent)) {
+					try {
+						field.setAccessible(true);
+						own.add(field);
+					} catch (RuntimeException e) {
+						// left out
+					}
+				}
+			}
+			fields = own.toArray(new Field[0]);
+			hashFields = fields;
+		}
+		int result = 1;
+		for (Field field : fields) {
+			try {
+				result = 31 * result + java.util.Objects.hashCode(field.get(style));
+			} catch (IllegalAccessException | RuntimeException e) {
+				result = 31 * result;
+			}
+		}
+		return result;
 	}
 
 	private static volatile Field parentField;

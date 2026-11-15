@@ -171,7 +171,29 @@ final class SafeMixins implements IClassTransformer {
 		}
 		boolean changed = false;
 		for (MethodNode method : node.methods) {
-			if (method.instructions.size() == 0 || !method.name.startsWith("handler$") || !method.desc.endsWith(")V")) {
+			if (method.instructions.size() == 0) {
+				continue;
+			}
+			var args = xyz.wagyourtail.jvmdg.shade.asm.Type.getArgumentTypes(method.desc);
+			var returned = xyz.wagyourtail.jvmdg.shade.asm.Type.getReturnType(method.desc);
+			boolean callback = method.name.startsWith("handler$") && method.desc.endsWith(")V");
+			// a value modifier (@ModifyArg, @ModifyVariable, @ModifyConstant, MixinExtras' @ModifyExpressionValue and
+			// @ModifyReturnValue) takes the value first and returns it: a broken one gives the value back unchanged.
+			// Chat Heads' modify handler in the client's packet listener didn't verify, and every mixin of that class
+			// was left out with it: Xaero's maps lost their world and drew the chunks of other worlds
+			boolean value = valueModifier(method.name) && args.length > 0 && args[0].equals(returned);
+			// MixinExtras' @WrapOperation: the wrapped call's receiver and arguments, then the Operation: a broken one
+			// makes the original call (Accessories' took every mixin of GuiContainer down, Supplementaries' BlockFire's)
+			int operation = -1;
+			if (!callback && !value && method.name.startsWith("wrapOperation$")) {
+				for (int i = 0; i < args.length; i++) {
+					if (OPERATION.equals(args[i].getDescriptor())) {
+						operation = i;
+						break;
+					}
+				}
+			}
+			if (!callback && !value && operation < 0) {
 				continue;
 			}
 			try {
@@ -182,9 +204,18 @@ final class SafeMixins implements IClassTransformer {
 				method.localVariables = null;
 				method.visibleLocalVariableAnnotations = null;
 				method.invisibleLocalVariableAnnotations = null;
-				method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.RETURN));
+				if (callback) {
+					method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.RETURN));
+				} else if (operation >= 0) {
+					callOriginal(method, args, returned, operation);
+				} else {
+					int slot = (method.access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_STATIC) != 0 ? 0 : 1;
+					method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.VarInsnNode(args[0].getOpcode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ILOAD), slot));
+					method.instructions.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(returned.getOpcode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.IRETURN)));
+				}
 				changed = true;
-				LOGGER.warn("Mixin callback {}.{} doesn't verify on 1.12.2 ({}): it does nothing", className, method.name, e.getMessage());
+				LOGGER.warn("Mixin {} {}.{} doesn't verify on 1.12.2 ({}): {}", callback ? "callback" : operation >= 0 ? "wrapper" : "value modifier", className,
+						method.name, e.getMessage(), callback ? "it does nothing" : operation >= 0 ? "the original call runs" : "it gives the value back unchanged");
 			}
 		}
 		if (!changed) {
@@ -197,6 +228,79 @@ final class SafeMixins implements IClassTransformer {
 		} catch (RuntimeException e) {
 			return null;
 		}
+	}
+
+	private static final String OPERATION = "Lcom/llamalad7/mixinextras/injector/wrapoperation/Operation;";
+
+	/** A wrapper's body made {@code return original.call(receiver and arguments)}. */
+	private static void callOriginal(MethodNode method, xyz.wagyourtail.jvmdg.shade.asm.Type[] args, xyz.wagyourtail.jvmdg.shade.asm.Type returned,
+			int operation) {
+		var code = method.instructions;
+		int slot = (method.access & xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ACC_STATIC) != 0 ? 0 : 1;
+		int[] slots = new int[args.length];
+		for (int i = 0; i < args.length; i++) {
+			slots[i] = slot;
+			slot += args[i].getSize();
+		}
+		code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.VarInsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ALOAD, slots[operation]));
+		code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.LdcInsnNode(operation));
+		code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ANEWARRAY, "java/lang/Object"));
+		for (int i = 0; i < operation; i++) {
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.DUP));
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.LdcInsnNode(i));
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.VarInsnNode(args[i].getOpcode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.ILOAD), slots[i]));
+			String box = box(args[i]);
+			if (box != null) {
+				code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.MethodInsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.INVOKESTATIC, box, "valueOf",
+						"(" + args[i].getDescriptor() + ")L" + box + ";", false));
+			}
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.AASTORE));
+		}
+		code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.MethodInsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.INVOKEINTERFACE,
+				"com/llamalad7/mixinextras/injector/wrapoperation/Operation", "call", "([Ljava/lang/Object;)Ljava/lang/Object;", true));
+		if (returned.getSort() == xyz.wagyourtail.jvmdg.shade.asm.Type.VOID) {
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.POP));
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.RETURN));
+			return;
+		}
+		String box = box(returned);
+		if (box != null) {
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.CHECKCAST, box));
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.MethodInsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.INVOKEVIRTUAL, box,
+					returned.getClassName() + "Value", "()" + returned.getDescriptor(), false));
+		} else {
+			code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.TypeInsnNode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.CHECKCAST, returned.getInternalName()));
+		}
+		code.add(new xyz.wagyourtail.jvmdg.shade.asm.tree.InsnNode(returned.getOpcode(xyz.wagyourtail.jvmdg.shade.asm.Opcodes.IRETURN)));
+	}
+
+	private static String box(xyz.wagyourtail.jvmdg.shade.asm.Type type) {
+		switch (type.getSort()) {
+			case xyz.wagyourtail.jvmdg.shade.asm.Type.BOOLEAN:
+				return "java/lang/Boolean";
+			case xyz.wagyourtail.jvmdg.shade.asm.Type.CHAR:
+				return "java/lang/Character";
+			case xyz.wagyourtail.jvmdg.shade.asm.Type.BYTE:
+				return "java/lang/Byte";
+			case xyz.wagyourtail.jvmdg.shade.asm.Type.SHORT:
+				return "java/lang/Short";
+			case xyz.wagyourtail.jvmdg.shade.asm.Type.INT:
+				return "java/lang/Integer";
+			case xyz.wagyourtail.jvmdg.shade.asm.Type.FLOAT:
+				return "java/lang/Float";
+			case xyz.wagyourtail.jvmdg.shade.asm.Type.LONG:
+				return "java/lang/Long";
+			case xyz.wagyourtail.jvmdg.shade.asm.Type.DOUBLE:
+				return "java/lang/Double";
+			default:
+				return null;
+		}
+	}
+
+	/** The names Mixin gives the handlers that take a value first and return its new value. */
+	private static boolean valueModifier(String name) {
+		return name.startsWith("modify$") || name.startsWith("localvar$") || name.startsWith("constant$") || name.startsWith("modifyExpressionValue$")
+				|| name.startsWith("modifyReturnValue$");
 	}
 
 	/**

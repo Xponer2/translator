@@ -62,6 +62,15 @@ public final class BufferVertexConsumer implements VertexConsumer {
 		this.raw = false;
 	}
 
+	/** The buffer source that hands this consumer out: told when a batch starts, so a draw looks at the started ones only. */
+	@Nullable
+	private MultiBufferSource source;
+
+	BufferVertexConsumer(RenderType type, MultiBufferSource source) {
+		this(type);
+		this.source = source;
+	}
+
 	private BufferVertexConsumer(BufferBuilder target) {
 		this(target, false);
 	}
@@ -333,6 +342,9 @@ public final class BufferVertexConsumer implements VertexConsumer {
 			MultiBufferSource.flushAllOthers(this);
 		}
 		this.started = true;
+		if (this.source != null) {
+			this.source.started(this);
+		}
 		if (this.target == null) {
 			// the texture first: a type whose shard binds its own (a map tile's) binds it in its setup after; a type
 			// without a texture (gui, lines) leaves the screen's bound one alone
