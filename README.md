@@ -1,51 +1,84 @@
 # Translator
 
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg?style=flat-square)](LICENSE)
-[![Minecraft 1.12.2](https://img.shields.io/badge/Minecraft-1.12.2-green.svg?style=flat-square)](#)
+[![Status: redesign](https://img.shields.io/badge/status-redesign%20in%20progress-orange.svg?style=flat-square)](#status-redesign-november-2026)
+[![Minecraft 1.21.1 to 1.20.4 to 1.12.2](https://img.shields.io/badge/Minecraft-1.21.1%20%E2%86%92%201.20.4%20%E2%86%92%201.12.2-green.svg?style=flat-square)](#the-new-design-a-ladder-of-versions)
 ![Made with AI (Claude)](https://img.shields.io/badge/made%20with-AI%20(Claude)-8A2BE2?style=flat-square)
 
-The **Minecraft 1.21.1 / NeoForge API on Minecraft 1.12.2** (Forge). It runs **original NeoForge 1.21.1 mod jars**
-on 1.12.2: put them in `mods/1.21.1/` (or `mods/`) next to the Translator and start the game.
+Run Minecraft mods made for **newer versions on older versions**, and mods of **different versions together** in one
+game: a target version with any number of mods made for the versions above it.
 
 **Made with AI:** the Translator is made entirely with AI (Claude), from the code to the in-game testing.
 
-**Experimental.** Many blocks, items, menus and recipes of the tested mods work. Rendering, world generation and
-some screens are still incomplete. A mod can load and still miss parts of its behaviour.
+## Status: redesign (November 2026)
 
-**Development environment only, for now.** The converter maps the mods to Minecraft's development names (MCP).
-The normal game uses obfuscated (SRG) names, so running original 1.21.1 jars there doesn't work yet. Ports built on
-the Translator work in both.
+The first build ran NeoForge 1.21.1 mods on Forge 1.12.2 in one big jump, and many mods partly work there (see
+[the 1.12.2 build](#the-1211-to-1122-build-frozen) below). But it grew by hand: every new mod showed new gaps, and each
+gap needed code written for it. That doesn't reach the real goal (any version, versions mixed), so the Translator is
+being rebuilt around a **ladder of versions**.
 
-## Goal and roadmap
+- **The 1.21.1 → 1.12.2 build is frozen.** Its builds stay on the [releases](https://github.com/Xponer2/translator/releases)
+  page and keep working as they are, with no new features. 1.12.2 comes back as a step of the new design, reusing what
+  this build learned (more than 4096 block ids, the 1.13 flattening, mixin handling).
+- **The new design is being built now**, starting at the top of the ladder: 1.21.1 → 1.20.4.
 
-**The goal:** run mods of **any version on any lower version** of Minecraft, and **mix versions** in one game: a
-target version *x* with any number of mods made for versions above it, e.g. 1.12.2 with mods for 1.13, 1.16, 1.21
-and later, all together. 1.12.2 is the first target, not the last: lower targets come later too.
+## The new design: a ladder of versions
 
-**The route:** a ladder of small steps down between neighbouring versions (… → 1.21 → 1.20 → … → *x*). Each mod
-enters the ladder at its own version and steps down to the target; the target is where the ladder stops. A new
-Minecraft version adds one step at the top, an older target one step at the bottom. Each step is the API difference
-of two neighbouring versions, taken from the official mappings and the loaders' porting notes.
+- A mod goes down **one step at a time between neighbouring versions** (1.21.1 → 1.21 → 1.20.6 → 1.20.4 → … →
+  1.12.2) instead of one big jump. Each mod enters at its own version, so mods of 1.21.1, 1.20.1 and 1.18.2 can meet
+  on the same target.
+- **Most of each step is generated, not written:** the renames come from Mojang's official mappings, matched across
+  versions through Fabric's intermediary names; classes and methods that are new in the upper version are carried
+  down as they are when their own code works on the lower one.
+- **Code is written by hand only where Minecraft really changed:** an object that gained new state (item data
+  components), a registry the older version doesn't have, a change in the loader's API. Written once, it serves every
+  mod and every lower version.
+- **One object, one class:** a stack, block or entity is the same object for every mod whatever version it was made
+  for, so mods of different versions work together. The rules for this are checked by tests on the JVM.
+- **Strict checks:** a mod counts as working only when nothing in it was stubbed, skipped or turned off, and each step
+  is compared with the real game on both of its versions.
+- Nothing of Minecraft is shipped: the tables are generated on your machine from the official downloads.
+
+### Where it is
+
+Measured over the 300 most popular NeoForge 1.21.1 mods on Modrinth (their references to Minecraft and NeoForge):
+
+| Step | Resolved by generated renames | Of the rest, carried down as real code | Places that need hand-written code |
+|---|---|---|---|
+| 1.21.1 → 1.21 | 99.9% | 75% | 8 |
+| 1.21 → 1.20.6 | 97.7% | 66% | 198 |
+| 1.20.6 → 1.20.4 (item data components) | 93.2% | 39% | 409 |
+
+- **20 of the 300 mods** already convert to 1.20.4 with nothing missing.
+- **The first one runs on the real NeoForge 1.20.4:** Alternate Current (a redstone mod made for 1.21.1) loads, and its
+  mixins are applied to 1.20.4's own redstone code.
+- 1.20.5 has no step of its own: NeoForge only had betas for it, and 1.20.6 is its hotfix, so the step 1.20.6 → 1.20.4
+  holds its changes.
+
+### Roadmap
 
 | Stage | What | State |
 |---|---|---|
-| 1 | The tools every step uses: the jar converter, the 1.21.1 classes carried from the player's own game, the bridges, a fast in-game self-test, an offline ranking of the missing API over hundreds of mods | ✅ done, improved as we go |
-| 2 | **First (long) step: NeoForge 1.21.1 → 1.12.2**, closed by the missing API ranked over the 300 most popular 1.21.1 mods | 🔨 **now** (see the numbers below) |
-| 3 | Mods for 1.13–1.20 lifted up to 1.21.1 (mostly renames), so they run on 1.12.2 through stage 2 | ⬜ next |
-| 4 | Small steps down from the top (newer versions → 1.21 → 1.20 → …): every step opens one more target version | ⬜ planned |
-| 5 | Fabric mods, targets below 1.12.2 | ⬜ planned |
+| 1 | Generated steps 1.21.1 → 1.20.4, the one-pass converter, strict checks, behaviour tests in the real 1.20.4 | 🔨 **now** |
+| 2 | The hand-written parts of 1.20.6 → 1.20.4 (item data components, new registries, network payloads); mods of different versions sharing one item across a save and load | ⬜ next |
+| 3 | Steps down to 1.20.1 (the version with the most mods), then 1.19.2, 1.18.2, 1.16.5 | ⬜ planned |
+| 4 | The step down to 1.12.2 | ⬜ planned |
+| 5 | Older mods brought up, Fabric mods, targets below 1.12.2 | ⬜ later |
 
-**Where stage 2 is:** 99.4% of the API references of the tested mods are bridged (the missing ones are listed under
+## The 1.21.1 to 1.12.2 build (frozen)
+
+The **Minecraft 1.21.1 / NeoForge API on Minecraft 1.12.2** (Forge): it runs **original NeoForge 1.21.1 mod jars** on
+1.12.2. Put them in `mods/1.21.1/` (or `mods/`) next to the Translator and start the game.
+
+**Experimental.** Many blocks, items, menus and recipes of the tested mods work. Rendering, world generation and some
+screens are still incomplete. A mod can load and still miss parts of its behaviour.
+
+**Where it stopped:** 99.4% of the API references of the tested mods are bridged (the missing ones are listed under
 [What is left to bridge](#what-is-left-to-bridge)); the table below shows each mod's state in the self-test. Twilight
-Forest passes 97% of its blocks and items, Supplementaries 96%.
+Forest passes 97% of its blocks and items, Supplementaries 96%. Over the 300 most popular NeoForge 1.21.1 mods, 296
+convert and 46 need nothing the build lacks.
 
-**Corpus** (the 300 most popular NeoForge 1.21.1 mods on Modrinth, converted outside the game with v244): 296 of 300
-convert (4 stop the converter: a method grown too large, a very old class version, two crashes); **46 need nothing
-the Translator lacks yet**, 68 miss 1–10 calls, 182 miss more (44 815 call sites in all, v236: 46 587; counted per
-call site, data generators and other mods' APIs left out). The largest gaps are converter-wide (mixin fields 1.12.2
-doesn't have: 101 mods; stack map frames naming missing classes: 97 mods, 128 at v236), so they are closed first.
-
-## Mods
+### Mods on the 1.12.2 build
 
 <!-- mods:start -->
 
@@ -148,7 +181,7 @@ Tested with converter v233, 2026-11-13. 90 mods: 12 work, 65 partly work, 4 don'
 
 <!-- mods:end -->
 
-## What is left to bridge
+### What is left to bridge
 
 <!-- stubs:start -->
 
@@ -244,7 +277,7 @@ An *API reference* is a place in a mod's code that names a Minecraft 1.21.1 or N
 
 <!-- stubs:end -->
 
-## How it works
+### How the 1.12.2 build works
 
 At startup each 1.21.1 jar is converted for 1.12.2, then loaded like any mod:
 
@@ -271,7 +304,7 @@ content 1.12.2 has nothing like are left out. Copper, which 1.12.2 doesn't have 
 (ingot and ore, with ore generation). When another mod adds copper (`ingotCopper`), the Translator turns its own copper
 off and uses that mod's.
 
-## Self-test
+### Self-test
 
 `/translatortest [modid]` (operator, single player) tries every block and item of the converted mods next to the
 player:
@@ -284,14 +317,14 @@ player:
 The report goes to `translator/selftest/`: what failed and which 1.21 calls are still missing, grouped by how many
 blocks and items they break.
 
-## Ports
+### Ports
 
 Mods can also be ported to build on the Translator directly. A port keeps its 1.21 code and data, and the Translator
 runs it on 1.12.2:
 [Mystical Agriculture: Back to Life](https://github.com/Xponer2/mystical-agriculture-back-to-life) and
 [Cucumber Library: Back to Life](https://github.com/Xponer2/cucumber-back-to-life).
 
-## Requirements
+### Requirements of the 1.12.2 build
 
 - Minecraft 1.12.2, Forge 14.23.5.2847 or newer.
 - For original 1.21.1 mods: MixinBooter, and the Minecraft 1.21.1 / NeoForge files described above.
