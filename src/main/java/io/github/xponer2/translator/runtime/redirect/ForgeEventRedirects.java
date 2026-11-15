@@ -119,4 +119,9 @@ public final class ForgeEventRedirects {
 	public static ItemEntityPickupEvent.Pre fireItemPickupPre(EntityItem item, EntityPlayer player) {
 		return ItemEntityPickupEvent.fire(item, player);
 	}
+
+	/** NeoForge {@code BreakSpeed.getPosition()}: the block's position, empty when unknown (Mekanism's mining speed tweaks). */
+	public static java.util.Optional<net.minecraft.util.math.BlockPos> getPosition(net.minecraftforge.event.entity.player.PlayerEvent.BreakSpeed event) {
+		return java.util.Optional.ofNullable(event.getPos());
+	}
 }

@@ -298,12 +298,17 @@ final class SelfTestClient {
 						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "break particles: the missing texture (purple and black)");
 					}
 					var state = block.getDefaultState();
-					boolean plantLike = state.getMaterial() == net.minecraft.block.material.Material.PLANTS
-							|| state.getMaterial() == net.minecraft.block.material.Material.VINE || state.getMaterial() == net.minecraft.block.material.Material.LEAVES
-							|| state.getCollisionBoundingBox(mc.world, net.minecraft.util.math.BlockPos.ORIGIN) == Block.NULL_AABB
-									&& state.getBlockHardness(mc.world, net.minecraft.util.math.BlockPos.ORIGIN) == 0.0F;
-					if (plantLike && block.getSoundType(state, mc.world, net.minecraft.util.math.BlockPos.ORIGIN, null) == net.minecraft.block.SoundType.STONE) {
-						run.addClientProblem("block", String.valueOf(block.getRegistryName()), "sound: a plant that sounds like stone when broken or walked on");
+					boolean plant = state.getMaterial() == net.minecraft.block.material.Material.PLANTS
+							|| state.getMaterial() == net.minecraft.block.material.Material.VINE || state.getMaterial() == net.minecraft.block.material.Material.LEAVES;
+					boolean plantLike = state.getCollisionBoundingBox(mc.world, net.minecraft.util.math.BlockPos.ORIGIN) == Block.NULL_AABB
+							&& state.getBlockHardness(mc.world, net.minecraft.util.math.BlockPos.ORIGIN) == 0.0F;
+					if ((plant || plantLike) && block.getSoundType(state, mc.world, net.minecraft.util.math.BlockPos.ORIGIN, null) == net.minecraft.block.SoundType.STONE) {
+						if (plant) {
+							run.addClientProblem("block", String.valueOf(block.getRegistryName()), "sound: a plant that sounds like stone when broken or walked on");
+						} else {
+							// a pot, a technical block: may be stone in 1.21 too
+							run.addClientNote("block", String.valueOf(block.getRegistryName()), "sounds like stone (no collision, breaks at once)");
+						}
 					}
 					if (block instanceof net.minecraftforge.fluids.BlockFluidBase) {
 						// a mod's fluid as it is drawn placed (its source block): no pixels means it is invisible in the world

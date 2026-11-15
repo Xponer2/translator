@@ -2165,6 +2165,18 @@ public final class MiscBridges {
 		return java.util.Arrays.stream(plane.facings());
 	}
 
+	/** 1.21 {@code connection.getLoggableAddress(logIps)}: the remote address, or "local" for a local connection or when IPs aren't logged. */
+	public static String getLoggableAddress(net.minecraft.network.NetworkManager connection, boolean logIps) {
+		if (connection.isLocalChannel() || !logIps) {
+			return "local";
+		}
+		return String.valueOf(connection.getRemoteAddress());
+	}
+
+	public static String getLoggableAddress(net.minecraft.network.NetworkManager connection) {
+		return getLoggableAddress(connection, false);
+	}
+
 	/** 1.21 {@code Direction.Plane.length()}: how many directions (Supplementaries' boat path finder sizes arrays by it). */
 	public static int length(net.minecraft.util.EnumFacing.Plane plane) {
 		return plane.facings().length;

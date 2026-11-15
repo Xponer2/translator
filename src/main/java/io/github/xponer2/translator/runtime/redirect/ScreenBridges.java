@@ -326,6 +326,14 @@ public final class ScreenBridges {
 		return ApiBridges.getRecipeManager(Minecraft.getMinecraft().world);
 	}
 
+	/**
+	 * 1.21 {@code connection.enabledFeatures()}: every feature (1.12.2 has no experimental ones). JEI builds its item list
+	 * from the creative tabs of the enabled features: the missing call made it fail, and JEI never started.
+	 */
+	public static io.github.xponer2.translator.util.FeatureFlagSet enabledFeatures(NetHandlerPlayClient connection) {
+		return io.github.xponer2.translator.util.FeatureFlagSet.of();
+	}
+
 	// --- GuiScreen ---------------------------------------------------------------------------------------------------
 
 	public static void init(GuiScreen screen, Minecraft minecraft, int width, int height) {
