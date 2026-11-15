@@ -32,6 +32,12 @@ public interface ItemLike {
         if (value instanceof Item item) {
             return item;
         }
+        if (value instanceof io.github.xponer2.translator.runtime.redirect.AbsentBlock absent) {
+            // a 1.21 vanilla block 1.12.2 lacks (the stonecutter): its placeholder item, not air. JEI's stonecutting
+            // category drew Blocks.STONECUTTER: air threw, JEI's start failed and ran again at every screen opened
+            Item placeholder = Item.getByNameOrId(absent.name());
+            return placeholder != null ? placeholder : net.minecraft.init.Items.AIR;
+        }
         if (value instanceof net.minecraft.block.Block block) {
             return Item.getItemFromBlock(block);
         }

@@ -59,6 +59,11 @@ public class MultiBufferSource {
         return consumer;
     }
 
+    /** How many render type consumers the shared source keeps (the self-test's play check: they must not pile up). */
+    public static int kept() {
+        return INSTANCE.consumers.size();
+    }
+
     /** A consumer of this source started a batch (one that was let go and is written to again too). */
     void started(BufferVertexConsumer consumer) {
         this.active.add(consumer);

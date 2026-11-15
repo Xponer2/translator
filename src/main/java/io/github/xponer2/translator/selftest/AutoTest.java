@@ -46,6 +46,9 @@ public final class AutoTest {
 	private int ticks;
 	private long started;
 	private ScreenTour tour;
+	private boolean played;
+	@javax.annotation.Nullable
+	private PlayCheck play;
 	/** The server of the world left for the save-and-reload check, until it has stopped (and saved). */
 	private net.minecraft.server.MinecraftServer leaving;
 	private volatile long lastTick;
@@ -191,7 +194,13 @@ public final class AutoTest {
 				}
 			}
 			case 3 -> {
-				if (this.ticks > 40) {
+				if (!this.played && mc.world != null && mc.player != null) {
+					// before quitting: half a minute of play as a player sees it (bugs the test's own setup hid)
+					this.played = true;
+					this.play = new PlayCheck(mc);
+					this.state = 12;
+					this.ticks = 0;
+				} else if (this.ticks > 40) {
 					if (Boolean.getBoolean("translator.autotest.stay")) {
 						// -Dtranslator.autotest.stay=true: the game stays in the world for a look (the report is written)
 						LOGGER.info("Self-test finished, staying in the world (translator.autotest.stay)");
@@ -263,6 +272,13 @@ public final class AutoTest {
 					LOGGER.info("Save-and-reload check done, touring the screens");
 					this.tour = new ScreenTour(mc);
 					this.state = 4;
+					this.ticks = 0;
+				}
+			}
+			case 12 -> {
+				if (this.play.tick(this.ticks)) {
+					this.play = null;
+					this.state = 3;
 					this.ticks = 0;
 				}
 			}
