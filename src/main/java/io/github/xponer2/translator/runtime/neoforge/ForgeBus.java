@@ -205,7 +205,7 @@ public final class ForgeBus implements IEventBus {
 			ModContainer owner = InterModProcessEvent.class.isAssignableFrom(type) || InterModEnqueueEvent.class.isAssignableFrom(type)
 					? ModLoadingContext.get().getActiveContainer() : null;
 			IEventListener listener = event -> {
-				if (!forThisMod(event)) {
+				if (!forThisMod(type, event)) {
 					return;
 				}
 				if (receiveCanceled || !event.isCancelable() || !event.isCanceled()) {
@@ -247,10 +247,14 @@ public final class ForgeBus implements IEventBus {
 	 * (an entity, nothing), 1.21's RenderHighlightEvent.Block is a block's only. A mod's outline code read the block of a
 	 * miss: a null position and a NullPointerException in several mods each frame.
 	 */
-	private static boolean forThisMod(Event event) {
+	private static boolean forThisMod(Class<?> type, Event event) {
 		// by name: the event is a client class, and this bus runs on a dedicated server too
-		if ("net.minecraftforge.client.event.DrawBlockHighlightEvent".equals(event.getClass().getName())) {
+		String name = event.getClass().getName();
+		if ("net.minecraftforge.client.event.DrawBlockHighlightEvent".equals(name)) {
 			return io.github.xponer2.translator.client.ClientEventFilters.blockHighlight(event);
+		}
+		if (name.startsWith("net.minecraftforge.client.event.RenderGameOverlayEvent")) {
+			return io.github.xponer2.translator.client.ClientEventFilters.wholeHud(type, event);
 		}
 		return true;
 	}

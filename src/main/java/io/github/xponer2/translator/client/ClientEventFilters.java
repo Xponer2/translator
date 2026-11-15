@@ -29,4 +29,22 @@ public final class ClientEventFilters {
 		var target = ((DrawBlockHighlightEvent) event).getTarget();
 		return target != null && target.typeOfHit == net.minecraft.util.math.RayTraceResult.Type.BLOCK && target.getBlockPos() != null;
 	}
+
+	/**
+	 * RenderGameOverlayEvent.Pre/Post as 1.21's RenderGuiEvent.Pre/Post: once a frame, for the whole HUD. 1.12.2 posts
+	 * them for every HUD element too (health, food, chat...): JourneyMap drew its minimap a dozen times a frame, and
+	 * one of them, for the chat's own event, left the chat out of the screen to the left. A listener for a subclass
+	 * (Text: 1.21's debug text event) gets its own events as before.
+	 */
+	public static boolean wholeHud(Class<?> listenerType, Event event) {
+		if (listenerType != net.minecraftforge.client.event.RenderGameOverlayEvent.Pre.class
+				&& listenerType != net.minecraftforge.client.event.RenderGameOverlayEvent.Post.class
+				&& listenerType != net.minecraftforge.client.event.RenderGameOverlayEvent.class) {
+			return true;
+		}
+		return event instanceof net.minecraftforge.client.event.RenderGameOverlayEvent hud
+				&& hud.getType() == net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType.ALL
+				&& (event.getClass() == net.minecraftforge.client.event.RenderGameOverlayEvent.Pre.class
+						|| event.getClass() == net.minecraftforge.client.event.RenderGameOverlayEvent.Post.class);
+	}
 }

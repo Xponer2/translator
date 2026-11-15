@@ -158,11 +158,21 @@ public final class GlStateGuard {
 		return values;
 	}
 
-	/** Back to the depth before (what the mod pushed and left is popped), then the matrix it had. */
+	/**
+	 * Back to the depth before (what the mod pushed and left is popped; what it popped below its start is pushed back),
+	 * then the matrix it had. A mod that pushes in one listener and pops in another (JourneyMap moves the effect icons
+	 * aside: pushPose in the effects layer's Pre, popPose in its Post) popped a matrix of 1.12.2's own HUD in the
+	 * second, each listener being guarded apart: everything drawn after it on the frame was off its place (the chat
+	 * shifted out of the screen to the left).
+	 */
 	private static void restore(int mode, int depthQuery, int depthBefore, FloatBuffer values) {
 		GL11.glMatrixMode(mode);
-		for (int depth = GL11.glGetInteger(depthQuery); depth > depthBefore; depth--) {
+		int depth = GL11.glGetInteger(depthQuery);
+		for (; depth > depthBefore; depth--) {
 			GL11.glPopMatrix();
+		}
+		for (; depth < depthBefore; depth++) {
+			GL11.glPushMatrix();
 		}
 		values.rewind();
 		GL11.glLoadMatrix(values);

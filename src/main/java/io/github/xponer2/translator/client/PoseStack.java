@@ -41,11 +41,12 @@ public class PoseStack {
         return depth;
     }
 
-    /** The count only, set back (the GL stack was restored by other means: {@link GlStateGuard}). */
+    /**
+     * The count only, set back (the GL stack was restored by other means: {@link GlStateGuard}, which also pushes back
+     * what a mod popped below its start).
+     */
     static void resetDepth(int to) {
-        if (depth > to) {
-            depth = to;
-        }
+        depth = Math.max(0, to);
     }
 
     /**
