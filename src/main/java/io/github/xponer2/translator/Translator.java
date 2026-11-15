@@ -198,6 +198,8 @@ public final class Translator {
 			bar.step("tags and recipes of the 1.21 data");
 			RecipeLoader.load();
 		}
+		// the spawn rules of the mods' mobs (RegisterSpawnPlacementsEvent: darkness for their monsters)
+		io.github.xponer2.translator.entity.SpawnRules.register();
 		if (event.getSide().isClient()) {
 			io.github.xponer2.translator.client.ClientSetup.postInit();
 			// -Dtranslator.autotest=<world>: the self-test on its own, then the game quits
