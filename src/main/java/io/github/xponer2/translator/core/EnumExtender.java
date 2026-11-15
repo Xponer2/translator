@@ -226,8 +226,11 @@ public final class EnumExtender implements IClassTransformer {
 			}
 			code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, self, "<init>", constructor, false));
 			code.add(new FieldInsnNode(Opcodes.PUTSTATIC, self, extension.name, "L" + self + ";"));
-			if (extension.proxy) {
-				code.add(new FieldInsnNode(Opcodes.GETSTATIC, extension.source[0], extension.source[1], "L" + PROXY + ";"));
+			// made with a 1.12.2 constructor: the mod's own proxy still gets the constant (Iron's Spellbooks' rarities, an
+			// EnumRarity now: the proxy stayed empty and 11 of its items weren't registered)
+			Extension owner = extension.original != null ? extension.original : extension;
+			if (owner.proxy) {
+				code.add(new FieldInsnNode(Opcodes.GETSTATIC, owner.source[0], owner.source[1], "L" + PROXY + ";"));
 				code.add(new FieldInsnNode(Opcodes.GETSTATIC, self, extension.name, "L" + self + ";"));
 				code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, PROXY, "setValue", "(Ljava/lang/Enum;)V", false));
 			}
@@ -258,6 +261,9 @@ public final class EnumExtender implements IClassTransformer {
 				// a class no object is an instance of, not null: Aether's mob categories, made with EnumCreatureType's
 				// 1.12.2 constructor, crashed the mob spawner every tick (type.getCreatureClass().isAssignableFrom)
 				code.add(new LdcInsnNode(Type.getObjectType("io/github/xponer2/translator/core/EnumExtender$NoClass")));
+			} else if (constant == null && "Lnet/minecraft/util/text/TextFormatting;".equals(type.getDescriptor())) {
+				// a color 1.21 gives another way (a rarity's style): white, not null (the tooltip printed "null" before the name)
+				code.add(new FieldInsnNode(Opcodes.GETSTATIC, "net/minecraft/util/text/TextFormatting", "WHITE", type.getDescriptor()));
 			} else if (constant == null) {
 				code.add(switch (type.getSort()) {
 					case Type.ARRAY, Type.OBJECT -> new InsnNode(Opcodes.ACONST_NULL);

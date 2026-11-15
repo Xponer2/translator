@@ -72,6 +72,7 @@ public final class Translator {
 		io.github.xponer2.translator.content.Copper.readConfig(new net.minecraftforge.common.config.Configuration(event.getSuggestedConfigurationFile()));
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.content.Copper.Registrar());
 		MinecraftForge.EVENT_BUS.register(new RegisterEvent.Forwarder());
+		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.loot.HarvestLoot());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.redirect.VanillaPlaceholders());
 		MinecraftForge.EVENT_BUS.register(new io.github.xponer2.translator.runtime.ChunkUnloadGuard());
 		Menus.init();

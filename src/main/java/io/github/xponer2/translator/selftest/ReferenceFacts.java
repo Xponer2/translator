@@ -118,7 +118,8 @@ public final class ReferenceFacts {
 				facts.addProperty("hardness", round(placed.getBlockHardness(world, pos)));
 				facts.addProperty("blast", round(block.getExplosionResistance(null)));
 				facts.addProperty("light", placed.getLightValue(world, pos));
-				facts.addProperty("item", Item.getItemFromBlock(block) != net.minecraft.init.Items.AIR);
+				// 1.21 asItem: a wall sign or wall torch gives its standing one's item
+				facts.addProperty("item", io.github.xponer2.translator.util.ItemLike.itemOfBlock(block) != net.minecraft.init.Items.AIR);
 				facts.addProperty("placed", placed.getBlock() == block);
 				TileEntity tile = world.getTileEntity(pos);
 				ResourceLocation tileId = tile == null ? null : TileEntity.getKey(tile.getClass());
@@ -128,6 +129,11 @@ public final class ReferenceFacts {
 				for (int i = 0; i < 4; i++) {
 					NonNullList<ItemStack> list = NonNullList.create();
 					block.getDrops(list, world, pos, placed, 0);
+					// what a harvest gives: the 1.21 table of a mod block on a 1.12.2 class comes through the harvest event
+					NonNullList<ItemStack> table = io.github.xponer2.translator.loot.HarvestLoot.drops(block, world, pos, placed, 0, null, world.rand);
+					if (table != null) {
+						list = table;
+					}
 					for (ItemStack drop : list) {
 						if (!drop.isEmpty()) {
 							drops.add(String.valueOf(io.github.xponer2.translator.util.ItemIds.id(drop)));

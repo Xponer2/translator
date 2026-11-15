@@ -141,7 +141,32 @@ public final class VanillaRedirects {
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	public static Object setValue(IBlockState state, net.minecraft.block.properties.IProperty property, Comparable value) {
 		// null only comes from a method the Translator couldn't run (1.21 never sets null): the state stays
-		return value == null || !state.getPropertyKeys().contains(property) ? state : state.withProperty(property, value);
+		if (value == null || !state.getPropertyKeys().contains(property)) {
+			return state;
+		}
+		if (!property.getValueClass().isInstance(value)) {
+			// one value of two enums: 1.21's door half is a DoubleBlockHalf, the 1.12.2 door's property takes its own
+			// EnumDoorHalf (Macaw's doors set LOWER in their constructor and weren't registered)
+			value = sameNamedValue(property, value);
+			if (value == null) {
+				return state;
+			}
+		}
+		return state.withProperty(property, value);
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	@Nullable
+	private static Comparable sameNamedValue(net.minecraft.block.properties.IProperty property, Comparable value) {
+		String name = value instanceof net.minecraft.util.IStringSerializable serializable ? serializable.getName()
+				: value instanceof Enum<?> constant ? constant.name() : String.valueOf(value);
+		for (Object allowed : property.getAllowedValues()) {
+			if (property.getName((Comparable) allowed).equalsIgnoreCase(name)
+					|| allowed instanceof Enum<?> constant && constant.name().equalsIgnoreCase(name)) {
+				return (Comparable) allowed;
+			}
+		}
+		return null;
 	}
 
 	/**

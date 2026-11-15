@@ -35,29 +35,29 @@ public final class Attributes {
 	/** 1.21 entity reach: 1.12.2 has one reach attribute (Forge's), for blocks and entities alike. */
 	public static final Holder<Attribute> ENTITY_INTERACTION_RANGE = ENTITY_REACH;
 	/** Entity#stepHeight in 1.12.2. */
-	public static final Holder<Attribute> STEP_HEIGHT = Holder.direct(new Attribute(null, "generic.step_height", 0.6D));
+	public static final Holder<Attribute> STEP_HEIGHT = vanilla(new Attribute(null, "generic.step_height", 0.6D));
 	// 1.21 attributes 1.12.2 doesn't have: their default value
-	public static final Holder<Attribute> SAFE_FALL_DISTANCE = Holder.direct(new Attribute(null, "generic.safe_fall_distance", 3.0D));
-	public static final Holder<Attribute> FALL_DAMAGE_MULTIPLIER = Holder.direct(new Attribute(null, "generic.fall_damage_multiplier", 1.0D));
-	public static final Holder<Attribute> GRAVITY = Holder.direct(new Attribute(null, "generic.gravity", 0.08D));
-	public static final Holder<Attribute> JUMP_STRENGTH = Holder.direct(new Attribute(null, "generic.jump_strength", 0.42D));
-	public static final Holder<Attribute> SCALE = Holder.direct(new Attribute(null, "generic.scale", 1.0D));
-	public static final Holder<Attribute> ATTACK_KNOCKBACK = Holder.direct(new Attribute(null, "generic.attack_knockback", 0.0D));
-	public static final Holder<Attribute> MINING_EFFICIENCY = Holder.direct(new Attribute(null, "player.mining_efficiency", 0.0D));
-	public static final Holder<Attribute> BLOCK_BREAK_SPEED = Holder.direct(new Attribute(null, "player.block_break_speed", 1.0D));
-	public static final Holder<Attribute> SUBMERGED_MINING_SPEED = Holder.direct(new Attribute(null, "player.submerged_mining_speed", 0.2D));
-	public static final Holder<Attribute> SNEAKING_SPEED = Holder.direct(new Attribute(null, "player.sneaking_speed", 0.3D));
-	public static final Holder<Attribute> OXYGEN_BONUS = Holder.direct(new Attribute(null, "generic.oxygen_bonus", 0.0D));
-	public static final Holder<Attribute> MAX_ABSORPTION = Holder.direct(new Attribute(null, "generic.max_absorption", 0.0D));
-	public static final Holder<Attribute> BURNING_TIME = Holder.direct(new Attribute(null, "generic.burning_time", 1.0D));
-	public static final Holder<Attribute> EXPLOSION_KNOCKBACK_RESISTANCE = Holder.direct(new Attribute(null, "generic.explosion_knockback_resistance", 0.0D));
-	public static final Holder<Attribute> MOVEMENT_EFFICIENCY = Holder.direct(new Attribute(null, "generic.movement_efficiency", 0.0D));
-	public static final Holder<Attribute> WATER_MOVEMENT_EFFICIENCY = Holder.direct(new Attribute(null, "generic.water_movement_efficiency", 0.0D));
-	public static final Holder<Attribute> SWEEPING_DAMAGE_RATIO = Holder.direct(new Attribute(null, "player.sweeping_damage_ratio", 0.0D));
+	public static final Holder<Attribute> SAFE_FALL_DISTANCE = vanilla(new Attribute(null, "generic.safe_fall_distance", 3.0D));
+	public static final Holder<Attribute> FALL_DAMAGE_MULTIPLIER = vanilla(new Attribute(null, "generic.fall_damage_multiplier", 1.0D));
+	public static final Holder<Attribute> GRAVITY = vanilla(new Attribute(null, "generic.gravity", 0.08D));
+	public static final Holder<Attribute> JUMP_STRENGTH = vanilla(new Attribute(null, "generic.jump_strength", 0.42D));
+	public static final Holder<Attribute> SCALE = vanilla(new Attribute(null, "generic.scale", 1.0D));
+	public static final Holder<Attribute> ATTACK_KNOCKBACK = vanilla(new Attribute(null, "generic.attack_knockback", 0.0D));
+	public static final Holder<Attribute> MINING_EFFICIENCY = vanilla(new Attribute(null, "player.mining_efficiency", 0.0D));
+	public static final Holder<Attribute> BLOCK_BREAK_SPEED = vanilla(new Attribute(null, "player.block_break_speed", 1.0D));
+	public static final Holder<Attribute> SUBMERGED_MINING_SPEED = vanilla(new Attribute(null, "player.submerged_mining_speed", 0.2D));
+	public static final Holder<Attribute> SNEAKING_SPEED = vanilla(new Attribute(null, "player.sneaking_speed", 0.3D));
+	public static final Holder<Attribute> OXYGEN_BONUS = vanilla(new Attribute(null, "generic.oxygen_bonus", 0.0D));
+	public static final Holder<Attribute> MAX_ABSORPTION = vanilla(new Attribute(null, "generic.max_absorption", 0.0D));
+	public static final Holder<Attribute> BURNING_TIME = vanilla(new Attribute(null, "generic.burning_time", 1.0D));
+	public static final Holder<Attribute> EXPLOSION_KNOCKBACK_RESISTANCE = vanilla(new Attribute(null, "generic.explosion_knockback_resistance", 0.0D));
+	public static final Holder<Attribute> MOVEMENT_EFFICIENCY = vanilla(new Attribute(null, "generic.movement_efficiency", 0.0D));
+	public static final Holder<Attribute> WATER_MOVEMENT_EFFICIENCY = vanilla(new Attribute(null, "generic.water_movement_efficiency", 0.0D));
+	public static final Holder<Attribute> SWEEPING_DAMAGE_RATIO = vanilla(new Attribute(null, "player.sweeping_damage_ratio", 0.0D));
 	/** The zombies' reinforcements chance: 1.12.2's own (EntityZombie keeps it protected). */
 	public static final Holder<Attribute> SPAWN_REINFORCEMENTS_CHANCE = forge(zombieReinforcements());
 	/** NeoForge's creative flight: the player's allowFlying capability in 1.12.2. */
-	public static final Holder<Attribute> CREATIVE_FLIGHT = Holder.direct(new Attribute(null, "neoforge.creative_flight", 0.0D));
+	public static final Holder<Attribute> CREATIVE_FLIGHT = vanilla(new Attribute(null, "neoforge.creative_flight", 0.0D));
 
 	private Attributes() {
 	}
@@ -136,6 +136,63 @@ public final class Attributes {
 	}
 
 	private static Holder<Attribute> forge(net.minecraft.entity.ai.attributes.IAttribute attribute) {
-		return Holder.direct(new Attribute(attribute, attribute.getName(), attribute.getDefaultValue()));
+		return vanilla(new Attribute(attribute, attribute.getName(), attribute.getDefaultValue()));
+	}
+
+	private static Holder<Attribute> vanilla(Attribute attribute) {
+		return new Vanilla(attribute);
+	}
+
+	/**
+	 * A vanilla attribute's holder: its key is its 1.21.1 id once {@link #registerVanilla} put it in
+	 * {@code minecraft:attribute}, as 1.21's are references. Artifacts names its modifiers by
+	 * {@code attribute.unwrapKey().orElseThrow()}: with a direct holder 10 of its items weren't registered.
+	 */
+	private static final class Vanilla implements Holder<Attribute> {
+		private final Attribute value;
+		private io.github.xponer2.translator.registry.ResourceKey<Attribute> key;
+
+		Vanilla(Attribute value) {
+			this.value = value;
+		}
+
+		@Override
+		public Attribute value() {
+			return this.value;
+		}
+
+		@Override
+		public boolean isBound() {
+			return true;
+		}
+
+		@Override
+		@SuppressWarnings({"unchecked", "rawtypes"})
+		public java.util.Optional<io.github.xponer2.translator.registry.ResourceKey<Attribute>> unwrapKey() {
+			io.github.xponer2.translator.registry.Registry registry = this.key != null ? null
+					: io.github.xponer2.translator.util.BuiltInRegistries.byKey(io.github.xponer2.translator.util.Registries.ATTRIBUTE);
+			if (registry != null) {
+				Object location = registry.getKey(this.value);
+				if (location != null) {
+					this.key = io.github.xponer2.translator.registry.ResourceKey.create(registry.key(), (net.minecraft.util.ResourceLocation) location);
+				}
+			}
+			return java.util.Optional.ofNullable(this.key);
+		}
+
+		@Override
+		public boolean equals(Object other) {
+			return this == other || other instanceof Vanilla vanilla && vanilla.value == this.value;
+		}
+
+		@Override
+		public int hashCode() {
+			return System.identityHashCode(this.value);
+		}
+
+		@Override
+		public String toString() {
+			return "Reference{" + this.unwrapKey().orElse(null) + "=" + this.value + "}";
+		}
 	}
 }

@@ -112,11 +112,25 @@ public class DeferredRegister<T> {
     public <I extends T> DeferredHolder<T, I> register(String name, Function<ResourceLocation, ? extends I> factory) {
         // like NeoForge: entries may be added after register(bus) (Twilight Forest's block items, made when TFBlocks
         // loads), until the registry event has run
+        boolean now = false;
         if (this.seenRegisterEvent && !(this.registry() instanceof MappedRegistry)) {
-            throw new IllegalStateException("Cannot register new entries to " + this.registryKey.location() + " after its registry event has run");
+            // during its registry event, from a RegisterEvent listener of the mod: registered now. NeoForge runs such a
+            // listener before the DeferredRegister's own when the mod added it first; here the DeferredRegisters fill
+            // the registry first (Ars Nouveau adds its decorative sourcestone in its block event: 75 blocks and their
+            // items were missing)
+            if (this.iterating || !(this.registry() instanceof ForgeRegistryWrapper wrapper) || RegisterEvent.Forwarder.current() != wrapper.forge()) {
+                throw new IllegalStateException("Cannot register new entries to " + this.registryKey.location() + " after its registry event has run");
+            }
+            now = true;
         }
         var location = new ResourceLocation(this.namespace, name);
         DeferredHolder<T, I> holder = this.createHolder(this.registryKey, location);
+        if (now) {
+            Supplier<? extends I> supplier = () -> factory.apply(location);
+            this.entries.putIfAbsent(holder, supplier);
+            this.registerOne((IForgeRegistry) ((ForgeRegistryWrapper) this.registry()).forge(), (DeferredHolder) holder, supplier);
+            return holder;
+        }
         if (this.entries.putIfAbsent(holder, () -> factory.apply(location)) != null) {
             throw new IllegalArgumentException("Duplicate registration " + location);
         }
@@ -211,6 +225,20 @@ public class DeferredRegister<T> {
 
     private boolean registeredEarly;
 
+    /**
+     * The sounds and mob effects before every mod's blocks: the mods' registers listen at the same priority in the
+     * order the mod added them, Twilight Forest's blocks came before its sounds and its jars' constructors found no sound.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onRegisterEarly(RegistryEvent.Register event) {
+        if (!this.registeredEarly && this.registry() instanceof ForgeRegistryWrapper wrapper && wrapper.forge() != event.getRegistry()
+                && event.getRegistry().getRegistrySuperType() == Block.class && isBeforeBlocks(wrapper.forge())) {
+            this.registeredEarly = true;
+            this.registerAll(wrapper.forge());
+        }
+    }
+
     private static boolean isBeforeBlocks(IForgeRegistry<?> registry) {
         Class<?> type = registry.getRegistrySuperType();
         return type == net.minecraft.util.SoundEvent.class || type == net.minecraft.potion.Potion.class;
@@ -227,29 +255,42 @@ public class DeferredRegister<T> {
         }
     }
 
+    private boolean iterating;
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void registerAll(IForgeRegistry registry) {
         this.seenRegisterEvent = true;
         RegisterEvent.Forwarder.step(this.namespace);
+        this.iterating = true;
+        try {
+            for (var entry : this.entries.entrySet()) {
+                this.registerOne(registry, (DeferredHolder) entry.getKey(), entry.getValue());
+            }
+        } finally {
+            this.iterating = false;
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void registerOne(IForgeRegistry registry, DeferredHolder holder, Supplier<?> supplier) {
         boolean lenient = io.github.xponer2.translator.runtime.RuntimeMods.isRuntimeNamespace(this.namespace);
-        for (var entry : this.entries.entrySet()) {
-            var holder = (DeferredHolder) entry.getKey();
+        {
             IForgeRegistryEntry value;
             try {
-                value = (IForgeRegistryEntry) entry.getValue().get();
+                value = (IForgeRegistryEntry) supplier.get();
             } catch (RuntimeException | LinkageError e) {
                 if (!lenient) {
                     throw e;
                 }
                 // an original 1.21.1 mod (runtime): one entry the Translator can't make doesn't stop the game
                 io.github.xponer2.translator.runtime.RuntimeMods.skipped(holder.getId(), e);
-                continue;
+                return;
             }
             var location = holder.getId();
             if (value == null && lenient) {
                 // its supplier can't run on 1.12.2 yet (a stubbed constructor of the mod returns nothing)
                 io.github.xponer2.translator.runtime.RuntimeMods.skipped(location, new IllegalStateException("the entry is null"));
-                continue;
+                return;
             }
             try {
                 if (value.getRegistryName() == null) {

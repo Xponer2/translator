@@ -263,6 +263,7 @@ public class RegisterEvent extends Event implements IContextSetter {
 		@SubscribeEvent(priority = EventPriority.HIGHEST)
 		@SuppressWarnings("rawtypes")
 		public void onRegisterStart(RegistryEvent.Register event) {
+			current = event.getRegistry();
 			int count = DeferredRegister.countFor(event.getRegistry());
 			if (count > 0 && bar == null) {
 				bar = io.github.xponer2.translator.util.LoadingBar.push("Translator: registering " + event.getName().getPath(), count);
@@ -272,6 +273,7 @@ public class RegisterEvent extends Event implements IContextSetter {
 		@SubscribeEvent(priority = EventPriority.LOWEST)
 		@SuppressWarnings("rawtypes")
 		public void onRegisterEnd(RegistryEvent.Register event) {
+			current = null;
 			if (bar != null) {
 				bar.close();
 				bar = null;
@@ -279,6 +281,15 @@ public class RegisterEvent extends Event implements IContextSetter {
 			if (event.getRegistry().getRegistrySuperType() == net.minecraft.item.Item.class) {
 				BrokenBlockItems.fix(event.getRegistry());
 			}
+		}
+
+		/** The 1.12.2 registry whose event is going on, null between the events. */
+		@javax.annotation.Nullable
+		private static volatile IForgeRegistry<?> current;
+
+		@javax.annotation.Nullable
+		static IForgeRegistry<?> current() {
+			return current;
 		}
 
 		static void step(String namespace) {

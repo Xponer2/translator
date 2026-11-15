@@ -40,7 +40,9 @@ public class BlockProperties {
     public float destroyTime;
     public float explosionResistance;
     private int lightLevel;
-    public java.util.function.ToIntFunction<IBlockState> lightEmission;
+    // never null, as in 1.21: mods wrap the existing function (Mekanism's applyLightLevelAdjustments takes
+    // properties.lightEmission and calls it), a null one dropped 163 Mekanism blocks
+    public java.util.function.ToIntFunction<IBlockState> lightEmission = state -> this.lightLevel;
     @Nullable
     public net.minecraft.block.material.EnumPushReaction pushReaction;
     public boolean requiresCorrectToolForDrops;
@@ -240,7 +242,7 @@ public class BlockProperties {
 
     /** 1.21 form: the light of each state (1.12.2 blocks have one light level; the default state's is used). */
     public BlockProperties lightLevel(java.util.function.ToIntFunction<IBlockState> lightEmission) {
-        this.lightEmission = lightEmission;
+        this.lightEmission = lightEmission != null ? lightEmission : state -> this.lightLevel;
         return this;
     }
 
