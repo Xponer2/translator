@@ -162,6 +162,8 @@ public final class Translator {
 	@Mod.EventHandler
 	public void serverStarted(net.minecraftforge.fml.common.event.FMLServerStartedEvent event) {
 		ServerEvents.post(new ServerEvents.ServerStartedEvent(net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance()));
+		// -Dtranslator.facts=<file>: the facts of the mods' content, for the comparison with the 1.21.1 reference
+		io.github.xponer2.translator.selftest.ReferenceFacts.recordIfAsked(net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance());
 	}
 
 	@Mod.EventHandler
