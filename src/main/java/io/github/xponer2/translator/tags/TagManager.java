@@ -68,7 +68,7 @@ public final class TagManager {
      */
     private static final Pattern TAG_FILE = Pattern.compile("([a-z0-9_.-]+)/tags/((?:worldgen/)?[a-z_]+)/([a-z0-9_./-]+)\\.json");
     private static final Map<String, Map<ResourceLocation, List<Entry>>> FILES = new HashMap<>();
-    private static final Map<ResourceLocation, IBlockState> FLATTENED_BLOCKS = new HashMap<>();
+    private static final Map<ResourceLocation, List<BlockEntry>> FLATTENED_BLOCKS = new HashMap<>();
     private static final Map<ResourceLocation, List<ItemStack>> ITEM_TAGS = new HashMap<>();
     private static final Map<ResourceLocation, List<BlockEntry>> BLOCK_TAGS = new HashMap<>();
     private static boolean read;
@@ -322,7 +322,7 @@ public final class TagManager {
                 var id = io.github.xponer2.translator.util.ResourceLocations.parse(entry.id);
                 var flattened = FLATTENED_BLOCKS.get(id);
                 if (flattened != null) {
-                    result.add(new BlockEntry(flattened.getBlock(), flattened.getBlock().getMetaFromState(flattened)));
+                    result.addAll(flattened);
                 } else if (ForgeRegistries.BLOCKS.containsKey(id)) {
                     result.add(new BlockEntry(ForgeRegistries.BLOCKS.getValue(id), -1));
                 }
@@ -434,12 +434,27 @@ public final class TagManager {
                     }
                     continue;
                 }
-                if (item != null) {
+                // "item": false: 1.21 has no item of that id (a wall torch is a 1.12.2 torch, the torch item isn't one)
+                if (item != null && (!target.has("item") || target.get("item").getAsBoolean())) {
                     ItemIds.registerFlattened(id, item, meta);
                 }
-                var block = ForgeRegistries.BLOCKS.containsKey(oldId) ? ForgeRegistries.BLOCKS.getValue(oldId) : null;
+                // "block": the 1.12.2 block when it isn't the item's; "blockMetas": the 1.12.2 metas that are this 1.21
+                // block ([0, 4, 8]: an oak log on each axis), "all" = every state
+                var blockId = target.has("block") ? io.github.xponer2.translator.util.ResourceLocations.parse(target.get("block").getAsString()) : oldId;
+                var block = ForgeRegistries.BLOCKS.containsKey(blockId) ? ForgeRegistries.BLOCKS.getValue(blockId) : null;
                 if (block != null) {
-                    FLATTENED_BLOCKS.put(id, block.getStateFromMeta(meta));
+                    var entries = new ArrayList<BlockEntry>();
+                    var metas = target.get("blockMetas");
+                    if (metas != null && metas.isJsonPrimitive() && "all".equals(metas.getAsString())) {
+                        entries.add(new BlockEntry(block, -1));
+                    } else if (metas != null && metas.isJsonArray()) {
+                        for (var m : metas.getAsJsonArray()) {
+                            entries.add(new BlockEntry(block, block.getMetaFromState(block.getStateFromMeta(m.getAsInt()))));
+                        }
+                    } else {
+                        entries.add(new BlockEntry(block, block.getMetaFromState(block.getStateFromMeta(meta))));
+                    }
+                    FLATTENED_BLOCKS.put(id, entries);
                 }
             }
         } catch (IOException | RuntimeException e) {

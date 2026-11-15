@@ -17,6 +17,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -115,7 +116,8 @@ public final class BlockStateNbt {
 		if (flat != null) {
 			Block block = Block.getBlockFromName((String) flat[0]);
 			if (block != null) {
-				IBlockState state = block.getStateFromMeta((Integer) flat[1]);
+				int meta = (Integer) flat[1];
+				IBlockState state = meta < 0 ? block.getDefaultState() : block.getStateFromMeta(meta);
 				if (block == Blocks.STONE_SLAB || block == Blocks.WOODEN_SLAB || block == Blocks.STONE_SLAB2 || block == Blocks.PURPUR_SLAB) {
 					// 1.21 slabs say type=top|bottom|double; 1.12.2's half, and a double slab is another block
 					String type = properties.getString("type");
@@ -162,7 +164,17 @@ public final class BlockStateNbt {
 					if (target.has("similar") && target.get("similar").getAsBoolean()) {
 						continue;
 					}
-					map.put(entry.getKey(), new Object[] {target.get("id").getAsString(), target.get("meta").getAsInt()});
+					// the block (when not the item's) and its first meta of this 1.21 block; "all": every state of it is
+					// this block, its default state then (the properties are set by name)
+					String block = target.has("block") ? target.get("block").getAsString() : target.get("id").getAsString();
+					JsonElement metas = target.get("blockMetas");
+					int meta = target.get("meta").getAsInt();
+					if (metas != null && metas.isJsonPrimitive() && "all".equals(metas.getAsString())) {
+						meta = -1;
+					} else if (metas != null && metas.isJsonArray() && metas.getAsJsonArray().size() > 0) {
+						meta = metas.getAsJsonArray().get(0).getAsInt();
+					}
+					map.put(entry.getKey(), new Object[] {block, meta});
 				}
 			} catch (java.io.IOException | RuntimeException e) {
 				org.apache.logging.log4j.LogManager.getLogger("Translator").warn("Couldn't read the flattening table: {}", e.toString());
