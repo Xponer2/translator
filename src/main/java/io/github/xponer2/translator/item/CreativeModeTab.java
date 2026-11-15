@@ -221,6 +221,14 @@ public class CreativeModeTab implements RegistrationCallback {
 
         private ItemDisplayParameters() { }
 
+        /**
+         * 1.21 {@code new ItemDisplayParameters(features, hasPermissions, holders)}: JEI builds its item list with its own
+         * (the missing constructor stopped JEI's start). Every feature is enabled here, the tabs list everything.
+         */
+        public ItemDisplayParameters(io.github.xponer2.translator.util.FeatureFlagSet features, boolean hasPermissions,
+                io.github.xponer2.translator.registry.HolderLookup.Provider holders) {
+        }
+
         public boolean hasPermissions() {
             return true;
         }

@@ -886,3 +886,4 @@ X	net/neoforged/fml/ModLoader	postEventWithWrapInModOrder	(Lnet/minecraftforge/f
 X	net/neoforged/fml/ModLoader	runEventGenerator	(Ljava/util/function/Function;)V	io/github/xponer2/translator/runtime/neoforge/ModLoaderBridges
 R	net/minecraft/network/NetworkManager	io/github/xponer2/translator/runtime/redirect/MiscBridges
 R	net/minecraftforge/event/entity/player/PlayerEvent$BreakSpeed	io/github/xponer2/translator/runtime/redirect/ForgeEventRedirects
+R	net/minecraft/client/gui/GuiButton	io/github/xponer2/translator/runtime/redirect/ScreenBridges

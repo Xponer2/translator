@@ -129,6 +129,30 @@ public final class ScreenBridges {
 		return new io.github.xponer2.translator.client.OptionInstance<>(() -> (double) options.gammaSetting, value -> options.gammaSetting = value.floatValue());
 	}
 
+	private static boolean operatorItemsTab;
+
+	/** 1.21 {@code options.operatorItemsTab()}: whether the operator items tab shows (1.12.2 has no such option: kept here, off). */
+	public static io.github.xponer2.translator.client.OptionInstance<Boolean> operatorItemsTab(net.minecraft.client.settings.GameSettings options) {
+		return new io.github.xponer2.translator.client.OptionInstance<>(() -> operatorItemsTab, value -> operatorItemsTab = value);
+	}
+
+	// a 1.12.2 button's place and size by the 1.21 names (JEI keeps clear of the recipe book's tabs)
+	public static int getX(net.minecraft.client.gui.GuiButton button) {
+		return button.x;
+	}
+
+	public static int getY(net.minecraft.client.gui.GuiButton button) {
+		return button.y;
+	}
+
+	public static int getWidth(net.minecraft.client.gui.GuiButton button) {
+		return button.width;
+	}
+
+	public static int getHeight(net.minecraft.client.gui.GuiButton button) {
+		return button.height;
+	}
+
 	public static io.github.xponer2.translator.client.OptionInstance<Boolean> bobView(net.minecraft.client.settings.GameSettings options) {
 		return new io.github.xponer2.translator.client.OptionInstance<>(() -> options.viewBobbing, value -> options.viewBobbing = value);
 	}
