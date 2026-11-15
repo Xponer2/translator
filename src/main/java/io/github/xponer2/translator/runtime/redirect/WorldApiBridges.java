@@ -108,6 +108,35 @@ public final class WorldApiBridges {
 		return type == DimensionType.NETHER ? 15 : 0;
 	}
 
+	private static Object darkSpawnLight;
+	private static Object netherSpawnLight;
+
+	/**
+	 * 1.21 {@code dimensionType.monsterSpawnLightTest()}: the light a monster spawns in at most, 0 to 7 (the Nether: 7).
+	 * Missing, Monster.isDarkEnoughToSpawn failed, and with it the spawn rule of every mod's monster.
+	 */
+	public static Object monsterSpawnLightTest(DimensionType type) {
+		boolean nether = type == DimensionType.NETHER;
+		Object cached = nether ? netherSpawnLight : darkSpawnLight;
+		if (cached != null) {
+			return cached;
+		}
+		try {
+			ClassLoader loader = net.minecraft.launchwrapper.Launch.classLoader;
+			Object made = nether
+					? Class.forName("net.minecraft.util.valueproviders.ConstantInt", true, loader).getMethod("of", int.class).invoke(null, 7)
+					: Class.forName("net.minecraft.util.valueproviders.UniformInt", true, loader).getMethod("of", int.class, int.class).invoke(null, 0, 7);
+			if (nether) {
+				netherSpawnLight = made;
+			} else {
+				darkSpawnLight = made;
+			}
+			return made;
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
 	// --- world: brewing, chunks, light ------------------------------------------------------------------------------
 
 	/** 1.21 {@code level.potionBrewing()}: 1.12.2's brewing (static, so one shared instance stands for every world). */
