@@ -76,12 +76,12 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   branch inside a bridged constructor's arguments, method references (bound, unbound, constructor), overrides of a
   changed method on two levels with super calls, an FML 4 extension point of an ordinary class, DFU 8 codecs (a
   dispatch over map codecs, validation, error messages), holders' names, food values, mixins into a method whose
-  parameter changed, a block entity saving and loading through 1.20.5's registry-passing methods: **the same 45 results** natively on 1.21.1 and converted on
+  parameter changed, a block entity saving and loading through 1.20.5's registry-passing methods: **the same 48 results** natively on 1.21.1 and converted on
   1.20.4. On the client, 1.21's vertex API (`Tesselator.begin`, `addVertex` with its setters in any order, a wrapper
   over two buffers, builders interleaved, posed normals, a missing element, `MeshData`) and `DeltaTracker`: **the same
   15 results, the written vertex bytes included**.
 
-Over the whole corpus, 39 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
+Over the whole corpus, 42 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
 outside `META-INF/jarjar` and Mojang's libraries are checked too). What holds the others back most, in order: mixins
 into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in code and
 in loot tables), the 1.20.5 network payloads, `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`,
