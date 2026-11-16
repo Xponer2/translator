@@ -80,6 +80,11 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   1.20.4. On the client, 1.21's vertex API (`Tesselator.begin`, `addVertex` with its setters in any order, a wrapper
   over two buffers, builders interleaved, posed normals, a missing element, `MeshData`) and `DeltaTracker`: **the same
   15 results, the written vertex bytes included**.
+- **Item data components** (the first compatibility module; test mod B, made for 1.21.1): its own component types,
+  an item's defaults, the game's own components; values set, updated, removed, copied, saved and read back; custom
+  data whose keys clash with the game's; a stream codec; the stack handed to another mod in a chest and read by the
+  type's id, across a server restart: **the same 28 results** natively on 1.21.1 and converted on 1.20.4. A stack's
+  components live in its NBT (the one place its data is kept), with 1.21's defaults, overrides and removal markers.
 
 Over the whole corpus, 42 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
 outside `META-INF/jarjar` and Mojang's libraries are checked too). What holds the others back most, in order: mixins
