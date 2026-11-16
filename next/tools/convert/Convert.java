@@ -1222,8 +1222,18 @@ public class Convert {
     static final String RESOURCE_KEY = "net/minecraft/resources/ResourceKey";
     static final String RESOURCE_LOCATION = "net/minecraft/resources/ResourceLocation";
 
+    /** library types the game's members give where newer versions give their interfaces (Guava's immutables) */
+    static final Map<String, Set<String>> LIBRARY_SUPERTYPES = Map.of(
+            "com/google/common/collect/ImmutableMap", Set.of("java/util/Map"),
+            "com/google/common/collect/ImmutableList", Set.of("java/util/List", "java/util/Collection", "java/lang/Iterable"),
+            "com/google/common/collect/ImmutableSet", Set.of("java/util/Set", "java/util/Collection", "java/lang/Iterable"),
+            "com/google/common/collect/ImmutableCollection", Set.of("java/util/Collection", "java/lang/Iterable"));
+
     /** Whether the bottom version's class sub extends or implements sup. */
     static boolean isSubtype(String sub, String sup) {
+        if (LIBRARY_SUPERTYPES.getOrDefault(sub, Set.of()).contains(sup)) {
+            return true;
+        }
         Stage0.Version bottom = versions.get(versions.size() - 1);
         Deque<String> todo = new ArrayDeque<>(List.of(sub));
         Set<String> seen = new HashSet<>();

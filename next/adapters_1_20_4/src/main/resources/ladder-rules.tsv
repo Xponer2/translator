@@ -119,3 +119,10 @@ X	net/minecraft/network/chat/Component$Serializer	toJson	(Lnet/minecraft/network
 X	net/minecraft/network/chat/Component$Serializer	fromJson	(Ljava/lang/String;Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/network/chat/MutableComponent;	ladder/adapter/misc/MiscAdapters	fromJson
 X	net/minecraft/network/chat/Component$Serializer	fromJson	(Lcom/google/gson/JsonElement;Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/network/chat/MutableComponent;	ladder/adapter/misc/MiscAdapters	fromJson
 X	net/minecraft/network/chat/Component$Serializer	fromJsonLenient	(Ljava/lang/String;Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/network/chat/MutableComponent;	ladder/adapter/misc/MiscAdapters	fromJsonLenient
+# holders, registries and food of 1.20.5
+X	net/minecraft/core/Holder	getRegisteredName	()Ljava/lang/String;	ladder/adapter/misc/MiscAdapters	getRegisteredName
+X	net/minecraft/core/Holder	is	(Lnet/minecraft/core/Holder;)Z	ladder/adapter/misc/MiscAdapters	is
+X	net/minecraft/core/Registry	getHolder	(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;	ladder/adapter/misc/MiscAdapters	getHolder
+X	net/minecraft/world/food/FoodProperties	nutrition	()I	ladder/adapter/misc/MiscAdapters	nutrition
+X	net/minecraft/world/food/FoodProperties	saturation	()F	ladder/adapter/misc/MiscAdapters	saturation
+X	net/minecraft/world/food/FoodProperties	eatSeconds	()F	ladder/adapter/misc/MiscAdapters	eatSeconds

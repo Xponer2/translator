@@ -73,7 +73,7 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
 - **Test mod A** (`testmods/ladder_test_a`, made for NeoForge 1.21.1): mob effects and attributes through holders, a
   branch inside a bridged constructor's arguments, method references (bound, unbound, constructor), overrides of a
   changed method on two levels with super calls, an FML 4 extension point of an ordinary class, DFU 8 codecs (a
-  dispatch over map codecs, validation, error messages): **the same 28 results** natively on 1.21.1 and converted on
+  dispatch over map codecs, validation, error messages), holders' names, food values: **the same 36 results** natively on 1.21.1 and converted on
   1.20.4. On the client, 1.21's vertex API (`Tesselator.begin`, `addVertex` with its setters in any order, a wrapper
   over two buffers, builders interleaved, posed normals, a missing element, `MeshData`) and `DeltaTracker`: **the same
   15 results, the written vertex bytes included**.

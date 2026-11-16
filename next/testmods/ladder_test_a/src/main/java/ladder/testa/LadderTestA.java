@@ -105,6 +105,7 @@ public final class LadderTestA {
             // an extension point of an ordinary class, read back
             results.put("extensionPoint", this.container.getCustomExtension(ProbePoint.class).map(p -> p.value).orElse("none"));
             DfuTest.run(results);
+            SmallApiTest.run(results);
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("ladder_test_a", "probe");
             results.put("resourceLocation", id.toString());
             results.put("blockAtOrigin", String.valueOf(level.getBlockState(BlockPos.ZERO.above(64)).isAir()));

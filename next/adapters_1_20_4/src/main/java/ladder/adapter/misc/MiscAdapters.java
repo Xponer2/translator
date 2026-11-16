@@ -90,6 +90,42 @@ public final class MiscAdapters {
         return mob.finalizeSpawn(level, difficulty, type, data, null);
     }
 
+    /** 1.20.5's {@code Holder.getRegisteredName()} */
+    public static String getRegisteredName(net.minecraft.core.Holder<?> holder) {
+        return holder.unwrapKey().map(key -> key.location().toString()).orElse("[unregistered]");
+    }
+
+    /** 1.20.5's {@code Holder.is(other)}: the same registry entry (by key), or the same value */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static boolean is(net.minecraft.core.Holder holder, net.minecraft.core.Holder other) {
+        if (holder == other) {
+            return true;
+        }
+        java.util.Optional<net.minecraft.resources.ResourceKey> key = holder.unwrapKey();
+        return key.isPresent() ? other.is(key.get()) : holder.value() == other.value();
+    }
+
+    /** 1.20.5's {@code Registry.getHolder(location)} */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static java.util.Optional<?> getHolder(net.minecraft.core.Registry registry, net.minecraft.resources.ResourceLocation location) {
+        return registry.getHolder(net.minecraft.resources.ResourceKey.create(registry.key(), location));
+    }
+
+    /** 1.20.5's food record: {@code nutrition()} */
+    public static int nutrition(net.minecraft.world.food.FoodProperties food) {
+        return food.getNutrition();
+    }
+
+    /** 1.20.5's {@code saturation()}: the saturation itself, which 1.20.4 keeps as a modifier (nutrition * modifier * 2) */
+    public static float saturation(net.minecraft.world.food.FoodProperties food) {
+        return food.getNutrition() * food.getSaturationModifier() * 2.0F;
+    }
+
+    /** 1.20.5's {@code eatSeconds()}: 1.20.4's fast food is eaten in 16 ticks, the rest in 32 */
+    public static float eatSeconds(net.minecraft.world.food.FoodProperties food) {
+        return food.isFastFood() ? 0.8F : 1.6F;
+    }
+
     // 1.21's Component.Serializer takes the registries; 1.20.4's needs none
 
     public static String toJson(Component component, HolderLookup.Provider registries) {
