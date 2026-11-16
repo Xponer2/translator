@@ -2118,6 +2118,12 @@ public class Convert {
                     results.add("<init>" + remapper.mapMethodDesc(mDesc));
                     continue;
                 }
+                if (bridgeOf(o, mName, mDesc, true) != null) {
+                    // its types changed below: the handler's parameters would need converting (a handler bridge)
+                    problem("mixin into " + o + "." + mName + mDesc + ", whose types changed below: no handler bridge yet (" + where + ")");
+                    results.add(mName + (desc != null ? mDesc : ""));
+                    continue;
+                }
                 String mapped = mapMember(o, mName, mDesc, true);
                 results.add(mapped + (desc != null ? remapper.mapMethodDesc(mDesc) : ""));
             }
@@ -2165,6 +2171,11 @@ public class Convert {
             validateConstructor(owner, desc);
             newName = name;
         } else {
+            if (bridgeOf(owner, name, desc, !field) != null) {
+                // the game's own code below calls (or reads) the lower member: this target matches nothing there
+                problem("mixin target " + target + ", whose types changed below: no target bridge yet (" + where + ")");
+                return target;
+            }
             newName = finalName(owner, name, desc, !field);
             if (newName == null) {
                 problem("mixin target " + target + " matches nothing in " + versions.get(0).id + " (" + where + ")");
