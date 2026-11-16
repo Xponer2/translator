@@ -78,6 +78,11 @@ public final class Conversions {
         return ClientRegistries.access();
     }
 
+    /** the current registries (the server's, else the client's): what 1.20.5 passes where 1.20.4 passes nothing */
+    public static net.minecraft.core.RegistryAccess registries() {
+        return registryAccess(null);
+    }
+
     /** {@code ResourceKey<X>} -> {@code X}: the value of that key in its built-in registry (1.21's enchantment keys) */
     @Nullable
     @SuppressWarnings({"unchecked", "rawtypes"})

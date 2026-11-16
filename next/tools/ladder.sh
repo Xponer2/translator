@@ -39,7 +39,7 @@ case "$COMMAND" in
         if [ -n "$ADAPTERS" ]; then
             RULES=("-Dladder.rules=$(path "$PWD/adapters_1_20_4/src/main/resources/ladder-rules.tsv")" "-Dladder.adapters=$(path "$PWD/$ADAPTERS")")
         fi
-        "$JAVA" -Xmx8G "${RULES[@]}" -cp "$CP${SEP}tools/build" Convert "$(path "$1")" "$(path "$2")" "$(path "$3")" "${VERSIONS[@]}"
+        "$JAVA" -Xmx8G ${LADDER_JAVA_OPTS:-} "${RULES[@]}" -cp "$CP${SEP}tools/build" Convert "$(path "$1")" "$(path "$2")" "$(path "$3")" "${VERSIONS[@]}"
         ;;
     *)
         sed -n '2,5p' "$0"

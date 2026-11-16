@@ -104,8 +104,10 @@ public final class LadderTestA {
             results.put("override2Poison", String.valueOf(probe2.hasEffect(MobEffects.POISON)));
             // an extension point of an ordinary class, read back
             results.put("extensionPoint", this.container.getCustomExtension(ProbePoint.class).map(p -> p.value).orElse("none"));
+            MixinTest.run(stand, results);
             DfuTest.run(results);
             SmallApiTest.run(results);
+            SmallApiTest.blockEntity(level, results);
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("ladder_test_a", "probe");
             results.put("resourceLocation", id.toString());
             results.put("blockAtOrigin", String.valueOf(level.getBlockState(BlockPos.ZERO.above(64)).isAir()));

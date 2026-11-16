@@ -126,6 +126,43 @@ public final class MiscAdapters {
         return food.isFastFood() ? 0.8F : 1.6F;
     }
 
+    // 1.20.5's block entity loading and saving entries (registries passed; 1.20.4's load and save take none)
+
+    /**
+     * 1.20.5's {@code loadWithComponents}: 1.20.4's load; the tag's block entity components (1.20.4 has none) are kept
+     * in the entity's persistent data, so they are saved with it and come back as they were.
+     */
+    public static void loadWithComponents(net.minecraft.world.level.block.entity.BlockEntity entity, net.minecraft.nbt.CompoundTag tag,
+            HolderLookup.Provider registries) {
+        entity.load(tag);
+        if (tag.contains("components")) {
+            entity.getPersistentData().put(COMPONENTS_KEPT, tag.get("components").copy());
+        }
+    }
+
+    /** where a block entity keeps the components 1.20.4 can't read (in its persistent data) */
+    public static final String COMPONENTS_KEPT = "ladder:components";
+
+    public static void loadCustomOnly(net.minecraft.world.level.block.entity.BlockEntity entity, net.minecraft.nbt.CompoundTag tag,
+            HolderLookup.Provider registries) {
+        entity.load(tag);
+    }
+
+    public static net.minecraft.nbt.CompoundTag saveCustomOnly(net.minecraft.world.level.block.entity.BlockEntity entity, HolderLookup.Provider registries) {
+        return entity.saveWithoutMetadata();
+    }
+
+    public static net.minecraft.nbt.CompoundTag saveCustomAndMetadata(net.minecraft.world.level.block.entity.BlockEntity entity,
+            HolderLookup.Provider registries) {
+        return entity.saveWithFullMetadata();
+    }
+
+    /** 1.20.5's {@code HolderLookup.Provider.createSerializationContext(ops)}: 1.20.4's RegistryOps over the same registries */
+    public static net.minecraft.resources.RegistryOps<?> createSerializationContext(HolderLookup.Provider registries,
+            com.mojang.serialization.DynamicOps<?> ops) {
+        return net.minecraft.resources.RegistryOps.create(ops, registries);
+    }
+
     // 1.21's Component.Serializer takes the registries; 1.20.4's needs none
 
     public static String toJson(Component component, HolderLookup.Provider registries) {

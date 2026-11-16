@@ -21,7 +21,9 @@ build in the rest of the repository. See the [main README](../README.md) for the
    values and calls the lower member: field reads, method calls, method references and constructors (`new X(...)`
    becomes the bridge's factory). A mod's **override** of such a method gets the lower method generated in its own
    class (it converts the values and calls the mod's method), so the game calls it; a super call goes to the lower
-   method through a private helper. The conversions themselves are written once.
+   method through a private helper; a **mixin** into such a method gets its selector moved and its handler wrapped. A
+   context parameter the lower version doesn't pass (the registries of 1.20.5's saving and loading) is dropped from
+   calls and supplied to overrides. The conversions themselves are written once.
 4. **Hand-written adapters only for the roots** (`adapters_1_20_4`, a mod for the real 1.20.4): where an existing class
    gained new state (an `ItemStack`'s data components), a method was split (1.20.5's `useItemOn` / `useWithoutItem`),
    a registry or a loader API changed. The converter applies them from a rules file (`ladder-rules.tsv`): provided
@@ -73,12 +75,13 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
 - **Test mod A** (`testmods/ladder_test_a`, made for NeoForge 1.21.1): mob effects and attributes through holders, a
   branch inside a bridged constructor's arguments, method references (bound, unbound, constructor), overrides of a
   changed method on two levels with super calls, an FML 4 extension point of an ordinary class, DFU 8 codecs (a
-  dispatch over map codecs, validation, error messages), holders' names, food values: **the same 36 results** natively on 1.21.1 and converted on
+  dispatch over map codecs, validation, error messages), holders' names, food values, mixins into a method whose
+  parameter changed, a block entity saving and loading through 1.20.5's registry-passing methods: **the same 45 results** natively on 1.21.1 and converted on
   1.20.4. On the client, 1.21's vertex API (`Tesselator.begin`, `addVertex` with its setters in any order, a wrapper
   over two buffers, builders interleaved, posed normals, a missing element, `MeshData`) and `DeltaTracker`: **the same
   15 results, the written vertex bytes included**.
 
-Over the whole corpus, 38 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
+Over the whole corpus, 39 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
 outside `META-INF/jarjar` and Mojang's libraries are checked too). What holds the others back most, in order: mixins
 into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in code and
 in loot tables), the 1.20.5 network payloads, `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`,

@@ -86,6 +86,36 @@ public class Convert {
             versions.add(Stage0.load(p[0], Paths.get(p[1]), Paths.get(p[2]), loader));
         }
         loadRules();
+        String why = System.getProperty("ladder.why") == null ? null : System.getProperty("ladder.why").replaceFirst("^([CMF])_", "$1 ").replace("_SP_", " ");
+        if (why != null) {
+            // what still keeps a thing from being carried at a rung: the hard needs the converter can't resolve, down its chain
+            int rung = Integer.getInteger("ladder.whyRung", versions.size() - 2);
+            Stage0.Plan plan = Stage0.plan(versions.get(rung), versions.get(rung + 1));
+            Deque<String> todo = new ArrayDeque<>(List.of(why));
+            Set<String> seen = new HashSet<>();
+            Map<String, Integer> roots = new TreeMap<>();
+            while (!todo.isEmpty()) {
+                String k = todo.poll();
+                Stage0.Needs n = plan.needs.get(k);
+                if (n == null || !seen.add(k) || provided.containsKey(k.substring(2))) {
+                    continue;
+                }
+                for (String h : n.hard) {
+                    if (!resolvable(rung, h)) {
+                        roots.merge(h, 1, Integer::sum);
+                    }
+                }
+                todo.addAll(n.deps);
+            }
+            System.out.println(why + ": " + seen.size() + " things in its chain; unresolved roots:");
+            roots.forEach((r, c) -> System.out.println("  " + r));
+            return;
+        }
+        String measure = System.getProperty("ladder.measure");
+        if (measure != null) {
+            measureInstanceCarrying(Paths.get(measure));
+            return;
+        }
         if (Files.isDirectory(in)) {
             // batch: every jar of the folder, one report line each; the clean ones first
             Files.createDirectories(out);
@@ -257,6 +287,7 @@ public class Convert {
                     ClassNode remapped = new ClassNode();
                     node.accept(new ClassRemapper(remapped, remapper));
                     fixInterfaceCalls(remapped);
+                    applyHandlerFixes(node.name, remapped);
                     lowerOverrides.addAll(addAfterRemap.getOrDefault(node.name, List.of()));
                     addAfterRemap.remove(node.name);
                     for (MethodNode g : lowerOverrides) {
@@ -460,6 +491,8 @@ public class Convert {
     static final List<String[]> overrides = new ArrayList<>();
     /** X: "owner.name desc" -> {adapter class, adapter method} */
     static final Map<String, String[]> redirects = new HashMap<>();
+    /** M rows: owner, name, desc (top names), lower name, lower desc (bottom names): the same hook below, renamed */
+    static final List<String[]> memberMoves = new ArrayList<>();
     /** the adapters jar: class -> its methods "name desc" (each rule's target is checked against it) */
     static final Map<String, Set<String>> adapterMethods = new HashMap<>();
 
@@ -477,6 +510,8 @@ public class Convert {
                     case "X" -> redirects.put(c[1] + "." + c[2] + " " + c[3], new String[] {c[4], c[5]});
                     // a class renamed below with the same members: its uses get the lower name
                     case "R" -> NEOFORGE_MOVES.put(c[1], c[2]);
+                    // a member (of the owner and its subclasses) that is another one below: bridged to it
+                    case "M" -> memberMoves.add(new String[] {c[1], c[2], c[3], c[4], c[5]});
                     default -> throw new IOException("unknown rule " + line);
                 }
             }
@@ -770,6 +805,17 @@ public class Convert {
                         // a class renamed below (an R row): its members are the renamed class's, never carried
                         return renamedMember(cur);
                     }
+                    Stage0.Ref moved = i + 2 == versions.size() ? movedMember(i, cur) : null;
+                    if (moved != null) {
+                        // an M row: the same hook below under another name and descriptor, bridged to it
+                        String[] bridge = bridgeFor(i, cur, moved);
+                        if (bridge != null) {
+                            callRedirect.put(key, bridge);
+                            return new Stage0.Ref(cur.kind(), bridge[0], bridge[1], cur.desc());
+                        }
+                        problem("changed below (an M row), no bridge: " + cur.key() + " -> " + moved.name() + moved.desc());
+                        return null;
+                    }
                     Set<String> ok = carriable(i);
                     if (Stage0.mapClass(from, to, cur.cls()) == null) {
                         // the owner itself is new: its member comes down with the carried class (mapClass relocates it)
@@ -799,6 +845,22 @@ public class Convert {
             checkAccess(cur);
         }
         return cur;
+    }
+
+    /** An M row's lower member for a member missing at the last step (the owner or a subclass of the row's); else null. */
+    static Stage0.Ref movedMember(int i, Stage0.Ref cur) {
+        if (cur.kind() != 'M' || memberMoves.isEmpty()) {
+            return null;
+        }
+        Stage0.Version from = versions.get(i), to = versions.get(i + 1);
+        for (String[] row : memberMoves) {
+            if (row[1].equals(cur.name()) && row[2].equals(cur.desc()) && (cur.cls().equals(row[0]) || extendsClass(from, cur.cls(), row[0]))) {
+                String lowerOwner = Stage0.mapClass(from, to, cur.cls());
+                String decl = lowerOwner == null ? null : to.declaring(lowerOwner, row[3], row[4], true);
+                return decl == null ? null : new Stage0.Ref('M', decl, row[3], row[4]);
+            }
+        }
+        return null;
     }
 
     /** A member of a class an R row renames: the same member of the renamed class, which the bottom version must have. */
@@ -836,9 +898,30 @@ public class Convert {
         }
         Stage0.Version from = versions.get(i);
         Stage0.Plan plan = Stage0.plan(from, versions.get(i + 1));
+        // Stage0 counts every member whose types changed below as a root; the converter bridges many of them, and the
+        // adapters' rules cover others: what is left hard decides
+        Set<String> base = new HashSet<>();
+        plan.needs.forEach((k, n) -> {
+            if (n.hard.stream().allMatch(h -> resolvable(i, h))) {
+                base.add(k);
+            }
+        });
+        boolean shrunk = true;
+        while (shrunk) {
+            shrunk = false;
+            for (var it = base.iterator(); it.hasNext();) {
+                for (String d : plan.needs.get(it.next()).deps) {
+                    if (plan.needs.containsKey(d) && !base.contains(d) && !provided.containsKey(d.substring(2))) {
+                        it.remove();
+                        shrunk = true;
+                        break;
+                    }
+                }
+            }
+        }
         Set<String> ok = new HashSet<>();
         Map<String, Map<String, Set<Stage0.Ref>>> code = new HashMap<>();
-        for (String key : plan.carried) {
+        for (String key : base) {
             Stage0.Ref r = plan.things.get(key);
             if (!(r.kind() == 'C' || r.kind() == 'M' && from.classes.get(r.cls()).staticMethods.contains(r.name() + " " + r.desc()))) {
                 continue;
@@ -881,6 +964,125 @@ public class Convert {
         }
         carriable.put(i, ok);
         return ok;
+    }
+
+    /**
+     * A measurement: the new instance methods of existing classes whose own code would link below (Stage0's plan, and
+     * every member it reaches accessible from the carried package), and the batch report's "missing M" problems they
+     * are. Carried as static extensions (receiver first), these would come down with no adapter.
+     */
+    static void measureInstanceCarrying(Path report) throws IOException {
+        Set<String> ok = new HashSet<>();
+        Map<String, Integer> blocked = new TreeMap<>();
+        for (int i = 0; i + 1 < versions.size(); i++) {
+            Stage0.Version from = versions.get(i);
+            Stage0.Plan plan = Stage0.plan(from, versions.get(i + 1));
+            level = i;
+            for (String key : plan.needs.keySet()) {
+                Stage0.Ref r = plan.things.get(key);
+                if (r == null || r.kind() != 'M' || r.name().startsWith("<") || plan.absent.contains(r.cls())
+                        || from.classes.get(r.cls()).staticMethods.contains(r.name() + " " + r.desc())) {
+                    continue;
+                }
+                if (!plan.carried.contains(key)) {
+                    String why = plan.needs.get(key).hard.isEmpty() ? "needs uncarried code" : plan.needs.get(key).hard.iterator().next().replaceAll(":.*", "");
+                    blocked.merge(why, 1, Integer::sum);
+                    continue;
+                }
+                Set<Stage0.Ref> refs = new HashSet<>(Stage0.codeRefs(from, r.cls()).getOrDefault(r.name() + " " + r.desc(), Set.of()));
+                if (reachable(i, r, refs)) {
+                    ok.add(from.id + "|" + r.cls() + "." + r.name() + " " + r.desc());
+                } else {
+                    blocked.merge("reaches a non-public member", 1, Integer::sum);
+                }
+            }
+        }
+        java.util.regex.Pattern missing = java.util.regex.Pattern.compile("missing M (\\S+)\\.(\\S+) (\\S+) \\((\\S+) -> \\S+\\)");
+        int problemsAll = 0, problemsOk = 0;
+        Set<String> modsAll = new HashSet<>(), modsAllOk = new HashSet<>();
+        Map<String, Integer> top = new HashMap<>();
+        for (String line : Files.readAllLines(report)) {
+            String[] parts = line.split("\t");
+            if (parts.length < 5) {
+                continue;
+            }
+            boolean every = true, any = false;
+            for (String problem : parts[4].split(" \\| ")) {
+                java.util.regex.Matcher m = missing.matcher(problem);
+                if (!m.find()) {
+                    continue;
+                }
+                any = true;
+                problemsAll++;
+                if (ok.contains(m.group(4) + "|" + m.group(1) + "." + m.group(2) + " " + m.group(3))) {
+                    problemsOk++;
+                    top.merge(m.group(1) + "." + m.group(2), 1, Integer::sum);
+                } else {
+                    every = false;
+                }
+            }
+            if (any) {
+                modsAll.add(parts[1]);
+                if (every) {
+                    modsAllOk.add(parts[1]);
+                }
+            }
+        }
+        System.out.println("new instance methods that would link below: " + ok.size() + "; not carriable: " + blocked);
+        System.out.println("'missing M' problems in the report: " + problemsAll + ", of them carriable instance methods: " + problemsOk);
+        System.out.println("mods with 'missing M' problems: " + modsAll.size() + ", all of them carriable: " + modsAllOk.size());
+        top.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).limit(25)
+                .forEach(e -> System.out.println(String.format("%5d %s", e.getValue(), e.getKey())));
+    }
+
+    /**
+     * Whether one of Stage0's hard needs is something the converter resolves itself: a member whose types changed that
+     * a generated bridge (public below) or an adapter rule covers, a missing member an adapter rule covers.
+     */
+    static boolean resolvable(int i, String hard) {
+        int colon = hard.indexOf(": ");
+        if (colon < 0) {
+            return false;
+        }
+        String what = hard.substring(0, colon), key = hard.substring(colon + 2);
+        if (!what.equals("changed below") && !what.equals("missing below")) {
+            return false;
+        }
+        char kind = key.charAt(0);
+        String rest = key.substring(2);
+        int space = rest.indexOf(' ');
+        if (kind == 'C' || space < 0) {
+            return false;
+        }
+        String member = rest.substring(0, space), desc = rest.substring(space + 1);
+        int dot = member.lastIndexOf('.');
+        Stage0.Ref ref = new Stage0.Ref(kind, member.substring(0, dot), member.substring(dot + 1), desc);
+        if (kind == 'M' && redirects.containsKey(ref.cls() + "." + ref.name() + " " + ref.desc())) {
+            return true;
+        }
+        if (provided.containsKey(ref.cls())) {
+            return true;
+        }
+        if (!what.equals("changed below") || ref.name().startsWith("<") || adapterMethods.get(CONVERSIONS) == null) {
+            return false;
+        }
+        Stage0.Version from = versions.get(i), to = versions.get(i + 1);
+        Stage0.Step step = Stage0.step(from, to, ref);
+        Stage0.Ref lower = step.to();
+        if (lower == null || to.classes.get(lower.cls()) == null) {
+            return false;
+        }
+        Stage0.Ref end = quietWalk(i + 1, lower);
+        Stage0.Cls bottomOwner = end == null ? null : versions.get(versions.size() - 1).classes.get(end.cls());
+        Integer access = bottomOwner == null ? null : bottomOwner.access.get(end.kind() + " " + end.name() + " " + end.desc());
+        if (access == null || (access & Opcodes.ACC_PUBLIC) == 0) {
+            return false;
+        }
+        if (kind == 'F') {
+            return convertible(Type.getType(ref.desc()), Type.getType(lower.desc()));
+        }
+        return paramMap(Type.getArgumentTypes(ref.desc()), Type.getArgumentTypes(lower.desc())) != null
+                && convertible(Type.getReturnType(ref.desc()), Type.getReturnType(lower.desc()));
     }
 
     /** Whether every member the carried code reaches is accessible from the carried package at the bottom version. */
@@ -1099,7 +1301,7 @@ public class Convert {
             bridgeConstructors(m);
             for (AbstractInsnNode insn : m.instructions) {
                 if (insn instanceof MethodInsnNode call && !call.name.startsWith("<") && call.getOpcode() != Opcodes.INVOKESPECIAL
-                        && bridgeCall(call)) {
+                        && bridgeCall(node, call)) {
                     continue;
                 }
                 if (insn instanceof MethodInsnNode call && !call.name.startsWith("<") && call.getOpcode() == Opcodes.INVOKESPECIAL) {
@@ -1258,6 +1460,41 @@ public class Convert {
         return conversion(upper, lower) >= 0;
     }
 
+    /**
+     * Context parameters a newer version added that the lower one gets by itself: dropped from calls, supplied to
+     * overrides (the registries: HolderLookup.Provider in 1.20.5's saving and loading).
+     */
+    static final Set<String> CONTEXT_PARAMETERS = Set.of(PROVIDER, REGISTRY_ACCESS);
+
+    /**
+     * upper parameter -> lower parameter (-1: a context parameter the lower member hasn't), the lower ones in order and
+     * each convertible; null when the parameters don't map so.
+     */
+    static int[] paramMap(Type[] up, Type[] low) {
+        if (low.length > up.length) {
+            return null;
+        }
+        int[] map = new int[up.length];
+        int k = 0;
+        for (int j = 0; j < up.length; j++) {
+            boolean context = up[j].getSort() == Type.OBJECT && CONTEXT_PARAMETERS.contains(up[j].getInternalName());
+            // a context parameter stays only when the lower member has the same one there
+            if (k < low.length && convertible(up[j], low[k]) && (!context || up.length - j == low.length - k || up[j].equals(low[k]))) {
+                map[j] = k++;
+            } else if (context) {
+                map[j] = -1;
+            } else {
+                return null;
+            }
+        }
+        return k == low.length ? map : null;
+    }
+
+    /** The value of a context parameter the lower version doesn't pass (the current registries). */
+    static void supplyContext(InsnList code, Type type) {
+        code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "registries", "()L" + REGISTRY_ACCESS + ";", false));
+    }
+
     /** A value of the upper type on the stack becomes the lower type's. */
     static void convertDown(InsnList code, Type upper, Type lower) {
         switch (conversion(upper, lower)) {
@@ -1298,9 +1535,22 @@ public class Convert {
         }
         Stage0.Cls bottomOwner = versions.get(versions.size() - 1).classes.get(end.cls());
         Integer access = bottomOwner == null ? null : bottomOwner.access.get(end.kind() + " " + end.name() + " " + end.desc());
-        if (access == null || (access & Opcodes.ACC_PUBLIC) == 0) {
-            // the bridge sits in its own package: only a public member below can be called from there
+        if (access == null) {
             return null;
+        }
+        if ((access & Opcodes.ACC_PUBLIC) == 0) {
+            if ((access & Opcodes.ACC_PROTECTED) == 0 || upper.kind() != 'M') {
+                return null;
+            }
+            // protected: a static bridge in its own package couldn't call it; overrides and super calls need none, and
+            // a subclass's calls go through a private helper of its own (protectedCall)
+            Type[] ua = Type.getArgumentTypes(upper.desc()), la = Type.getArgumentTypes(lower.desc());
+            if (paramMap(ua, la) == null || !convertible(Type.getReturnType(upper.desc()), Type.getReturnType(lower.desc()))) {
+                return null;
+            }
+            String[] bridge = {PROTECTED + lower.cls(), upper.name() + "$" + Integer.toHexString(upper.desc().hashCode())};
+            bridgeEnds.put(bridge[0] + "." + bridge[1], end);
+            return bridge;
         }
         String owner = CARRIED + "bridges/" + lower.cls();
         String job = upper.kind() + "|" + upper.cls() + "|" + upper.name() + "|" + upper.desc() + "|" + lower.cls() + "|" + lower.name() + "|"
@@ -1314,19 +1564,17 @@ public class Convert {
             return bridge;
         }
         Type[] ua = Type.getArgumentTypes(upper.desc()), la = Type.getArgumentTypes(lower.desc());
-        if (ua.length != la.length || !convertible(Type.getReturnType(upper.desc()), Type.getReturnType(lower.desc()))) {
+        if (paramMap(ua, la) == null || !convertible(Type.getReturnType(upper.desc()), Type.getReturnType(lower.desc()))) {
             return null;
-        }
-        for (int a = 0; a < ua.length; a++) {
-            if (!convertible(ua[a], la[a])) {
-                return null;
-            }
         }
         String[] bridge = {owner, upper.name() + "$" + Integer.toHexString(upper.desc().hashCode())};
         schedule(rung + 1, new Stage0.Ref('B', owner, bridge[1], job));
         bridgeEnds.put(owner + "." + bridge[1], end);
         return bridge;
     }
+
+    /** the owner of a protected member's bridge record (no class: its calls go through helpers in the calling class) */
+    static final String PROTECTED = "ladder/protected/";
 
     /** bridge class.name -> the bottom version's member it calls */
     static final Map<String, Stage0.Ref> bridgeEnds = new HashMap<>();
@@ -1469,7 +1717,7 @@ public class Convert {
     }
 
     /** A call of a bridged member: to its bridge, the receiver first. */
-    static boolean bridgeCall(MethodInsnNode call) {
+    static boolean bridgeCall(ClassNode node, MethodInsnNode call) {
         if (call.owner.startsWith(CARRIED) || call.owner.startsWith("[") || !(Stage0.platform(call.owner) || mod.containsKey(call.owner))) {
             return false;
         }
@@ -1483,6 +1731,20 @@ public class Convert {
             return false;
         }
         boolean isStatic = call.getOpcode() == Opcodes.INVOKESTATIC;
+        if (bridge[0].startsWith(PROTECTED)) {
+            // a protected method below: only the class itself (a subclass) can call it, through a helper of its own
+            MethodNode helper = inCarried || (node.access & Opcodes.ACC_INTERFACE) != 0 ? null : protectedCall(node, call, bridge, isStatic);
+            if (helper == null) {
+                problem("a call of the protected " + ref.key() + ", whose types changed below: no helper for it");
+                return true;
+            }
+            call.desc = isStatic ? call.desc : "(L" + call.owner + ";" + call.desc.substring(1);
+            call.setOpcode(Opcodes.INVOKESTATIC);
+            call.owner = node.name;
+            call.name = helper.name;
+            call.itf = false;
+            return true;
+        }
         call.desc = isStatic ? call.desc : "(L" + ref.cls() + ";" + call.desc.substring(1);
         call.setOpcode(Opcodes.INVOKESTATIC);
         call.owner = bridge[0];
@@ -1559,6 +1821,56 @@ public class Convert {
         return false;
     }
 
+    /**
+     * A subclass's call of a protected method whose types changed below: a private static helper of the class (added
+     * after remapping, in the bottom version's names) takes the receiver and the upper values, converts them and calls
+     * the lower method.
+     */
+    static MethodNode protectedCall(ClassNode node, MethodInsnNode call, String[] bridge, boolean isStatic) {
+        Stage0.Ref end = bridgeEnds.get(bridge[0] + "." + bridge[1]);
+        if (end == null) {
+            return null;
+        }
+        String topDesc = isStatic ? call.desc : "(L" + call.owner + ";" + call.desc.substring(1);
+        String desc = remapper.mapMethodDesc(topDesc);
+        Type[] all = Type.getArgumentTypes(desc), low = Type.getArgumentTypes(end.desc());
+        Type[] up = isStatic ? all : Arrays.copyOfRange(all, 1, all.length);
+        Type upRet = Type.getReturnType(desc), lowRet = Type.getReturnType(end.desc());
+        int[] map = paramMap(up, low);
+        if (map == null || !convertible(upRet, lowRet)) {
+            return null;
+        }
+        String name = "ladder$call$" + call.name + "$" + Integer.toHexString(topDesc.hashCode());
+        List<MethodNode> pending = addAfterRemap.computeIfAbsent(node.name, k -> new ArrayList<>());
+        for (MethodNode done : pending) {
+            if (done.name.equals(name)) {
+                return done;
+            }
+        }
+        MethodNode g = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, name, desc, null, null);
+        InsnList code = g.instructions;
+        int slot = 0;
+        if (!isStatic) {
+            code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            slot = 1;
+        }
+        for (int a = 0; a < up.length; a++) {
+            if (map[a] >= 0) {
+                code.add(new VarInsnNode(up[a].getOpcode(Opcodes.ILOAD), slot));
+                convertDown(code, up[a], low[map[a]]);
+            }
+            slot += up[a].getSize();
+        }
+        code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : Opcodes.INVOKEVIRTUAL, isStatic ? end.cls() : remapper.map(call.owner),
+                end.name(), end.desc(), false));
+        convertUp(code, lowRet, upRet);
+        code.add(new InsnNode(upRet.getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 2;
+        pending.add(g);
+        return g;
+    }
+
     /** class -> methods to add once it is remapped (written in the bottom version's names) */
     static final Map<String, List<MethodNode>> addAfterRemap = new HashMap<>();
 
@@ -1574,13 +1886,9 @@ public class Convert {
         String desc = remapper.mapMethodDesc(call.desc);
         Type[] up = Type.getArgumentTypes(desc), low = Type.getArgumentTypes(end.desc());
         Type upRet = Type.getReturnType(desc), lowRet = Type.getReturnType(end.desc());
-        if (up.length != low.length || !convertible(upRet, lowRet)) {
+        int[] map = paramMap(up, low);
+        if (map == null || !convertible(upRet, lowRet)) {
             return null;
-        }
-        for (int a = 0; a < up.length; a++) {
-            if (!convertible(up[a], low[a])) {
-                return null;
-            }
         }
         String name = "ladder$super$" + call.name + "$" + Integer.toHexString((call.owner + call.desc).hashCode());
         List<MethodNode> pending = addAfterRemap.computeIfAbsent(node.name, k -> new ArrayList<>());
@@ -1594,9 +1902,11 @@ public class Convert {
         code.add(new VarInsnNode(Opcodes.ALOAD, 0));
         int slot = 1;
         for (int a = 0; a < up.length; a++) {
-            code.add(new VarInsnNode(up[a].getOpcode(Opcodes.ILOAD), slot));
+            if (map[a] >= 0) {
+                code.add(new VarInsnNode(up[a].getOpcode(Opcodes.ILOAD), slot));
+                convertDown(code, up[a], low[map[a]]);
+            }
             slot += up[a].getSize();
-            convertDown(code, up[a], low[a]);
         }
         code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, remapper.map(call.owner), end.name(), end.desc(), false));
         convertUp(code, lowRet, upRet);
@@ -1635,6 +1945,10 @@ public class Convert {
             String[] bridge = tag == Opcodes.H_NEWINVOKESPECIAL ? bridgeOf(h.getOwner(), "<init>", h.getDesc(), true)
                     : bridgeOf(h.getOwner(), h.getName(), h.getDesc(), !field);
             if (bridge == null) {
+                continue;
+            }
+            if (bridge[0].startsWith(PROTECTED)) {
+                problem("a method reference to the protected " + h.getOwner() + "." + h.getName() + h.getDesc() + ", whose types changed below");
                 continue;
             }
             String desc;
@@ -1699,28 +2013,39 @@ public class Convert {
         String ownName = remapper.mapMethodName(node.name, m.name, m.desc), ownDesc = remapper.mapMethodDesc(m.desc);
         Type[] up = Type.getArgumentTypes(ownDesc), low = Type.getArgumentTypes(end.desc());
         Type upRet = Type.getReturnType(ownDesc), lowRet = Type.getReturnType(end.desc());
-        if (up.length != low.length || !convertible(upRet, lowRet)) {
+        int[] map = paramMap(up, low);
+        if (map == null || !convertible(upRet, lowRet)) {
             return null;
         }
-        for (int a = 0; a < up.length; a++) {
-            if (!convertible(up[a], low[a])) {
-                return null;
-            }
+        int access = Opcodes.ACC_PUBLIC;
+        Stage0.Cls bottomOwner = versions.get(versions.size() - 1).classes.get(end.cls());
+        Integer lowerAccess = bottomOwner == null ? null : bottomOwner.access.get("M " + end.name() + " " + end.desc());
+        if (lowerAccess != null && (lowerAccess & Opcodes.ACC_PROTECTED) != 0) {
+            // an override of a protected method stays protected (the mod's own may be protected too)
+            access = Opcodes.ACC_PROTECTED;
         }
-        MethodNode g = new MethodNode(Opcodes.ACC_PUBLIC, end.name(), end.desc(), null, null);
+        MethodNode g = new MethodNode(access, end.name(), end.desc(), null, null);
         InsnList code = g.instructions;
         code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        int[] slots = new int[low.length];
         int slot = 1;
         for (int a = 0; a < low.length; a++) {
-            code.add(new VarInsnNode(low[a].getOpcode(Opcodes.ILOAD), slot));
+            slots[a] = slot;
             slot += low[a].getSize();
-            convertUp(code, low[a], up[a]);
+        }
+        for (int a = 0; a < up.length; a++) {
+            if (map[a] >= 0) {
+                code.add(new VarInsnNode(low[map[a]].getOpcode(Opcodes.ILOAD), slots[map[a]]));
+                convertUp(code, low[map[a]], up[a]);
+            } else {
+                supplyContext(code, up[a]);
+            }
         }
         code.add(new MethodInsnNode(itf ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL, remapper.map(node.name), ownName, ownDesc, itf));
         convertDown(code, upRet, lowRet);
         code.add(new InsnNode(lowRet.getOpcode(Opcodes.IRETURN)));
         g.maxLocals = slot;
-        g.maxStack = slot + 2;
+        g.maxStack = slot + 2 + 2 * up.length;
         return g;
     }
 
@@ -1787,6 +2112,7 @@ public class Convert {
             code.add(new InsnNode(Type.getType(upperDesc).getOpcode(Opcodes.IRETURN)));
         } else {
             Type[] ua = Type.getArgumentTypes(upperDesc), la = Type.getArgumentTypes(lowerDesc);
+            int[] map = paramMap(ua, la);
             StringBuilder b = new StringBuilder("(");
             if (!lowerStatic) {
                 b.append("L").append(lowerOwner).append(";");
@@ -1795,10 +2121,12 @@ public class Convert {
             }
             for (int a = 0; a < ua.length; a++) {
                 b.append(ua[a].getDescriptor());
-                code.add(new VarInsnNode(ua[a].getOpcode(Opcodes.ILOAD), locals));
+                if (map[a] >= 0) {
+                    code.add(new VarInsnNode(ua[a].getOpcode(Opcodes.ILOAD), locals));
+                    stack += ua[a].getSize();
+                    convertDown(code, ua[a], la[map[a]]);
+                }
                 locals += ua[a].getSize();
-                stack += ua[a].getSize();
-                convertDown(code, ua[a], la[a]);
             }
             Type upperReturn = Type.getReturnType(upperDesc), lowerReturn = Type.getReturnType(lowerDesc);
             desc = b.append(")").append(upperReturn.getDescriptor()).toString();
@@ -1858,7 +2186,6 @@ public class Convert {
                     redirectCarried(holder);
                     ClassNode converted = new ClassNode();
                     holder.accept(new ClassRemapper(converted, remapper));
-                fixInterfaceCalls(converted);
                     fixInterfaceCalls(converted);
                     ClassNode companion = carriedOut.computeIfAbsent(converted.name, n -> {
                         ClassNode c = new ClassNode();
@@ -1883,6 +2210,7 @@ public class Convert {
                 ClassNode source = new ClassNode();
                 new ClassReader(bytes).accept(source, 0);
                 if (thing.kind() == 'C') {
+                    applyRules(source, false);
                     redirectCarried(source);
                     ClassNode converted = new ClassNode();
                     source.accept(new ClassRemapper(converted, remapper));
@@ -1924,6 +2252,7 @@ public class Convert {
                         }
                     }
                 }
+                applyRules(holder, false);
                 redirectCarried(holder);
                 ClassNode converted = new ClassNode();
                 holder.accept(new ClassRemapper(converted, remapper));
@@ -2047,12 +2376,30 @@ public class Convert {
             for (List<AnnotationNode> list : Arrays.asList(m.visibleAnnotations, m.invisibleAnnotations)) {
                 if (list != null) {
                     for (AnnotationNode a : list) {
-                        remapAnnotation(a, targets, remapper, node.name + "." + m.name);
+                        currentHandler = new String[] {node.name, m.name, m.desc, a.desc};
+                        try {
+                            remapAnnotation(a, targets, remapper, node.name + "." + m.name);
+                        } finally {
+                            currentHandler = null;
+                        }
                     }
                 }
             }
         }
     }
+
+    /** the mixin handler whose annotation is being remapped: class, name, desc, annotation */
+    static String[] currentHandler;
+
+    /**
+     * A mixin handler whose target's (or target call's) types changed below: the selector goes to the lower member; the
+     * handler, when its parameters hold the changed types, gets a wrapper of the lower types that converts them and
+     * calls it (added once the class is remapped). {@code call}: an @At target (the handler's parameters are a call's).
+     */
+    record HandlerFix(String cls, String method, String desc, String annotation, String upperDesc, Stage0.Ref end, boolean call) {
+    }
+
+    static final List<HandlerFix> handlerFixes = new ArrayList<>();
 
     static void remapAnnotation(AnnotationNode a, List<String> targets, Remapper remapper, String where) {
         if (a.values == null || !(a.desc.startsWith("Lorg/spongepowered/asm/mixin/") || a.desc.startsWith("Lcom/llamalad7/mixinextras/"))) {
@@ -2118,10 +2465,18 @@ public class Convert {
                     results.add("<init>" + remapper.mapMethodDesc(mDesc));
                     continue;
                 }
-                if (bridgeOf(o, mName, mDesc, true) != null) {
-                    // its types changed below: the handler's parameters would need converting (a handler bridge)
-                    problem("mixin into " + o + "." + mName + mDesc + ", whose types changed below: no handler bridge yet (" + where + ")");
-                    results.add(mName + (desc != null ? mDesc : ""));
+                String[] bridged = bridgeOf(o, mName, mDesc, true);
+                if (bridged != null) {
+                    // its types changed below: the lower method is the target; the handler's parameters are converted
+                    Stage0.Ref end = bridgeEnds.get(bridged[0] + "." + bridged[1]);
+                    if (end == null || currentHandler == null) {
+                        problem("mixin into " + o + "." + mName + mDesc + ", whose types changed below: no handler bridge (" + where + ")");
+                        results.add(mName + (desc != null ? mDesc : ""));
+                        continue;
+                    }
+                    handlerFixes.add(new HandlerFix(currentHandler[0], currentHandler[1], currentHandler[2], currentHandler[3],
+                            remapper.mapMethodDesc(mDesc), end, false));
+                    results.add(end.name() + end.desc());
                     continue;
                 }
                 String mapped = mapMember(o, mName, mDesc, true);
@@ -2171,10 +2526,17 @@ public class Convert {
             validateConstructor(owner, desc);
             newName = name;
         } else {
-            if (bridgeOf(owner, name, desc, !field) != null) {
-                // the game's own code below calls (or reads) the lower member: this target matches nothing there
-                problem("mixin target " + target + ", whose types changed below: no target bridge yet (" + where + ")");
-                return target;
+            String[] bridged = bridgeOf(owner, name, desc, !field);
+            if (bridged != null) {
+                // the game's own code below calls (or reads) the lower member: that is the target
+                Stage0.Ref end = bridgeEnds.get(bridged[0] + "." + bridged[1]);
+                if (end == null || field || currentHandler == null) {
+                    problem("mixin target " + target + ", whose types changed below: no target bridge (" + where + ")");
+                    return target;
+                }
+                handlerFixes.add(new HandlerFix(currentHandler[0], currentHandler[1], currentHandler[2], currentHandler[3],
+                        remapper.mapMethodDesc(desc), end, true));
+                return "L" + remapper.map(owner) + ";" + end.name() + end.desc();
             }
             newName = finalName(owner, name, desc, !field);
             if (newName == null) {
@@ -2184,6 +2546,112 @@ public class Convert {
         }
         String newDesc = field ? remapper.mapDesc(desc) : remapper.mapMethodDesc(desc);
         return "L" + remapper.map(owner) + ";" + newName + (field ? ":" : "") + newDesc;
+    }
+
+    /**
+     * The handlers of a remapped mixin class whose targets' types changed below. A handler that doesn't hold the
+     * changed types needs nothing more (its selector was moved). An @Inject into a changed method whose parameters
+     * begin with the target's: a wrapper of the lower types takes the annotations, converts the values up and calls the
+     * handler (which keeps its name and descriptor, so the mixin's own calls of it still link). The rest are problems.
+     */
+    static void applyHandlerFixes(String original, ClassNode out) {
+        List<HandlerFix> fixes = new ArrayList<>();
+        for (Iterator<HandlerFix> it = handlerFixes.iterator(); it.hasNext();) {
+            HandlerFix f = it.next();
+            if (f.cls().equals(original)) {
+                fixes.add(f);
+                it.remove();
+            }
+        }
+        Map<String, List<HandlerFix>> byHandler = new LinkedHashMap<>();
+        for (HandlerFix f : fixes) {
+            byHandler.computeIfAbsent(f.method() + f.desc(), k -> new ArrayList<>()).add(f);
+        }
+        for (List<HandlerFix> list : byHandler.values()) {
+            HandlerFix f = list.get(0);
+            String where = original + "." + f.method();
+            String hDesc = remapper.mapMethodDesc(f.desc());
+            MethodNode h = out.methods.stream().filter(m -> m.name.equals(f.method()) && m.desc.equals(hDesc)).findFirst().orElse(null);
+            Type[] up = Type.getArgumentTypes(f.upperDesc()), low = Type.getArgumentTypes(f.end().desc());
+            Type[] hp = h == null ? new Type[0] : Type.getArgumentTypes(h.desc);
+            int[] map = paramMap(up, low);
+            Set<Type> changed = new HashSet<>();
+            for (int i = 0; i < up.length; i++) {
+                if (map == null || map[i] < 0 || !up[i].equals(low[map[i]])) {
+                    changed.add(up[i]);
+                }
+            }
+            boolean returnChanged = !Type.getReturnType(f.upperDesc()).equals(Type.getReturnType(f.end().desc()));
+            boolean holdsChanged = Arrays.stream(hp).anyMatch(changed::contains);
+            boolean returns = Arrays.stream(hp).anyMatch(t -> t.getInternalName().endsWith("CallbackInfoReturnable"));
+            if (h == null) {
+                problem("mixin handler " + where + " not found after remapping");
+                continue;
+            }
+            if (!holdsChanged && !(f.call() && returnChanged && Type.getReturnType(h.desc).equals(Type.getReturnType(f.upperDesc())))
+                    && !(!f.call() && returnChanged && returns)) {
+                // the handler doesn't see the changed types: the moved selector is all it needs
+                continue;
+            }
+            boolean inject = f.annotation().equals("Lorg/spongepowered/asm/mixin/injection/Inject;");
+            boolean prefix = hp.length >= up.length && Arrays.equals(Arrays.copyOf(hp, up.length), up);
+            boolean distinct = list.stream().allMatch(x -> x.upperDesc().equals(f.upperDesc()) && x.end().equals(f.end()) && x.call() == f.call());
+            if (f.call() || !inject || !prefix || returnChanged || !distinct) {
+                problem("mixin handler " + where + " takes types that changed below (" + f.upperDesc() + " -> " + f.end().desc()
+                        + "): no handler bridge for it");
+                continue;
+            }
+            if (map == null) {
+                problem("mixin handler " + where + ": the target's types changed below without a known conversion");
+                continue;
+            }
+            // the lower target's parameters, then the handler's own (CallbackInfo, locals)
+            Type[] wrapped = new Type[low.length + hp.length - up.length];
+            System.arraycopy(low, 0, wrapped, 0, low.length);
+            System.arraycopy(hp, up.length, wrapped, low.length, hp.length - up.length);
+            // the wrapper gets a name of its own (the injector's annotation picks the target, not the name); the
+            // handler keeps its name and descriptor, so the mixin's own calls of it still link
+            MethodNode g = new MethodNode(h.access, "ladder$wrap$" + h.name, Type.getMethodDescriptor(Type.getReturnType(h.desc), wrapped), null,
+                    h.exceptions.toArray(new String[0]));
+            g.visibleAnnotations = h.visibleAnnotations;
+            g.invisibleAnnotations = h.invisibleAnnotations;
+            g.visibleParameterAnnotations = h.visibleParameterAnnotations;
+            g.invisibleParameterAnnotations = h.invisibleParameterAnnotations;
+            h.visibleAnnotations = null;
+            h.invisibleAnnotations = null;
+            h.visibleParameterAnnotations = null;
+            h.invisibleParameterAnnotations = null;
+            boolean isStatic = (h.access & Opcodes.ACC_STATIC) != 0;
+            InsnList code = g.instructions;
+            int slot = 0;
+            if (!isStatic) {
+                code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                slot = 1;
+            }
+            int[] slots = new int[wrapped.length];
+            for (int i = 0; i < wrapped.length; i++) {
+                slots[i] = slot;
+                slot += wrapped[i].getSize();
+            }
+            for (int i = 0; i < up.length; i++) {
+                if (map[i] >= 0) {
+                    code.add(new VarInsnNode(low[map[i]].getOpcode(Opcodes.ILOAD), slots[map[i]]));
+                    convertUp(code, low[map[i]], up[i]);
+                } else {
+                    supplyContext(code, up[i]);
+                }
+            }
+            for (int i = low.length; i < wrapped.length; i++) {
+                code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slots[i]));
+            }
+            boolean privateHandler = (h.access & Opcodes.ACC_PRIVATE) != 0;
+            code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : privateHandler ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, out.name,
+                    h.name, h.desc, false));
+            code.add(new InsnNode(Type.getReturnType(h.desc).getOpcode(Opcodes.IRETURN)));
+            g.maxLocals = slot;
+            g.maxStack = slot + 2 + 2 * up.length;
+            out.methods.add(g);
+        }
     }
 
     // ---------------------------------------------------------------- data
