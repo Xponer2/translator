@@ -1,0 +1,38 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// Java 21: the converted 1.21.1 mods keep their class file version (65); 1.20.4 itself runs on it
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+neoForge {
+    version = '20.4.253'
+    // the behaviour probe mod of this project (src/main)
+    mods {
+        ladder_probe {
+            sourceSet sourceSets.main
+        }
+    }
+    runs {
+        // the converted mods in run-<name>/mods; a headless server first (stopped by the test when it has started)
+        server {
+            server()
+            gameDirectory = file('run-server')
+            programArgument '--nogui'
+            jvmArgument '-Xmx4G'
+            jvmArgument '-Dforge.logging.console.level=debug'
+            jvmArgument '-Dforge.logging.marker.scan=ACCEPT'
+            // the classes as the mods' mixins left them, in run-server/.mixin.out: proof that a mixin applied
+            jvmArgument '-Dmixin.debug.export=true'
+            // the behaviour probes (LadderProbe): results to this file, then the server stops
+            systemProperty 'ladder.probe.out', file('run-server/probe.json').absolutePath.replace(File.separator, '/')
+        }
+        client {
+            client()
+            gameDirectory = file('run-client')
+            jvmArgument '-Xmx4G'
+        }
+    }
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}

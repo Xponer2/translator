@@ -1,0 +1,14 @@
+# build outputs and the Gradle cache
+.gradle/
+build/
+**/build/
+*.log
+# downloaded Mojang mappings and Fabric intermediary: generated locally, never committed or shared
+mappings/
+# generated reports and tables (rebuilt by the tools)
+out/
+# per-machine lists of the loader jars
+**/loader-jars.txt
+# game runs of the prototype (worlds, logs, mixin dumps, the converted mods put there)
+**/run-*/
+tools/build/

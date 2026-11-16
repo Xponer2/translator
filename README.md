@@ -20,7 +20,8 @@ being rebuilt around a **ladder of versions**.
 - **The 1.21.1 → 1.12.2 build is frozen.** Its builds stay on the [releases](https://github.com/Xponer2/translator/releases)
   page and keep working as they are, with no new features. 1.12.2 comes back as a step of the new design, reusing what
   this build learned (more than 4096 block ids, the 1.13 flattening, mixin handling).
-- **The new design is being built now**, starting at the top of the ladder: 1.21.1 → 1.20.4.
+- **The new design is being built now**, starting at the top of the ladder: 1.21.1 → 1.20.4. Its code is in
+  [`next/`](next/) (a prototype: the generator of the steps, the converter, the tests).
 
 ## The new design: a ladder of versions
 

@@ -1,0 +1,15 @@
+plugins {
+    id 'net.neoforged.moddev' version '2.0.107' apply false
+}
+
+// the loader's own jars (FML, event bus, SPI) beside the joined game jar: the ladder's model of each version needs them
+subprojects {
+    tasks.register('printLoaderJars') {
+        def files = project.provider { project.configurations.compileClasspath.files }
+        def out = project.file('loader-jars.txt')
+        doLast {
+            out.text = files.get().findAll { it.toURI().toString().contains('/net.neoforged') }
+                    .collect { it.absolutePath }.join('\n')
+        }
+    }
+}
