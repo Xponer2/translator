@@ -28,7 +28,11 @@ build in the rest of the repository. See the [main README](../README.md) for the
    classes, overrides of newer methods (the mod class gets the adapters' interface, 1.20.4's call sites call it through
    mixins), call redirects. Each rule's target is checked against the built adapters.
 5. **One pass.** The renames of all steps compose, so a mod is converted once, whatever its version.
-6. **The loader.** The newer metadata becomes the older one's; embedded jars are converted with the mod; a mod's entry
+6. **Mojang's libraries are steps too.** DataFixerUpper and Brigadier are walked like the game, each version with its
+   own jars (DFU 8 in 1.21, DFU 6 in 1.20.4); the adapters cover what changed, including what the descriptors hide (a
+   dispatch codec's types are map codecs in DFU 8, codecs in DFU 6). A call takes the bottom version's kind of its
+   owner (DFU 8's `DataResult` is an interface, DFU 6's a class).
+7. **The loader.** The newer metadata becomes the older one's; embedded jars are converted with the mod; a mod's entry
    points the older loader can't take (`@Mod(dist = ...)`, several `@Mod` classes, a mod with none) get one generated
    entry class that constructs the mod's own classes as the newer loader would.
 
@@ -63,18 +67,22 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
 - **Data of the converted mods**: every data file that names a registry entry, a tag, a loot table, a recipe or an
   advancement must be in the running game: **3019 of 3019** load, among them Trek's 901 (structures, template pools,
   processors), Geophilic's 296 (biome features) and Explorify's 131.
-- **On the client**: 17 converted mods together (Cherished Worlds, Searchables, Cubes Without Borders, Fast IP Ping,
-  Ambient Environment, Just Enough Characters, Macaw's, Trek and others): the 1.20.4 client makes a fresh world, enters
-  it, draws it (about 550 frames) and opens the inventory, with no error.
+- **On the client**: 18 converted mods together (Mouse Tweaks, Resourceful Config, Cherished Worlds, Searchables,
+  Cubes Without Borders, Fast IP Ping, Ambient Environment, Just Enough Characters, Macaw's, Trek and others): the 1.20.4
+  client makes a fresh world, enters it, draws it and opens the inventory, with no error.
 - **Test mod A** (`testmods/ladder_test_a`, made for NeoForge 1.21.1): mob effects and attributes through holders, a
   branch inside a bridged constructor's arguments, method references (bound, unbound, constructor), overrides of a
-  changed method on two levels with super calls, an FML 4 extension point of an ordinary class: **the same 22 results**
-  natively on 1.21.1 and converted on 1.20.4.
+  changed method on two levels with super calls, an FML 4 extension point of an ordinary class, DFU 8 codecs (a
+  dispatch over map codecs, validation, error messages): **the same 28 results** natively on 1.21.1 and converted on
+  1.20.4. On the client, 1.21's vertex API (`Tesselator.begin`, `addVertex` with its setters in any order, a wrapper
+  over two buffers, posed normals, `MeshData`) and `DeltaTracker`: **the same 12 results, the written vertex bytes
+  included**.
 
-Over the whole corpus, 31 of 300 mods convert with nothing left (strict; fewer than before because overrides of
-changed methods and jars embedded outside `META-INF/jarjar` are now checked too). What holds the others back most, in
-order: the 1.21 render buffers and GUI changes, item data components (in code and in loot tables), the 1.20.5 network
-payloads, `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`, loot tables by key.
+Over the whole corpus, 35 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too). What holds the others back most, in order: mixins
+into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in code and
+in loot tables), the 1.20.5 network payloads, `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`,
+loot tables by key.
 
 1.20.5 has no step of its own: NeoForge only had betas for it, and 1.20.6 is its hotfix, so the step 1.20.6 → 1.20.4
 holds its changes.

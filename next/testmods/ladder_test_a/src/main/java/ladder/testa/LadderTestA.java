@@ -48,6 +48,9 @@ public final class LadderTestA {
         this.container = container;
         NeoForge.EVENT_BUS.register(this);
         container.registerExtensionPoint(ProbePoint.class, new ProbePoint("point"));
+        if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
+            NeoForge.EVENT_BUS.register(new ClientVertexTest());
+        }
     }
 
     @SubscribeEvent
@@ -101,6 +104,7 @@ public final class LadderTestA {
             results.put("override2Poison", String.valueOf(probe2.hasEffect(MobEffects.POISON)));
             // an extension point of an ordinary class, read back
             results.put("extensionPoint", this.container.getCustomExtension(ProbePoint.class).map(p -> p.value).orElse("none"));
+            DfuTest.run(results);
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("ladder_test_a", "probe");
             results.put("resourceLocation", id.toString());
             results.put("blockAtOrigin", String.valueOf(level.getBlockState(BlockPos.ZERO.above(64)).isAir()));

@@ -256,6 +256,7 @@ public class Convert {
                     redirectCarried(node);
                     ClassNode remapped = new ClassNode();
                     node.accept(new ClassRemapper(remapped, remapper));
+                    fixInterfaceCalls(remapped);
                     lowerOverrides.addAll(addAfterRemap.getOrDefault(node.name, List.of()));
                     addAfterRemap.remove(node.name);
                     for (MethodNode g : lowerOverrides) {
@@ -734,6 +735,10 @@ public class Convert {
     static Stage0.Ref walkUncached(Stage0.Ref ref, String key) {
         Stage0.Ref cur = ref;
         for (int i = level; i + 1 < versions.size() && cur != null; i++) {
+            if (provided.containsKey(cur.cls())) {
+                // a class the adapters provide: its members are theirs, at every rung (whatever the versions between do)
+                return new Stage0.Ref(cur.kind(), provided.get(cur.cls()), cur.name(), cur.desc());
+            }
             Stage0.Version from = versions.get(i), to = versions.get(i + 1);
             Stage0.Step s = Stage0.step(from, to, cur);
             switch (s.outcome()) {
@@ -1172,6 +1177,10 @@ public class Convert {
         if (upper.equals(lower)) {
             return 0;
         }
+        if (upper.getSort() == Type.OBJECT && DELTA_TRACKERS.contains(upper.getInternalName()) && lower.getSort() == Type.FLOAT) {
+            // 1.21's DeltaTracker where 1.20.4 passes the partial tick
+            return 9;
+        }
         if (upper.getSort() != Type.OBJECT || lower.getSort() != Type.OBJECT) {
             return -1;
         }
@@ -1201,6 +1210,7 @@ public class Convert {
         return -1;
     }
 
+    static final Set<String> DELTA_TRACKERS = Set.of("net/minecraft/client/DeltaTracker", "ladder/adapter/provided/DeltaTracker");
     static final String RESOURCE_KEY = "net/minecraft/resources/ResourceKey";
     static final String RESOURCE_LOCATION = "net/minecraft/resources/ResourceLocation";
 
@@ -1246,6 +1256,10 @@ public class Convert {
             }
             case 7 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "location", "(L" + RESOURCE_KEY + ";)L" + RESOURCE_LOCATION + ";", false));
             case 8 -> code.add(new TypeInsnNode(Opcodes.CHECKCAST, lower.getInternalName()));
+            case 9 -> {
+                code.add(new InsnNode(Opcodes.ICONST_1));
+                code.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, upper.getInternalName(), "getGameTimeDeltaPartialTick", "(Z)F", true));
+            }
             default -> {
             }
         }
@@ -1457,6 +1471,55 @@ public class Convert {
         call.name = bridge[1];
         call.itf = false;
         return true;
+    }
+
+    /**
+     * A platform type that is an interface in one version and a class in another (DFU 8's DataResult is an interface,
+     * DFU 6's a class): the calls and method handles take the bottom version's kind, or the JVM refuses them
+     * (IncompatibleClassChangeError).
+     */
+    static void fixInterfaceCalls(ClassNode node) {
+        Stage0.Version bottom = versions.get(versions.size() - 1);
+        for (MethodNode m : node.methods) {
+            for (AbstractInsnNode insn : m.instructions) {
+                if (insn instanceof MethodInsnNode call && Stage0.platform(call.owner)) {
+                    Stage0.Cls info = bottom.classes.get(call.owner);
+                    if (info == null) {
+                        continue;
+                    }
+                    boolean itf = (info.classAccess & Opcodes.ACC_INTERFACE) != 0;
+                    if (call.itf == itf) {
+                        continue;
+                    }
+                    call.itf = itf;
+                    if (call.getOpcode() == Opcodes.INVOKEINTERFACE && !itf) {
+                        call.setOpcode(Opcodes.INVOKEVIRTUAL);
+                    } else if (call.getOpcode() == Opcodes.INVOKEVIRTUAL && itf) {
+                        call.setOpcode(Opcodes.INVOKEINTERFACE);
+                    }
+                } else if (insn instanceof InvokeDynamicInsnNode indy) {
+                    for (int i = 0; i < indy.bsmArgs.length; i++) {
+                        if (indy.bsmArgs[i] instanceof Handle h && h.getTag() >= Opcodes.H_INVOKEVIRTUAL && Stage0.platform(h.getOwner())) {
+                            Stage0.Cls info = bottom.classes.get(h.getOwner());
+                            if (info == null) {
+                                continue;
+                            }
+                            boolean itf = (info.classAccess & Opcodes.ACC_INTERFACE) != 0;
+                            if (h.isInterface() == itf) {
+                                continue;
+                            }
+                            int tag = h.getTag();
+                            if (tag == Opcodes.H_INVOKEINTERFACE && !itf) {
+                                tag = Opcodes.H_INVOKEVIRTUAL;
+                            } else if (tag == Opcodes.H_INVOKEVIRTUAL && itf) {
+                                tag = Opcodes.H_INVOKEINTERFACE;
+                            }
+                            indy.bsmArgs[i] = new Handle(tag, h.getOwner(), h.getName(), h.getDesc(), itf);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /** Whether a mod class at or above owner (below the platform) declares that method ("name desc"). */
@@ -1745,6 +1808,7 @@ public class Convert {
             }
             case 6 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "keyOfValue", "(Ljava/lang/Object;)L" + RESOURCE_KEY + ";", false));
             case 7 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "lootTableKey", "(L" + RESOURCE_LOCATION + ";)L" + RESOURCE_KEY + ";", false));
+            case 9 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "deltaTracker", "(F)" + upper.getDescriptor(), false));
             default -> {
                 // the same type, or a subtype (RegistryAccess is a HolderLookup.Provider)
             }
@@ -1776,6 +1840,8 @@ public class Convert {
                     redirectCarried(holder);
                     ClassNode converted = new ClassNode();
                     holder.accept(new ClassRemapper(converted, remapper));
+                fixInterfaceCalls(converted);
+                    fixInterfaceCalls(converted);
                     ClassNode companion = carriedOut.computeIfAbsent(converted.name, n -> {
                         ClassNode c = new ClassNode();
                         c.version = converted.version;
@@ -1802,6 +1868,7 @@ public class Convert {
                     redirectCarried(source);
                     ClassNode converted = new ClassNode();
                     source.accept(new ClassRemapper(converted, remapper));
+                    fixInterfaceCalls(converted);
                     if (!converted.name.startsWith(CARRIED)) {
                         // a carried class outside its own package tree would split a game package (JPMS refuses it)
                         problem("carried class " + thing.cls() + " would be written as " + converted.name);

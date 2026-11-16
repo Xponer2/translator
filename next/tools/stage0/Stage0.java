@@ -110,7 +110,10 @@ public class Stage0 {
             return false;
         }
         return internal.startsWith("net/minecraft/") || internal.startsWith("net/neoforged/") || internal.startsWith("com/mojang/blaze3d/")
-                || internal.startsWith("com/mojang/math/") || internal.startsWith("com/mojang/realmsclient/");
+                || internal.startsWith("com/mojang/math/") || internal.startsWith("com/mojang/realmsclient/")
+                // Mojang's libraries of the game: their API changes between the versions too (DFU 6 -> 8, Brigadier)
+                || internal.startsWith("com/mojang/serialization/") || internal.startsWith("com/mojang/datafixers/")
+                || internal.startsWith("com/mojang/brigadier/");
     }
 
     static boolean neoforge(String internal) {

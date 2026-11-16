@@ -16,6 +16,11 @@ neoForge {
             programArgument '--nogui'
             systemProperty 'ladder.test.out', file('run-server/test-a.json').absolutePath.replace(File.separator, '/')
         }
+        client {
+            client()
+            gameDirectory = file('run-client')
+            systemProperty 'ladder.test.client.out', file('run-client/test-a-client.json').absolutePath.replace(File.separator, '/')
+        }
     }
     mods {
         ladder_test_a {

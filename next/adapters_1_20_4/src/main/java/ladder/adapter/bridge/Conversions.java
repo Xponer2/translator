@@ -116,6 +116,11 @@ public final class Conversions {
         return location == null ? null : net.minecraft.resources.ResourceKey.create(LOOT_TABLE, location);
     }
 
+    /** a partial tick -> 1.21's {@code DeltaTracker} of it */
+    public static ladder.adapter.provided.DeltaTracker deltaTracker(float partialTick) {
+        return new ladder.adapter.provided.DeltaTracker.PartialTick(partialTick);
+    }
+
     /** {@code X} -> {@code Optional<X>} */
     public static java.util.Optional<?> optional(@Nullable Object value) {
         return java.util.Optional.ofNullable(value);

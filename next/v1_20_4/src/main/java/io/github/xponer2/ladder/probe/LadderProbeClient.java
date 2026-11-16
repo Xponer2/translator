@@ -106,7 +106,7 @@ public final class LadderProbeClient {
 
     @SubscribeEvent
     public void onScreenDrawn(ScreenEvent.Render.Post event) {
-        if (event.getScreen() instanceof InventoryScreen) {
+        if (event.getScreen() instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>) {
             this.inventoryFrames++;
         }
     }

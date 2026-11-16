@@ -9,6 +9,9 @@
     "BlockItemMixin",
     "EntityAccess"
   ],
+  "client": [
+    "BufferBuilderMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }
