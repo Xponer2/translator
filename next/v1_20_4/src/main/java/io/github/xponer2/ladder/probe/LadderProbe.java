@@ -95,6 +95,16 @@ public final class LadderProbe {
                 LOGGER.error("Facts failed", e);
             }
         }
+        String data = System.getProperty("ladder.data.out");
+        if (data != null) {
+            // whether every data file of the converted mods loaded
+            try {
+                Files.writeString(Path.of(data), new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
+                        .toJson(LadderData.record(server)), StandardCharsets.UTF_8);
+            } catch (IOException | RuntimeException | LinkageError e) {
+                LOGGER.error("Data check failed", e);
+            }
+        }
         try {
             Files.writeString(Path.of(out), new GsonBuilder().setPrettyPrinting().create().toJson(root), StandardCharsets.UTF_8);
             LOGGER.info("Probe results written to {}", out);

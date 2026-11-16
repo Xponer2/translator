@@ -300,6 +300,8 @@ public class Stage0 {
     static final class ModClass {
         String superName;
         String[] interfaces;
+        /** "name desc" of the class's own non-static methods (the converter's super calls) */
+        Set<String> methods = new HashSet<>();
     }
 
     static Set<Ref> modRefs(Path jar, Version top, Map<String, Integer> libraryRefs) throws IOException {

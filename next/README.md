@@ -15,16 +15,22 @@ build in the rest of the repository. See the [main README](../README.md) for the
    static helper of its own class comes along), registers nothing, is no event (the lower game never posts it) and
    keeps the lower version's interface contracts. All carried code goes into one library per target
    (`ladder-carried-1.20.4.jar`, a game library in its own package tree), shared by every converted mod.
-3. **Generated bridges.** A member whose types changed between the versions, every change a known conversion (now:
-   `Holder<X>` above, `X` below: mob effects, attributes, game events, sounds, potions), gets a generated bridge that
-   converts the values and calls the lower member: field reads, method calls and constructors (`new X(...)` becomes the
-   bridge's factory). The conversions themselves are written once.
+3. **Generated bridges.** A member whose types changed between the versions, every change a known conversion
+   (`Holder<X>` / `X`, `MapCodec` / `Codec`, `HolderLookup.Provider` / `RegistryAccess`, `ResourceKey<X>` / `X`,
+   `ResourceKey` / `ResourceLocation`, `X` / `Optional<X>`, a subtype below), gets a generated bridge that converts the
+   values and calls the lower member: field reads, method calls, method references and constructors (`new X(...)`
+   becomes the bridge's factory). A mod's **override** of such a method gets the lower method generated in its own
+   class (it converts the values and calls the mod's method), so the game calls it; a super call goes to the lower
+   method through a private helper. The conversions themselves are written once.
 4. **Hand-written adapters only for the roots** (`adapters_1_20_4`, a mod for the real 1.20.4): where an existing class
    gained new state (an `ItemStack`'s data components), a method was split (1.20.5's `useItemOn` / `useWithoutItem`),
    a registry or a loader API changed. The converter applies them from a rules file (`ladder-rules.tsv`): provided
    classes, overrides of newer methods (the mod class gets the adapters' interface, 1.20.4's call sites call it through
    mixins), call redirects. Each rule's target is checked against the built adapters.
 5. **One pass.** The renames of all steps compose, so a mod is converted once, whatever its version.
+6. **The loader.** The newer metadata becomes the older one's; embedded jars are converted with the mod; a mod's entry
+   points the older loader can't take (`@Mod(dist = ...)`, several `@Mod` classes, a mod with none) get one generated
+   entry class that constructs the mod's own classes as the newer loader would.
 
 **Shared objects.** Mods of different versions must see the same stack, block or entity. Five rules make that so:
 one target class per source class for every mod; shared types are mapped to the game's own classes, never copied;
@@ -54,14 +60,21 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   its own item in hand nothing happens, as in 1.21.1.
 - **Alternate Current** (redstone): the same redstone line with the mod on and off: the powers are vanilla's both times,
   and the mod's own update path runs (1 + 1 neighbour notifications against vanilla's 106 + 449).
-- **Cherished Worlds, Searchables** (client mods on carried code): the 1.20.4 client reaches its title screen with no
-  error.
-- **Test mod A** (`testmods/ladder_test_a`, made for NeoForge 1.21.1: mob effects and attributes through holders, a
-  carried factory): the same 10 results natively on 1.21.1 and converted on 1.20.4.
+- **Data of the converted mods**: every data file that names a registry entry, a tag, a loot table, a recipe or an
+  advancement must be in the running game: **3019 of 3019** load, among them Trek's 901 (structures, template pools,
+  processors), Geophilic's 296 (biome features) and Explorify's 131.
+- **On the client**: 17 converted mods together (Cherished Worlds, Searchables, Cubes Without Borders, Fast IP Ping,
+  Ambient Environment, Just Enough Characters, Macaw's, Trek and others): the 1.20.4 client makes a fresh world, enters
+  it, draws it (about 550 frames) and opens the inventory, with no error.
+- **Test mod A** (`testmods/ladder_test_a`, made for NeoForge 1.21.1): mob effects and attributes through holders, a
+  branch inside a bridged constructor's arguments, method references (bound, unbound, constructor), overrides of a
+  changed method on two levels with super calls, an FML 4 extension point of an ordinary class: **the same 22 results**
+  natively on 1.21.1 and converted on 1.20.4.
 
-Over the whole corpus, 36 of 300 mods convert with nothing left (strict). What holds the others back most, in order:
-item data components, the 1.20.5 network payloads, the 1.21 render buffers, recipes on `RecipeInput`, FML's extension
-points.
+Over the whole corpus, 31 of 300 mods convert with nothing left (strict; fewer than before because overrides of
+changed methods and jars embedded outside `META-INF/jarjar` are now checked too). What holds the others back most, in
+order: the 1.21 render buffers and GUI changes, item data components (in code and in loot tables), the 1.20.5 network
+payloads, `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`, loot tables by key.
 
 1.20.5 has no step of its own: NeoForge only had betas for it, and 1.20.6 is its hotfix, so the step 1.20.6 → 1.20.4
 holds its changes.
@@ -98,4 +111,5 @@ tools/identity-test/run.sh
 The first conversion makes the carried library the adapters are compiled against; the second applies the adapters'
 rules. To run converted mods: put them with `out/converted/ladder-carried-1.20.4.jar` and
 `adapters_1_20_4/build/libs/ladder-adapters-1.20.4-*.jar` in `v1_20_4/run-server/mods/` (or `run-client/mods/`) and run
-`tools/run-probe.sh server` (or `client`); the results go to `v1_20_4/run-server/probe.json` and `facts.json`.
+`tools/run-probe.sh server` (or `client`, or `client-world` to make and enter a world first); the results go to
+`v1_20_4/run-server/probe.json`, `facts.json` and `data.json` (or `run-client/probe-client.json`).

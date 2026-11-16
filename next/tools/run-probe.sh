@@ -3,11 +3,15 @@
 # game when they don't come (a mod that breaks loading, a hang).
 #   tools/run-probe.sh server [seconds]   ->  v1_20_4/run-server/probe.json
 #   tools/run-probe.sh client [seconds]   ->  v1_20_4/run-client/probe-client.json
+#   tools/run-probe.sh client-world [s]   ->  the same, after a fresh world was entered and the inventory opened
 set -u
 cd "$(dirname "$0")/.."
 SIDE="${1:-server}"
 LIMIT="${2:-240}"
-if [ "$SIDE" = client ]; then RESULT=v1_20_4/run-client/probe-client.json; TASK=runClient; else RESULT=v1_20_4/run-server/probe.json; TASK=runServer; fi
+EXTRA=()
+RUN="$SIDE"
+if [ "$SIDE" = client-world ]; then RUN=client; EXTRA=(-Pladder.world); fi
+if [ "$RUN" = client ]; then RESULT=v1_20_4/run-client/probe-client.json; TASK=runClient; else RESULT=v1_20_4/run-server/probe.json; TASK=runServer; fi
 LOG=v1_20_4/run-$SIDE.log
 # the machine's guard before another game JVM (free memory, nobody playing): LADDER_GUARD (a command; non-zero exit = no)
 GUARD="${LADDER_GUARD:-}"
@@ -16,12 +20,12 @@ if [ -n "$GUARD" ] && ! $GUARD; then
     exit 2
 fi
 rm -f "$RESULT"
-if [ "$SIDE" = client ] && [ ! -f v1_20_4/run-client/options.txt ]; then
+if [ "$RUN" = client ] && [ ! -f v1_20_4/run-client/options.txt ]; then
     # straight to the title screen (no accessibility onboarding), quiet
     mkdir -p v1_20_4/run-client
-    printf 'onboardAccessibility:false\nsoundCategory_master:0.0\npauseOnLostFocus:false\n' > v1_20_4/run-client/options.txt
+    printf 'onboardAccessibility:false\nsoundCategory_master:0.0\npauseOnLostFocus:false\nrenderDistance:4\nsimulationDistance:5\n' > v1_20_4/run-client/options.txt
 fi
-./gradlew ":v1_20_4:$TASK" --console=plain > "$LOG" 2>&1 &
+./gradlew ":v1_20_4:$TASK" "${EXTRA[@]}" --console=plain > "$LOG" 2>&1 &
 start=$(date +%s)
 while [ ! -f "$RESULT" ]; do
     if grep -q -E 'Exception in thread "main"|BUILD FAILED|Mod Loading has failed|Crash report saved|FAILURE:|Failed to (load|create) mod' "$LOG" 2>/dev/null; then
@@ -36,9 +40,9 @@ done
 sleep 3
 stop_game() {
     if command -v powershell >/dev/null 2>&1; then
-        powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -match '${SIDE}RunVmArgs' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Confirm:\$false }" >/dev/null 2>&1
+        powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -match '${RUN}RunVmArgs' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Confirm:\$false }" >/dev/null 2>&1
     else
-        pkill -f "${SIDE}RunVmArgs" 2>/dev/null
+        pkill -f "${RUN}RunVmArgs" 2>/dev/null
     fi
 }
 stop_game

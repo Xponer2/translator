@@ -27,6 +27,7 @@ neoForge {
             systemProperty 'ladder.probe.out', file('run-server/probe.json').absolutePath.replace(File.separator, '/')
             // the converted mods' facts (LadderFacts), compared with the 1.21.1 reference
             systemProperty 'ladder.facts.out', file('run-server/facts.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.data.out', file('run-server/data.json').absolutePath.replace(File.separator, '/')
             // the test mods' own results (testmods/*): compared with their runs on their own version
             systemProperty 'ladder.test.out', file('run-server/test-a.json').absolutePath.replace(File.separator, '/')
         }
@@ -37,6 +38,8 @@ neoForge {
             jvmArgument '-Dforge.logging.marker.scan=ACCEPT'
             // the client probe (LadderProbeClient): results to this file at the title screen, then the game closes
             systemProperty 'ladder.probe.client.out', file('run-client/probe-client.json').absolutePath.replace(File.separator, '/')
+            // -Pladder.world: a fresh world is made and entered, the inventory opened, before the results
+            systemProperty 'ladder.probe.client.world', project.hasProperty('ladder.world') ? 'true' : 'false'
         }
     }
 }

@@ -58,9 +58,9 @@ public class Convert {
     static Remapper remapper;
 
     /** NeoForge classes that moved between 21.x and 20.4 (no intermediary for NeoForge): their own rows. */
-    static final Map<String, String> NEOFORGE_MOVES = Map.of(
+    static final Map<String, String> NEOFORGE_MOVES = new HashMap<>(Map.of(
             "net/neoforged/fml/common/EventBusSubscriber", "net/neoforged/fml/common/Mod$EventBusSubscriber",
-            "net/neoforged/fml/common/EventBusSubscriber$Bus", "net/neoforged/fml/common/Mod$EventBusSubscriber$Bus");
+            "net/neoforged/fml/common/EventBusSubscriber$Bus", "net/neoforged/fml/common/Mod$EventBusSubscriber$Bus"));
 
     /** The problems a cached class or member walk found: added again for every mod that meets it. */
     static final Map<String, List<String>> cachedProblems = new HashMap<>();
@@ -177,6 +177,11 @@ public class Convert {
                 Stage0.ModClass mc = new Stage0.ModClass();
                 mc.superName = node.superName;
                 mc.interfaces = node.interfaces.toArray(new String[0]);
+                for (MethodNode m : node.methods) {
+                    if ((m.access & Opcodes.ACC_STATIC) == 0) {
+                        mc.methods.add(m.name + " " + m.desc);
+                    }
+                }
                 mod.put(node.name, mc);
                 List<String> targets = mixinTargetsOf(node);
                 if (!targets.isEmpty()) {
@@ -210,6 +215,29 @@ public class Convert {
         String bottom = versions.get(versions.size() - 1).id;
         boolean newMetadata = entries.containsKey("META-INF/neoforge.mods.toml");
         Set<String> written = new HashSet<>();
+        // FML 4's entry points FML 2 can't take (@Mod(dist), several @Mod classes, no @Mod class): one generated each
+        Map<String, byte[]> generatedEntries = new LinkedHashMap<>();
+        Set<String> stripMod = new HashSet<>();
+        if (newMetadata) {
+            modEntries(new String(entries.get("META-INF/neoforge.mods.toml"), StandardCharsets.UTF_8), entries, generatedEntries, stripMod);
+        }
+        // the embedded jars the loader loads: the ones jarjar's metadata names (anywhere), and those in its folder
+        Set<String> nestedJars = new HashSet<>();
+        byte[] jarjar = entries.get("META-INF/jarjar/metadata.json");
+        if (jarjar != null) {
+            try {
+                for (JsonElement j : JsonParser.parseString(new String(jarjar, StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonArray("jars")) {
+                    nestedJars.add(j.getAsJsonObject().get("path").getAsString());
+                }
+            } catch (RuntimeException e) {
+                problem("META-INF/jarjar/metadata.json doesn't parse: " + e.getMessage());
+            }
+        }
+        for (String path : nestedJars) {
+            if (!entries.containsKey(path)) {
+                problem("jarjar names " + path + ", which the jar hasn't");
+            }
+        }
         try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(out))) {
             for (var e : entries.entrySet()) {
                 String name = e.getKey();
@@ -220,10 +248,23 @@ public class Convert {
                     if (mixinTargets.containsKey(node.name)) {
                         remapMixinSelectors(node, remapper);
                     }
+                    if (stripMod.contains(node.name) && node.visibleAnnotations != null) {
+                        node.visibleAnnotations.removeIf(a -> a.desc.equals(MOD_ANNOTATION));
+                    }
+                    List<MethodNode> lowerOverrides = overrideBridges(node);
                     applyRules(node, true);
                     redirectCarried(node);
+                    ClassNode remapped = new ClassNode();
+                    node.accept(new ClassRemapper(remapped, remapper));
+                    lowerOverrides.addAll(addAfterRemap.getOrDefault(node.name, List.of()));
+                    addAfterRemap.remove(node.name);
+                    for (MethodNode g : lowerOverrides) {
+                        if (remapped.methods.stream().noneMatch(x -> x.name.equals(g.name) && x.desc.equals(g.desc))) {
+                            remapped.methods.add(g);
+                        }
+                    }
                     ClassWriter writer = new ClassWriter(0);
-                    node.accept(new ClassRemapper(writer, remapper));
+                    remapped.accept(writer);
                     data = writer.toByteArray();
                     name = remapper.map(name.substring(0, name.length() - 6)) + ".class";
                 } else if (name.equals("META-INF/mods.toml") && newMetadata) {
@@ -234,7 +275,7 @@ public class Convert {
                     data = modsToml(new String(data, StandardCharsets.UTF_8), bottom).getBytes(StandardCharsets.UTF_8);
                 } else if (name.endsWith("mixins.json")) {
                     data = new String(data, StandardCharsets.UTF_8).replaceAll("\"JAVA_2[0-9]\"", "\"JAVA_17\"").getBytes(StandardCharsets.UTF_8);
-                } else if (name.startsWith("META-INF/jarjar/") && name.endsWith(".jar")) {
+                } else if (name.endsWith(".jar") && (nestedJars.contains(name) || name.startsWith("META-INF/jarjar/"))) {
                     data = nested(name, data);
                     if (data == null) {
                         continue;
@@ -262,7 +303,121 @@ public class Convert {
                 zip.write(data);
                 zip.closeEntry();
             }
+            for (var e : generatedEntries.entrySet()) {
+                if (!written.add(e.getKey())) {
+                    problem("two entries for " + e.getKey());
+                    continue;
+                }
+                zip.putNextEntry(new ZipEntry(e.getKey()));
+                zip.write(e.getValue());
+                zip.closeEntry();
+            }
         }
+    }
+
+    // ---------------------------------------------------------------- mod entry points
+
+    static final String MOD_ANNOTATION = "Lnet/neoforged/fml/common/Mod;";
+
+    /**
+     * FML 4 constructs each {@code @Mod} class of a mod whose {@code dist} holds the running side, and loads a javafml
+     * mod with no {@code @Mod} class; FML 2 takes one class per mod, constructed on both sides. Such a mod gets one
+     * generated entry class ({@code ladder/entry/<mod>/ModEntry}) that constructs the mod's own classes through the
+     * adapters' {@code ModEntries}; their {@code @Mod} annotations go.
+     */
+    static void modEntries(String toml, Map<String, byte[]> entries, Map<String, byte[]> out, Set<String> stripMod) {
+        // the loader's own TOML parser (night-config), so the file reads as FML reads it
+        com.electronwill.nightconfig.core.Config config;
+        try {
+            config = new com.electronwill.nightconfig.toml.TomlParser().parse(toml);
+        } catch (RuntimeException e) {
+            problem("neoforge.mods.toml doesn't parse: " + e.getMessage());
+            return;
+        }
+        if (!"javafml".equals(config.get("modLoader"))) {
+            return;
+        }
+        List<String> ids = new ArrayList<>();
+        Object mods = config.get("mods");
+        if (mods instanceof List<?> list) {
+            for (Object m : list) {
+                if (m instanceof com.electronwill.nightconfig.core.Config modConfig && modConfig.get("modId") instanceof String id) {
+                    ids.add(id);
+                }
+            }
+        }
+        // mod id -> its @Mod classes, each "name<TAB>sides"
+        Map<String, List<String>> classes = new LinkedHashMap<>();
+        Set<String> sided = new HashSet<>();
+        for (var e : entries.entrySet()) {
+            if (!e.getKey().endsWith(".class") || e.getKey().startsWith("META-INF/")) {
+                continue;
+            }
+            ClassNode node = new ClassNode();
+            new ClassReader(e.getValue()).accept(node, ClassReader.SKIP_CODE);
+            if (node.visibleAnnotations == null) {
+                continue;
+            }
+            for (AnnotationNode a : node.visibleAnnotations) {
+                if (!a.desc.equals(MOD_ANNOTATION) || a.values == null) {
+                    continue;
+                }
+                String id = null;
+                List<String> sides = new ArrayList<>();
+                for (int i = 0; i + 1 < a.values.size(); i += 2) {
+                    Object v = a.values.get(i + 1);
+                    if ("value".equals(a.values.get(i))) {
+                        id = (String) v;
+                    } else if ("dist".equals(a.values.get(i)) && v instanceof List<?> list) {
+                        for (Object d : list) {
+                            sides.add(((String[]) d)[1]);
+                        }
+                    }
+                }
+                if (id != null) {
+                    classes.computeIfAbsent(id, k -> new ArrayList<>()).add(node.name.replace('/', '.') + "\t" + String.join(",", sides));
+                    if (!sides.isEmpty()) {
+                        sided.add(id);
+                    }
+                }
+            }
+        }
+        for (String id : ids) {
+            List<String> own = classes.getOrDefault(id, List.of());
+            if (own.size() == 1 && !sided.contains(id)) {
+                continue;
+            }
+            for (String line : own) {
+                stripMod.add(line.substring(0, line.indexOf('\t')).replace('.', '/'));
+            }
+            String name = "ladder/entry/" + id.replaceAll("[^A-Za-z0-9_]", "_") + "/ModEntry";
+            out.put(name + ".class", entryClass(name, id, String.join("\n", own)));
+        }
+    }
+
+    static byte[] entryClass(String name, String id, String lines) {
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+        cw.visit(Opcodes.V17, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL | Opcodes.ACC_SUPER, name, null, "java/lang/Object", null);
+        AnnotationVisitor mod = cw.visitAnnotation(MOD_ANNOTATION, true);
+        mod.visit("value", id);
+        mod.visitEnd();
+        String desc = "(Lnet/neoforged/bus/api/IEventBus;Lnet/neoforged/fml/ModContainer;Lnet/neoforged/api/distmarker/Dist;)V";
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", desc, null, null);
+        mv.visitCode();
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+        mv.visitLdcInsn(Type.getObjectType(name));
+        mv.visitLdcInsn(lines);
+        mv.visitVarInsn(Opcodes.ALOAD, 1);
+        mv.visitVarInsn(Opcodes.ALOAD, 2);
+        mv.visitVarInsn(Opcodes.ALOAD, 3);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "ladder/adapter/fml/ModEntries", "construct",
+                "(Ljava/lang/Class;Ljava/lang/String;Lnet/neoforged/bus/api/IEventBus;Lnet/neoforged/fml/ModContainer;Lnet/neoforged/api/distmarker/Dist;)V", false);
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+        cw.visitEnd();
+        return cw.toByteArray();
     }
 
     /** An embedded library jar, converted like the mod; its problems are the mod's. */
@@ -311,6 +466,8 @@ public class Convert {
                     case "P" -> provided.put(c[1], c[2]);
                     case "O" -> overrides.add(new String[] {c[1], c[2], c[3], c[4], c[5], c[6]});
                     case "X" -> redirects.put(c[1] + "." + c[2] + " " + c[3], new String[] {c[4], c[5]});
+                    // a class renamed below with the same members: its uses get the lower name
+                    case "R" -> NEOFORGE_MOVES.put(c[1], c[2]);
                     default -> throw new IOException("unknown rule " + line);
                 }
             }
@@ -596,6 +753,10 @@ public class Convert {
                         // a class the adapters provide: its members are theirs
                         return new Stage0.Ref(cur.kind(), provided.get(cur.cls()), cur.name(), cur.desc());
                     }
+                    if (NEOFORGE_MOVES.containsKey(cur.cls())) {
+                        // a class renamed below (an R row): its members are the renamed class's, never carried
+                        return renamedMember(cur);
+                    }
                     Set<String> ok = carriable(i);
                     if (Stage0.mapClass(from, to, cur.cls()) == null) {
                         // the owner itself is new: its member comes down with the carried class (mapClass relocates it)
@@ -625,6 +786,18 @@ public class Convert {
             checkAccess(cur);
         }
         return cur;
+    }
+
+    /** A member of a class an R row renames: the same member of the renamed class, which the bottom version must have. */
+    static Stage0.Ref renamedMember(Stage0.Ref cur) {
+        String cls = NEOFORGE_MOVES.get(cur.cls());
+        boolean method = cur.kind() == 'M';
+        String desc = method ? remapper.mapMethodDesc(cur.desc()) : remapper.mapDesc(cur.desc());
+        if (versions.get(versions.size() - 1).declaring(cls, cur.name(), desc, method) == null) {
+            problem("missing " + cur.key() + " in its renamed class " + cls + " below");
+            return null;
+        }
+        return new Stage0.Ref(cur.kind(), cls, cur.name(), cur.desc());
     }
 
     /** Carried code lives in its own package: what it calls below must be public (or it fails with IllegalAccessError). */
@@ -670,8 +843,11 @@ public class Convert {
                 ok.add(key);
             }
         }
-        // what the adapters provide is there below too
-        for (String p : provided.keySet()) {
+        // what the adapters provide, and what an R row renames, is there below too (and never carried)
+        Set<String> there = new HashSet<>(provided.keySet());
+        there.addAll(NEOFORGE_MOVES.keySet());
+        ok.removeIf(k -> there.contains(k.substring(2).split(" ")[0]));
+        for (String p : there) {
             if (plan.needs.containsKey("C " + p)) {
                 ok.add("C " + p);
             }
@@ -913,6 +1089,30 @@ public class Convert {
                         && bridgeCall(call)) {
                     continue;
                 }
+                if (insn instanceof MethodInsnNode call && !call.name.startsWith("<") && call.getOpcode() == Opcodes.INVOKESPECIAL) {
+                    String[] bridge = bridgeOf(call.owner, call.name, call.desc, true);
+                    if (bridge != null && modDeclares(call.owner, call.name + " " + call.desc)) {
+                        // the super implementation is a mod class's own (renamed as this call is): a plain super call
+                        // to it; going through its lower override bridge would dispatch back to the subclass
+                        continue;
+                    }
+                    if (bridge != null) {
+                        // super.x(...) must stay a super call (a static bridge would call the receiver's own override):
+                        // to a private helper of the class that converts and calls the lower method with invokespecial
+                        MethodNode helper = inCarried || (node.access & Opcodes.ACC_INTERFACE) != 0 ? null : superHelper(node, call, bridge);
+                        if (helper == null) {
+                            problem("a super call of " + call.owner + "." + call.name + call.desc + ", whose parameters changed below: no bridge for it");
+                        } else {
+                            call.owner = node.name;
+                            call.name = helper.name;
+                            call.itf = false;
+                        }
+                        continue;
+                    }
+                }
+                if (insn instanceof InvokeDynamicInsnNode indy) {
+                    bridgeHandles(indy);
+                }
                 if (insn instanceof FieldInsnNode field && bridgeField(m, field)) {
                     continue;
                 }
@@ -957,16 +1157,98 @@ public class Convert {
     static final String HOLDER = "net/minecraft/core/Holder";
     static final String REFERENCE = "net/minecraft/core/Holder$Reference";
 
-    /** Whether one value type can be converted to the other by the adapters' conversions (Holder<X> <-> X). */
-    static boolean convertible(Type upper, Type lower) {
+    static final String MAP_CODEC = "com/mojang/serialization/MapCodec";
+    static final String CODEC = "com/mojang/serialization/Codec";
+    static final String PROVIDER = "net/minecraft/core/HolderLookup$Provider";
+    static final String REGISTRY_ACCESS = "net/minecraft/core/RegistryAccess";
+    static final String OPTIONAL = "java/util/Optional";
+
+    /**
+     * The value-type pairs the bridges convert (upper type, lower type): Holder<X> / X (and Holder.Reference<X> / X),
+     * MapCodec / Codec, HolderLookup.Provider / RegistryAccess, X / Optional<X>. 0 when the types are the same, -1 when
+     * no conversion is known.
+     */
+    static int conversion(Type upper, Type lower) {
         if (upper.equals(lower)) {
-            return true;
+            return 0;
         }
         if (upper.getSort() != Type.OBJECT || lower.getSort() != Type.OBJECT) {
-            return false;
+            return -1;
         }
         String u = upper.getInternalName(), l = lower.getInternalName();
-        return (u.equals(HOLDER) || u.equals(REFERENCE)) && !l.equals(HOLDER) && !l.equals(REFERENCE) && !l.startsWith("java/");
+        if ((u.equals(HOLDER) || u.equals(REFERENCE)) && !l.equals(HOLDER) && !l.equals(REFERENCE) && !l.startsWith("java/")) {
+            return u.equals(HOLDER) ? 1 : 2;
+        }
+        if (u.equals(MAP_CODEC) && l.equals(CODEC)) {
+            return 3;
+        }
+        if (u.equals(PROVIDER) && l.equals(REGISTRY_ACCESS)) {
+            return 4;
+        }
+        if (l.equals(OPTIONAL) && !u.equals(OPTIONAL) && !u.startsWith("java/")) {
+            return 5;
+        }
+        if (u.equals(RESOURCE_KEY) && l.equals(RESOURCE_LOCATION)) {
+            return 7;
+        }
+        if (u.equals(RESOURCE_KEY) && !l.startsWith("java/") && !l.equals(RESOURCE_KEY)) {
+            return 6;
+        }
+        if (isSubtype(l, u)) {
+            // the lower type is the upper one's subtype (a DefaultedRegistry for a Registry): read as it is, passed cast
+            return 8;
+        }
+        return -1;
+    }
+
+    static final String RESOURCE_KEY = "net/minecraft/resources/ResourceKey";
+    static final String RESOURCE_LOCATION = "net/minecraft/resources/ResourceLocation";
+
+    /** Whether the bottom version's class sub extends or implements sup. */
+    static boolean isSubtype(String sub, String sup) {
+        Stage0.Version bottom = versions.get(versions.size() - 1);
+        Deque<String> todo = new ArrayDeque<>(List.of(sub));
+        Set<String> seen = new HashSet<>();
+        while (!todo.isEmpty()) {
+            String c = todo.poll();
+            if (c == null || !seen.add(c)) {
+                continue;
+            }
+            if (c.equals(sup) && !c.equals(sub)) {
+                return true;
+            }
+            Stage0.Cls info = bottom.classes.get(c);
+            if (info != null) {
+                todo.add(info.superName);
+                todo.addAll(Arrays.asList(info.interfaces));
+            }
+        }
+        return false;
+    }
+
+    static boolean convertible(Type upper, Type lower) {
+        return conversion(upper, lower) >= 0;
+    }
+
+    /** A value of the upper type on the stack becomes the lower type's. */
+    static void convertDown(InsnList code, Type upper, Type lower) {
+        switch (conversion(upper, lower)) {
+            case 1, 2 -> {
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "unwrap", "(L" + HOLDER + ";)Ljava/lang/Object;", false));
+                code.add(new TypeInsnNode(Opcodes.CHECKCAST, lower.getInternalName()));
+            }
+            case 3 -> code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, MAP_CODEC, "codec", "()L" + CODEC + ";", false));
+            case 4 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "registryAccess", "(L" + PROVIDER + ";)L" + REGISTRY_ACCESS + ";", false));
+            case 5 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "optional", "(Ljava/lang/Object;)L" + OPTIONAL + ";", false));
+            case 6 -> {
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "valueOfKey", "(L" + RESOURCE_KEY + ";)Ljava/lang/Object;", false));
+                code.add(new TypeInsnNode(Opcodes.CHECKCAST, lower.getInternalName()));
+            }
+            case 7 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "location", "(L" + RESOURCE_KEY + ";)L" + RESOURCE_LOCATION + ";", false));
+            case 8 -> code.add(new TypeInsnNode(Opcodes.CHECKCAST, lower.getInternalName()));
+            default -> {
+            }
+        }
     }
 
     /** The bridge for a member whose types changed at rung i, when every change is a known conversion; else null. */
@@ -1010,8 +1292,12 @@ public class Convert {
         }
         String[] bridge = {owner, upper.name() + "$" + Integer.toHexString(upper.desc().hashCode())};
         schedule(rung + 1, new Stage0.Ref('B', owner, bridge[1], job));
+        bridgeEnds.put(owner + "." + bridge[1], end);
         return bridge;
     }
+
+    /** bridge class.name -> the bottom version's member it calls */
+    static final Map<String, Stage0.Ref> bridgeEnds = new HashMap<>();
 
 
     /**
@@ -1111,10 +1397,42 @@ public class Convert {
                 problem("a super(...) or unusual new of " + ref.key() + ", whose parameters changed below: no bridge for it");
                 continue;
             }
+            dropUninitialized(m, made);
             m.instructions.remove(made);
             m.instructions.remove(dup);
             m.instructions.set(call, new MethodInsnNode(Opcodes.INVOKESTATIC, bridge[0], bridge[1],
                     call.desc.substring(0, call.desc.indexOf(')') + 1) + "L" + call.owner + ";", false));
+        }
+    }
+
+    /**
+     * A NEW that goes: the stack map frames between it and its constructor call hold its two uninitialized values (the
+     * NEW's and the DUP's), named by the label at the NEW. They go from the frames too (the class is written with the
+     * frames it has), or the method fails verification.
+     */
+    static void dropUninitialized(MethodNode m, AbstractInsnNode made) {
+        Set<LabelNode> labels = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (AbstractInsnNode back = made.getPrevious(); back != null && back.getOpcode() < 0; back = back.getPrevious()) {
+            if (back instanceof LabelNode label) {
+                labels.add(label);
+            }
+        }
+        if (labels.isEmpty()) {
+            return;
+        }
+        for (AbstractInsnNode insn : m.instructions) {
+            if (!(insn instanceof FrameNode frame)) {
+                continue;
+            }
+            if (frame.stack != null) {
+                frame.stack.removeIf(labels::contains);
+                if (frame.type == Opcodes.F_SAME1 && frame.stack.isEmpty()) {
+                    frame.type = Opcodes.F_SAME;
+                }
+            }
+            if (frame.local != null && frame.local.stream().anyMatch(labels::contains)) {
+                problem("a constructor bridge whose new object sits in a local before its constructor runs");
+            }
         }
     }
 
@@ -1139,6 +1457,190 @@ public class Convert {
         call.name = bridge[1];
         call.itf = false;
         return true;
+    }
+
+    /** Whether a mod class at or above owner (below the platform) declares that method ("name desc"). */
+    static boolean modDeclares(String owner, String method) {
+        Deque<String> todo = new ArrayDeque<>(List.of(owner));
+        Set<String> seen = new HashSet<>();
+        while (!todo.isEmpty()) {
+            Stage0.ModClass mc = mod.get(todo.poll());
+            if (mc == null) {
+                continue;
+            }
+            if (mc.methods.contains(method)) {
+                return true;
+            }
+            if (mc.superName != null && seen.add(mc.superName)) {
+                todo.add(mc.superName);
+            }
+        }
+        return false;
+    }
+
+    /** class -> methods to add once it is remapped (written in the bottom version's names) */
+    static final Map<String, List<MethodNode>> addAfterRemap = new HashMap<>();
+
+    /**
+     * A super call of a bridged method: a private helper of the class (added after remapping, in the bottom version's
+     * names) converts the values down, calls the superclass's lower method with invokespecial, converts the result up.
+     */
+    static MethodNode superHelper(ClassNode node, MethodInsnNode call, String[] bridge) {
+        Stage0.Ref end = bridgeEnds.get(bridge[0] + "." + bridge[1]);
+        if (end == null) {
+            return null;
+        }
+        String desc = remapper.mapMethodDesc(call.desc);
+        Type[] up = Type.getArgumentTypes(desc), low = Type.getArgumentTypes(end.desc());
+        Type upRet = Type.getReturnType(desc), lowRet = Type.getReturnType(end.desc());
+        if (up.length != low.length || !convertible(upRet, lowRet)) {
+            return null;
+        }
+        for (int a = 0; a < up.length; a++) {
+            if (!convertible(up[a], low[a])) {
+                return null;
+            }
+        }
+        String name = "ladder$super$" + call.name + "$" + Integer.toHexString((call.owner + call.desc).hashCode());
+        List<MethodNode> pending = addAfterRemap.computeIfAbsent(node.name, k -> new ArrayList<>());
+        for (MethodNode done : pending) {
+            if (done.name.equals(name)) {
+                return done;
+            }
+        }
+        MethodNode g = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_SYNTHETIC, name, desc, null, null);
+        InsnList code = g.instructions;
+        code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        int slot = 1;
+        for (int a = 0; a < up.length; a++) {
+            code.add(new VarInsnNode(up[a].getOpcode(Opcodes.ILOAD), slot));
+            slot += up[a].getSize();
+            convertDown(code, up[a], low[a]);
+        }
+        code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, remapper.map(call.owner), end.name(), end.desc(), false));
+        convertUp(code, lowRet, upRet);
+        code.add(new InsnNode(upRet.getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 2;
+        pending.add(g);
+        return g;
+    }
+
+    /** The bridge of a platform member (or of a mod class's inherited one), or null when it has none. */
+    static String[] bridgeOf(String owner, String name, String desc, boolean method) {
+        if (owner.startsWith(CARRIED) || owner.startsWith("[") || !(Stage0.platform(owner) || mod.containsKey(owner))) {
+            return null;
+        }
+        Stage0.Ref ref = resolve(owner, name, desc, method);
+        if (ref == null) {
+            return null;
+        }
+        walk(ref);
+        String[] bridge = callRedirect.get(level + " " + ref.key());
+        return bridge == null ? null : new String[] {bridge[0], bridge[1], ref.cls()};
+    }
+
+    /**
+     * Method references (lambda handles) of bridged members: to the bridge, a static method taking the receiver first
+     * (the lambda's captured or first argument), or the factory of a bridged constructor.
+     */
+    static void bridgeHandles(InvokeDynamicInsnNode indy) {
+        for (int i = 0; i < indy.bsmArgs.length; i++) {
+            if (!(indy.bsmArgs[i] instanceof Handle h)) {
+                continue;
+            }
+            int tag = h.getTag();
+            boolean field = tag <= Opcodes.H_PUTSTATIC;
+            String[] bridge = tag == Opcodes.H_NEWINVOKESPECIAL ? bridgeOf(h.getOwner(), "<init>", h.getDesc(), true)
+                    : bridgeOf(h.getOwner(), h.getName(), h.getDesc(), !field);
+            if (bridge == null) {
+                continue;
+            }
+            String desc;
+            switch (tag) {
+                case Opcodes.H_INVOKEVIRTUAL, Opcodes.H_INVOKEINTERFACE -> desc = "(L" + bridge[2] + ";" + h.getDesc().substring(1);
+                case Opcodes.H_INVOKESTATIC -> desc = h.getDesc();
+                case Opcodes.H_NEWINVOKESPECIAL -> desc = h.getDesc().substring(0, h.getDesc().indexOf(')') + 1) + "L" + h.getOwner() + ";";
+                case Opcodes.H_GETFIELD -> desc = "(L" + bridge[2] + ";)" + h.getDesc();
+                case Opcodes.H_GETSTATIC -> desc = "()" + h.getDesc();
+                default -> {
+                    problem("a method handle (" + tag + ") of " + h.getOwner() + "." + h.getName() + h.getDesc() + ", whose types changed below: no bridge for it");
+                    continue;
+                }
+            }
+            indy.bsmArgs[i] = new Handle(Opcodes.H_INVOKESTATIC, bridge[0], bridge[1], desc, false);
+            // a lambda's captured values must have the implementation's parameter types exactly (the bound receiver
+            // becomes the bridge's first parameter, its declaring class): the call site takes them so
+            Type[] captured = Type.getArgumentTypes(indy.desc), params = Type.getArgumentTypes(desc);
+            if (captured.length > 0 && captured.length <= params.length) {
+                System.arraycopy(params, 0, captured, 0, captured.length);
+                indy.desc = Type.getMethodDescriptor(Type.getReturnType(indy.desc), captured);
+            }
+        }
+    }
+
+    /**
+     * A mod method overriding a platform method whose types changed below: the game calls the lower method, and the
+     * bridges of the mod's own calls call it too. The mod class gets the lower method (an override bridge): it converts
+     * the values up, calls the mod's method, converts its result down. In the bottom version's names: added after the
+     * class is remapped. When the values don't convert (or the class is a mixin), it is a problem: the override would
+     * never run. An O row of the adapters covers its own methods.
+     */
+    static List<MethodNode> overrideBridges(ClassNode node) {
+        List<MethodNode> made = new ArrayList<>();
+        boolean itf = (node.access & Opcodes.ACC_INTERFACE) != 0;
+        for (MethodNode m : node.methods) {
+            if (m.name.startsWith("<") || (m.access & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE | Opcodes.ACC_ABSTRACT)) != 0) {
+                continue;
+            }
+            Stage0.Ref ref = resolve(node.name, m.name, m.desc, true);
+            if (ref == null || overrideRule(ref.cls(), m.name, m.desc) != null) {
+                continue;
+            }
+            walk(ref);
+            String[] bridge = callRedirect.get(level + " " + ref.key());
+            if (bridge == null) {
+                continue;
+            }
+            Stage0.Ref end = bridgeEnds.get(bridge[0] + "." + bridge[1]);
+            MethodNode g = end == null || mixinTargets.containsKey(node.name) ? null : overrideBridge(node, m, end, itf);
+            if (g == null) {
+                problem("an override of " + ref.key() + ", whose parameters changed below: no override bridge for it (it would never be called)");
+                continue;
+            }
+            made.add(g);
+        }
+        return made;
+    }
+
+    /** The lower method of an override bridge, in the bottom version's names; null when the values don't convert. */
+    static MethodNode overrideBridge(ClassNode node, MethodNode m, Stage0.Ref end, boolean itf) {
+        String ownName = remapper.mapMethodName(node.name, m.name, m.desc), ownDesc = remapper.mapMethodDesc(m.desc);
+        Type[] up = Type.getArgumentTypes(ownDesc), low = Type.getArgumentTypes(end.desc());
+        Type upRet = Type.getReturnType(ownDesc), lowRet = Type.getReturnType(end.desc());
+        if (up.length != low.length || !convertible(upRet, lowRet)) {
+            return null;
+        }
+        for (int a = 0; a < up.length; a++) {
+            if (!convertible(up[a], low[a])) {
+                return null;
+            }
+        }
+        MethodNode g = new MethodNode(Opcodes.ACC_PUBLIC, end.name(), end.desc(), null, null);
+        InsnList code = g.instructions;
+        code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        int slot = 1;
+        for (int a = 0; a < low.length; a++) {
+            code.add(new VarInsnNode(low[a].getOpcode(Opcodes.ILOAD), slot));
+            slot += low[a].getSize();
+            convertUp(code, low[a], up[a]);
+        }
+        code.add(new MethodInsnNode(itf ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL, remapper.map(node.name), ownName, ownDesc, itf));
+        convertDown(code, upRet, lowRet);
+        code.add(new InsnNode(lowRet.getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 2;
+        return g;
     }
 
     /** A read of a bridged field: to its getter bridge; a write can't be bridged. */
@@ -1188,10 +1690,7 @@ public class Convert {
                 code.add(new VarInsnNode(ua[a].getOpcode(Opcodes.ILOAD), locals));
                 locals += ua[a].getSize();
                 stack += ua[a].getSize();
-                if (!ua[a].equals(la[a]) && convertible(ua[a], la[a])) {
-                    code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "unwrap", "(L" + HOLDER + ";)Ljava/lang/Object;", false));
-                    code.add(new TypeInsnNode(Opcodes.CHECKCAST, la[a].getInternalName()));
-                }
+                convertDown(code, ua[a], la[a]);
             }
             desc = b.append(")L").append(lowerOwner).append(";").toString();
             code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, lowerOwner, "<init>", lowerDesc, false));
@@ -1218,10 +1717,7 @@ public class Convert {
                 code.add(new VarInsnNode(ua[a].getOpcode(Opcodes.ILOAD), locals));
                 locals += ua[a].getSize();
                 stack += ua[a].getSize();
-                if (!ua[a].equals(la[a])) {
-                    code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "unwrap", "(L" + HOLDER + ";)Ljava/lang/Object;", false));
-                    code.add(new TypeInsnNode(Opcodes.CHECKCAST, la[a].getInternalName()));
-                }
+                convertDown(code, ua[a], la[a]);
             }
             Type upperReturn = Type.getReturnType(upperDesc), lowerReturn = Type.getReturnType(lowerDesc);
             desc = b.append(")").append(upperReturn.getDescriptor()).toString();
@@ -1237,15 +1733,21 @@ public class Convert {
         return method;
     }
 
-    /** A lower value to the upper type: X -> Holder<X> (a registry reference when there is one). */
+    /** A value of the lower type on the stack becomes the upper type's. */
     static void convertUp(InsnList code, Type lower, Type upper) {
-        if (lower.equals(upper)) {
-            return;
-        }
-        if (upper.getInternalName().equals(REFERENCE)) {
-            code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "reference", "(Ljava/lang/Object;)L" + REFERENCE + ";", false));
-        } else {
-            code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "holder", "(Ljava/lang/Object;)L" + HOLDER + ";", false));
+        switch (conversion(upper, lower)) {
+            case 1 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "holder", "(Ljava/lang/Object;)L" + HOLDER + ";", false));
+            case 2 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "reference", "(Ljava/lang/Object;)L" + REFERENCE + ";", false));
+            case 3 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "mapCodec", "(L" + CODEC + ";)L" + MAP_CODEC + ";", false));
+            case 5 -> {
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "orNull", "(L" + OPTIONAL + ";)Ljava/lang/Object;", false));
+                code.add(new TypeInsnNode(Opcodes.CHECKCAST, upper.getInternalName()));
+            }
+            case 6 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "keyOfValue", "(Ljava/lang/Object;)L" + RESOURCE_KEY + ";", false));
+            case 7 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "lootTableKey", "(L" + RESOURCE_LOCATION + ";)L" + RESOURCE_KEY + ";", false));
+            default -> {
+                // the same type, or a subtype (RegistryAccess is a HolderLookup.Provider)
+            }
         }
     }
 
@@ -1300,6 +1802,11 @@ public class Convert {
                     redirectCarried(source);
                     ClassNode converted = new ClassNode();
                     source.accept(new ClassRemapper(converted, remapper));
+                    if (!converted.name.startsWith(CARRIED)) {
+                        // a carried class outside its own package tree would split a game package (JPMS refuses it)
+                        problem("carried class " + thing.cls() + " would be written as " + converted.name);
+                        continue;
+                    }
                     carriedOut.put(converted.name, converted);
                     continue;
                 }

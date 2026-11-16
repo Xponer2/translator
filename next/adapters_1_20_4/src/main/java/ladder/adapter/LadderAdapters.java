@@ -12,9 +12,13 @@ package ladder.adapter;
 
 import net.neoforged.fml.common.Mod;
 
-/** The adapters' mod: its mixins put the newer versions' method splits into 1.20.4's call sites. */
+/**
+ * The adapters' mod: its mixins put the newer versions' method splits into 1.20.4's call sites, and the event bridges
+ * post the newer versions' events from 1.20.4's.
+ */
 @Mod("ladder_adapters")
 public final class LadderAdapters {
     public LadderAdapters() {
+        ladder.adapter.event.TickBridge.register();
     }
 }

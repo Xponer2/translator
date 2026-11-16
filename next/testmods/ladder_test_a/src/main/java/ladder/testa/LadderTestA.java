@@ -42,8 +42,12 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
  */
 @Mod("ladder_test_a")
 public final class LadderTestA {
-    public LadderTestA(IEventBus modBus) {
+    private final net.neoforged.fml.ModContainer container;
+
+    public LadderTestA(IEventBus modBus, net.neoforged.fml.ModContainer container) {
+        this.container = container;
         NeoForge.EVENT_BUS.register(this);
+        container.registerExtensionPoint(ProbePoint.class, new ProbePoint("point"));
     }
 
     @SubscribeEvent
@@ -70,11 +74,38 @@ public final class LadderTestA {
             AttributeInstance health = stand.getAttribute(maxHealth);
             results.put("maxHealthBase", String.valueOf(health == null ? -1 : health.getBaseValue()));
             results.put("maxHealthValue", String.valueOf(stand.getAttributeValue(Attributes.MAX_HEALTH)));
+            // a branch inside a bridged constructor's arguments (stack map frames with the new object in them)
+            boolean longer = level.getGameTime() >= 0;
+            MobEffectInstance speed = new MobEffectInstance(MobEffects.MOVEMENT_SPEED, longer ? 300 : 100, longer ? 2 : 0);
+            stand.addEffect(speed);
+            results.put("ternaryDuration", String.valueOf(speed.getDuration()));
+            // method references of bridged members: bound, unbound, a constructor
+            java.util.function.Predicate<Holder<MobEffect>> has = stand::hasEffect;
+            results.put("boundRefHas", String.valueOf(has.test(MobEffects.MOVEMENT_SPEED)));
+            java.util.function.BiPredicate<ArmorStand, Holder<MobEffect>> hasOn = ArmorStand::hasEffect;
+            results.put("unboundRefHas", String.valueOf(hasOn.test(stand, MobEffects.POISON)));
+            java.util.function.BiFunction<Holder<MobEffect>, Integer, MobEffectInstance> make = MobEffectInstance::new;
+            results.put("constructorRefDuration", String.valueOf(make.apply(MobEffects.LUCK, 77).getDuration()));
+            // an override of a bridged method (with a super call): the mod's calls, and the game's own lower call
+            ProbeStand probe = new ProbeStand(EntityType.ARMOR_STAND, level);
+            probe.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, 0));
+            results.put("overrideLuck", String.valueOf(probe.hasEffect(MobEffects.LUCK)));
+            results.put("overrideSuperRegeneration", String.valueOf(probe.hasEffect(MobEffects.REGENERATION)));
+            results.put("overrideSuperPoison", String.valueOf(probe.hasEffect(MobEffects.POISON)));
+            net.minecraft.world.entity.LivingEntity asLiving = probe;
+            results.put("overrideThroughBase", String.valueOf(asLiving.hasEffect(MobEffects.LUCK)));
+            // two levels of overrides, the lower one's super call going to the upper mod class
+            ProbeStand2 probe2 = new ProbeStand2(EntityType.ARMOR_STAND, level);
+            results.put("override2Unluck", String.valueOf(probe2.hasEffect(MobEffects.UNLUCK)));
+            results.put("override2Luck", String.valueOf(probe2.hasEffect(MobEffects.LUCK)));
+            results.put("override2Poison", String.valueOf(probe2.hasEffect(MobEffects.POISON)));
+            // an extension point of an ordinary class, read back
+            results.put("extensionPoint", this.container.getCustomExtension(ProbePoint.class).map(p -> p.value).orElse("none"));
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("ladder_test_a", "probe");
             results.put("resourceLocation", id.toString());
             results.put("blockAtOrigin", String.valueOf(level.getBlockState(BlockPos.ZERO.above(64)).isAir()));
         } catch (RuntimeException | LinkageError e) {
-            results.put("error", e.toString());
+            results.put("error", e + (e.getCause() == null ? "" : " / " + e.getCause()));
         }
         StringBuilder json = new StringBuilder("{\n");
         results.forEach((k, v) -> json.append("  \"").append(k).append("\": \"").append(v.replace("\"", "'")).append("\",\n"));

@@ -50,12 +50,14 @@ Measured over the 300 most popular NeoForge 1.21.1 mods on Modrinth (their refer
 | 1.21 → 1.20.6 | 97.7% | 66% | 198 |
 | 1.20.6 → 1.20.4 (item data components) | 93.2% | 39% | 409 |
 
-- **36 of the 300 mods** convert to 1.20.4 with nothing left, in strict mode: carried code, generated bridges (for types
-  that changed, like `Holder<X>` → `X`) and the first hand-written adapters included.
+- **31 of the 300 mods** convert to 1.20.4 with nothing left, in strict mode: carried code, generated bridges (for types
+  that changed, like `Holder<X>` → `X`, also for a mod's overrides of such methods) and the first hand-written adapters
+  included.
 - **Checked in the real NeoForge 1.20.4:** Macaw's Bridges, Fences and Windows (635 blocks, 641 items, 793 recipes):
   **7948 of 7948 facts as in 1.21.1** (hardness, drops, light, collision, recipes...), and a right click opens a
-  shutter as in 1.21.1; Alternate Current does its own redstone; client mods reach the title screen with no error; a
-  test mod made for 1.21.1 gives the same results converted on 1.20.4 as on 1.21.1. Details in [`next/`](next/).
+  shutter as in 1.21.1; Alternate Current does its own redstone; all 3019 data files of the converted mods load
+  (Trek's structures among them); 17 converted mods together on the client make and enter a world with no error; a test
+  mod made for 1.21.1 gives the same 22 results converted on 1.20.4 as on 1.21.1. Details in [`next/`](next/).
 - 1.20.5 has no step of its own: NeoForge only had betas for it, and 1.20.6 is its hotfix, so the step 1.20.6 → 1.20.4
   holds its changes.
 
@@ -64,7 +66,7 @@ Measured over the 300 most popular NeoForge 1.21.1 mods on Modrinth (their refer
 | Stage | What | State |
 |---|---|---|
 | 1 | Generated steps 1.21.1 → 1.20.4, the one-pass converter, strict checks, behaviour tests in the real 1.20.4 | ✅ done |
-| 2 | The hand-written parts of 1.20.6 → 1.20.4: block/item method splits, changed types (done); item data components, network payloads, render buffers, recipe inputs (next); mods of different versions sharing one item across a save and load | 🔨 **now** |
+| 2 | The hand-written parts of 1.20.6 → 1.20.4: block/item method splits, changed types and overrides of them, loader entry points (done); render buffers, item data components, network payloads, recipe inputs (next); mods of different versions sharing one item across a save and load | 🔨 **now** |
 | 3 | Steps down to 1.20.1 (the version with the most mods), then 1.19.2, 1.18.2, 1.16.5 | ⬜ planned |
 | 4 | The step down to 1.12.2 | ⬜ planned |
 | 5 | Older mods brought up, Fabric mods, targets below 1.12.2 | ⬜ later |
