@@ -18,8 +18,9 @@ import net.neoforged.fml.common.Mod;
  */
 @Mod("ladder_adapters")
 public final class LadderAdapters {
-    public LadderAdapters() {
+    public LadderAdapters(net.neoforged.bus.api.IEventBus modBus) {
         ladder.adapter.event.TickBridge.register();
+        ladder.adapter.component.ComponentRegistry.register(modBus);
         if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
             // the frame's time for the trackers made of a partial tick
             ladder.adapter.provided.DeltaTracker.Client.timer = ladder.adapter.render.RenderAdapters.TIMER;

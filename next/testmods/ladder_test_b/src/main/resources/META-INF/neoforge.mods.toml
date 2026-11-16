@@ -1,0 +1,23 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="PolyForm Noncommercial 1.0.0"
+
+[[mods]]
+modId="ladder_test_b"
+version="1.0.0"
+displayName="Ladder Test B (1.21.1)"
+description="Item data components: its own types, an item's defaults, the game's own; handed to another mod."
+
+[[dependencies.ladder_test_b]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.ladder_test_b]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.22)"
+ordering="NONE"
+side="BOTH"

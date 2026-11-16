@@ -108,9 +108,20 @@ public final class LadderTestA {
             DfuTest.run(results);
             SmallApiTest.run(results);
             SmallApiTest.blockEntity(level, results);
+            // what another mod (test mod B) handed over in a chest, read by its component type's id (no code of B's)
+            if (level.getBlockEntity(new BlockPos(8, 140, 8)) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+                net.minecraft.world.item.ItemStack handed = chest.getItem(0);
+                net.minecraft.core.component.DataComponentType<?> charge = net.minecraft.core.registries.BuiltInRegistries.DATA_COMPONENT_TYPE
+                        .get(ResourceLocation.fromNamespaceAndPath("ladder_test_b", "charge"));
+                results.put("handedCharge", charge == null ? "no type" : String.valueOf(handed.get(charge)));
+                results.put("handedName", handed.getHoverName().getString());
+                results.put("handedCustom", String.valueOf(handed.has(net.minecraft.core.component.DataComponents.CUSTOM_DATA)));
+            } else {
+                results.put("handedCharge", "no chest");
+            }
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("ladder_test_a", "probe");
             results.put("resourceLocation", id.toString());
-            results.put("blockAtOrigin", String.valueOf(level.getBlockState(BlockPos.ZERO.above(64)).isAir()));
+            results.put("blockAboveTerrain", String.valueOf(level.getBlockState(BlockPos.ZERO.above(300)).isAir()));
         } catch (RuntimeException | LinkageError e) {
             results.put("error", e + (e.getCause() == null ? "" : " / " + e.getCause()));
         }

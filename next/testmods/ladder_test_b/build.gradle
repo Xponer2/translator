@@ -1,0 +1,34 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// Test mod B, made for NeoForge 1.21.1: item data components (its own types, an item's defaults, the game's own), changed,
+// copied, saved and read back, and handed to another mod (test mod A) in a chest, across a restart. Run natively on
+// 1.21.1 with test mod A (the reference) and converted on 1.20.4: same results.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base { archivesName = 'ladder-test-b-1.21.1' }
+version = '1.0.0'
+neoForge {
+    version = '21.1.247'
+    runs {
+        server {
+            server()
+            gameDirectory = file('run-server')
+            programArgument '--nogui'
+            systemProperty 'ladder.test.out', file('run-server/test-a.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.b.out', file('run-server/test-b.json').absolutePath.replace(File.separator, '/')
+        }
+    }
+    mods {
+        ladder_test_b {
+            sourceSet sourceSets.main
+        }
+        ladder_test_a {
+            sourceSet project(':testmods:ladder_test_a').sourceSets.main
+        }
+    }
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }

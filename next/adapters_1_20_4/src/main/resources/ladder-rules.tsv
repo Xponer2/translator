@@ -7,6 +7,8 @@
 # X <owner> <name> <desc> <adapter class> <adapter method>
 #                                             a call goes to the adapter's static method (receiver first)
 # R <class> <lower class>                     a class renamed below with the same members (NeoForge has no intermediary)
+# F <owner> <name> <desc> <adapter class> <getter>
+#                                             a static field the adapters give: its reads go to the getter
 # M <owner> <name> <desc> <lower name> <lower desc>
 #                                             the same hook (of the owner and its subclasses) under another name and
 #                                             descriptor below; the generated bridges take it from there
@@ -137,3 +139,30 @@ X	net/minecraft/world/level/block/entity/BlockEntity	saveCustomAndMetadata	(Lnet
 # 1.20.5 split BlockEntity.load into loadAdditional (the per-class hook, registries passed) and loadWithComponents
 M	net/minecraft/world/level/block/entity/BlockEntity	loadAdditional	(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V	load	(Lnet/minecraft/nbt/CompoundTag;)V
 X	net/minecraft/core/HolderLookup$Provider	createSerializationContext	(Lcom/mojang/serialization/DynamicOps;)Lnet/minecraft/resources/RegistryOps;	ladder/adapter/misc/MiscAdapters	createSerializationContext
+# Data components (the first compatibility module): types, the registry, a stack's values kept in its NBT
+P	net/minecraft/core/component/DataComponentType	ladder/adapter/component/DataComponentType
+P	net/minecraft/core/component/DataComponentType$Builder	ladder/adapter/component/DataComponentType$Builder
+P	net/minecraft/core/component/DataComponentMap	ladder/adapter/component/DataComponentMap
+P	net/minecraft/core/component/TypedDataComponent	ladder/adapter/component/TypedDataComponent
+P	net/minecraft/core/component/DataComponentHolder	ladder/adapter/component/DataComponentHolder
+P	net/minecraft/core/component/DataComponents	ladder/adapter/component/DataComponents
+P	net/minecraft/world/item/component/CustomData	ladder/adapter/component/CustomData
+P	net/neoforged/neoforge/registries/DeferredRegister$DataComponents	ladder/adapter/component/DeferredDataComponents
+F	net/minecraft/core/registries/Registries	DATA_COMPONENT_TYPE	Lnet/minecraft/resources/ResourceKey;	ladder/adapter/component/ComponentRegistry	key
+F	net/minecraft/core/registries/BuiltInRegistries	DATA_COMPONENT_TYPE	Lnet/minecraft/core/Registry;	ladder/adapter/component/ComponentRegistry	registry
+X	net/minecraft/core/component/DataComponentHolder	get	(Lnet/minecraft/core/component/DataComponentType;)Ljava/lang/Object;	ladder/adapter/component/ComponentStore	get
+X	net/minecraft/core/component/DataComponentHolder	getOrDefault	(Lnet/minecraft/core/component/DataComponentType;Ljava/lang/Object;)Ljava/lang/Object;	ladder/adapter/component/ComponentStore	getOrDefault
+X	net/minecraft/core/component/DataComponentHolder	has	(Lnet/minecraft/core/component/DataComponentType;)Z	ladder/adapter/component/ComponentStore	has
+X	net/minecraft/world/item/ItemStack	getComponents	()Lnet/minecraft/core/component/DataComponentMap;	ladder/adapter/component/ComponentStore	getComponents
+X	net/minecraft/world/item/ItemStack	set	(Lnet/minecraft/core/component/DataComponentType;Ljava/lang/Object;)Ljava/lang/Object;	ladder/adapter/component/ComponentStore	set
+X	net/minecraft/world/item/ItemStack	update	(Lnet/minecraft/core/component/DataComponentType;Ljava/lang/Object;Ljava/util/function/UnaryOperator;)Ljava/lang/Object;	ladder/adapter/component/ComponentStore	update
+X	net/minecraft/world/item/ItemStack	update	(Lnet/minecraft/core/component/DataComponentType;Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;	ladder/adapter/component/ComponentStore	update
+X	net/minecraft/world/item/ItemStack	remove	(Lnet/minecraft/core/component/DataComponentType;)Ljava/lang/Object;	ladder/adapter/component/ComponentStore	remove
+X	net/minecraft/world/item/Item$Properties	component	(Lnet/minecraft/core/component/DataComponentType;Ljava/lang/Object;)Lnet/minecraft/world/item/Item$Properties;	ladder/adapter/component/ItemDefaults	component
+X	net/minecraft/world/item/Item	components	()Lnet/minecraft/core/component/DataComponentMap;	ladder/adapter/component/ComponentRegistry	components
+X	net/neoforged/neoforge/registries/DeferredRegister	createDataComponents	(Ljava/lang/String;)Lnet/neoforged/neoforge/registries/DeferredRegister$DataComponents;	ladder/adapter/component/DeferredDataComponents	createDataComponents
+X	net/neoforged/neoforge/registries/DeferredRegister	createDataComponents	(Lnet/minecraft/resources/ResourceKey;Ljava/lang/String;)Lnet/neoforged/neoforge/registries/DeferredRegister$DataComponents;	ladder/adapter/component/DeferredDataComponents	createDataComponents
+X	net/minecraft/world/item/ItemStack	save	(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/nbt/Tag;	ladder/adapter/component/ComponentStore	save
+X	net/minecraft/world/item/ItemStack	saveOptional	(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/nbt/Tag;	ladder/adapter/component/ComponentStore	saveOptional
+X	net/minecraft/world/item/ItemStack	parseOptional	(Lnet/minecraft/core/HolderLookup$Provider;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/item/ItemStack;	ladder/adapter/component/ComponentStore	parseOptional
+X	net/minecraft/world/item/ItemStack	parse	(Lnet/minecraft/core/HolderLookup$Provider;Lnet/minecraft/nbt/Tag;)Ljava/util/Optional;	ladder/adapter/component/ComponentStore	parse

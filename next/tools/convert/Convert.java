@@ -491,6 +491,8 @@ public class Convert {
     static final List<String[]> overrides = new ArrayList<>();
     /** X: "owner.name desc" -> {adapter class, adapter method} */
     static final Map<String, String[]> redirects = new HashMap<>();
+    /** F rows: "owner.name desc" of a static field -> {adapter class, getter}: its reads go to the getter */
+    static final Map<String, String[]> fieldRedirects = new HashMap<>();
     /** M rows: owner, name, desc (top names), lower name, lower desc (bottom names): the same hook below, renamed */
     static final List<String[]> memberMoves = new ArrayList<>();
     /** the adapters jar: class -> its methods "name desc" (each rule's target is checked against it) */
@@ -512,6 +514,8 @@ public class Convert {
                     case "R" -> NEOFORGE_MOVES.put(c[1], c[2]);
                     // a member (of the owner and its subclasses) that is another one below: bridged to it
                     case "M" -> memberMoves.add(new String[] {c[1], c[2], c[3], c[4], c[5]});
+                    // a static field below that the adapters give: its reads go to their getter
+                    case "F" -> fieldRedirects.put(c[1] + "." + c[2] + " " + c[3], new String[] {c[4], c[5]});
                     default -> throw new IOException("unknown rule " + line);
                 }
             }
@@ -528,6 +532,8 @@ public class Convert {
                         new ClassReader(s).accept(node, ClassReader.SKIP_CODE);
                         Set<String> methods = new HashSet<>();
                         node.methods.forEach(m -> methods.add(m.name + " " + m.desc));
+                        // fields too, marked (a provided class's fields are checked like its methods)
+                        node.fields.forEach(f -> methods.add("F " + f.name + " " + f.desc));
                         adapterMethods.put(node.name, methods);
                     }
                 }
@@ -558,6 +564,18 @@ public class Convert {
         }
     }
 
+    /** A field of a provided class the mod uses must be in the adapters' class (a game component not given yet, say). */
+    static void checkProvidedField(String cls, String name, String upperDesc) {
+        if (adapterMethods.isEmpty()) {
+            return;
+        }
+        Set<String> members = adapterMethods.get(cls);
+        String desc = remapper.mapDesc(upperDesc);
+        if (members == null || !members.contains("F " + name + " " + desc)) {
+            problem("the adapters' " + cls + " has no field " + name + " " + desc);
+        }
+    }
+
     /** The adapters' static method a rule names must be in the adapters jar, with the converted descriptor. */
     static void checkAdapter(String owner, String name, String upperDesc, String rule) {
         if (adapterMethods.isEmpty()) {
@@ -575,8 +593,24 @@ public class Convert {
      * call into the game's own class goes to the defaults; an X row's call goes to its adapter.
      */
     static void applyRules(ClassNode node, boolean modClass) {
-        if (overrides.isEmpty() && redirects.isEmpty()) {
+        if (overrides.isEmpty() && redirects.isEmpty() && fieldRedirects.isEmpty()) {
             return;
+        }
+        for (MethodNode m : node.methods) {
+            for (AbstractInsnNode insn : m.instructions) {
+                if (insn instanceof FieldInsnNode field) {
+                    String[] f = fieldRedirects.get(field.owner + "." + field.name + " " + field.desc);
+                    if (f == null) {
+                        continue;
+                    }
+                    if (field.getOpcode() != Opcodes.GETSTATIC) {
+                        problem("a write to " + field.owner + "." + field.name + ", which the adapters give: not possible");
+                        continue;
+                    }
+                    checkAdapter(f[0], f[1], "()" + field.desc, "F " + field.owner + "." + field.name);
+                    m.instructions.set(field, new MethodInsnNode(Opcodes.INVOKESTATIC, f[0], f[1], "()" + field.desc, false));
+                }
+            }
         }
         Stage0.Version here = versions.get(level);
         // a mixin's interfaces would go onto the game's own class it targets: only the mod's own classes get them
@@ -744,6 +778,7 @@ public class Convert {
         } else {
             Stage0.Ref ref = resolve(owner, name, desc, false);
             if (ref != null && provided.containsKey(ref.cls())) {
+                checkProvidedField(provided.get(ref.cls()), name, desc);
                 return name;
             }
         }
@@ -1058,6 +1093,9 @@ public class Convert {
         int dot = member.lastIndexOf('.');
         Stage0.Ref ref = new Stage0.Ref(kind, member.substring(0, dot), member.substring(dot + 1), desc);
         if (kind == 'M' && redirects.containsKey(ref.cls() + "." + ref.name() + " " + ref.desc())) {
+            return true;
+        }
+        if (kind == 'F' && fieldRedirects.containsKey(ref.cls() + "." + ref.name() + " " + ref.desc())) {
             return true;
         }
         if (provided.containsKey(ref.cls())) {

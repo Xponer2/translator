@@ -16,7 +16,9 @@ import javax.annotation.Nullable;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import ladder.adapter.Dispatch;
 import ladder.adapter.item.HoverTextApi;
@@ -29,7 +31,22 @@ import net.minecraft.world.level.Level;
 
 /** 1.20.4's tooltip call site with 1.20.5's {@code appendHoverText(stack, TooltipContext, ...)} of a converted mod's item. */
 @Mixin(ItemStack.class)
-public abstract class ItemStackMixin {
+public abstract class ItemStackMixin implements ladder.adapter.component.DataComponentHolder {
+    /** a 1.20.4 stack is a 1.20.5 DataComponentHolder (casts, instanceof, calls through the interface) */
+    @Override
+    public ladder.adapter.component.DataComponentMap getComponents() {
+        return ladder.adapter.component.ComponentStore.getComponents((ItemStack) (Object) this);
+    }
+
+    /** the custom name an item's properties give (1.20.5's Item.Properties.component(CUSTOM_NAME, ...)) shows */
+    @Inject(method = "getHoverName", at = @At("HEAD"), cancellable = true)
+    private void ladder$defaultName(CallbackInfoReturnable<Component> cir) {
+        Component name = ladder.adapter.component.ComponentStore.defaultName((ItemStack) (Object) this);
+        if (name != null) {
+            cir.setReturnValue(name);
+        }
+    }
+
     @Redirect(method = "getTooltipLines", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/item/Item;appendHoverText(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Ljava/util/List;Lnet/minecraft/world/item/TooltipFlag;)V"))
     private void ladder$appendHoverText(Item item, ItemStack stack, @Nullable Level level, List<Component> lines, TooltipFlag flag) {
