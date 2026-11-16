@@ -25,8 +25,8 @@ import ladder.adapter.render.RenderAdapters;
 
 /**
  * 1.21's vertices are written when the next one begins or the buffer is built; the adapters keep the begun ones
- * (ladder.adapter.render.RenderAdapters). Before a 1.20.4 buffer ends, every begun vertex is written out (its own, and
- * those of wrappers that may write into it); before the game writes a whole vertex, this builder's own; a new batch
+ * (ladder.adapter.render.RenderAdapters). Before a 1.20.4 buffer ends, the begun vertices that go into it are written
+ * out (its own, and those of wrappers over it); before the game writes a whole vertex, this builder's own; a new batch
  * forgets a begun one.
  */
 @Mixin(BufferBuilder.class)
@@ -51,11 +51,11 @@ abstract class BufferBuilderMixin implements PendingVertex {
 
     @Inject(method = "end", at = @At("HEAD"))
     private void ladder$end(CallbackInfoReturnable<BufferBuilder.RenderedBuffer> ci) {
-        RenderAdapters.endAll();
+        RenderAdapters.endFor((BufferBuilder) (Object) this);
     }
 
     @Inject(method = "endOrDiscardIfEmpty", at = @At("HEAD"))
     private void ladder$endOrDiscard(CallbackInfoReturnable<BufferBuilder.RenderedBuffer> ci) {
-        RenderAdapters.endAll();
+        RenderAdapters.endFor((BufferBuilder) (Object) this);
     }
 }

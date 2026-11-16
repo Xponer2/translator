@@ -50,14 +50,14 @@ Measured over the 300 most popular NeoForge 1.21.1 mods on Modrinth (their refer
 | 1.21 → 1.20.6 | 97.7% | 66% | 198 |
 | 1.20.6 → 1.20.4 (item data components) | 93.2% | 39% | 409 |
 
-- **35 of the 300 mods** convert to 1.20.4 with nothing left, in strict mode: carried code, generated bridges (for types
+- **38 of the 300 mods** convert to 1.20.4 with nothing left, in strict mode: carried code, generated bridges (for types
   that changed, like `Holder<X>` → `X`, also for a mod's overrides of such methods), Mojang's libraries (DFU 8 → 6) and
   the first hand-written adapters (1.21's vertex API among them) included.
 - **Checked in the real NeoForge 1.20.4:** Macaw's Bridges, Fences and Windows (635 blocks, 641 items, 793 recipes):
   **7948 of 7948 facts as in 1.21.1** (hardness, drops, light, collision, recipes...), and a right click opens a
   shutter as in 1.21.1; Alternate Current does its own redstone; all 3019 data files of the converted mods load
-  (Trek's structures among them); 18 converted mods together on the client make and enter a world with no error; a test
-  mod made for 1.21.1 gives the same results converted on 1.20.4 as on 1.21.1 (28 on the server, 12 on the client,
+  (Trek's structures among them); 21 converted mods together on the client make and enter a world with no error; a test
+  mod made for 1.21.1 gives the same results converted on 1.20.4 as on 1.21.1 (28 on the server, 15 on the client,
   the vertex bytes it draws included). Details in [`next/`](next/).
 - 1.20.5 has no step of its own: NeoForge only had betas for it, and 1.20.6 is its hotfix, so the step 1.20.6 → 1.20.4
   holds its changes.

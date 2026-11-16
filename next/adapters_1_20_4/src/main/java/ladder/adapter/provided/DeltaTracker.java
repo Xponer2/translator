@@ -12,7 +12,8 @@ package ladder.adapter.provided;
 
 /**
  * 1.21's {@code DeltaTracker} (the frame's time: delta ticks, partial tick). On 1.20.4 the client's own comes from its
- * Minecraft (ladder.adapter.render.RenderAdapters.timer); a fixed one is made where 1.20.4 passes a partial tick.
+ * Minecraft (ladder.adapter.render.RenderAdapters.TIMER); where 1.20.4 passes only a partial tick, a tracker of that
+ * partial tick whose deltas are the client timer's.
  */
 public interface DeltaTracker {
     DeltaTracker ZERO = new DefaultValue(0.0F);
@@ -48,11 +49,20 @@ public interface DeltaTracker {
         }
     }
 
-    /** where 1.20.4 passes the partial tick only: that partial tick, deltas of one tick */
+    /** the client's timer, set by the adapters on the client (none on a server: no frames there) */
+    final class Client {
+        public static volatile DeltaTracker timer;
+
+        private Client() {
+        }
+    }
+
+    /** a partial tick 1.20.4 passes; the deltas are the client timer's */
     record PartialTick(float partialTick) implements DeltaTracker {
         @Override
         public float getGameTimeDeltaTicks() {
-            return 1.0F;
+            DeltaTracker timer = Client.timer;
+            return timer == null ? 1.0F : timer.getGameTimeDeltaTicks();
         }
 
         @Override
@@ -62,7 +72,8 @@ public interface DeltaTracker {
 
         @Override
         public float getRealtimeDeltaTicks() {
-            return 1.0F;
+            DeltaTracker timer = Client.timer;
+            return timer == null ? 1.0F : timer.getRealtimeDeltaTicks();
         }
     }
 }

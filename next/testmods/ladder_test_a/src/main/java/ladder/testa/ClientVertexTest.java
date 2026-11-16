@@ -94,6 +94,33 @@ public final class ClientVertexTest {
             results.put("wrapperBytes", hex(meshA.vertexBuffer()) + "/" + hex(meshB.vertexBuffer()));
             meshA.close();
             meshB.close();
+            // a vertex begun on one builder while another is built: it stays open for its colour
+            BufferBuilder open = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            open.addVertex(0, 0, 0);
+            BufferBuilder other = second.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            for (int v = 0; v < 4; v++) {
+                other.addVertex(v, 0, 0).setColor(0xFF00FF00);
+            }
+            other.buildOrThrow().close();
+            open.setColor(0xFFFF0000);
+            for (int v = 1; v < 4; v++) {
+                open.addVertex(v, 1, 0).setColor(0xFF0000FF);
+            }
+            mesh = open.buildOrThrow();
+            results.put("interleavedBytes", hex(mesh.vertexBuffer()));
+            mesh.close();
+            // a wrapper over POSITION_TEX_COLOR builders, uv before colour
+            a = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+            b = second.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+            both = com.mojang.blaze3d.vertex.VertexMultiConsumer.create(a, b);
+            for (int v = 0; v < 4; v++) {
+                both.addVertex(v, 2, 0).setUv(0.5F, v * 0.25F).setColor(0xFF445566);
+            }
+            meshA = a.buildOrThrow();
+            meshB = b.buildOrThrow();
+            results.put("wrapperTexBytes", hex(meshA.vertexBuffer()) + "/" + hex(meshB.vertexBuffer()));
+            meshA.close();
+            meshB.close();
             // a normal through a pose scaled unevenly
             PoseStack scaled = new PoseStack();
             scaled.scale(2, 1, 1);
@@ -122,6 +149,17 @@ public final class ClientVertexTest {
             results.put("emptyBuild", String.valueOf(empty == null));
             if (empty != null) {
                 empty.close();
+            }
+            // a vertex without its colour: an error (last: 1.21 keeps the failed vertex in its shared buffer)
+            builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            try {
+                for (int v = 0; v < 4; v++) {
+                    builder.addVertex(v, 0, 0);
+                }
+                builder.buildOrThrow().close();
+                results.put("missingColour", "built");
+            } catch (IllegalStateException e) {
+                results.put("missingColour", e.getClass().getSimpleName());
             }
         } catch (RuntimeException | LinkageError e) {
             results.put("error", e + (e.getCause() == null ? "" : " / " + e.getCause()));

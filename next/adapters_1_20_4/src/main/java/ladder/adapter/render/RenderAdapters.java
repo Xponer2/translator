@@ -48,7 +48,7 @@ public final class RenderAdapters {
     // ------------------------------------------------------------------ the frame's time
 
     /** the client's own DeltaTracker: 1.20.4's timer values through its Minecraft */
-    private static final DeltaTracker TIMER = new DeltaTracker() {
+    public static final DeltaTracker TIMER = new DeltaTracker() {
         @Override
         public float getGameTimeDeltaTicks() {
             return Minecraft.getInstance().getDeltaFrameTime();
@@ -56,8 +56,8 @@ public final class RenderAdapters {
 
         @Override
         public float getGameTimeDeltaPartialTick(boolean runsNormally) {
-            // 1.20.4's frame time is the paused partial tick while paused, as 1.21's timer gives it
-            return Minecraft.getInstance().getFrameTime();
+            // NeoForge's getPartialTick is the paused one while the game is paused, as 1.21's timer gives it
+            return Minecraft.getInstance().getPartialTick();
         }
 
         @Override
@@ -71,7 +71,7 @@ public final class RenderAdapters {
         return TIMER;
     }
 
-    /** 1.21's {@code getPartialTick()} of the render events, which 1.20.4 gives as a float */
+    /** 1.21's {@code getPartialTick()} of the render events, which 1.20.4 gives as a float (the deltas: the timer's) */
     public static DeltaTracker getPartialTick(RenderLevelStageEvent event) {
         return new DeltaTracker.PartialTick(event.getPartialTick());
     }
@@ -85,6 +85,11 @@ public final class RenderAdapters {
     /** 1.21's {@code Tesselator.begin(mode, format)}: the tesselator's builder, begun */
     public static BufferBuilder begin(Tesselator tesselator, VertexFormat.Mode mode, VertexFormat format) {
         BufferBuilder builder = tesselator.getBuilder();
+        if (builder.building()) {
+            // 1.21 begins a new builder each time: one left building (abandoned, or failed) is dropped
+            forget(builder);
+            builder.end().release();
+        }
         builder.begin(mode, format);
         return builder;
     }
@@ -122,66 +127,167 @@ public final class RenderAdapters {
     // ------------------------------------------------------------------ vertices
     //
     // 1.21 sets a vertex's attributes in any order and writes it when the next one begins (or the buffer is built);
-    // 1.20.4 takes them in its format's order and needs endVertex(). So a vertex begun here is kept, its attributes
-    // gathered, and written whole (in the format's order, endVertex() after) when the next one begins on that
-    // consumer, before the game writes a whole vertex, and before any buffer ends (a wrapper's vertex may go into it).
+    // 1.20.4 takes them in its format's order and needs endVertex(). So a vertex begun here is kept (per thread: the
+    // chunk builders write on their own), its attributes gathered, and written whole (in the format's order,
+    // endVertex() after) when the next one begins on that consumer, before the game writes a whole vertex into its
+    // builder, and before a builder it goes into ends (a wrapper's builders are found under it).
 
-    /** a begun vertex's attributes */
+    /** a begun vertex's attributes, and the builders it goes into */
     private static final class Vertex {
         float x, y, z;
-        int r = 255, g = 255, b = 255, a = 255;
+        int r, g, b, a;
         float u, v;
         int u1, v1, u2, v2;
-        float nx, ny = 1.0F, nz;
+        float nx, ny, nz;
         boolean color, uv, uv1, uv2, normal;
+        List<BufferBuilder> builders;
     }
 
-    /** consumer -> its begun vertex (identity: a consumer is its own key) */
-    private static final Map<VertexConsumer, Vertex> PENDING = Collections.synchronizedMap(new java.util.IdentityHashMap<>());
+    /** consumer -> its begun vertex, this thread's (identity: a consumer is its own key) */
+    private static final ThreadLocal<Map<VertexConsumer, Vertex>> PENDING = ThreadLocal.withInitial(java.util.IdentityHashMap::new);
 
     /** writes the consumer's begun vertex, if any */
     public static void endVertex(VertexConsumer consumer) {
-        Vertex vertex = PENDING.remove(consumer);
+        Vertex vertex = PENDING.get().remove(consumer);
         if (vertex != null) {
             write(consumer, vertex);
         }
     }
 
-    /** writes every begun vertex (a buffer ends: wrappers' vertices may go into it) */
-    public static void endAll() {
-        List<Map.Entry<VertexConsumer, Vertex>> all;
-        synchronized (PENDING) {
-            if (PENDING.isEmpty()) {
-                return;
-            }
-            all = new ArrayList<>(PENDING.entrySet());
-            PENDING.clear();
+    /** a builder ends: the begun vertices that go into it are written first */
+    public static void endFor(BufferBuilder builder) {
+        Map<VertexConsumer, Vertex> pending = PENDING.get();
+        if (pending.isEmpty()) {
+            return;
         }
-        for (Map.Entry<VertexConsumer, Vertex> e : all) {
-            write(e.getKey(), e.getValue());
+        // an IdentityHashMap's entries are views of its table: the pairs are copied before any is removed
+        List<VertexConsumer> consumers = new ArrayList<>();
+        List<Vertex> vertices = new ArrayList<>();
+        for (Map.Entry<VertexConsumer, Vertex> e : pending.entrySet()) {
+            if (e.getValue().builders.isEmpty() || e.getValue().builders.contains(builder)) {
+                consumers.add(e.getKey());
+                vertices.add(e.getValue());
+            }
+        }
+        for (int i = 0; i < consumers.size(); i++) {
+            pending.remove(consumers.get(i));
+            write(consumers.get(i), vertices.get(i));
         }
     }
 
     /** a builder begins a new batch: a vertex begun before it is gone */
     public static void forget(BufferBuilder builder) {
-        PENDING.remove(builder);
+        PENDING.get().remove(builder);
+    }
+
+    /** consumer class -> its fields that hold the consumers it writes into (wrappers: VertexMultiConsumer, decals...) */
+    private static final Map<Class<?>, List<java.lang.reflect.Field>> DELEGATES = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** the builders a consumer writes into: itself, or those under a wrapper (none known: empty) */
+    private static List<BufferBuilder> builders(VertexConsumer consumer) {
+        List<BufferBuilder> found = new ArrayList<>();
+        collect(consumer, found, 0);
+        return found;
+    }
+
+    private static void collect(Object consumer, List<BufferBuilder> found, int depth) {
+        if (consumer instanceof BufferBuilder builder) {
+            if (!found.contains(builder)) {
+                found.add(builder);
+            }
+            return;
+        }
+        if (consumer == null || depth > 8) {
+            return;
+        }
+        for (java.lang.reflect.Field field : DELEGATES.computeIfAbsent(consumer.getClass(), RenderAdapters::delegateFields)) {
+            try {
+                Object value = field.get(consumer);
+                if (value instanceof Object[] array) {
+                    for (Object o : array) {
+                        collect(o, found, depth + 1);
+                    }
+                } else {
+                    collect(value, found, depth + 1);
+                }
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                // not readable: its builders stay unknown
+            }
+        }
+    }
+
+    private static List<java.lang.reflect.Field> delegateFields(Class<?> type) {
+        List<java.lang.reflect.Field> fields = new ArrayList<>();
+        for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+            for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+                Class<?> t = f.getType();
+                boolean holds = VertexConsumer.class.isAssignableFrom(t) || t.isArray() && VertexConsumer.class.isAssignableFrom(t.getComponentType());
+                if (holds && !java.lang.reflect.Modifier.isStatic(f.getModifiers())) {
+                    try {
+                        f.setAccessible(true);
+                        fields.add(f);
+                    } catch (RuntimeException e) {
+                        // a closed package: left out
+                    }
+                }
+            }
+        }
+        return fields;
     }
 
     private static void write(VertexConsumer consumer, Vertex vertex) {
-        if (consumer instanceof PendingVertex builder && builder.ladder$format() != null) {
-            for (VertexFormatElement element : builder.ladder$format().getElements()) {
+        VertexFormat format = null;
+        if (consumer instanceof PendingVertex builder) {
+            format = builder.ladder$format();
+        } else if (!vertex.builders.isEmpty()) {
+            // a wrapper passes each attribute to the builders under it: in their format's order
+            format = ((PendingVertex) vertex.builders.get(0)).ladder$format();
+        }
+        if (format != null) {
+            List<String> missing = new ArrayList<>();
+            for (VertexFormatElement element : format.getElements()) {
+                if (!has(vertex, element.getUsage(), element.getIndex())) {
+                    missing.add(element.toString());
+                }
+            }
+            if (!missing.isEmpty()) {
+                // as 1.21: a vertex without all of its format's elements is an error
+                throw new IllegalStateException("Missing elements in vertex: " + String.join(", ", missing));
+            }
+            for (VertexFormatElement element : format.getElements()) {
                 writeElement(consumer, vertex, element.getUsage(), element.getIndex());
             }
         } else {
-            // a wrapper: it passes each attribute to the consumers under it, in the game's usual order
+            // no builder known under it: the attributes that were set, in the game's usual order
             writeElement(consumer, vertex, VertexFormatElement.Usage.POSITION, 0);
-            writeElement(consumer, vertex, VertexFormatElement.Usage.COLOR, 0);
-            writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 0);
-            writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 1);
-            writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 2);
-            writeElement(consumer, vertex, VertexFormatElement.Usage.NORMAL, 0);
+            if (vertex.color) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.COLOR, 0);
+            }
+            if (vertex.uv) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 0);
+            }
+            if (vertex.uv1) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 1);
+            }
+            if (vertex.uv2) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 2);
+            }
+            if (vertex.normal) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.NORMAL, 0);
+            }
         }
         consumer.endVertex();
+    }
+
+    private static boolean has(Vertex vertex, VertexFormatElement.Usage usage, int index) {
+        if (usage == VertexFormatElement.Usage.COLOR) {
+            return vertex.color;
+        } else if (usage == VertexFormatElement.Usage.UV) {
+            return index == 0 ? vertex.uv : index == 1 ? vertex.uv1 : index != 2 || vertex.uv2;
+        } else if (usage == VertexFormatElement.Usage.NORMAL) {
+            return vertex.normal;
+        }
+        return true;
     }
 
     private static void writeElement(VertexConsumer consumer, Vertex vertex, VertexFormatElement.Usage usage, int index) {
@@ -202,7 +308,7 @@ public final class RenderAdapters {
 
     /** the consumer's begun vertex; null when none (an attribute set outside 1.21's protocol goes straight through) */
     private static Vertex begun(VertexConsumer consumer) {
-        return PENDING.get(consumer);
+        return PENDING.get().get(consumer);
     }
 
     /** 1.21's {@code addVertex(x, y, z)}: writes the vertex before, begins one */
@@ -212,7 +318,8 @@ public final class RenderAdapters {
         vertex.x = x;
         vertex.y = y;
         vertex.z = z;
-        PENDING.put(consumer, vertex);
+        vertex.builders = builders(consumer);
+        PENDING.get().put(consumer, vertex);
         return consumer;
     }
 

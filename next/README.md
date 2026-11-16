@@ -67,7 +67,7 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
 - **Data of the converted mods**: every data file that names a registry entry, a tag, a loot table, a recipe or an
   advancement must be in the running game: **3019 of 3019** load, among them Trek's 901 (structures, template pools,
   processors), Geophilic's 296 (biome features) and Explorify's 131.
-- **On the client**: 18 converted mods together (Mouse Tweaks, Resourceful Config, Cherished Worlds, Searchables,
+- **On the client**: 21 converted mods together (Mouse Tweaks, Resourceful Config, Prism, spark, Cherished Worlds, Searchables,
   Cubes Without Borders, Fast IP Ping, Ambient Environment, Just Enough Characters, Macaw's, Trek and others): the 1.20.4
   client makes a fresh world, enters it, draws it and opens the inventory, with no error.
 - **Test mod A** (`testmods/ladder_test_a`, made for NeoForge 1.21.1): mob effects and attributes through holders, a
@@ -75,10 +75,10 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   changed method on two levels with super calls, an FML 4 extension point of an ordinary class, DFU 8 codecs (a
   dispatch over map codecs, validation, error messages): **the same 28 results** natively on 1.21.1 and converted on
   1.20.4. On the client, 1.21's vertex API (`Tesselator.begin`, `addVertex` with its setters in any order, a wrapper
-  over two buffers, posed normals, `MeshData`) and `DeltaTracker`: **the same 12 results, the written vertex bytes
-  included**.
+  over two buffers, builders interleaved, posed normals, a missing element, `MeshData`) and `DeltaTracker`: **the same
+  15 results, the written vertex bytes included**.
 
-Over the whole corpus, 35 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
+Over the whole corpus, 38 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
 outside `META-INF/jarjar` and Mojang's libraries are checked too). What holds the others back most, in order: mixins
 into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in code and
 in loot tables), the 1.20.5 network payloads, `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`,

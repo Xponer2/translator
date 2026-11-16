@@ -274,8 +274,14 @@ public class Convert {
                 } else if (name.equals("META-INF/neoforge.mods.toml")) {
                     name = "META-INF/mods.toml";
                     data = modsToml(new String(data, StandardCharsets.UTF_8), bottom).getBytes(StandardCharsets.UTF_8);
-                } else if (name.endsWith("mixins.json")) {
-                    data = new String(data, StandardCharsets.UTF_8).replaceAll("\"JAVA_2[0-9]\"", "\"JAVA_17\"").getBytes(StandardCharsets.UTF_8);
+                } else if (name.endsWith("mixins.json") || name.endsWith("mixin.json")) {
+                    // the bottom version's Java and Mixin (1.20.4: Java 17, Mixin 0.8.5; 1.21's configs ask for 0.8.7)
+                    String json = new String(data, StandardCharsets.UTF_8).replaceAll("\"JAVA_2[0-9]\"", "\"JAVA_17\"");
+                    String mixin = MIXIN_VERSIONS.get(bottom);
+                    if (mixin != null) {
+                        json = json.replaceAll("(\"minVersion\"\\s*:\\s*)\"0\\.8\\.([6-9]|[1-9][0-9])[^\"]*\"", "$1\"" + mixin + "\"");
+                    }
+                    data = json.getBytes(StandardCharsets.UTF_8);
                 } else if (name.endsWith(".jar") && (nestedJars.contains(name) || name.startsWith("META-INF/jarjar/"))) {
                     data = nested(name, data);
                     if (data == null) {
@@ -319,6 +325,8 @@ public class Convert {
     // ---------------------------------------------------------------- mod entry points
 
     static final String MOD_ANNOTATION = "Lnet/neoforged/fml/common/Mod;";
+    /** the Mixin each version's loader has (its sponge-mixin) */
+    static final Map<String, String> MIXIN_VERSIONS = Map.of("1.20.4", "0.8.5", "1.20.6", "0.8.5", "1.21", "0.8.7", "1.21.1", "0.8.7");
 
     /**
      * FML 4 constructs each {@code @Mod} class of a mod whose {@code dist} holds the running side, and loads a javafml
