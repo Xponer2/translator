@@ -11,4 +11,6 @@ out/
 **/loader-jars.txt
 # game runs of the prototype (worlds, logs, mixin dumps, the converted mods put there)
 **/run-*/
-tools/build/
+tools/convert/classpath.txt
+testmods/*/run-*/
+testmods/*/run.log

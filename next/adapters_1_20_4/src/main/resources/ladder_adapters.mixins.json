@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "ladder.adapter.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "BlockStateBaseMixin",
+    "ItemStackMixin",
+    "BlockItemMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

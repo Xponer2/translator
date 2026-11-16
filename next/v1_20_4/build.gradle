@@ -25,11 +25,18 @@ neoForge {
             jvmArgument '-Dmixin.debug.export=true'
             // the behaviour probes (LadderProbe): results to this file, then the server stops
             systemProperty 'ladder.probe.out', file('run-server/probe.json').absolutePath.replace(File.separator, '/')
+            // the converted mods' facts (LadderFacts), compared with the 1.21.1 reference
+            systemProperty 'ladder.facts.out', file('run-server/facts.json').absolutePath.replace(File.separator, '/')
+            // the test mods' own results (testmods/*): compared with their runs on their own version
+            systemProperty 'ladder.test.out', file('run-server/test-a.json').absolutePath.replace(File.separator, '/')
         }
         client {
             client()
             gameDirectory = file('run-client')
             jvmArgument '-Xmx4G'
+            jvmArgument '-Dforge.logging.marker.scan=ACCEPT'
+            // the client probe (LadderProbeClient): results to this file at the title screen, then the game closes
+            systemProperty 'ladder.probe.client.out', file('run-client/probe-client.json').absolutePath.replace(File.separator, '/')
         }
     }
 }

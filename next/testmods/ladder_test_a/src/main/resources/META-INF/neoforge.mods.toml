@@ -1,0 +1,23 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="PolyForm Noncommercial 1.0.0"
+
+[[mods]]
+modId="ladder_test_a"
+version="1.0.0"
+displayName="Ladder Test A (1.21.1)"
+description="Uses Holder fields, methods and constructors and carried code; the ladder's conversion tests compare its results."
+
+[[dependencies.ladder_test_a]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.ladder_test_a]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.22)"
+ordering="NONE"
+side="BOTH"

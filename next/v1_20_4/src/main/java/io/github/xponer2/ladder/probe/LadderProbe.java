@@ -55,6 +55,9 @@ public final class LadderProbe {
 
     public LadderProbe(IEventBus modBus) {
         NeoForge.EVENT_BUS.register(this);
+        if (net.neoforged.fml.loading.FMLEnvironment.dist == net.neoforged.api.distmarker.Dist.CLIENT) {
+            NeoForge.EVENT_BUS.register(new LadderProbeClient());
+        }
     }
 
     @SubscribeEvent
@@ -75,6 +78,22 @@ public final class LadderProbe {
         } catch (Exception | LinkageError e) {
             LOGGER.error("Probe failed", e);
             root.addProperty("error", e.toString());
+        }
+        try {
+            root.add("block_use", this.blockUse(server.overworld()));
+        } catch (Exception | LinkageError e) {
+            LOGGER.error("Block use probe failed", e);
+            root.addProperty("blockUseError", e.toString());
+        }
+        String facts = System.getProperty("ladder.facts.out");
+        if (facts != null) {
+            // the converted mods' facts, as the 1.21.1 reference records them
+            try {
+                Files.writeString(Path.of(facts), new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
+                        .toJson(LadderFacts.record(server)), StandardCharsets.UTF_8);
+            } catch (IOException | RuntimeException | LinkageError e) {
+                LOGGER.error("Facts failed", e);
+            }
         }
         try {
             Files.writeString(Path.of(out), new GsonBuilder().setPrettyPrinting().create().toJson(root), StandardCharsets.UTF_8);
@@ -120,6 +139,45 @@ public final class LadderProbe {
         boolean codeRan = !notified.get(0).equals(notified.get(1));
         result.addProperty("modCodePathRan", codeRan);
         result.addProperty("pass", levelInterface.isInstance(level) && handler != null && powersOk && codeRan);
+        return result;
+    }
+
+    /**
+     * 1.20.5's useItemOn of a converted mod's block reached through 1.20.4's {@code BlockStateBase.use} (the adapters):
+     * Macaw's shutter opens and closes on a right click with an empty hand, and stays as it is with its own item in
+     * hand (useItemOn passes to the default interaction, which a shutter hasn't).
+     */
+    private JsonObject blockUse(ServerLevel level) {
+        JsonObject result = new JsonObject();
+        var id = new net.minecraft.resources.ResourceLocation("mcwwindows", "acacia_shutter");
+        if (!net.minecraft.core.registries.BuiltInRegistries.BLOCK.containsKey(id)) {
+            result.addProperty("present", false);
+            return result;
+        }
+        var block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(id);
+        BlockPos pos = new BlockPos(4, 100, 16);
+        level.setBlock(pos.below(), Blocks.STONE.defaultBlockState(), 3);
+        level.setBlock(pos, block.defaultBlockState(), 3);
+        var player = net.neoforged.neoforge.common.util.FakePlayerFactory.getMinecraft(level);
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+        var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(pos), net.minecraft.core.Direction.NORTH, pos, false);
+        var open = net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN;
+        boolean before = level.getBlockState(pos).getValue(open);
+        var first = level.getBlockState(pos).use(level, player, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+        boolean afterFirst = level.getBlockState(pos).getValue(open);
+        level.getBlockState(pos).use(level, player, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+        boolean afterSecond = level.getBlockState(pos).getValue(open);
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.item.ItemStack(block.asItem()));
+        var withItem = level.getBlockState(pos).use(level, player, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+        boolean afterItem = level.getBlockState(pos).getValue(open);
+        result.addProperty("present", true);
+        result.addProperty("firstResult", first.toString());
+        result.addProperty("openBefore", before);
+        result.addProperty("openAfterFirstClick", afterFirst);
+        result.addProperty("openAfterSecondClick", afterSecond);
+        result.addProperty("withOwnItemResult", withItem.toString());
+        result.addProperty("openAfterClickWithOwnItem", afterItem);
+        result.addProperty("pass", !before && afterFirst && !afterSecond && !afterItem && first.consumesAction() && !withItem.consumesAction());
         return result;
     }
 

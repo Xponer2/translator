@@ -1,0 +1,17 @@
+# The converter's rules for the hand-written adapters of the step down to 1.20.4 (top-version names; tabs).
+# P <class>                                   a class the adapters provide (in place of carrying it)
+# O <owner> <name> <desc> <interface> <defaults class> <defaults method>
+#                                             an override of a newer method: the mod class gets the interface (the
+#                                             adapters' mixins call it from 1.20.4's call sites); a super call into the
+#                                             game's own class goes to the defaults method (receiver first)
+# X <owner> <name> <desc> <adapter class> <adapter method>
+#                                             a call goes to the adapter's static method (receiver first)
+P	net/minecraft/world/item/Item$TooltipContext	ladder/adapter/provided/TooltipContext
+O	net/minecraft/world/level/block/state/BlockBehaviour	useItemOn	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/ItemInteractionResult;	ladder/adapter/block/BlockUseApi	ladder/adapter/block/BlockDefaults	useItemOn
+O	net/minecraft/world/level/block/state/BlockBehaviour	useWithoutItem	(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/InteractionResult;	ladder/adapter/block/BlockUseApi	ladder/adapter/block/BlockDefaults	useWithoutItem
+O	net/minecraft/world/level/block/state/BlockBehaviour	isPathfindable	(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/pathfinder/PathComputationType;)Z	ladder/adapter/block/PathfindableApi	ladder/adapter/block/BlockDefaults	isPathfindable
+O	net/minecraft/world/level/block/Block	appendHoverText	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/Item$TooltipContext;Ljava/util/List;Lnet/minecraft/world/item/TooltipFlag;)V	ladder/adapter/item/HoverTextApi	ladder/adapter/block/BlockDefaults	appendHoverText
+O	net/minecraft/world/item/BlockItem	appendHoverText	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/Item$TooltipContext;Ljava/util/List;Lnet/minecraft/world/item/TooltipFlag;)V	ladder/adapter/item/HoverTextApi	ladder/adapter/item/ItemDefaults	blockItemAppendHoverText
+O	net/minecraft/world/item/Item	appendHoverText	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/Item$TooltipContext;Ljava/util/List;Lnet/minecraft/world/item/TooltipFlag;)V	ladder/adapter/item/HoverTextApi	ladder/adapter/item/ItemDefaults	appendHoverText
+X	net/neoforged/fml/ModContainer	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;)V	ladder/adapter/fml/FmlAdapters	registerConfig
+X	net/neoforged/fml/ModContainer	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;Ljava/lang/String;)V	ladder/adapter/fml/FmlAdapters	registerConfig

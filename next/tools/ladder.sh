@@ -12,7 +12,12 @@ path() {
     if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else echo "$1"; fi
 }
 mkdir -p tools/build
-"$JAVAC" -nowarn -cp "$CP" -d tools/build tools/stage0/Stage0.java tools/convert/Convert.java 2>&1 | grep -v -E '^Note:' || true
+# a failed compile stops here: never run the tools' older classes
+if ! COMPILE=$("$JAVAC" -nowarn -cp "$CP" -d tools/build tools/stage0/Stage0.java tools/convert/Convert.java 2>&1); then
+    echo "$COMPILE" >&2
+    exit 1
+fi
+echo "$COMPILE" | grep -v -E '^Note:|^$' >&2 || true
 VERSIONS=()
 for pair in "1.21.1 v1_21_1" "1.21 v1_21" "1.20.6 v1_20_6" "1.20.4 v1_20_4"; do
     read -r version project <<< "$pair"
@@ -28,7 +33,13 @@ case "$COMMAND" in
         "$JAVA" -Xmx10G -cp "$CP${SEP}tools/build" Stage0 "$(path "${2:-$PWD/out/stage0}")" "$(path "$1")" "${VERSIONS[@]}"
         ;;
     convert)
-        "$JAVA" -Xmx8G -cp "$CP${SEP}tools/build" Convert "$(path "$1")" "$(path "$2")" "$(path "$3")" "${VERSIONS[@]}"
+        # the hand-written adapters' rules and jar, when they are built (./gradlew :adapters_1_20_4:jar)
+        RULES=()
+        ADAPTERS=$(ls adapters_1_20_4/build/libs/ladder-adapters-1.20.4-*.jar 2>/dev/null | head -1)
+        if [ -n "$ADAPTERS" ]; then
+            RULES=("-Dladder.rules=$(path "$PWD/adapters_1_20_4/src/main/resources/ladder-rules.tsv")" "-Dladder.adapters=$(path "$PWD/$ADAPTERS")")
+        fi
+        "$JAVA" -Xmx8G "${RULES[@]}" -cp "$CP${SEP}tools/build" Convert "$(path "$1")" "$(path "$2")" "$(path "$3")" "${VERSIONS[@]}"
         ;;
     *)
         sed -n '2,5p' "$0"

@@ -33,6 +33,11 @@ public class Stage0 {
         final Set<String> methods = new HashSet<>();
         final Set<String> fields = new HashSet<>();
         final Set<String> staticFields = new HashSet<>();
+        final Set<String> staticMethods = new HashSet<>();
+        /** the class's own access flags (ACC_INTERFACE: calls on it are invokeinterface) */
+        int classAccess;
+        /** access flags: "M name desc" / "F name desc" */
+        final Map<String, Integer> access = new HashMap<>();
     }
 
     static final class Version {
@@ -139,6 +144,7 @@ public class Stage0 {
                         @Override
                         public void visit(int ver, int access, String name, String sig, String sup, String[] itfs) {
                             this.info = new Cls();
+                            this.info.classAccess = access;
                             this.info.superName = sup;
                             this.info.interfaces = itfs == null ? new String[0] : itfs;
                             v.classes.put(name, this.info);
@@ -147,6 +153,7 @@ public class Stage0 {
                         @Override
                         public FieldVisitor visitField(int access, String name, String desc, String sig, Object value) {
                             this.info.fields.add(name + " " + desc);
+                            this.info.access.put("F " + name + " " + desc, access);
                             if ((access & Opcodes.ACC_STATIC) != 0) {
                                 this.info.staticFields.add(name + " " + desc);
                             }
@@ -156,6 +163,10 @@ public class Stage0 {
                         @Override
                         public MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] ex) {
                             this.info.methods.add(name + " " + desc);
+                            this.info.access.put("M " + name + " " + desc, access);
+                            if ((access & Opcodes.ACC_STATIC) != 0) {
+                                this.info.staticMethods.add(name + " " + desc);
+                            }
                             return null;
                         }
                     }, ClassReader.SKIP_CODE);
@@ -832,8 +843,15 @@ public class Stage0 {
         return n;
     }
 
-    static void carry(Version from, Version to, Map<Ref, Integer> stopped, StringBuilder details, StringBuilder table, Path out)
-            throws IOException {
+    /** What a rung can carry down by itself: the classes absent below, the new things, what each needs, the carried ones. */
+    static final class Plan {
+        Set<String> absent;
+        Map<String, Ref> things;
+        Map<String, Needs> needs;
+        Set<String> carried;
+    }
+
+    static Plan plan(Version from, Version to) {
         Set<String> absent = new HashSet<>();
         for (String c : from.classes.keySet()) {
             if (mapClass(from, to, c) == null) {
@@ -890,6 +908,21 @@ public class Stage0 {
                 }
             }
         }
+        Plan plan = new Plan();
+        plan.absent = absent;
+        plan.things = things;
+        plan.needs = needs;
+        plan.carried = carried;
+        return plan;
+    }
+
+    static void carry(Version from, Version to, Map<Ref, Integer> stopped, StringBuilder details, StringBuilder table, Path out)
+            throws IOException {
+        Plan plan = plan(from, to);
+        Set<String> absent = plan.absent;
+        Map<String, Ref> things = plan.things;
+        Map<String, Needs> needs = plan.needs;
+        Set<String> carried = plan.carried;
         // the roots: the hard things the held-back ones come down to, propagated to a fixed point (dependency cycles)
         Map<String, Set<String>> rootSets = new HashMap<>();
         needs.forEach((k, n) -> {

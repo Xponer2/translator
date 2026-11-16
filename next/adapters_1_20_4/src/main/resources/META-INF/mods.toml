@@ -1,0 +1,12 @@
+modLoader="javafml"
+loaderVersion="[2,)"
+license="PolyForm Noncommercial 1.0.0"
+
+[[mods]]
+modId="ladder_adapters"
+version="0.1.0"
+displayName="Ladder Adapters (1.20.4)"
+description="The hand-written parts of the step down to 1.20.4 the converted mods need."
+
+[[mixins]]
+config="ladder_adapters.mixins.json"

@@ -1,0 +1,20 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// The hand-written adapters of the step down to 1.20.4: what can't be carried or renamed (the roots). Compiled against
+// the real 1.20.4 and against the carried code of 1.20.4 (made by tools/ladder.sh convert: ladder-carried-1.20.4.jar).
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base { archivesName = 'ladder-adapters-1.20.4' }
+version = '0.1.0'
+neoForge {
+    version = '20.4.253'
+}
+def carried = rootProject.file(findProperty('ladder.carried') ?: 'out/converted/ladder-carried-1.20.4.jar')
+dependencies {
+    compileOnly files(carried)
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }

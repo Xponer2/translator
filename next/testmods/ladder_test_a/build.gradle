@@ -1,0 +1,29 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// Test mod A, made for NeoForge 1.21.1: uses the members the generated bridges cover (Holder<X> fields, methods and
+// constructors) and carried code. Run natively on 1.21.1 (the reference) and converted on 1.20.4: same results.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base { archivesName = 'ladder-test-a-1.21.1' }
+version = '1.0.0'
+neoForge {
+    version = '21.1.247'
+    runs {
+        server {
+            server()
+            gameDirectory = file('run-server')
+            programArgument '--nogui'
+            systemProperty 'ladder.test.out', file('run-server/test-a.json').absolutePath.replace(File.separator, '/')
+        }
+    }
+    mods {
+        ladder_test_a {
+            sourceSet sourceSets.main
+        }
+    }
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
