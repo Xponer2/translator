@@ -6,7 +6,7 @@
 > version steps on [`main`](https://github.com/Xponer2/translator). 1.12.2 will come back later as a step of the new
 > design.
 
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Status: redesign](https://img.shields.io/badge/status-redesign%20in%20progress-orange.svg?style=flat-square)](#status-redesign-november-2026)
 [![Minecraft 1.21.1 to 1.20.4 to 1.12.2](https://img.shields.io/badge/Minecraft-1.21.1%20%E2%86%92%201.20.4%20%E2%86%92%201.12.2-green.svg?style=flat-square)](#the-new-design-a-ladder-of-versions)
 ![Made with AI (Claude)](https://img.shields.io/badge/made%20with-AI%20(Claude)-8A2BE2?style=flat-square)
@@ -357,13 +357,7 @@ a mod that doesn't work? [Open an issue](https://github.com/Xponer2/translator/i
 
 ## License
 
-[PolyForm Noncommercial License 1.0.0](LICENSE), © Xponer2.
-
-- Free to use, change and share for any noncommercial purpose: in your own ports and mods, modpacks, servers,
-  videos, forks.
-- Keep the credit to the author: the `Required Notice` line of the license and the license header at the top of
-  every source file stay in every copy and in every changed version.
-- No commercial use.
+[MIT](LICENSE), © Xponer2: free for anyone to use, change and share, in any project.
 
 Bundled libraries:
 

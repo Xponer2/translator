@@ -68,6 +68,6 @@ made again.
 
 ## License of contributions
 
-The Translator is under the [PolyForm Noncommercial License 1.0.0](LICENSE). By sending a pull request you agree that
+The Translator is under the [MIT License](LICENSE). By sending a pull request you agree that
 your contribution is published under the same license. Code taken from other projects needs a compatible license
 and keeps its notice (see [`licenses/`](licenses)).
