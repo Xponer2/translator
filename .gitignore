@@ -1,37 +1,16 @@
-# eclipse
-bin
-*.launch
-.settings
-.metadata
-.classpath
-.project
-eclipse
-
-# idea
-out
-*.ipr
-*.iws
-*.iml
-.idea
-
-# vscode
-.vscode
-
-# gradle
-build
-.gradle
-
-# kate
-*.kate-swp
-
-# python
-__pycache__/
-*.pyc
-
-# local only
-run/
+# build outputs and the Gradle cache
+.gradle/
+build/
+**/build/
 *.log
-
-# local runs
-.jvmdg/
-logs/
+# downloaded Mojang mappings and Fabric intermediary: generated locally, never committed or shared
+mappings/
+# generated reports and tables (rebuilt by the tools)
+out/
+# per-machine lists of the loader jars
+**/loader-jars.txt
+# game runs of the prototype (worlds, logs, mixin dumps, the converted mods put there)
+**/run-*/
+tools/convert/classpath.txt
+testmods/*/run-*/
+testmods/*/run.log

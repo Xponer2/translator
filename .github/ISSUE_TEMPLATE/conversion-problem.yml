@@ -1,0 +1,32 @@
+name: Conversion problem
+description: A mod doesn't convert clean, or a converted mod behaves differently from the newer version.
+labels: ["mod support"]
+body:
+  - type: input
+    id: mod
+    attributes:
+      label: Mod and version
+      placeholder: Macaw's Bridges 3.1.2 (NeoForge 1.21.1)
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Translator commit
+      description: The commit you built, from `git log -1 --oneline`.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: The problems the converter lists, or what the converted mod does differently in the game.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Report and logs
+      description: Drag in the converter's report and, for a game run, `logs/latest.log`.
+    validations:
+      required: false

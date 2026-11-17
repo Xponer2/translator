@@ -1,57 +1,16 @@
 plugins {
-    id 'java-library'
-    id 'com.gtnewhorizons.retrofuturagradle' version '1.4.9'
+    id 'net.neoforged.moddev' version '2.0.107' apply false
 }
 
-apply from: rootProject.file('gradle/scripts/mod.gradle')
-
-// Compile-only stand-ins for carried 1.21 classes (the real ones come from the converted Minecraft 1.21.1 API at runtime,
-// under the same names): facades that take or return them compile with 1.21's exact descriptors. Never in the jar.
-sourceSets {
-    carriedStubs {
-        java.srcDir 'src/carriedStubs/java'
-    }
-}
-
-dependencies {
-    compileOnly sourceSets.carriedStubs.output
-    // Codec/MapCodec/RecordCodecBuilder (last Java 8 build, as used by MC 1.16.5). MIT licensed.
-    // Bundled into the Translator jar and part of its API, so the mods built on it compile against it too.
-    shade('com.mojang:datafixerupper:4.0.26') {
-        transitive = false
-    }
-    api('com.mojang:datafixerupper:4.0.26') {
-        transitive = false
-    }
-
-    // Runtime loading of original NeoForge 1.21.1 jars (runtime/**): downgrades their Java 21 bytecode to Java 8.
-    // The "all" jar carries its own (relocated) ASM 9 and the Java API stubs. LGPL-2.1, bundled unchanged.
-    shade('xyz.wagyourtail.jvmdowngrader:jvmdowngrader:2.0.1:all') {
-        transitive = false
-    }
-
-    // the JEI 1.21 API shapes (jei/**) are built on JEI 4.16; optional at runtime
-    compileOnly 'mezz.jei:jei_1.12.2:4.16.1.1013:api'
-
-    // the config files of original 1.21.1 mods (runtime/neoforge/ConfigLoader): night-config comes at runtime from the
-    // player's Minecraft 1.21.1 libraries (runtime/ApiCarry), never bundled
-    compileOnly 'com.electronwill.night-config:core:3.8.3'
-    compileOnly 'com.electronwill.night-config:toml:3.8.3'
-    // the 1.21 render math of the original 1.21.1 mods (Quaternionf, Matrix4f in PoseStack and Axis calls): JOML comes
-    // at runtime from the player's Minecraft 1.21.1 libraries (runtime/ApiCarry), never bundled
-    compileOnly 'org.joml:joml:1.10.5'
-}
-
-// JvmDowngrader finds its Java API stubs (META-INF/lib) and providers (META-INF/services) in its own jar: keep them
-jar {
-    from({ configurations.shade.findAll { it.name.startsWith('jvmdowngrader') }.collect { zipTree(it) } }) {
-        include 'META-INF/lib/**', 'META-INF/services/**'
-    }
-    // a coremod too: the 1.21.1 mods are converted before Minecraft's classes load, so their mixins apply
-    manifest {
-        attributes([
-                'FMLCorePlugin'               : 'io.github.xponer2.translator.core.TranslatorCore',
-                'FMLCorePluginContainsFMLMod' : 'true',
-        ])
+// the loader's own jars (FML, event bus, SPI) beside the joined game jar: the ladder's model of each version needs them
+subprojects {
+    tasks.register('printLoaderJars') {
+        def files = project.provider { project.configurations.findByName('compileClasspath')?.files ?: [] }
+        def out = project.file('loader-jars.txt')
+        doLast {
+            // the loader's jars, and Mojang's libraries whose API changes between the versions (DFU, Brigadier)
+            out.text = files.get().findAll { def u = it.toURI().toString(); u.contains('/net.neoforged') || u.contains('/datafixerupper/') || u.contains('/brigadier/') }
+                    .collect { it.absolutePath }.join('\n')
+        }
     }
 }
