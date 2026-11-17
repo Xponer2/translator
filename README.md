@@ -1,5 +1,11 @@
 # Translator
 
+> [!WARNING]
+> **Discontinued.** This branch keeps the first Translator build, which ran NeoForge 1.21.1 mods on Forge 1.12.2. It
+> gets no more updates, and its last build is the only release left. The Translator is being rebuilt as a ladder of
+> version steps on [`main`](https://github.com/Xponer2/translator). 1.12.2 will come back later as a step of the new
+> design.
+
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg?style=flat-square)](LICENSE)
 [![Status: redesign](https://img.shields.io/badge/status-redesign%20in%20progress-orange.svg?style=flat-square)](#status-redesign-november-2026)
 [![Minecraft 1.21.1 to 1.20.4 to 1.12.2](https://img.shields.io/badge/Minecraft-1.21.1%20%E2%86%92%201.20.4%20%E2%86%92%201.12.2-green.svg?style=flat-square)](#the-new-design-a-ladder-of-versions)
