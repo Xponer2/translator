@@ -1,6 +1,6 @@
 modLoader="javafml"
 loaderVersion="[4,)"
-license="PolyForm Noncommercial 1.0.0"
+license="MIT"
 
 [[mods]]
 modId="ladder_test_b"

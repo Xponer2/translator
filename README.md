@@ -1,6 +1,6 @@
 # Translator
 
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Status: prototype](https://img.shields.io/badge/status-prototype-orange.svg?style=flat-square)](#where-it-is)
 [![NeoForge 1.21.1 to 1.20.4](https://img.shields.io/badge/NeoForge-1.21.1%20%E2%86%92%201.20.4-green.svg?style=flat-square)](#how-a-step-works)
 ![Made with AI (Claude)](https://img.shields.io/badge/made%20with-AI%20(Claude)-8A2BE2?style=flat-square)
@@ -165,6 +165,5 @@ Help is welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-[PolyForm Noncommercial License 1.0.0](LICENSE), © Xponer2. Free to use, change and share for any noncommercial
-purpose, with credit to the author. Nothing of Minecraft is in this repository: the tables are made on your machine
-from the official downloads.
+[MIT](LICENSE), © Xponer2: free for anyone to use, change and share, in any project. Nothing of Minecraft is in this
+repository: the tables are made on your machine from the official downloads.

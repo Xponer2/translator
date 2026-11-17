@@ -26,6 +26,6 @@ counts now is in the code and in checking it against the real game.
 
 ## License of contributions
 
-The Translator is under the [PolyForm Noncommercial License 1.0.0](LICENSE). By sending a pull request you agree that
-your contribution is published under the same license. Code taken from other projects needs a compatible license and
-keeps its notice.
+The Translator is under the [MIT License](LICENSE). By sending a pull request you agree that your contribution is
+published under it. Code taken from other projects needs a compatible license and keeps its notice
+([THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists them).
