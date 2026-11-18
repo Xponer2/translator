@@ -105,22 +105,33 @@ public class Convert {
             Stage0.Plan plan = Stage0.plan(versions.get(rung), versions.get(rung + 1));
             Deque<String> todo = new ArrayDeque<>(List.of(why));
             Set<String> seen = new HashSet<>();
-            Map<String, Integer> roots = new TreeMap<>();
+            Map<String, String> roots = new TreeMap<>();
+            Map<String, String> parent = new HashMap<>();
             while (!todo.isEmpty()) {
                 String k = todo.poll();
                 Stage0.Needs n = plan.needs.get(k);
-                if (n == null || !seen.add(k) || provided.containsKey(k.substring(2))) {
+                // what the adapters provide or an X/F row covers isn't carried: its own needs don't count
+                if (n == null || !seen.add(k) || provided.containsKey(k.substring(2)) || !k.equals(why) && ruled(k)) {
                     continue;
                 }
                 for (String h : n.hard) {
                     if (!resolvable(rung, h)) {
-                        roots.merge(h, 1, Integer::sum);
+                        roots.putIfAbsent(h, k);
                     }
                 }
-                todo.addAll(n.deps);
+                for (String d : n.deps) {
+                    parent.putIfAbsent(d, k);
+                    todo.add(d);
+                }
             }
-            System.out.println(why + ": " + seen.size() + " things in its chain; unresolved roots:");
-            roots.forEach((r, c) -> System.out.println("  " + r));
+            System.out.println(why + ": " + seen.size() + " things in its chain; unresolved roots (and the path to them):");
+            roots.forEach((r, by) -> {
+                StringBuilder path = new StringBuilder(by);
+                for (String up = parent.get(by); up != null && path.length() < 600; up = parent.get(up)) {
+                    path.append("  <-  ").append(up);
+                }
+                System.out.println("  " + r + System.lineSeparator() + "      <- " + path);
+            });
             // the chain's things that still aren't carried, and the first reason each (access below, a contract, a need)
             Set<String> ok = carriable(rung);
             Stage0.Version from = versions.get(rung);
@@ -835,6 +846,8 @@ public class Convert {
     static final List<String[]> overrides = new ArrayList<>();
     /** X: "owner.name desc" -> {adapter class, adapter method} */
     static final Map<String, String[]> redirects = new HashMap<>();
+    /** K rows: "owner.<init> upperDesc" -> {lower desc, adapter class, the lower parameters (an upper one $i, or an adapter method)} */
+    static final Map<String, String[]> constructorArguments = new HashMap<>();
     /** F rows: "owner.name desc" of a static field -> {adapter class, getter}: its reads go to the getter */
     static final Map<String, String[]> fieldRedirects = new HashMap<>();
     /** M rows: owner, name, desc (top names), lower name, lower desc (bottom names): the same hook below, renamed */
@@ -887,8 +900,12 @@ public class Convert {
                 String[] c = line.split("\t");
                 switch (c[0]) {
                     case "P" -> provided.put(c[1], c[2]);
+                    // a class whose intermediary twin below is a different class: new above (carried, not renamed)
+                    case "N" -> Stage0.notTheSame.add(c[1]);
                     case "O" -> overrides.add(new String[] {c[1], c[2], c[3], c[4], c[5], c[6]});
                     case "X" -> redirects.put(c[1] + "." + c[2] + " " + c[3], new String[] {c[4], c[5]});
+                    // a constructor that takes more below: each lower parameter is an upper one or an adapter's value
+                    case "K" -> constructorArguments.put(c[1] + ".<init> " + c[2], new String[] {c[3], c[4], c[5]});
                     // a class renamed below with the same members: its uses get the lower name
                     case "R" -> NEOFORGE_MOVES.put(c[1], c[2]);
                     // a member (of the owner and its subclasses) that is another one below: bridged to it
@@ -982,6 +999,11 @@ public class Convert {
             for (AbstractInsnNode insn : m.instructions) {
                 if (insn instanceof FieldInsnNode field) {
                     String[] f = fieldRedirects.get(field.owner + "." + field.name + " " + field.desc);
+                    if (f == null && Stage0.platform(field.owner)) {
+                        // an inherited static field read through a subclass (SwordItem.BASE_ATTACK_DAMAGE_UUID, Item's)
+                        Stage0.Ref declared = resolve(field.owner, field.name, field.desc, false);
+                        f = declared == null ? null : fieldRedirects.get(declared.cls() + "." + field.name + " " + field.desc);
+                    }
                     if (f == null) {
                         continue;
                     }
@@ -1032,7 +1054,23 @@ public class Convert {
             }
         }
         for (MethodNode m : node.methods) {
-            for (AbstractInsnNode insn : m.instructions) {
+            for (AbstractInsnNode insn : m.instructions.toArray()) {
+                if (insn instanceof MethodInsnNode call && call.getOpcode() == Opcodes.INVOKESPECIAL && call.name.equals("<init>")
+                        && Stage0.platform(call.owner)) {
+                    // new X(args) of a constructor an adapter's factory gives (an X row on <init>)
+                    Stage0.Ref ref = resolve(call.owner, call.name, call.desc, true);
+                    String[] x = ref == null ? null : redirects.get(ref.cls() + "." + ref.name() + " " + ref.desc());
+                    if (x != null) {
+                        checkAdapter(x[0], x[1], call.desc.substring(0, call.desc.indexOf(')') + 1) + "L" + call.owner + ";", "X " + ref.key());
+                        newToFactory(m, call, x, ref);
+                    }
+                    // new X(args) or super(args) of a constructor that takes more below (a K row)
+                    String[] k = ref == null ? null : constructorArguments.get(ref.cls() + "." + ref.name() + " " + ref.desc());
+                    if (x == null && k != null) {
+                        spreadArguments(m, call, k, ref);
+                    }
+                    continue;
+                }
                 if (!(insn instanceof MethodInsnNode call) || call.owner.startsWith("[") || call.name.startsWith("<")) {
                     continue;
                 }
@@ -1334,7 +1372,8 @@ public class Convert {
             return false;
         }
         String rest = key.substring(2);
-        return key.charAt(0) == 'M' && redirects.containsKey(rest) || key.charAt(0) == 'F' && fieldRedirects.containsKey(rest);
+        return key.charAt(0) == 'M' && (redirects.containsKey(rest) || constructorArguments.containsKey(rest))
+                || key.charAt(0) == 'F' && fieldRedirects.containsKey(rest);
     }
 
     static Set<String> carriable(int i) {
@@ -1554,6 +1593,10 @@ public class Convert {
         for (Stage0.Ref ref : refs) {
             if (ref.kind() == 'C' || ref.cls().equals(thing.cls()) && thing.kind() == 'C') {
                 // types, and a carried class's own members (they come down with it)
+                continue;
+            }
+            if (ruled(ref.key())) {
+                // an X/F row's adapter takes the use (a protected field below read through a public getter)
                 continue;
             }
             Stage0.Ref end = quietWalk(rung, ref);
@@ -2070,6 +2113,7 @@ public class Convert {
             return null;
         }
         Type[] ua = Type.getArgumentTypes(upper.desc());
+        List<String> holderOf = holderArguments(from, upper, ua.length);
         String match = null;
         for (String m : info.methods) {
             if (!m.startsWith("<init> ")) {
@@ -2084,6 +2128,13 @@ public class Convert {
             for (int a = 0; a < la.length && ok; a++) {
                 ok = convertible(ua[a], la[a]) || ua[a].getSort() == Type.OBJECT && la[a].getSort() == Type.OBJECT
                         && lowerOwnerName(from, to, ua[a].getInternalName()).equals(la[a].getInternalName());
+                // a Holder<X> becomes an X below, not any other class (new MobEffectInstance(Holder<MobEffect>) is the
+                // (MobEffect) constructor, not the copy constructor (MobEffectInstance))
+                String x = holderOf.get(a);
+                if (ok && x != null && la[a].getSort() == Type.OBJECT && !la[a].getInternalName().equals(HOLDER)
+                        && !la[a].getInternalName().equals(REFERENCE)) {
+                    ok = lowerOwnerName(from, to, x).equals(la[a].getInternalName());
+                }
             }
             if (ok) {
                 if (match != null) {
@@ -2105,6 +2156,77 @@ public class Convert {
         String[] bridge = {owner, "new$" + Integer.toHexString(upper.desc().hashCode())};
         schedule(rung + 1, new Stage0.Ref('B', owner, bridge[1], "N|" + upper.cls() + "|<init>|" + upper.desc() + "|" + lowerOwner + "|<init>|" + match));
         return bridge;
+    }
+
+    /**
+     * The value class X of each Holder<X> parameter of an upper member, by parameter (null where the parameter isn't a
+     * Holder or the generic signature doesn't name a class), from the member's generic signature.
+     */
+    static List<String> holderArguments(Stage0.Version v, Stage0.Ref ref, int count) {
+        List<String> out = new ArrayList<>(Collections.nCopies(count, null));
+        byte[] code = v.bytes.get(ref.cls());
+        if (code == null) {
+            return out;
+        }
+        ClassNode cn = new ClassNode();
+        new ClassReader(code).accept(cn, ClassReader.SKIP_CODE);
+        for (MethodNode m : cn.methods) {
+            if (!m.name.equals(ref.name()) || !m.desc.equals(ref.desc()) || m.signature == null) {
+                continue;
+            }
+            List<TypeSignature> params = new ArrayList<>();
+            new org.objectweb.asm.signature.SignatureReader(m.signature).accept(new org.objectweb.asm.signature.SignatureVisitor(Opcodes.ASM9) {
+                @Override
+                public org.objectweb.asm.signature.SignatureVisitor visitParameterType() {
+                    TypeSignature t = new TypeSignature();
+                    params.add(t);
+                    return t;
+                }
+            });
+            // a signature without the synthetic parameters (an inner class's outer instance) doesn't line up
+            if (params.size() == count) {
+                for (int a = 0; a < count; a++) {
+                    TypeSignature t = params.get(a);
+                    if ((HOLDER.equals(t.cls) || REFERENCE.equals(t.cls)) && t.args.size() == 1) {
+                        out.set(a, t.args.get(0).cls);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /** One type of a generic signature: its class (null for a type variable or an array) and its type arguments. */
+    static final class TypeSignature extends org.objectweb.asm.signature.SignatureVisitor {
+        String cls;
+        final List<TypeSignature> args = new ArrayList<>();
+
+        TypeSignature() {
+            super(Opcodes.ASM9);
+        }
+
+        @Override
+        public void visitClassType(String name) {
+            cls = name;
+        }
+
+        @Override
+        public void visitInnerClassType(String name) {
+            cls = cls + "$" + name;
+            args.clear();
+        }
+
+        @Override
+        public org.objectweb.asm.signature.SignatureVisitor visitTypeArgument(char wildcard) {
+            TypeSignature a = new TypeSignature();
+            args.add(a);
+            return a;
+        }
+
+        @Override
+        public org.objectweb.asm.signature.SignatureVisitor visitArrayType() {
+            return new TypeSignature();
+        }
     }
 
     static String lowerOwnerName(Stage0.Version from, Stage0.Version to, String cls) {
@@ -2130,9 +2252,65 @@ public class Convert {
             }
             walk(ref);
             String[] bridge = callRedirect.get(level + " " + ref.key());
-            if (bridge == null) {
-                continue;
+            if (bridge != null) {
+                newToFactory(m, call, bridge, ref);
             }
+        }
+    }
+
+    /**
+     * A K row's constructor call: the upper arguments go to new locals, then the lower constructor's arguments are
+     * loaded, each an upper one ($i) or the value of an adapter method given all the upper ones. The object being made
+     * (a NEW's, or the uninitialized this of a super call) stays under them on the stack. The new locals live only
+     * here, before any later frame, so the method's frames still hold.
+     */
+    static void spreadArguments(MethodNode m, MethodInsnNode call, String[] rule, Stage0.Ref ref) {
+        Type[] upper = Type.getArgumentTypes(call.desc);
+        Type[] lower = Type.getArgumentTypes(rule[0]);
+        String[] specs = rule[2].split(",");
+        if (specs.length != lower.length) {
+            problem("K " + ref.key() + ": " + specs.length + " parameters given for " + rule[0]);
+            return;
+        }
+        int[] slot = new int[upper.length];
+        int next = m.maxLocals;
+        StringBuilder all = new StringBuilder("(");
+        for (int a = 0; a < upper.length; a++) {
+            slot[a] = next;
+            next += upper[a].getSize();
+            all.append(upper[a].getDescriptor());
+        }
+        all.append(')');
+        m.maxLocals = next;
+        InsnList code = new InsnList();
+        for (int a = upper.length - 1; a >= 0; a--) {
+            code.add(new VarInsnNode(upper[a].getOpcode(Opcodes.ISTORE), slot[a]));
+        }
+        for (int p = 0; p < lower.length; p++) {
+            String spec = specs[p].trim();
+            if (spec.startsWith("$")) {
+                int a = Integer.parseInt(spec.substring(1));
+                code.add(new VarInsnNode(upper[a].getOpcode(Opcodes.ILOAD), slot[a]));
+            } else {
+                for (int a = 0; a < upper.length; a++) {
+                    code.add(new VarInsnNode(upper[a].getOpcode(Opcodes.ILOAD), slot[a]));
+                }
+                String desc = all + lower[p].getDescriptor();
+                checkAdapter(rule[1], spec, desc, "K " + ref.key());
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, rule[1], spec, desc, false));
+            }
+        }
+        m.instructions.insertBefore(call, code);
+        call.desc = rule[0];
+    }
+
+    /**
+     * new X(args) -> factory(args): the NEW and its DUP go, the constructor call becomes a static factory returning the
+     * object (a constructor bridge, or an adapter's factory of an X rule). False, with a problem, for a super(...)
+     * call or a NEW whose object isn't DUPed.
+     */
+    static boolean newToFactory(MethodNode m, MethodInsnNode call, String[] factory, Stage0.Ref ref) {
+        {
             int depth = 0;
             AbstractInsnNode made = null;
             for (AbstractInsnNode back = call.getPrevious(); back != null; back = back.getPrevious()) {
@@ -2150,13 +2328,14 @@ public class Convert {
             AbstractInsnNode dup = made == null ? null : made.getNext();
             if (made == null || dup == null || dup.getOpcode() != Opcodes.DUP) {
                 problem("a super(...) or unusual new of " + ref.key() + ", whose parameters changed below: no bridge for it");
-                continue;
+                return false;
             }
             dropUninitialized(m, made);
             m.instructions.remove(made);
             m.instructions.remove(dup);
-            m.instructions.set(call, new MethodInsnNode(Opcodes.INVOKESTATIC, bridge[0], bridge[1],
+            m.instructions.set(call, new MethodInsnNode(Opcodes.INVOKESTATIC, factory[0], factory[1],
                     call.desc.substring(0, call.desc.indexOf(')') + 1) + "L" + call.owner + ";", false));
+            return true;
         }
     }
 

@@ -178,4 +178,9 @@ public final class MiscAdapters {
     public static MutableComponent fromJsonLenient(String json, HolderLookup.Provider registries) {
         return Component.Serializer.fromJsonLenient(json);
     }
+
+    /** FastColor.ARGB32.color(r, g, b): the opaque colour (1.20.5's short form of color(255, r, g, b)). */
+    public static int opaqueColor(int r, int g, int b) {
+        return FastColor.ARGB32.color(255, r, g, b);
+    }
 }

@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import com.mojang.serialization.Codec;
@@ -34,6 +37,20 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.Tiers;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.component.CustomModelData;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.component.ItemLore;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -62,6 +79,13 @@ public final class LadderTestB {
     static final DeferredHolder<Item, Item> NAMED = ITEMS.register("named_stick",
             () -> new Item(new Item.Properties().component(DataComponents.CUSTOM_NAME, Component.literal("Named by default"))));
 
+    /** a sword of the mod's own: its damage and speed are the properties' attribute modifiers */
+    static final DeferredHolder<Item, Item> BLADE = ITEMS.register("test_blade",
+            () -> new SwordItem(Tiers.IRON, new Item.Properties().attributes(SwordItem.createAttributes(Tiers.IRON, 4, -2.0F))));
+    /** a food of the mod's own, with an effect */
+    static final DeferredHolder<Item, Item> SNACK = ITEMS.register("test_snack", () -> new Item(new Item.Properties().food(new FoodProperties.Builder()
+            .nutrition(3).saturationModifier(0.5F).effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0), 0.5F).build())));
+
     record Owner(String name, int level) {
         static final Codec<Owner> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.STRING.fieldOf("name").forGetter(Owner::name), Codec.INT.fieldOf("level").forGetter(Owner::level)).apply(i, Owner::new));
@@ -75,6 +99,90 @@ public final class LadderTestB {
 
     static int chargeOf(net.minecraft.core.component.DataComponentHolder holder) {
         return holder.getOrDefault(CHARGE.get(), -1) + (holder.getComponents().has(CHARGE.get()) ? 100 : 0);
+    }
+
+    static String effects(Iterable<MobEffectInstance> effects) {
+        List<String> all = new ArrayList<>();
+        for (MobEffectInstance effect : effects) {
+            all.add(effect.getDescriptionId() + "/" + effect.getDuration() + "/" + effect.getAmplifier());
+        }
+        return all.toString();
+    }
+
+    static String attributes(ItemAttributeModifiers modifiers) {
+        List<String> all = new ArrayList<>();
+        for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
+            all.add(entry.attribute().unwrapKey().map(k -> k.location().toString()).orElse("?") + "@" + entry.slot().getSerializedName() + "="
+                    + entry.modifier().amount() + "/" + entry.modifier().operation().id());
+        }
+        java.util.Collections.sort(all);
+        return all + (modifiers.showInTooltip() ? "" : " hidden");
+    }
+
+    static ItemStack savedBack(ServerLevel level, ItemStack stack) {
+        return ItemStack.parseOptional(level.registryAccess(), (CompoundTag) stack.save(level.registryAccess()));
+    }
+
+    /** the game's other components: potions, food, lore, the model number, attribute modifiers, rarity */
+    static void moreComponents(Map<String, String> results, ServerLevel level) {
+        ItemStack potion = PotionContents.createItemStack(Items.POTION, Potions.HEALING);
+        PotionContents contents = potion.get(DataComponents.POTION_CONTENTS);
+        results.put("potion", contents.potion().flatMap(Holder::unwrapKey).map(k -> k.location().toString()).orElse("none"));
+        results.put("potionIs", contents.is(Potions.HEALING) + "/" + contents.is(Potions.SWIFTNESS));
+        results.put("potionEffects", effects(contents.getAllEffects()));
+        results.put("potionColor", Integer.toHexString(contents.getColor()));
+        results.put("potionDefault", String.valueOf(new ItemStack(Items.POTION).get(DataComponents.POTION_CONTENTS).potion().isPresent()));
+        results.put("stickNoPotion", String.valueOf(new ItemStack(Items.STICK).get(DataComponents.POTION_CONTENTS)));
+        potion.set(DataComponents.POTION_CONTENTS, contents.withEffectAdded(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200, 1)));
+        results.put("potionSaved", effects(savedBack(level, potion).get(DataComponents.POTION_CONTENTS).getAllEffects()));
+        ItemStack colored = new ItemStack(Items.SPLASH_POTION);
+        colored.set(DataComponents.POTION_CONTENTS, new PotionContents(Optional.empty(), Optional.of(0x112233), List.of()));
+        results.put("potionCustomColor", Integer.toHexString(savedBack(level, colored).get(DataComponents.POTION_CONTENTS).getColor()));
+
+        FoodProperties apple = new ItemStack(Items.GOLDEN_APPLE).get(DataComponents.FOOD);
+        results.put("food", apple.nutrition() + "/" + apple.saturation() + "/" + apple.canAlwaysEat() + "/" + apple.eatSeconds());
+        List<String> appleEffects = new ArrayList<>();
+        for (FoodProperties.PossibleEffect effect : apple.effects()) {
+            appleEffects.add(effect.effect().getDescriptionId() + "/" + effect.effect().getAmplifier() + "@" + effect.probability());
+        }
+        results.put("foodEffects", appleEffects.toString());
+        results.put("stickNoFood", String.valueOf(new ItemStack(Items.STICK).get(DataComponents.FOOD)));
+        FoodProperties snack = new ItemStack(SNACK.get()).get(DataComponents.FOOD);
+        results.put("foodOwn", snack.nutrition() + "/" + snack.saturation() + "/" + snack.effects().size() + "/"
+                + snack.effects().get(0).effect().getDescriptionId() + "@" + snack.effects().get(0).probability());
+
+        ItemStack paper = new ItemStack(Items.PAPER);
+        results.put("loreDefault", String.valueOf(paper.get(DataComponents.LORE).lines().size()));
+        paper.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("first"), Component.literal("second"))));
+        List<String> lines = new ArrayList<>();
+        for (Component line : savedBack(level, paper).get(DataComponents.LORE).lines()) {
+            lines.add(line.getString());
+        }
+        results.put("lore", lines.toString());
+        results.put("loreAdded", String.valueOf(paper.get(DataComponents.LORE).withLineAdded(Component.literal("third")).lines().size()));
+
+        ItemStack modeled = new ItemStack(Items.STICK);
+        results.put("modelDataDefault", String.valueOf(modeled.get(DataComponents.CUSTOM_MODEL_DATA)));
+        modeled.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(42));
+        results.put("modelData", String.valueOf(savedBack(level, modeled).get(DataComponents.CUSTOM_MODEL_DATA).value()));
+
+        results.put("swordAttributes", attributes(new ItemStack(Items.DIAMOND_SWORD).get(DataComponents.ATTRIBUTE_MODIFIERS)));
+        results.put("stickAttributes", attributes(new ItemStack(Items.STICK).get(DataComponents.ATTRIBUTE_MODIFIERS)));
+        ItemStack rod = new ItemStack(Items.STICK);
+        rod.set(DataComponents.ATTRIBUTE_MODIFIERS, SwordItem.createAttributes(Tiers.STONE, 5, -3.0F).withTooltip(false));
+        results.put("setAttributes", attributes(savedBack(level, rod).get(DataComponents.ATTRIBUTE_MODIFIERS)));
+        results.put("bladeAttributes", attributes(new ItemStack(BLADE.get()).get(DataComponents.ATTRIBUTE_MODIFIERS)));
+        // what the game gives an entity holding them (equipment changes are applied on its tick)
+        Zombie zombie = EntityType.ZOMBIE.create(level);
+        zombie.setPos(8.5, 141.0, 8.5);
+        zombie.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(BLADE.get()));
+        zombie.tick();
+        results.put("bladeZombie", String.valueOf(zombie.getAttributeValue(Attributes.ATTACK_DAMAGE)));
+        zombie.setItemSlot(EquipmentSlot.MAINHAND, rod.copy());
+        zombie.tick();
+        results.put("rodZombie", String.valueOf(zombie.getAttributeValue(Attributes.ATTACK_DAMAGE)));
+
+        results.put("rarity", new ItemStack(Items.ENCHANTED_GOLDEN_APPLE).get(DataComponents.RARITY) + "/" + new ItemStack(Items.STICK).get(DataComponents.RARITY));
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
@@ -179,6 +287,11 @@ public final class LadderTestB {
             results.put("bookSaved", String.valueOf(bookBack.get(DataComponents.STORED_ENCHANTMENTS).getLevel(sharpness)));
             results.put("bookNotOnItself", String.valueOf(bookBack.get(DataComponents.ENCHANTMENTS).getLevel(sharpness)));
             results.put("stickNoBook", String.valueOf(new ItemStack(Items.STICK).get(DataComponents.STORED_ENCHANTMENTS)));
+            try {
+                moreComponents(results, level);
+            } catch (RuntimeException | LinkageError e) {
+                results.put("more.error", e + (e.getCause() == null ? "" : " / " + e.getCause()));
+            }
             // handed to another mod in a chest (once: a restart finds it there)
             if (level.getBlockEntity(CHEST) instanceof ChestBlockEntity chest) {
                 results.put("run", "again");

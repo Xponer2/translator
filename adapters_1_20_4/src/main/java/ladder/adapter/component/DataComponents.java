@@ -322,8 +322,26 @@ public final class DataComponents {
         }
     }
 
-    public static final List<DataComponentType<?>> ALL = List.of(CUSTOM_DATA, CUSTOM_NAME, ITEM_NAME, DAMAGE, MAX_DAMAGE, MAX_STACK_SIZE,
-            DYED_COLOR, ENCHANTMENTS, STORED_ENCHANTMENTS);
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.alchemy.PotionContents> POTION_CONTENTS = new Game<>("potion_contents",
+            ladder.carried.net.minecraft.world.item.alchemy.PotionContents.CODEC, new StackComponents.Potions());
+
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.ItemLore> LORE = new Game<>("lore",
+            ladder.carried.net.minecraft.world.item.component.ItemLore.CODEC, new StackComponents.Lore());
+
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.CustomModelData> CUSTOM_MODEL_DATA = new Game<>("custom_model_data",
+            ladder.carried.net.minecraft.world.item.component.CustomModelData.CODEC, new StackComponents.ModelData());
+
+    public static final DataComponentType<net.minecraft.world.food.FoodProperties> FOOD = new Game<>("food",
+            ladder.adapter.food.FoodAdapters.directCodec(), new StackComponents.Food());
+
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.ItemAttributeModifiers> ATTRIBUTE_MODIFIERS = new Game<>("attribute_modifiers",
+            ladder.carried.net.minecraft.world.item.component.ItemAttributeModifiers.CODEC, new StackComponents.Attributes());
+
+    public static final DataComponentType<net.minecraft.world.item.Rarity> RARITY = new Game<>("rarity", StackComponents.ItemRarity.CODEC,
+            new StackComponents.ItemRarity());
+
+    public static final List<DataComponentType<?>> ALL = List.of(RARITY, CUSTOM_DATA, CUSTOM_NAME, ITEM_NAME, DAMAGE, MAX_DAMAGE, MAX_STACK_SIZE,
+            DYED_COLOR, ENCHANTMENTS, STORED_ENCHANTMENTS, POTION_CONTENTS, LORE, CUSTOM_MODEL_DATA, FOOD, ATTRIBUTE_MODIFIERS);
 
     private DataComponents() {
     }

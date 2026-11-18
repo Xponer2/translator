@@ -487,9 +487,19 @@ public class Stage0 {
     record Step(Outcome outcome, Ref to, String row) {
     }
 
+    /**
+     * Classes whose intermediary twin below is another class in all but the id (Fabric kept the id when Mojang replaced
+     * the class: 1.20.5's PotionContents record has 1.20.4's PotionUtils id): new above, so they are carried, not renamed.
+     * Filled from the adapters' N rows.
+     */
+    static final Set<String> notTheSame = new HashSet<>();
+
     static String mapClass(Version from, Version to, String cls) {
         if (to.classes.containsKey(cls)) {
             return cls;
+        }
+        if (notTheSame.contains(cls)) {
+            return null;
         }
         String inter = from.classToInter.get(cls);
         String other = inter == null ? null : to.interToClass.get(inter);

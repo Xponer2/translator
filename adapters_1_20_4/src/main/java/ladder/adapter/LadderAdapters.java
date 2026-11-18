@@ -16,6 +16,7 @@ public final class LadderAdapters {
     public LadderAdapters(net.neoforged.bus.api.IEventBus modBus) {
         ladder.adapter.event.TickBridge.register();
         ladder.adapter.component.ComponentRegistry.register(modBus);
+        ladder.adapter.component.ItemAttributes.register();
         ladder.adapter.network.PayloadBridge.register(modBus);
         if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
             // the frame's time for the trackers made of a partial tick

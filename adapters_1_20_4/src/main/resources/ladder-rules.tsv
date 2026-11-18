@@ -1,5 +1,6 @@
 # The converter's rules for the hand-written adapters of the step down to 1.20.4 (top-version names; tabs).
 # P <class>                                   a class the adapters provide (in place of carrying it)
+# N <class>                                   new above although its intermediary twin exists below (another class)
 # O <owner> <name> <desc> <interface> <defaults class> <defaults method>
 #                                             an override of a newer method: the mod class gets the interface (the
 #                                             adapters' mixins call it from 1.20.4's call sites); a super call into the
@@ -9,6 +10,10 @@
 # R <class> <lower class>                     a class renamed below with the same members (NeoForge has no intermediary)
 # F <owner> <name> <desc> <adapter class> <getter>
 #                                             a static field the adapters give: its reads go to the getter
+# K <owner> <upper desc> <lower desc> <adapter class> <lower parameters>
+#                                             a constructor that takes more below (new X(..) and super(..)): each
+#                                             lower parameter is an upper one ($0, $1..) or an adapter method's value,
+#                                             the method given all the upper arguments
 # M <owner> <name> <desc> <lower name> <lower desc>
 #                                             the same hook (of the owner and its subclasses) under another name and
 #                                             descriptor below; the generated bridges take it from there
@@ -232,3 +237,41 @@ X	net/minecraft/network/FriendlyByteBuf	writeNullable	(Lio/netty/buffer/ByteBuf;
 X	net/neoforged/neoforge/common/CommonHooks	validateComponent	(Ljava/lang/Object;)V	ladder/adapter/component/ComponentChecks	validateComponent
 F	net/minecraft/tags/ItemTags	DYEABLE	Lnet/minecraft/tags/TagKey;	ladder/adapter/component/ComponentTags	dyeable
 X	com/mojang/serialization/Codec	sizeLimitedListOf	(I)Lcom/mojang/serialization/Codec;	ladder/adapter/dfu/DfuAdapters	sizeLimitedListOf
+# classes whose intermediary twin below is another class
+N	net/minecraft/world/item/alchemy/PotionContents
+N	net/minecraft/client/multiplayer/SessionSearchTrees
+N	net/minecraft/client/multiplayer/SessionSearchTrees$Key
+F	net/minecraft/world/effect/MobEffectInstance	CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/effect/EffectAdapters	codec
+F	net/minecraft/world/effect/MobEffectInstance	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/effect/EffectAdapters	streamCodec
+X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;IIZZZLnet/minecraft/world/effect/MobEffectInstance;)V	ladder/adapter/effect/EffectAdapters	create
+X	net/minecraft/world/effect/MobEffectInstance	is	(Lnet/minecraft/core/Holder;)Z	ladder/adapter/effect/EffectAdapters	is
+X	net/minecraft/util/FastColor$ARGB32	color	(III)I	ladder/adapter/misc/MiscAdapters	opaqueColor
+X	net/minecraft/world/effect/MobEffect	createModifiers	(ILjava/util/function/BiConsumer;)V	ladder/adapter/effect/EffectAdapters	createModifiers
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier$Operation	id	()I	ladder/adapter/misc/AttributeAdapters	operationId
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	id	()Ljava/util/UUID;	ladder/adapter/misc/AttributeAdapters	id
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	amount	()D	ladder/adapter/misc/AttributeAdapters	amount
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	operation	()Lnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;	ladder/adapter/misc/AttributeAdapters	operation
+F	net/minecraft/world/entity/EquipmentSlot	BODY	Lnet/minecraft/world/entity/EquipmentSlot;	ladder/adapter/misc/AttributeAdapters	bodySlot
+F	net/minecraft/world/entity/ai/attributes/AttributeModifier	MAP_CODEC	Lcom/mojang/serialization/MapCodec;	ladder/adapter/misc/AttributeAdapters	mapCodec
+F	net/minecraft/world/entity/ai/attributes/AttributeModifier	CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/misc/AttributeAdapters	codec
+F	net/minecraft/world/entity/ai/attributes/AttributeModifier	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/misc/AttributeAdapters	streamCodec
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	name	()Ljava/lang/String;	ladder/adapter/misc/AttributeAdapters	modifierName
+F	net/minecraft/world/entity/ai/attributes/AttributeModifier$Operation	CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/misc/AttributeAdapters	operationCodec
+F	net/minecraft/world/entity/ai/attributes/AttributeModifier$Operation	BY_ID	Ljava/util/function/IntFunction;	ladder/adapter/misc/AttributeAdapters	operationById
+F	net/minecraft/world/entity/ai/attributes/AttributeModifier$Operation	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/misc/AttributeAdapters	operationStreamCodec
+X	net/minecraft/world/food/FoodProperties	nutrition	()I	ladder/adapter/food/FoodAdapters	nutrition
+X	net/minecraft/world/food/FoodProperties	saturation	()F	ladder/adapter/food/FoodAdapters	saturation
+X	net/minecraft/world/food/FoodProperties	eatSeconds	()F	ladder/adapter/food/FoodAdapters	eatSeconds
+X	net/minecraft/world/food/FoodProperties	eatDurationTicks	()I	ladder/adapter/food/FoodAdapters	eatDurationTicks
+X	net/minecraft/world/food/FoodProperties	effects	()Ljava/util/List;	ladder/adapter/food/FoodAdapters	effects
+X	net/minecraft/world/food/FoodProperties	<init>	(IFZFLjava/util/List;)V	ladder/adapter/food/FoodAdapters	create
+F	net/minecraft/world/food/FoodProperties	DIRECT_CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/food/FoodAdapters	directCodec
+X	net/minecraft/world/item/Item$Properties	attributes	(Lnet/minecraft/world/item/component/ItemAttributeModifiers;)Lnet/minecraft/world/item/Item$Properties;	ladder/adapter/component/ItemAttributes	attributes
+F	net/minecraft/world/item/Item	BASE_ATTACK_DAMAGE_UUID	Ljava/util/UUID;	ladder/adapter/item/ToolAdapters	baseAttackDamage
+F	net/minecraft/world/item/Item	BASE_ATTACK_SPEED_UUID	Ljava/util/UUID;	ladder/adapter/item/ToolAdapters	baseAttackSpeed
+K	net/minecraft/world/item/SwordItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/world/item/Item$Properties;)V	(Lnet/minecraft/world/item/Tier;IFLnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	$0,swordDamage,swordSpeed,$1
+K	net/minecraft/world/item/PickaxeItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/world/item/Item$Properties;)V	(Lnet/minecraft/world/item/Tier;IFLnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	$0,pickaxeDamage,pickaxeSpeed,$1
+K	net/minecraft/world/item/HoeItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/world/item/Item$Properties;)V	(Lnet/minecraft/world/item/Tier;IFLnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	$0,hoeDamage,hoeSpeed,$1
+K	net/minecraft/world/item/AxeItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/world/item/Item$Properties;)V	(Lnet/minecraft/world/item/Tier;FFLnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	$0,axeDamage,axeSpeed,$1
+K	net/minecraft/world/item/ShovelItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/world/item/Item$Properties;)V	(Lnet/minecraft/world/item/Tier;FFLnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	$0,shovelDamage,shovelSpeed,$1
+K	net/minecraft/world/item/DiggerItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/tags/TagKey;Lnet/minecraft/world/item/Item$Properties;)V	(FFLnet/minecraft/world/item/Tier;Lnet/minecraft/tags/TagKey;Lnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	diggerDamage,diggerSpeed,$0,$1,$2

@@ -29,6 +29,12 @@ public final class ItemDefaults {
         return properties;
     }
 
+    /** a component the properties have been given so far (the item isn't made yet), or null */
+    public static Object pending(Item.Properties properties, DataComponentType<?> type) {
+        Map<DataComponentType<?>, Object> values = BY_PROPERTIES.get(properties);
+        return values == null ? null : values.get(type);
+    }
+
     /** an item is made of its properties: their components are its own */
     public static void bind(Item item, Item.Properties properties) {
         Map<DataComponentType<?>, Object> values = BY_PROPERTIES.get(properties);
