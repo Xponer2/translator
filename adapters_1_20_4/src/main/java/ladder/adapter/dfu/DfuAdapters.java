@@ -125,6 +125,11 @@ public final class DfuAdapters {
 
     /** DFU 8's {@code listOf(min, max)} */
     @SuppressWarnings({"unchecked", "rawtypes"})
+    /** DFU 8's {@code sizeLimitedListOf(max)}: {@code listOf(0, max)}. */
+    public static Codec<?> sizeLimitedListOf(Codec codec, int max) {
+        return listOf(codec, 0, max);
+    }
+
     public static Codec<?> listOf(Codec codec, int min, int max) {
         Function<List<?>, DataResult<List<?>>> check = list -> list.size() < min || list.size() > max
                 ? DataResult.error(() -> "List size " + list.size() + " outside of [" + min + ", " + max + "]")

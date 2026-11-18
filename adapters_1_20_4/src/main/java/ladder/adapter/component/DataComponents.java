@@ -18,6 +18,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import ladder.carried.net.minecraft.world.item.component.DyedItemColor;
+import ladder.carried.net.minecraft.world.item.enchantment.ItemEnchantments;
 
 /**
  * 1.20.5's {@code DataComponents}, the game's own components, on 1.20.4's data of the stack: each reads and writes what
@@ -185,7 +196,134 @@ public final class DataComponents {
     public static final DataComponentType<Integer> MAX_STACK_SIZE = new Game<>("max_stack_size", ExtraCodecs.intRange(1, 99), itemOnly("max_stack_size", false));
 
     /** the game's components here, registered under minecraft: (ComponentRegistry) */
-    public static final List<DataComponentType<?>> ALL = List.of(CUSTOM_DATA, CUSTOM_NAME, ITEM_NAME, DAMAGE, MAX_DAMAGE, MAX_STACK_SIZE);
+    /** 1.20.4's HideFlags bits that 1.20.5 turned into each component's show_in_tooltip (ItemStackComponentizationFix) */
+    static final int HIDE_ENCHANTMENTS = 1, HIDE_ADDITIONAL = 32, HIDE_DYE = 64;
+
+    static boolean shown(ItemStack stack, int bit) {
+        CompoundTag tag = stack.getTag();
+        return tag == null || (tag.getInt("HideFlags") & bit) == 0;
+    }
+
+    static void show(ItemStack stack, int bit, boolean shown) {
+        CompoundTag tag = stack.getTag();
+        int flags = tag == null ? 0 : tag.getInt("HideFlags");
+        int changed = shown ? flags & ~bit : flags | bit;
+        if (changed == flags) {
+            return;
+        }
+        if (changed == 0) {
+            stack.removeTagKey("HideFlags");
+        } else {
+            stack.getOrCreateTag().putInt("HideFlags", changed);
+        }
+    }
+
+    static void dropEmptyTag(ItemStack stack) {
+        if (stack.getTag() != null && stack.getTag().isEmpty()) {
+            stack.setTag(null);
+        }
+    }
+
+    /** 1.21's dyed_color: 1.20.4's display.color, shown unless HideFlags has the dye bit. */
+    public static final DataComponentType<DyedItemColor> DYED_COLOR = new Game<>("dyed_color", DyedItemColor.CODEC, new DataComponentType.Vanilla<>() {
+        @Override
+        public DyedItemColor get(ItemStack stack) {
+            CompoundTag display = stack.getTagElement("display");
+            if (display == null || !display.contains("color", Tag.TAG_ANY_NUMERIC)) {
+                return null;
+            }
+            return new DyedItemColor(display.getInt("color"), shown(stack, HIDE_DYE));
+        }
+
+        @Override
+        public DyedItemColor prototype(ItemStack stack) {
+            return null;
+        }
+
+        @Override
+        public void set(ItemStack stack, DyedItemColor value) {
+            if (value == null) {
+                CompoundTag display = stack.getTagElement("display");
+                if (display != null) {
+                    display.remove("color");
+                    if (display.isEmpty()) {
+                        stack.removeTagKey("display");
+                    }
+                }
+                show(stack, HIDE_DYE, true);
+            } else {
+                stack.getOrCreateTagElement("display").putInt("color", value.rgb());
+                show(stack, HIDE_DYE, value.showInTooltip());
+            }
+            dropEmptyTag(stack);
+        }
+    });
+
+    /** 1.21's enchantments: 1.20.4's Enchantments list ({id, lvl}); every item has an empty one by default. */
+    public static final DataComponentType<ItemEnchantments> ENCHANTMENTS = new Game<>("enchantments", ItemEnchantments.CODEC,
+            new Enchantments("Enchantments", HIDE_ENCHANTMENTS, true));
+
+    /** 1.21's stored_enchantments (an enchanted book's): 1.20.4's StoredEnchantments list. */
+    public static final DataComponentType<ItemEnchantments> STORED_ENCHANTMENTS = new Game<>("stored_enchantments", ItemEnchantments.CODEC,
+            new Enchantments("StoredEnchantments", HIDE_ADDITIONAL, false));
+
+    /** An enchantment list of the stack's tag as ItemEnchantments, both ways (ids of 1.20.4's enchantment registry). */
+    static final class Enchantments implements DataComponentType.Vanilla<ItemEnchantments> {
+        private final String key;
+        private final int hideBit;
+        private final boolean everyItem;
+
+        Enchantments(String key, int hideBit, boolean everyItem) {
+            this.key = key;
+            this.hideBit = hideBit;
+            this.everyItem = everyItem;
+        }
+
+        @Override
+        public ItemEnchantments get(ItemStack stack) {
+            CompoundTag tag = stack.getTag();
+            if (tag == null || !tag.contains(this.key, Tag.TAG_LIST)) {
+                return null;
+            }
+            ItemEnchantments.Mutable value = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+            ListTag list = tag.getList(this.key, Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                CompoundTag entry = list.getCompound(i);
+                ResourceLocation id = EnchantmentHelper.getEnchantmentId(entry);
+                Enchantment enchantment = id == null ? null : BuiltInRegistries.ENCHANTMENT.get(id);
+                if (enchantment != null) {
+                    value.set(enchantment, EnchantmentHelper.getEnchantmentLevel(entry));
+                }
+            }
+            return value.toImmutable().withTooltip(shown(stack, this.hideBit));
+        }
+
+        @Override
+        public ItemEnchantments prototype(ItemStack stack) {
+            return this.everyItem || stack.is(Items.ENCHANTED_BOOK) ? ItemEnchantments.EMPTY : null;
+        }
+
+        @Override
+        public void set(ItemStack stack, ItemEnchantments value) {
+            if (value == null || value.isEmpty()) {
+                stack.removeTagKey(this.key);
+            } else {
+                ListTag list = new ListTag();
+                for (Object2IntMap.Entry<Holder<Enchantment>> e : value.entrySet()) {
+                    ResourceLocation id = BuiltInRegistries.ENCHANTMENT.getKey(e.getKey().value());
+                    if (id != null) {
+                        list.add(EnchantmentHelper.storeEnchantment(id, e.getIntValue()));
+                    }
+                }
+                stack.getOrCreateTag().put(this.key, list);
+            }
+            show(stack, this.hideBit, value == null || value.equals(value.withTooltip(true)));
+            dropEmptyTag(stack);
+        }
+    }
+
+    public static final List<DataComponentType<?>> ALL = List.of(CUSTOM_DATA, CUSTOM_NAME, ITEM_NAME, DAMAGE, MAX_DAMAGE, MAX_STACK_SIZE,
+            DYED_COLOR, ENCHANTMENTS, STORED_ENCHANTMENTS);
 
     private DataComponents() {
     }

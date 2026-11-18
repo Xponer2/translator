@@ -229,3 +229,6 @@ X	net/minecraft/network/FriendlyByteBuf	readNullable	(Lnet/minecraft/network/cod
 X	net/minecraft/network/FriendlyByteBuf	writeNullable	(Ljava/lang/Object;Lnet/minecraft/network/codec/StreamEncoder;)V	ladder/adapter/network/BufferCodecAdapters	writeNullable
 X	net/minecraft/network/FriendlyByteBuf	readNullable	(Lio/netty/buffer/ByteBuf;Lnet/minecraft/network/codec/StreamDecoder;)Ljava/lang/Object;	ladder/adapter/network/BufferCodecAdapters	readNullable
 X	net/minecraft/network/FriendlyByteBuf	writeNullable	(Lio/netty/buffer/ByteBuf;Ljava/lang/Object;Lnet/minecraft/network/codec/StreamEncoder;)V	ladder/adapter/network/BufferCodecAdapters	writeNullable
+X	net/neoforged/neoforge/common/CommonHooks	validateComponent	(Ljava/lang/Object;)V	ladder/adapter/component/ComponentChecks	validateComponent
+F	net/minecraft/tags/ItemTags	DYEABLE	Lnet/minecraft/tags/TagKey;	ladder/adapter/component/ComponentTags	dyeable
+X	com/mojang/serialization/Codec	sizeLimitedListOf	(I)Lcom/mojang/serialization/Codec;	ladder/adapter/dfu/DfuAdapters	sizeLimitedListOf

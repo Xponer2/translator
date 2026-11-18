@@ -103,6 +103,12 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   the main thread, replies, `PacketDistributor`: **the same 25 results** natively on 1.21.1 and converted on 1.20.4,
   in a single-player world and over a real connection to a dedicated server.
 
+- **Mods of two versions share one item** (test mod E): a mod made for 1.20.4 and running as it is, not converted,
+  takes the stack a converted 1.21.1 mod (test mod B) left in a chest and changes it with 1.20.4's own API (an
+  enchantment, a key of the stack's data, a new name). After a restart both mods read the same stack, and their
+  results are those of the same steps on the real 1.21.1 (with E's 1.21.1 twin): **B 41 + 46, E 6 + 6 results equal**.
+  The game's own item components 1.20.4 keeps elsewhere (dyed colour, enchantments, an enchanted book's stored ones)
+  are read and written where 1.20.4 keeps them, so 1.20.4's code sees them too.
 - **Mixins into methods that changed below** (test mod D, made for 1.21.1): every injector of a converted mod is
   checked against the lower game's method bodies, and one whose target moved (a parameter added or dropped, a call
   inside retyped, a parameter's type changed) is repaired by [Sinytra Adapter](https://github.com/Sinytra/Adapter)'s
@@ -110,7 +116,7 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   on 1.20.4.
 
 Over the whole corpus, 46 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 11942 (the
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 10846 (the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). What holds the others back most, in order:
 mixins into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in

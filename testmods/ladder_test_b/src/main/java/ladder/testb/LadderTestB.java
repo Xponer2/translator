@@ -16,6 +16,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
@@ -143,9 +149,47 @@ public final class LadderTestB {
             // a stack as the holder interface
             results.put("holderCharge", String.valueOf(chargeOf(stack)));
             results.put("holderIs", String.valueOf(((Object) stack) instanceof net.minecraft.core.component.DataComponentHolder));
+            // the game's own components 1.20.4 keeps elsewhere: a dyed colour, enchantments, an enchanted book's
+            ItemStack boots = new ItemStack(Items.LEATHER_BOOTS);
+            results.put("dyedDefault", String.valueOf(boots.get(DataComponents.DYED_COLOR)));
+            boots.set(DataComponents.DYED_COLOR, new DyedItemColor(0x336699, false));
+            results.put("dyed", String.valueOf(boots.get(DataComponents.DYED_COLOR)));
+            results.put("dyedOrDefault", Integer.toHexString(DyedItemColor.getOrDefault(boots, -1)));
+            ItemStack bootsBack = ItemStack.parseOptional(level.registryAccess(), (CompoundTag) boots.save(level.registryAccess()));
+            results.put("dyedSaved", String.valueOf(bootsBack.get(DataComponents.DYED_COLOR)));
+            Holder<Enchantment> sharpness = level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.SHARPNESS);
+            ItemStack blade = new ItemStack(Items.DIAMOND_SWORD);
+            results.put("enchDefault", String.valueOf(blade.get(DataComponents.ENCHANTMENTS).isEmpty()));
+            blade.enchant(sharpness, 3);
+            results.put("enchComponent", String.valueOf(blade.get(DataComponents.ENCHANTMENTS).getLevel(sharpness)));
+            results.put("enchHelper", String.valueOf(EnchantmentHelper.getItemEnchantmentLevel(sharpness, blade)));
+            ItemEnchantments.Mutable more = new ItemEnchantments.Mutable(blade.get(DataComponents.ENCHANTMENTS));
+            more.set(sharpness, 5);
+            blade.set(DataComponents.ENCHANTMENTS, more.toImmutable().withTooltip(false));
+            ItemStack bladeBack = ItemStack.parseOptional(level.registryAccess(), (CompoundTag) blade.save(level.registryAccess()));
+            ItemEnchantments bladeEnchantments = bladeBack.get(DataComponents.ENCHANTMENTS);
+            results.put("enchSaved", bladeEnchantments.getLevel(sharpness) + " hidden=" + bladeEnchantments.equals(bladeEnchantments.withTooltip(false)));
+            results.put("enchSavedHelper", String.valueOf(EnchantmentHelper.getItemEnchantmentLevel(sharpness, bladeBack)));
+            ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
+            results.put("bookDefault", String.valueOf(book.get(DataComponents.STORED_ENCHANTMENTS).isEmpty()));
+            ItemEnchantments.Mutable stored = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+            stored.set(sharpness, 2);
+            book.set(DataComponents.STORED_ENCHANTMENTS, stored.toImmutable());
+            ItemStack bookBack = ItemStack.parseOptional(level.registryAccess(), (CompoundTag) book.save(level.registryAccess()));
+            results.put("bookSaved", String.valueOf(bookBack.get(DataComponents.STORED_ENCHANTMENTS).getLevel(sharpness)));
+            results.put("bookNotOnItself", String.valueOf(bookBack.get(DataComponents.ENCHANTMENTS).getLevel(sharpness)));
+            results.put("stickNoBook", String.valueOf(new ItemStack(Items.STICK).get(DataComponents.STORED_ENCHANTMENTS)));
             // handed to another mod in a chest (once: a restart finds it there)
             if (level.getBlockEntity(CHEST) instanceof ChestBlockEntity chest) {
                 results.put("run", "again");
+                // the stack after a restart, as another mod (test mod E, of either version) changed it on the first run
+                ItemStack kept = chest.getItem(0);
+                results.put("again.charge", String.valueOf(kept.get(CHARGE.get())));
+                results.put("again.owner", String.valueOf(kept.get(OWNER.get())));
+                results.put("again.name", kept.getHoverName().getString());
+                CompoundTag keptData = kept.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+                results.put("again.custom", keptData.getInt("k") + "/" + keptData.getInt("e_mark"));
+                results.put("again.sharpness", String.valueOf(kept.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY).getLevel(sharpness)));
             } else {
                 level.setBlock(CHEST, Blocks.CHEST.defaultBlockState(), 3);
                 ((ChestBlockEntity) level.getBlockEntity(CHEST)).setItem(0, stack.copy());

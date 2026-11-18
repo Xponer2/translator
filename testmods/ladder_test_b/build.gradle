@@ -8,6 +8,8 @@ plugins {
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 base { archivesName = 'ladder-test-b-1.21.1' }
 version = '1.0.0'
+// test mod E (the 1.21.1 twin of the mixed-version test) runs with B: its source set must exist first
+evaluationDependsOn(':testmods:ladder_test_e')
 neoForge {
     version = '21.1.247'
     runs {
@@ -17,6 +19,7 @@ neoForge {
             programArgument '--nogui'
             systemProperty 'ladder.test.out', file('run-server/test-a.json').absolutePath.replace(File.separator, '/')
             systemProperty 'ladder.test.b.out', file('run-server/test-b.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.e.out', file('run-server/test-e.json').absolutePath.replace(File.separator, '/')
         }
     }
     mods {
@@ -25,6 +28,9 @@ neoForge {
         }
         ladder_test_a {
             sourceSet project(':testmods:ladder_test_a').sourceSets.main
+        }
+        ladder_test_e {
+            sourceSet project(':testmods:ladder_test_e').sourceSets.main
         }
     }
 }

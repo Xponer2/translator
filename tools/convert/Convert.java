@@ -841,6 +841,41 @@ public class Convert {
     static final List<String[]> memberMoves = new ArrayList<>();
     /** the adapters jar: class -> its methods "name desc" (each rule's target is checked against it) */
     static final Map<String, Set<String>> adapterMethods = new HashMap<>();
+    /** An adapters class's superclass and interfaces (a provided class's members may be inherited, from the JDK too). */
+    static final Map<String, List<String>> adapterSupers = new HashMap<>();
+
+    /** Whether a provided class has the member ("name desc" or "F name desc"), declared or inherited. */
+    static boolean providedHas(String cls, String member, Set<String> seen) {
+        if (cls == null || !seen.add(cls)) {
+            return false;
+        }
+        Set<String> members = adapterMethods.get(cls);
+        if (members != null) {
+            if (members.contains(member)) {
+                return true;
+            }
+            for (String s : adapterSupers.getOrDefault(cls, List.of())) {
+                if (providedHas(s, member, seen)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (cls.startsWith("java/")) {
+            // a JDK supertype (Iterable, Comparable, Record...): its public methods
+            try {
+                Class<?> c = Class.forName(cls.replace('/', '.'), false, ClassLoader.getPlatformClassLoader());
+                for (java.lang.reflect.Method m : c.getMethods()) {
+                    if (member.equals(m.getName() + " " + Type.getMethodDescriptor(m))) {
+                        return true;
+                    }
+                }
+            } catch (ClassNotFoundException ignored) {
+                // not a JDK class
+            }
+        }
+        return false;
+    }
 
     static void loadRules() throws IOException {
         String rules = System.getProperty("ladder.rules");
@@ -879,6 +914,11 @@ public class Convert {
                         // fields too, marked (a provided class's fields are checked like its methods)
                         node.fields.forEach(f -> methods.add("F " + f.name + " " + f.desc));
                         adapterMethods.put(node.name, methods);
+                        List<String> supers = new ArrayList<>(node.interfaces);
+                        if (node.superName != null) {
+                            supers.add(0, node.superName);
+                        }
+                        adapterSupers.put(node.name, supers);
                     }
                 }
             }
@@ -901,9 +941,8 @@ public class Convert {
         if (adapterMethods.isEmpty()) {
             return;
         }
-        Set<String> methods = adapterMethods.get(cls);
         String desc = remapper.mapMethodDesc(upperDesc);
-        if (methods == null || !methods.contains(name + " " + desc)) {
+        if (!providedHas(cls, name + " " + desc, new HashSet<>())) {
             problem("the adapters' " + cls + " has no " + name + desc);
         }
     }
@@ -913,9 +952,8 @@ public class Convert {
         if (adapterMethods.isEmpty()) {
             return;
         }
-        Set<String> members = adapterMethods.get(cls);
         String desc = remapper.mapDesc(upperDesc);
-        if (members == null || !members.contains("F " + name + " " + desc)) {
+        if (!providedHas(cls, "F " + name + " " + desc, new HashSet<>())) {
             problem("the adapters' " + cls + " has no field " + name + " " + desc);
         }
     }
@@ -1360,7 +1398,12 @@ public class Convert {
         while (changed) {
             changed = false;
             for (var it = ok.iterator(); it.hasNext();) {
-                Stage0.Needs n = plan.needs.get(it.next());
+                String key = it.next();
+                if (there.contains(key.substring(2))) {
+                    // a provided or renamed class is there below whatever its upper code needs: never dropped
+                    continue;
+                }
+                Stage0.Needs n = plan.needs.get(key);
                 for (String d : n.deps) {
                     if (plan.needs.containsKey(d) && !ok.contains(d) && !ruled(d)) {
                         it.remove();
@@ -1453,6 +1496,10 @@ public class Convert {
             return false;
         }
         String what = hard.substring(0, colon), key = hard.substring(colon + 2);
+        if (ruled(key)) {
+            // an adapter rule covers it, whatever kind of root it is (a library member with no code below, say)
+            return true;
+        }
         if (!what.equals("changed below") && !what.equals("missing below")) {
             return false;
         }
@@ -1946,11 +1993,23 @@ public class Convert {
             return null;
         }
         Stage0.Ref end = quietWalk(rung + 1, lower);
+        Integer access;
         if (end == null) {
-            return null;
+            // the lower member's class isn't below either but is carried down (a 1.20.5 class whose method changed
+            // between 1.21 and 1.20.6, ItemEnchantments.set(Holder, int) -> set(Enchantment, int)): the carried copy is
+            // the end, in its converted names
+            if (!carriable(rung + 1).contains("C " + lower.cls())) {
+                return null;
+            }
+            Stage0.Cls lowerOwner = to.classes.get(lower.cls());
+            access = lowerOwner.access.get(lower.kind() + " " + lower.name() + " " + lower.desc());
+            schedule(rung + 1, new Stage0.Ref('C', lower.cls(), null, null));
+            end = new Stage0.Ref(lower.kind(), CARRIED + lower.cls(), lower.name(),
+                    lower.kind() == 'F' ? remapper.mapDesc(lower.desc()) : remapper.mapMethodDesc(lower.desc()));
+        } else {
+            Stage0.Cls bottomOwner = versions.get(versions.size() - 1).classes.get(end.cls());
+            access = bottomOwner == null ? null : bottomOwner.access.get(end.kind() + " " + end.name() + " " + end.desc());
         }
-        Stage0.Cls bottomOwner = versions.get(versions.size() - 1).classes.get(end.cls());
-        Integer access = bottomOwner == null ? null : bottomOwner.access.get(end.kind() + " " + end.name() + " " + end.desc());
         if (access == null) {
             return null;
         }
