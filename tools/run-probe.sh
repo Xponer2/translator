@@ -4,6 +4,7 @@
 #   tools/run-probe.sh server [seconds]   ->  v1_20_4/run-server/probe.json
 #   tools/run-probe.sh client [seconds]   ->  v1_20_4/run-client/probe-client.json
 #   tools/run-probe.sh client-world [s]   ->  the same, after a fresh world was entered and the inventory opened
+#   tools/run-probe.sh client-connect [s] ->  the same, on the dedicated server of tools/run-net.sh
 set -u
 cd "$(dirname "$0")/.."
 SIDE="${1:-server}"
@@ -11,6 +12,8 @@ LIMIT="${2:-240}"
 EXTRA=()
 RUN="$SIDE"
 if [ "$SIDE" = client-world ]; then RUN=client; EXTRA=(-Pladder.world); fi
+# onto the dedicated server of tools/run-net.sh (a real connection: payloads are encoded)
+if [ "$SIDE" = client-connect ]; then RUN=client; EXTRA=(-Pladder.connect=localhost:25570); fi
 if [ "$RUN" = client ]; then RESULT=v1_20_4/run-client/probe-client.json; TASK=runClient; else RESULT=v1_20_4/run-server/probe.json; TASK=runServer; fi
 LOG=v1_20_4/run-$SIDE.log
 # the machine's guard before another game JVM (free memory, nobody playing): LADDER_GUARD (a command; non-zero exit = no)

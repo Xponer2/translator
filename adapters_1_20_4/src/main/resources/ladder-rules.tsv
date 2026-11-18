@@ -166,3 +166,66 @@ X	net/minecraft/world/item/ItemStack	save	(Lnet/minecraft/core/HolderLookup$Prov
 X	net/minecraft/world/item/ItemStack	saveOptional	(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/nbt/Tag;	ladder/adapter/component/ComponentStore	saveOptional
 X	net/minecraft/world/item/ItemStack	parseOptional	(Lnet/minecraft/core/HolderLookup$Provider;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/item/ItemStack;	ladder/adapter/component/ComponentStore	parseOptional
 X	net/minecraft/world/item/ItemStack	parse	(Lnet/minecraft/core/HolderLookup$Provider;Lnet/minecraft/nbt/Tag;)Ljava/util/Optional;	ladder/adapter/component/ComponentStore	parse
+# network: 1.20.5's static FriendlyByteBuf helpers on any ByteBuf (ByteBufCodecs and the STREAM_CODECs need them)
+X	net/minecraft/network/FriendlyByteBuf	readByteArray	(Lio/netty/buffer/ByteBuf;)[B	ladder/adapter/network/ByteBufAdapters	readByteArray
+X	net/minecraft/network/FriendlyByteBuf	readByteArray	(Lio/netty/buffer/ByteBuf;I)[B	ladder/adapter/network/ByteBufAdapters	readByteArray
+X	net/minecraft/network/FriendlyByteBuf	writeByteArray	(Lio/netty/buffer/ByteBuf;[B)V	ladder/adapter/network/ByteBufAdapters	writeByteArray
+X	net/minecraft/network/FriendlyByteBuf	readBlockPos	(Lio/netty/buffer/ByteBuf;)Lnet/minecraft/core/BlockPos;	ladder/adapter/network/ByteBufAdapters	readBlockPos
+X	net/minecraft/network/FriendlyByteBuf	writeBlockPos	(Lio/netty/buffer/ByteBuf;Lnet/minecraft/core/BlockPos;)V	ladder/adapter/network/ByteBufAdapters	writeBlockPos
+X	net/minecraft/network/FriendlyByteBuf	readVector3f	(Lio/netty/buffer/ByteBuf;)Lorg/joml/Vector3f;	ladder/adapter/network/ByteBufAdapters	readVector3f
+X	net/minecraft/network/FriendlyByteBuf	writeVector3f	(Lio/netty/buffer/ByteBuf;Lorg/joml/Vector3f;)V	ladder/adapter/network/ByteBufAdapters	writeVector3f
+X	net/minecraft/network/FriendlyByteBuf	readQuaternion	(Lio/netty/buffer/ByteBuf;)Lorg/joml/Quaternionf;	ladder/adapter/network/ByteBufAdapters	readQuaternion
+X	net/minecraft/network/FriendlyByteBuf	writeQuaternion	(Lio/netty/buffer/ByteBuf;Lorg/joml/Quaternionf;)V	ladder/adapter/network/ByteBufAdapters	writeQuaternion
+X	net/minecraft/network/FriendlyByteBuf	readUUID	(Lio/netty/buffer/ByteBuf;)Ljava/util/UUID;	ladder/adapter/network/ByteBufAdapters	readUUID
+X	net/minecraft/network/FriendlyByteBuf	writeUUID	(Lio/netty/buffer/ByteBuf;Ljava/util/UUID;)V	ladder/adapter/network/ByteBufAdapters	writeUUID
+X	net/minecraft/network/FriendlyByteBuf	writeNbt	(Lio/netty/buffer/ByteBuf;Lnet/minecraft/nbt/Tag;)V	ladder/adapter/network/ByteBufAdapters	writeNbt
+X	net/minecraft/network/FriendlyByteBuf	readNbt	(Lio/netty/buffer/ByteBuf;)Lnet/minecraft/nbt/CompoundTag;	ladder/adapter/network/ByteBufAdapters	readNbt
+X	net/minecraft/network/FriendlyByteBuf	readNbt	(Lio/netty/buffer/ByteBuf;Lnet/minecraft/nbt/NbtAccounter;)Lnet/minecraft/nbt/Tag;	ladder/adapter/network/ByteBufAdapters	readNbt
+# network: what ByteBufCodecs and the payloads need of classes 1.20.4 has (new members, new STREAM_CODEC fields)
+X	net/minecraft/core/IdMap	getIdOrThrow	(Ljava/lang/Object;)I	ladder/adapter/network/NetworkAdapters	getIdOrThrow
+X	net/minecraft/core/HolderLookup$Provider	createSerializationContext	(Lcom/mojang/serialization/DynamicOps;)Lnet/minecraft/resources/RegistryOps;	ladder/adapter/network/NetworkAdapters	createSerializationContext
+F	net/minecraft/resources/ResourceLocation	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	resourceLocation
+F	net/minecraft/core/UUIDUtil	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	uuid
+F	net/minecraft/core/BlockPos	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	blockPos
+F	net/minecraft/core/Direction	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	direction
+# network: 1.20.5 payloads on 20.4 (registration, the handler context, sending; items, ingredients and text as stream codecs)
+P	net/neoforged/neoforge/network/event/RegisterPayloadHandlersEvent	ladder/adapter/provided/network/RegisterPayloadHandlersEvent
+P	net/neoforged/neoforge/network/registration/PayloadRegistrar	ladder/adapter/provided/network/PayloadRegistrar
+O	net/minecraft/network/protocol/common/custom/CustomPacketPayload	type	()Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload$Type;	ladder/adapter/network/TypedPayload	ladder/adapter/network/PayloadAdapters	type
+X	net/minecraft/network/protocol/common/custom/CustomPacketPayload	type	()Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload$Type;	ladder/adapter/network/PayloadAdapters	type
+X	net/neoforged/neoforge/network/handling/IPayloadContext	enqueueWork	(Ljava/lang/Runnable;)Ljava/util/concurrent/CompletableFuture;	ladder/adapter/network/PayloadContexts	enqueueWork
+X	net/neoforged/neoforge/network/handling/IPayloadContext	enqueueWork	(Ljava/util/function/Supplier;)Ljava/util/concurrent/CompletableFuture;	ladder/adapter/network/PayloadContexts	enqueueWork
+X	net/neoforged/neoforge/network/handling/IPayloadContext	player	()Lnet/minecraft/world/entity/player/Player;	ladder/adapter/network/PayloadContexts	player
+X	net/neoforged/neoforge/network/handling/IPayloadContext	reply	(Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/PayloadContexts	reply
+X	net/neoforged/neoforge/network/handling/IPayloadContext	disconnect	(Lnet/minecraft/network/chat/Component;)V	ladder/adapter/network/PayloadContexts	disconnect
+X	net/neoforged/neoforge/network/handling/IPayloadContext	handle	(Lnet/minecraft/network/protocol/Packet;)V	ladder/adapter/network/PayloadContexts	handle
+X	net/neoforged/neoforge/network/handling/IPayloadContext	handle	(Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/PayloadContexts	handle
+X	net/neoforged/neoforge/network/handling/IPayloadContext	connection	()Lnet/minecraft/network/Connection;	ladder/adapter/network/PayloadContexts	connection
+X	net/neoforged/neoforge/network/PacketDistributor	sendToServer	(Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/Distributors	sendToServer
+X	net/neoforged/neoforge/network/PacketDistributor	sendToPlayer	(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/Distributors	sendToPlayer
+X	net/neoforged/neoforge/network/PacketDistributor	sendToPlayersInDimension	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/Distributors	sendToPlayersInDimension
+X	net/neoforged/neoforge/network/PacketDistributor	sendToPlayersNear	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;DDDDLnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/Distributors	sendToPlayersNear
+X	net/neoforged/neoforge/network/PacketDistributor	sendToAllPlayers	(Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/Distributors	sendToAllPlayers
+X	net/neoforged/neoforge/network/PacketDistributor	sendToPlayersTrackingEntity	(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/Distributors	sendToPlayersTrackingEntity
+X	net/neoforged/neoforge/network/PacketDistributor	sendToPlayersTrackingEntityAndSelf	(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/Distributors	sendToPlayersTrackingEntityAndSelf
+X	net/neoforged/neoforge/network/PacketDistributor	sendToPlayersTrackingChunk	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;[Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V	ladder/adapter/network/Distributors	sendToPlayersTrackingChunk
+F	net/minecraft/world/item/ItemStack	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	itemStack
+F	net/minecraft/world/item/ItemStack	OPTIONAL_STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	optionalItemStack
+F	net/minecraft/world/item/crafting/Ingredient	CONTENTS_STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	ingredient
+F	net/minecraft/network/chat/ComponentSerialization	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	component
+F	net/minecraft/network/chat/ComponentSerialization	TRUSTED_CONTEXT_FREE_STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	component
+F	net/minecraft/network/chat/ComponentSerialization	TRUSTED_STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	component
+F	net/minecraft/network/chat/ComponentSerialization	OPTIONAL_STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/network/StreamCodecs	optionalComponent
+# network: FriendlyByteBuf helpers that take stream codecs since 1.20.5 (1.20.4: Reader / Writer functions)
+X	net/minecraft/network/FriendlyByteBuf	readCollection	(Ljava/util/function/IntFunction;Lnet/minecraft/network/codec/StreamDecoder;)Ljava/util/Collection;	ladder/adapter/network/BufferCodecAdapters	readCollection
+X	net/minecraft/network/FriendlyByteBuf	writeCollection	(Ljava/util/Collection;Lnet/minecraft/network/codec/StreamEncoder;)V	ladder/adapter/network/BufferCodecAdapters	writeCollection
+X	net/minecraft/network/FriendlyByteBuf	readList	(Lnet/minecraft/network/codec/StreamDecoder;)Ljava/util/List;	ladder/adapter/network/BufferCodecAdapters	readList
+X	net/minecraft/network/FriendlyByteBuf	readMap	(Ljava/util/function/IntFunction;Lnet/minecraft/network/codec/StreamDecoder;Lnet/minecraft/network/codec/StreamDecoder;)Ljava/util/Map;	ladder/adapter/network/BufferCodecAdapters	readMap
+X	net/minecraft/network/FriendlyByteBuf	readMap	(Lnet/minecraft/network/codec/StreamDecoder;Lnet/minecraft/network/codec/StreamDecoder;)Ljava/util/Map;	ladder/adapter/network/BufferCodecAdapters	readMap
+X	net/minecraft/network/FriendlyByteBuf	writeMap	(Ljava/util/Map;Lnet/minecraft/network/codec/StreamEncoder;Lnet/minecraft/network/codec/StreamEncoder;)V	ladder/adapter/network/BufferCodecAdapters	writeMap
+X	net/minecraft/network/FriendlyByteBuf	readOptional	(Lnet/minecraft/network/codec/StreamDecoder;)Ljava/util/Optional;	ladder/adapter/network/BufferCodecAdapters	readOptional
+X	net/minecraft/network/FriendlyByteBuf	writeOptional	(Ljava/util/Optional;Lnet/minecraft/network/codec/StreamEncoder;)V	ladder/adapter/network/BufferCodecAdapters	writeOptional
+X	net/minecraft/network/FriendlyByteBuf	readNullable	(Lnet/minecraft/network/codec/StreamDecoder;)Ljava/lang/Object;	ladder/adapter/network/BufferCodecAdapters	readNullable
+X	net/minecraft/network/FriendlyByteBuf	writeNullable	(Ljava/lang/Object;Lnet/minecraft/network/codec/StreamEncoder;)V	ladder/adapter/network/BufferCodecAdapters	writeNullable
+X	net/minecraft/network/FriendlyByteBuf	readNullable	(Lio/netty/buffer/ByteBuf;Lnet/minecraft/network/codec/StreamDecoder;)Ljava/lang/Object;	ladder/adapter/network/BufferCodecAdapters	readNullable
+X	net/minecraft/network/FriendlyByteBuf	writeNullable	(Lio/netty/buffer/ByteBuf;Ljava/lang/Object;Lnet/minecraft/network/codec/StreamEncoder;)V	ladder/adapter/network/BufferCodecAdapters	writeNullable

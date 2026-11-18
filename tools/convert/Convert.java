@@ -104,6 +104,33 @@ public class Convert {
             }
             System.out.println(why + ": " + seen.size() + " things in its chain; unresolved roots:");
             roots.forEach((r, c) -> System.out.println("  " + r));
+            // the chain's things that still aren't carried, and the first reason each (access below, a contract, a need)
+            Set<String> ok = carriable(rung);
+            Stage0.Version from = versions.get(rung);
+            for (String k : new TreeSet<>(seen)) {
+                Stage0.Ref r = plan.things.get(k);
+                if (ok.contains(k) || r == null || provided.containsKey(k.substring(2)) || ruled(k)) {
+                    continue;
+                }
+                String reason;
+                if (!plan.needs.get(k).hard.stream().allMatch(h -> resolvable(rung, h))) {
+                    reason = "an unresolved root";
+                } else if (r.kind() == 'C' || r.kind() == 'M' && from.classes.get(r.cls()).staticMethods.contains(r.name() + " " + r.desc())) {
+                    var classCode = Stage0.codeRefs(from, r.cls());
+                    Set<Stage0.Ref> refs = new HashSet<>();
+                    if (r.kind() == 'C') {
+                        classCode.values().forEach(refs::addAll);
+                    } else {
+                        refs.addAll(classCode.getOrDefault(r.name() + " " + r.desc(), Set.of()));
+                    }
+                    Stage0.Ref bad = unreachable(rung, r, refs);
+                    reason = bad != null ? "not public below: " + bad.key() : !contractsHold(rung, r) ? "a contract below breaks"
+                            : "needs " + plan.needs.get(k).deps.stream().filter(d -> plan.needs.containsKey(d) && !ok.contains(d) && !ruled(d)).findFirst().orElse("?");
+                } else {
+                    reason = "not a class or static method (instance members come with their class or an adapter)";
+                }
+                System.out.println("  not carried: " + k + " -- " + reason);
+            }
             return;
         }
         String measure = System.getProperty("ladder.measure");
@@ -120,6 +147,8 @@ public class Convert {
             try (var s = Files.list(in)) {
                 jars = s.filter(p -> p.toString().endsWith(".jar")).sorted().toList();
             }
+            // the accidental-override renames are decided once for every jar of the folder (a library's and its users')
+            scanPack(jars);
             for (Path jar : jars) {
                 problems.clear();
                 unverified.clear();
@@ -152,6 +181,7 @@ public class Convert {
                     + carried + (problems.isEmpty() ? "" : " (carried code problems: " + problems + ")") + "; " + report);
             return;
         }
+        scanPack(List.of(in));
         convert(in, out);
         writeCarried(out.resolveSibling("ladder-carried-" + versions.get(versions.size() - 1).id + ".jar"));
         String bottom = versions.get(versions.size() - 1).id;
@@ -192,6 +222,293 @@ public class Convert {
             mixinTargets = outerMixins;
         }
         drainCarry();
+    }
+
+    /** The prefix of a mod method renamed because it would override a game method below by accident. */
+    static final String OWN = "ladder$own$";
+
+    /** A class of the jars converted together: its supertypes and its own non-static methods ("name desc"). */
+    record PackClass(String superName, String[] interfaces, Set<String> methods, Set<String> privates, boolean mixin) {
+    }
+
+    /** Every class of the jars converted together (the batch folder, or the one jar), embedded jars included. */
+    static final Map<String, PackClass> pack = new HashMap<>();
+    /** class -> the pack classes that extend or implement it */
+    static final Map<String, List<String>> packChildren = new HashMap<>();
+    /** "class name desc" -> whether that method's override family is renamed */
+    static final Map<String, Boolean> ownDecided = new HashMap<>();
+    /** the pack classes whose supertypes leave the pack for a class nobody gave (reported once each) */
+    static final Map<String, String> packUnknown = new HashMap<>();
+
+    static void scanPack(List<Path> jars) throws IOException {
+        pack.clear();
+        packChildren.clear();
+        ownDecided.clear();
+        packUnknown.clear();
+        for (Path jar : jars) {
+            try (InputStream in = Files.newInputStream(jar)) {
+                scanJar(in, 0);
+            } catch (IOException | RuntimeException e) {
+                // an unreadable jar: its own conversion reports it
+            }
+        }
+        for (var e : pack.entrySet()) {
+            List<String> supers = new ArrayList<>();
+            supers.add(e.getValue().superName());
+            supers.addAll(Arrays.asList(e.getValue().interfaces()));
+            for (String sup : supers) {
+                if (sup != null) {
+                    packChildren.computeIfAbsent(sup, k -> new ArrayList<>()).add(e.getKey());
+                }
+            }
+        }
+    }
+
+    static void scanJar(InputStream jar, int depth) throws IOException {
+        ZipInputStream zip = new ZipInputStream(jar);
+        for (ZipEntry e; (e = zip.getNextEntry()) != null;) {
+            String name = e.getName();
+            if (name.endsWith(".jar") && depth < 3) {
+                // an embedded jar (jarjar): its classes are converted with it and seen by the jars that use them
+                scanJar(new java.io.ByteArrayInputStream(zip.readAllBytes()), depth + 1);
+            } else if (name.endsWith(".class") && !name.startsWith("META-INF/")) {
+                ClassNode node = new ClassNode();
+                try {
+                    new ClassReader(zip.readAllBytes()).accept(node, ClassReader.SKIP_CODE);
+                } catch (RuntimeException bad) {
+                    continue;
+                }
+                Set<String> methods = new HashSet<>(), privates = new HashSet<>();
+                for (MethodNode m : node.methods) {
+                    if ((m.access & Opcodes.ACC_STATIC) == 0 && !m.name.startsWith("<")) {
+                        ((m.access & Opcodes.ACC_PRIVATE) == 0 ? methods : privates).add(m.name + " " + m.desc);
+                    }
+                }
+                pack.putIfAbsent(node.name, new PackClass(node.superName, node.interfaces.toArray(new String[0]), methods, privates,
+                        !mixinTargetsOf(node).isEmpty()));
+            }
+        }
+    }
+
+    /** A supertype outside the pack that no mod class can be: the JDK, the game, and the libraries the game ships. */
+    static boolean outsideKnown(String cls) {
+        return Stage0.platform(cls) || cls.startsWith("java/") || cls.startsWith("javax/") || cls.startsWith("jdk/") || cls.startsWith("sun/")
+                || cls.startsWith("com/sun/") || cls.startsWith("com/mojang/") || cls.startsWith("com/google/") || cls.startsWith("org/apache/")
+                || cls.startsWith("it/unimi/") || cls.startsWith("io/netty/") || cls.startsWith("org/joml/") || cls.startsWith("org/slf4j/")
+                || cls.startsWith("org/lwjgl/") || cls.startsWith("com/electronwill/") || cls.startsWith("org/spongepowered/")
+                || cls.startsWith("com/llamalad7/") || cls.startsWith("org/objectweb/") || cls.startsWith("kotlin/") || cls.startsWith("kotlinx/")
+                || cls.startsWith("org/jetbrains/") || cls.startsWith("org/intellij/") || cls.startsWith("cpw/mods/") || cls.startsWith("net/minecraftforge/");
+    }
+
+    /** The game's supertypes of a pack class, across the pack's jars; an unknown non-library supertype is noted. */
+    static List<String> packPlatformStarts(String cls) {
+        List<String> out = new ArrayList<>();
+        Deque<String> todo = new ArrayDeque<>(List.of(cls));
+        Set<String> seen = new HashSet<>();
+        while (!todo.isEmpty()) {
+            String c = todo.poll();
+            if (c == null || !seen.add(c)) {
+                continue;
+            }
+            if (Stage0.platform(c)) {
+                out.add(c);
+                continue;
+            }
+            PackClass pc = pack.get(c);
+            if (pc == null) {
+                if (!outsideKnown(c)) {
+                    packUnknown.putIfAbsent(cls, c);
+                }
+                continue;
+            }
+            todo.add(pc.superName());
+            todo.addAll(Arrays.asList(pc.interfaces()));
+        }
+        return out;
+    }
+
+    /** The pack class (this one or a pack supertype) declaring that non-static, non-private method, or null. */
+    static String packDeclaring(String cls, String name, String desc) {
+        Deque<String> todo = new ArrayDeque<>(List.of(cls));
+        Set<String> seen = new HashSet<>();
+        while (!todo.isEmpty()) {
+            String c = todo.poll();
+            PackClass pc = c == null || !seen.add(c) ? null : pack.get(c);
+            if (pc == null) {
+                continue;
+            }
+            if (pc.methods().contains(name + " " + desc)) {
+                return c;
+            }
+            todo.add(pc.superName());
+            todo.addAll(Arrays.asList(pc.interfaces()));
+        }
+        return null;
+    }
+
+    /** Every pack class whose supertypes (transitively) include that one. */
+    static Set<String> packDescendants(String cls) {
+        Set<String> out = new HashSet<>();
+        Deque<String> todo = new ArrayDeque<>(List.of(cls));
+        while (!todo.isEmpty()) {
+            for (String child : packChildren.getOrDefault(todo.poll(), List.of())) {
+                if (out.add(child)) {
+                    todo.add(child);
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Whether a pack method is renamed: its override family (the pack classes that declare it above or below it, across
+     * jars) overrides nothing in the upper version, but some member would override or implement a game method of the
+     * same name and descriptor below (a 1.21 payload's own {@code write(FriendlyByteBuf)} would become 1.20.4's
+     * {@code CustomPacketPayload.write}: a package-private one fails with IllegalAccessError, a public one is called in
+     * place of the payload's codec). The whole family is renamed with all its calls, in every jar of the pack.
+     */
+    static boolean ownRenamed(String cls, String name, String desc) {
+        String key = cls + " " + name + " " + desc;
+        Boolean known = ownDecided.get(key);
+        if (known != null) {
+            return known;
+        }
+        // the family: up to the declaring supertypes, down to the declaring subtypes of any member, until it stops growing
+        Set<String> family = new LinkedHashSet<>(List.of(cls));
+        Deque<String> todo = new ArrayDeque<>(family);
+        while (!todo.isEmpty()) {
+            String c = todo.poll();
+            Set<String> near = new HashSet<>();
+            PackClass pc = pack.get(c);
+            if (pc != null) {
+                List<String> supers = new ArrayList<>();
+                supers.add(pc.superName());
+                supers.addAll(Arrays.asList(pc.interfaces()));
+                for (String sup : supers) {
+                    String decl = sup == null ? null : packDeclaring(sup, name, desc);
+                    if (decl != null) {
+                        near.add(decl);
+                    }
+                }
+            }
+            for (String d : packDescendants(c)) {
+                if (pack.get(d).methods().contains(name + " " + desc)) {
+                    near.add(d);
+                }
+            }
+            for (String n : near) {
+                if (family.add(n)) {
+                    todo.add(n);
+                }
+            }
+        }
+        Stage0.Version top = versions.get(0), bottom = versions.get(versions.size() - 1);
+        boolean above = false, below = false;
+        for (String member : family) {
+            PackClass pc = pack.get(member);
+            if (pc == null || pc.mixin()) {
+                // a mixin's methods are merged into the game's class: overriding is what they are for
+                above = true;
+                continue;
+            }
+            for (String p : packPlatformStarts(member)) {
+                if (top.declaring(p, name, desc, true) != null) {
+                    above = true;
+                }
+                String lower = remapper.map(p);
+                String lowerDesc = remapper.mapMethodDesc(desc);
+                String decl = lower.startsWith(CARRIED) ? null : bottom.declaring(lower, name, lowerDesc, true);
+                Stage0.Cls info = decl == null ? null : bottom.classes.get(decl);
+                Integer access = info == null ? null : info.access.get("M " + name + " " + lowerDesc);
+                if (access != null && (access & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) == 0) {
+                    below = true;
+                }
+            }
+        }
+        // an override above is the same hook below (renamed or bridged by the walk): only a family that overrides
+        // nothing above and something below is renamed
+        boolean renamed = below && !above;
+        for (String member : family) {
+            ownDecided.put(member + " " + name + " " + desc, renamed);
+        }
+        ownDecided.put(key, renamed);
+        return renamed;
+    }
+
+    /** The accidental overrides of a class get their own names; so do the calls and method references to them. */
+    static void renameOwn(ClassNode node) {
+        PackClass self = pack.get(node.name);
+        if (self != null && !self.mixin()) {
+            boolean checked = false;
+            for (MethodNode m : node.methods) {
+                if ((m.access & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) != 0 || m.name.startsWith("<")) {
+                    continue;
+                }
+                if (!checked) {
+                    checked = true;
+                    packPlatformStarts(node.name);
+                }
+                String unknown = packUnknown.get(node.name);
+                if (unknown != null && onlyBelow(m.name, m.desc)) {
+                    // a game method of that name and descriptor exists below only: the unseen supertype could make it one
+                    problem("can't check " + node.name + "." + m.name + m.desc + " for overriding a game method below by accident: its supertype "
+                            + unknown + " isn't in the jars converted together");
+                }
+                if (ownRenamed(node.name, m.name, m.desc)) {
+                    m.name = OWN + m.name;
+                }
+            }
+        }
+        for (MethodNode m : node.methods) {
+            for (AbstractInsnNode insn : m.instructions) {
+                if (insn instanceof MethodInsnNode call && renamedCall(call.owner, call.name, call.desc)) {
+                    call.name = OWN + call.name;
+                } else if (insn instanceof InvokeDynamicInsnNode indy) {
+                    for (int a = 0; a < indy.bsmArgs.length; a++) {
+                        if (indy.bsmArgs[a] instanceof Handle h && h.getTag() != Opcodes.H_INVOKESTATIC && renamedCall(h.getOwner(), h.getName(), h.getDesc())) {
+                            indy.bsmArgs[a] = new Handle(h.getTag(), h.getOwner(), OWN + h.getName(), h.getDesc(), h.isInterface());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** "name desc" of the game's non-static, non-private methods: in the bottom version, in the top one (made once). */
+    static Set<String> bottomSignatures, topSignatures;
+
+    /** Whether a game method of that name and (converted) descriptor exists below but none of that name and descriptor above. */
+    static boolean onlyBelow(String name, String desc) {
+        if (bottomSignatures == null) {
+            bottomSignatures = signatures(versions.get(versions.size() - 1));
+            topSignatures = signatures(versions.get(0));
+        }
+        return bottomSignatures.contains(name + " " + remapper.mapMethodDesc(desc)) && !topSignatures.contains(name + " " + desc);
+    }
+
+    static Set<String> signatures(Stage0.Version v) {
+        Set<String> out = new HashSet<>();
+        for (Stage0.Cls info : v.classes.values()) {
+            for (String m : info.methods) {
+                Integer access = info.access.get("M " + m);
+                if (access != null && (access & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) == 0 && !m.startsWith("<")) {
+                    out.add(m);
+                }
+            }
+        }
+        return out;
+    }
+
+    static boolean renamedCall(String owner, String name, String desc) {
+        if (name.startsWith("<") || owner.startsWith("[") || !pack.containsKey(owner)) {
+            return false;
+        }
+        if (pack.get(owner).privates().contains(name + " " + desc)) {
+            // a private method of the call's own class is the target (never inherited, never renamed)
+            return false;
+        }
+        String decl = packDeclaring(owner, name, desc);
+        return decl != null && ownRenamed(decl, name, desc);
     }
 
     static void convertEntries(Path in, Path out, Map<String, byte[]> entries) throws IOException {
@@ -276,6 +593,7 @@ public class Convert {
                     if (stripMod.contains(node.name) && node.visibleAnnotations != null) {
                         node.visibleAnnotations.removeIf(a -> a.desc.equals(MOD_ANNOTATION));
                     }
+                    renameOwn(node);
                     List<MethodNode> lowerOverrides = overrideBridges(node);
                     applyRules(node, true);
                     redirectCarried(node);
@@ -604,6 +922,23 @@ public class Convert {
                     }
                     checkAdapter(f[0], f[1], "()" + field.desc, "F " + field.owner + "." + field.name);
                     m.instructions.set(field, new MethodInsnNode(Opcodes.INVOKESTATIC, f[0], f[1], "()" + field.desc, false));
+                } else if (insn instanceof InvokeDynamicInsnNode indy && !redirects.isEmpty()) {
+                    // a method reference to an X row's member (idMap::getIdOrThrow): to the adapter, the receiver first
+                    // (the lambda's captured or first argument, as for a call)
+                    for (int a = 0; a < indy.bsmArgs.length; a++) {
+                        if (!(indy.bsmArgs[a] instanceof Handle h) || h.getName().startsWith("<") || h.getOwner().startsWith("[")
+                                || h.getTag() != Opcodes.H_INVOKEVIRTUAL && h.getTag() != Opcodes.H_INVOKEINTERFACE && h.getTag() != Opcodes.H_INVOKESTATIC) {
+                            continue;
+                        }
+                        Stage0.Ref ref = resolve(h.getOwner(), h.getName(), h.getDesc(), true);
+                        String[] x = ref == null ? null : redirects.get(ref.cls() + "." + ref.name() + " " + ref.desc());
+                        if (x == null) {
+                            continue;
+                        }
+                        String desc = h.getTag() == Opcodes.H_INVOKESTATIC ? h.getDesc() : "(L" + ref.cls() + ";" + h.getDesc().substring(1);
+                        checkAdapter(x[0], x[1], desc, "X " + ref.key() + " (method reference)");
+                        indy.bsmArgs[a] = new Handle(Opcodes.H_INVOKESTATIC, x[0], x[1], desc, false);
+                    }
                 }
             }
         }
@@ -921,6 +1256,18 @@ public class Convert {
     // ---------------------------------------------------------------- carried code
 
     /** What the converter can carry down at rung i: classes, static methods; everything they need carried too. */
+    /**
+     * A member new above that an adapter rule covers (X: its calls go to an adapter, F: its reads to a getter): carried
+     * code that uses it gets the rule too, so it is there below like a provided class.
+     */
+    static boolean ruled(String key) {
+        if (key.length() < 3 || key.charAt(1) != ' ') {
+            return false;
+        }
+        String rest = key.substring(2);
+        return key.charAt(0) == 'M' && redirects.containsKey(rest) || key.charAt(0) == 'F' && fieldRedirects.containsKey(rest);
+    }
+
     static Set<String> carriable(int i) {
         Set<String> got = carriable.get(i);
         if (got != null) {
@@ -941,7 +1288,7 @@ public class Convert {
             shrunk = false;
             for (var it = base.iterator(); it.hasNext();) {
                 for (String d : plan.needs.get(it.next()).deps) {
-                    if (plan.needs.containsKey(d) && !base.contains(d) && !provided.containsKey(d.substring(2))) {
+                    if (plan.needs.containsKey(d) && !base.contains(d) && !provided.containsKey(d.substring(2)) && !ruled(d)) {
                         it.remove();
                         shrunk = true;
                         break;
@@ -984,7 +1331,7 @@ public class Convert {
             for (var it = ok.iterator(); it.hasNext();) {
                 Stage0.Needs n = plan.needs.get(it.next());
                 for (String d : n.deps) {
-                    if (plan.needs.containsKey(d) && !ok.contains(d)) {
+                    if (plan.needs.containsKey(d) && !ok.contains(d) && !ruled(d)) {
                         it.remove();
                         changed = true;
                         break;
@@ -1120,6 +1467,11 @@ public class Convert {
 
     /** Whether every member the carried code reaches is accessible from the carried package at the bottom version. */
     static boolean reachable(int rung, Stage0.Ref thing, Set<Stage0.Ref> refs) {
+        return unreachable(rung, thing, refs) == null;
+    }
+
+    /** The first reference of a carried thing's code that isn't public below (null: all reachable). */
+    static Stage0.Ref unreachable(int rung, Stage0.Ref thing, Set<Stage0.Ref> refs) {
         Stage0.Version bottom = versions.get(versions.size() - 1);
         for (Stage0.Ref ref : refs) {
             if (ref.kind() == 'C' || ref.cls().equals(thing.cls()) && thing.kind() == 'C') {
@@ -1142,9 +1494,9 @@ public class Convert {
             if (thing.kind() == 'M' && copyAlong(rung, thing, ref, new HashSet<>())) {
                 continue;
             }
-            return false;
+            return ref;
         }
-        return true;
+        return null;
     }
 
     /** rung + carried static method -> the private static helpers of its class copied along with it ("name desc") */

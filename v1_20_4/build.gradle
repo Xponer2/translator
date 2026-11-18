@@ -41,8 +41,18 @@ neoForge {
             systemProperty 'ladder.probe.client.out', file('run-client/probe-client.json').absolutePath.replace(File.separator, '/')
             // the test mods' client results (testmods/*)
             systemProperty 'ladder.test.client.out', file('run-client/test-a-client.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.c.out', file('run-client/test-c.json').absolutePath.replace(File.separator, '/')
             // -Pladder.world: a fresh world is made and entered, the inventory opened, before the results
             systemProperty 'ladder.probe.client.world', project.hasProperty('ladder.world') ? 'true' : 'false'
+            // -Pladder.connect=host:port: onto a dedicated server instead (serverNet), over a real connection
+            systemProperty 'ladder.probe.client.connect', project.findProperty('ladder.connect') ?: ''
+        }
+        // a dedicated server that stays up (no probes) for a client over a real connection: run-server-net, port 25570
+        serverNet {
+            server()
+            gameDirectory = file('run-server-net')
+            programArgument '--nogui'
+            jvmArgument '-Xmx3G'
         }
     }
 }

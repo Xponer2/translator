@@ -98,12 +98,16 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   data whose keys clash with the game's; a stream codec; the stack handed to another mod in a chest and read by the
   type's id, across a server restart: **the same 28 results** natively on 1.21.1 and converted on 1.20.4. A stack's
   components live in its NBT (the one place its data is kept), with 1.21's defaults, overrides and removal markers.
+- **Network payloads** (the second compatibility module; test mod C, made for 1.21.1): 1.20.5's payload types and
+  registrar, stream codecs (`ByteBufCodecs` and the game's own `STREAM_CODEC`s carried down as real code), handlers on
+  the main thread, replies, `PacketDistributor`: **the same 25 results** natively on 1.21.1 and converted on 1.20.4,
+  in a single-player world and over a real connection to a dedicated server.
 
 Over the whole corpus, 42 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too). What holds the others back most, in order: mixins
-into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in code and
-in loot tables), the 1.20.5 network payloads, `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`,
-loot tables by key.
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 11276 (the
+network module alone took the mods held back by payloads from 123 to 74). What holds the others back most, in order:
+mixins into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in
+code and in loot tables), `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`, loot tables by key.
 
 1.20.5 has no step of its own: NeoForge only had betas for it, and 1.20.6 is its hotfix, so the step 1.20.6 → 1.20.4
 holds its changes.
@@ -147,7 +151,7 @@ rules. To run converted mods: put them with `out/converted/ladder-carried-1.20.4
 | Stage | What | State |
 |---|---|---|
 | 1 | Generated steps 1.21.1 → 1.20.4, the one-pass converter, strict checks, behaviour tests in the real 1.20.4 | ✅ done |
-| 2 | The hand-written parts of 1.20.6 → 1.20.4: block/item method splits, changed types and overrides of them, loader entry points, render buffers, mixins into changed methods, item data components (done); network payloads, recipe inputs, loot keys (next) | 🔨 **now** |
+| 2 | The hand-written parts of 1.20.6 → 1.20.4: block/item method splits, changed types and overrides of them, loader entry points, render buffers, mixins into changed methods, item data components, network payloads (done); mixins whose targets moved below, recipe inputs, loot keys (next) | 🔨 **now** |
 | 3 | Steps down to 1.20.1 (the version with the most mods), then 1.19.2, 1.18.2, 1.16.5 | ⬜ planned |
 | 4 | The step down to 1.12.2 | ⬜ planned |
 | 5 | Older mods brought up, Fabric mods, targets below 1.12.2 | ⬜ later |

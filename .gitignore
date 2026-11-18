@@ -14,3 +14,6 @@ out/
 tools/convert/classpath.txt
 testmods/*/run-*/
 testmods/*/run.log
+
+# machine-local helpers (the public sync script and the like): never committed, never published
+tools/local/

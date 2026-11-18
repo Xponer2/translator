@@ -1,0 +1,31 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// Test mod C, made for NeoForge 1.21.1: network payloads. In a client world (single player) the client sends payloads to
+// the server (stream codecs of plain values, of registry-aware values, a payload handled on the network thread) and the
+// server answers through every way of sending; the client writes what arrived, on which thread. Run natively on 1.21.1
+// (the reference; the mod enters a world itself with -Dladder.test.c.drive=true) and converted on 1.20.4: same results.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base { archivesName = 'ladder-test-c-1.21.1' }
+version = '1.0.0'
+neoForge {
+    version = '21.1.247'
+    runs {
+        client {
+            client()
+            gameDirectory = file('run-client')
+            systemProperty 'ladder.test.c.out', file('run-client/test-c.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.c.drive', 'true'
+        }
+    }
+    mods {
+        ladder_test_c {
+            sourceSet sourceSets.main
+        }
+    }
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }

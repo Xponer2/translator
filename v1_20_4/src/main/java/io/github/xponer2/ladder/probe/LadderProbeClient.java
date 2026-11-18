@@ -61,6 +61,14 @@ public final class LadderProbeClient {
         ModList.get().getMods().forEach(info -> mods.add(info.getModId() + " " + info.getVersion()));
         this.root.add("mods", mods);
         Minecraft minecraft = Minecraft.getInstance();
+        String connect = System.getProperty("ladder.probe.client.connect", "");
+        if (!connect.isEmpty()) {
+            // onto a dedicated server over a real connection (single player passes packets as objects, unencoded)
+            minecraft.tell(() -> net.minecraft.client.gui.screens.ConnectScreen.startConnecting(event.getScreen(), minecraft,
+                    net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(connect),
+                    new net.minecraft.client.multiplayer.ServerData("ladder", connect, net.minecraft.client.multiplayer.ServerData.Type.OTHER), false));
+            return;
+        }
         if (!Boolean.getBoolean("ladder.probe.client.world")) {
             this.write(out);
             minecraft.stop();
