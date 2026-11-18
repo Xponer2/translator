@@ -31,6 +31,7 @@ neoForge {
             // the test mods' own results (testmods/*): compared with their runs on their own version
             systemProperty 'ladder.test.out', file('run-server/test-a.json').absolutePath.replace(File.separator, '/')
             systemProperty 'ladder.test.b.out', file('run-server/test-b.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.d.out', file('run-server/test-d.json').absolutePath.replace(File.separator, '/')
         }
         client {
             client()

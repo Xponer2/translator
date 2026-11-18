@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="ladder_test_d"
+version="1.0.0"
+displayName="Ladder Test D (1.21.1)"
+description="Mixins into game methods that changed below, next to one that didn't."
+
+[[mixins]]
+config="ladder_test_d.mixins.json"
+
+[[dependencies.ladder_test_d]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.ladder_test_d]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.22)"
+ordering="NONE"
+side="BOTH"

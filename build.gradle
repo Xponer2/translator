@@ -14,3 +14,30 @@ subprojects {
         }
     }
 }
+
+// libraries the converter itself uses (not the game's): Sinytra Adapter's dynamic mixin patches (MIT) and what it needs.
+// `./gradlew :printToolJars` lists them in tools/tool-jars.txt (per machine); tools/libs.sh puts them on the tools' class path.
+configurations {
+    // ASM comes from the tools' own class path (tools/libs.sh, a newer ASM)
+    ladderTools {
+        exclude group: 'org.ow2.asm'
+    }
+}
+repositories {
+    maven { url 'https://maven.su5ed.dev/releases' }
+    maven { url 'https://maven.fabricmc.net' }
+    maven { url 'https://libraries.minecraft.net' }
+    mavenCentral()
+}
+dependencies {
+    ladderTools 'org.sinytra.adapter:core:2.0.43+1.21.1'
+    // the game's own libraries Adapter takes for granted
+    ladderTools 'it.unimi.dsi:fastutil:8.5.12'
+}
+tasks.register('printToolJars') {
+    def files = configurations.ladderTools
+    def out = file('tools/tool-jars.txt')
+    doLast {
+        out.text = files.files.collect { it.absolutePath }.join('\n')
+    }
+}

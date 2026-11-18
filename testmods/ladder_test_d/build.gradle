@@ -1,0 +1,30 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// Test mod D, made for NeoForge 1.21.1: mixins into game methods that changed below (a parameter dropped, a parameter's
+// type changed, a call inside retyped) next to one that didn't. Run natively on 1.21.1 and converted on 1.20.4, where
+// the converter's mixin repair has to move them: same results.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base { archivesName = 'ladder-test-d-1.21.1' }
+version = '1.0.0'
+neoForge {
+    version = '21.1.247'
+    runs {
+        server {
+            server()
+            gameDirectory = file('run-server')
+            programArgument '--nogui'
+            systemProperty 'ladder.test.d.out', file('run-server/test-d.json').absolutePath.replace(File.separator, '/')
+        }
+    }
+    mods {
+        ladder_test_d {
+            sourceSet sourceSets.main
+        }
+    }
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }

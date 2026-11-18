@@ -13,11 +13,15 @@ path() {
 }
 mkdir -p tools/build
 # a failed compile stops here: never run the tools' older classes
-if ! COMPILE=$("$JAVAC" -nowarn -cp "$CP" -d tools/build tools/stage0/Stage0.java tools/convert/Convert.java 2>&1); then
+if ! COMPILE=$("$JAVAC" -nowarn -cp "$CP" -d tools/build tools/stage0/Stage0.java tools/convert/*.java 2>&1); then
     echo "$COMPILE" >&2
     exit 1
 fi
 echo "$COMPILE" | grep -v -E '^Note:|^$' >&2 || true
+# Mixin's services outside a game (the mixin repair runs Mixin's own tooling offline)
+mkdir -p tools/build/META-INF/services
+echo OfflineMixinService > tools/build/META-INF/services/org.spongepowered.asm.service.IMixinService
+echo OfflinePropertyService > tools/build/META-INF/services/org.spongepowered.asm.service.IGlobalPropertyService
 VERSIONS=()
 for pair in "1.21.1 v1_21_1" "1.21 v1_21" "1.20.6 v1_20_6" "1.20.4 v1_20_4"; do
     read -r version project <<< "$pair"
@@ -39,7 +43,7 @@ case "$COMMAND" in
         if [ -n "$ADAPTERS" ]; then
             RULES=("-Dladder.rules=$(path "$PWD/adapters_1_20_4/src/main/resources/ladder-rules.tsv")" "-Dladder.adapters=$(path "$PWD/$ADAPTERS")")
         fi
-        "$JAVA" -Xmx8G ${LADDER_JAVA_OPTS:-} "${RULES[@]}" -cp "$CP${SEP}tools/build" Convert "$(path "$1")" "$(path "$2")" "$(path "$3")" "${VERSIONS[@]}"
+        "$JAVA" -Xmx8G "-Dlog4j2.configurationFile=file:///$(path "$PWD/tools/convert/log4j2-ladder.xml")" ${LADDER_JAVA_OPTS:-} "${RULES[@]}" -cp "$CP${SEP}tools/build" Convert "$(path "$1")" "$(path "$2")" "$(path "$3")" "${VERSIONS[@]}"
         ;;
     *)
         sed -n '2,5p' "$0"

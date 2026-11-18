@@ -17,3 +17,8 @@ testmods/*/run.log
 
 # machine-local helpers (the public sync script and the like): never committed, never published
 tools/local/
+# per-machine list of the converter tools' library jars
+tools/tool-jars.txt
+logs/
+# local Claude Code skills and settings (machine paths)
+.claude/

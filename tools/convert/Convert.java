@@ -62,9 +62,26 @@ public class Convert {
     static List<String> collecting;
 
     static void problem(String text) {
-        problems.add(text);
+        report(text);
         if (collecting != null) {
             collecting.add(text);
+        }
+    }
+
+    /**
+     * The problems a mixin handler's selectors raise while they are remapped wait here (per mixin class and handler):
+     * whether they stand is decided once the converted mixin is checked against the bottom game (after the mixin
+     * repair). Null outside a handler's remapping.
+     */
+    static List<String> deferring;
+    static final Map<String, Map<String, List<String>>> deferredMixin = new HashMap<>();
+
+    /** A problem into the report, or into the handler's deferred list while its selectors are remapped. */
+    static void report(String text) {
+        if (deferring != null) {
+            deferring.add(text);
+        } else {
+            problems.add(text);
         }
     }
 
@@ -183,6 +200,9 @@ public class Convert {
         }
         scanPack(List.of(in));
         convert(in, out);
+        if (Boolean.getBoolean("ladder.mixinRepair.audit") && mixinRepair != null) {
+            System.out.println(mixinRepair.audit());
+        }
         writeCarried(out.resolveSibling("ladder-carried-" + versions.get(versions.size() - 1).id + ".jar"));
         String bottom = versions.get(versions.size() - 1).id;
         StringBuilder text = new StringBuilder("# " + in.getFileName() + " -> " + bottom + "\n\n");
@@ -587,7 +607,10 @@ public class Convert {
                 if (name.endsWith(".class") && !name.startsWith("META-INF/")) {
                     ClassNode node = new ClassNode();
                     new ClassReader(data).accept(node, 0);
+                    Map<String, String> landsAbove = null;
                     if (mixinTargets.containsKey(node.name)) {
+                        MixinPoints.modClasses = mod::containsKey;
+                        landsAbove = MixinPoints.check(node, mixinTargets.get(node.name), Convert::topClass);
                         remapMixinSelectors(node, remapper);
                     }
                     if (stripMod.contains(node.name) && node.visibleAnnotations != null) {
@@ -608,7 +631,15 @@ public class Convert {
                             remapped.methods.add(g);
                         }
                     }
-                    ClassWriter writer = new ClassWriter(0);
+                    int writeFlags = 0;
+                    if (landsAbove != null) {
+                        ClassNode checked = checkMixinPoints(node.name, landsAbove, remapped, entries);
+                        if (checked != remapped) {
+                            remapped = checked;
+                            writeFlags = ClassWriter.COMPUTE_MAXS;
+                        }
+                    }
+                    ClassWriter writer = new ClassWriter(writeFlags);
                     remapped.accept(writer);
                     data = writer.toByteArray();
                     name = remapper.map(name.substring(0, name.length() - 6)) + ".class";
@@ -1011,7 +1042,7 @@ public class Convert {
         String cacheKey = level + " " + c;
         String cached = classCache.get(cacheKey);
         if (cached != null) {
-            cachedProblems.getOrDefault("C " + cacheKey, List.of()).forEach(problems::add);
+            cachedProblems.getOrDefault("C " + cacheKey, List.of()).forEach(Convert::report);
             return cached;
         }
         List<String> outer = collecting;
@@ -1125,7 +1156,7 @@ public class Convert {
     static Stage0.Ref walk(Stage0.Ref ref) {
         String key = level + " " + ref.key();
         if (memberCache.containsKey(key)) {
-            cachedProblems.getOrDefault(key, List.of()).forEach(problems::add);
+            cachedProblems.getOrDefault(key, List.of()).forEach(Convert::report);
             return memberCache.get(key);
         }
         List<String> outer = collecting;
@@ -2754,6 +2785,97 @@ public class Convert {
         return targets;
     }
 
+    /** The game classes of the top and bottom versions, parsed once (the mixin checks and repairs read them). */
+    static final Map<String, Optional<ClassNode>> topClasses = new HashMap<>(), bottomClasses = new HashMap<>();
+    static MixinRepair mixinRepair;
+
+    static ClassNode topClass(String name) {
+        return parsed(topClasses, versions.get(0), name);
+    }
+
+    static ClassNode bottomClass(String name) {
+        return parsed(bottomClasses, versions.get(versions.size() - 1), name);
+    }
+
+    static ClassNode parsed(Map<String, Optional<ClassNode>> cache, Stage0.Version v, String name) {
+        return cache.computeIfAbsent(name, n -> {
+            byte[] b = v.bytes.get(n);
+            if (b == null) {
+                return Optional.empty();
+            }
+            ClassNode c = new ClassNode();
+            new ClassReader(b).accept(c, ClassReader.EXPAND_FRAMES);
+            return Optional.of(c);
+        }).orElse(null);
+    }
+
+    /**
+     * A mixin's injectors must land below where they land above: the converted mixin is checked against the bottom
+     * game's method bodies; when a point moved, Sinytra Adapter's patches (MixinRepair) adapt the mixin and it is
+     * checked again. Each injector that lands above and still not below is a problem. Returns the class to write (the
+     * patched one, or the converted one as it was).
+     */
+    static ClassNode checkMixinPoints(String mixin, Map<String, String> above, ClassNode converted, Map<String, byte[]> modClasses) {
+        Map<String, List<String>> deferred = deferredMixin.getOrDefault(mixin, Map.of());
+        deferredMixin.remove(mixin);
+        Map<String, String> below = new HashMap<>(MixinPoints.check(converted, mixinTargetsOf(converted), Convert::bottomClass));
+        Set<String> moved = new TreeSet<>();
+        above.forEach((handler, verdict) -> {
+            String lower = below.containsKey(handler) ? handler : "ladder$wrap$" + handler;
+            if (verdict == null && below.containsKey(lower) && below.get(lower) != null) {
+                moved.add(handler);
+            }
+        });
+        ClassNode result = converted;
+        String repairError = null;
+        if (!moved.isEmpty() && !"false".equals(System.getProperty("ladder.mixinRepair"))) {
+            if (mixinRepair == null) {
+                mixinRepair = new MixinRepair(Convert::topClass, Convert::bottomClass);
+            }
+            // the patches edit a copy with full frames; the converted class stays as it was when they fail
+            ClassWriter w = new ClassWriter(0);
+            converted.accept(w);
+            ClassNode copy = new ClassNode();
+            new ClassReader(w.toByteArray()).accept(copy, ClassReader.EXPAND_FRAMES);
+            int before = mixinRepair.generated().size();
+            repairError = mixinRepair.patch(copy, modClasses, Convert::bottomClass);
+            if (repairError == null && mixinRepair.generated().size() != before) {
+                repairError = "the patch split an injector into a generated mixin class (not placed yet)";
+            }
+            if (repairError == null) {
+                result = copy;
+                below.putAll(MixinPoints.check(copy, mixinTargetsOf(copy), Convert::bottomClass));
+            }
+        }
+        Set<String> handlers = new TreeSet<>(above.keySet());
+        handlers.addAll(deferred.keySet());
+        for (String h : handlers) {
+            // a handler bridge carries the injector below under its own name (ladder$wrap$<handler>)
+            String lower = below.containsKey(h) ? h : below.containsKey("ladder$wrap$" + h) ? "ladder$wrap$" + h : h;
+            boolean landsAbove = above.containsKey(h) && above.get(h) == null;
+            boolean landsBelow = below.containsKey(lower) && below.get(lower) == null;
+            if (landsAbove && landsBelow) {
+                // what its selectors raised is settled: it lands below as it does above
+                continue;
+            }
+            if (MixinPoints.INACTIVE.equals(above.get(h))) {
+                // a mixin for another loader or version: it applies to nothing above, and must apply to nothing below
+                if (MixinPoints.INACTIVE.equals(below.get(lower))) {
+                    continue;
+                }
+                report("mixin applies below only: its target classes aren't in the upper game but are in the bottom one ("
+                        + mixin + "." + h + ")");
+                continue;
+            }
+            deferred.getOrDefault(h, List.of()).forEach(Convert::report);
+            if (landsAbove) {
+                report((MixinPoints.INACTIVE.equals(below.get(lower)) ? "mixin into a class the bottom game hasn't" : "mixin injection point moved below: " + below.get(lower)) + " (" + mixin + "." + h + ")"
+                        + (repairError == null ? "" : "; repair failed: " + repairError));
+            }
+        }
+        return result;
+    }
+
     /** The string selectors of a mixin's injectors (method = ..., @At(target = ...)) in the bottom version's names. */
     static void remapMixinSelectors(ClassNode node, Remapper remapper) {
         List<String> targets = mixinTargets.get(node.name);
@@ -2762,10 +2884,21 @@ public class Convert {
                 if (list != null) {
                     for (AnnotationNode a : list) {
                         currentHandler = new String[] {node.name, m.name, m.desc, a.desc};
+                        boolean injector = MixinPoints.INJECTORS.contains(a.desc);
+                        if (injector) {
+                            deferring = new ArrayList<>();
+                        }
                         try {
                             remapAnnotation(a, targets, remapper, node.name + "." + m.name);
                         } finally {
                             currentHandler = null;
+                            if (injector) {
+                                List<String> held = deferring;
+                                deferring = null;
+                                if (!held.isEmpty()) {
+                                    deferredMixin.computeIfAbsent(node.name, k -> new HashMap<>()).computeIfAbsent(MixinPoints.key(node, m), k -> new ArrayList<>()).addAll(held);
+                                }
+                            }
                         }
                     }
                 }
@@ -2831,6 +2964,7 @@ public class Convert {
         List<String> owners = owner != null ? List.of(owner) : targets;
         Stage0.Version top = versions.get(0);
         Set<String> results = new TreeSet<>();
+        Set<String> qualified = new TreeSet<>();
         for (String o : owners) {
             if (!Stage0.platform(o)) {
                 continue;
@@ -2866,6 +3000,9 @@ public class Convert {
                 }
                 String mapped = mapMember(o, mName, mDesc, true);
                 results.add(mapped + (desc != null ? remapper.mapMethodDesc(mDesc) : ""));
+                // a name-only selector that names one method above: the descriptor it meant goes along, so a method
+                // whose parameters changed below is found missing (and repaired) instead of matching the lower one
+                qualified.add(mapped + remapper.mapMethodDesc(mDesc));
             }
         }
         if (results.isEmpty()) {
@@ -2882,7 +3019,7 @@ public class Convert {
                 return selector;
             }
         }
-        String first = results.iterator().next();
+        String first = desc == null && results.size() == 1 && qualified.size() == 1 ? qualified.iterator().next() : results.iterator().next();
         return (owner != null ? "L" + remapper.map(owner) + ";" : "") + first;
     }
 

@@ -103,9 +103,16 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   the main thread, replies, `PacketDistributor`: **the same 25 results** natively on 1.21.1 and converted on 1.20.4,
   in a single-player world and over a real connection to a dedicated server.
 
-Over the whole corpus, 42 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 11276 (the
-network module alone took the mods held back by payloads from 123 to 74). What holds the others back most, in order:
+- **Mixins into methods that changed below** (test mod D, made for 1.21.1): every injector of a converted mod is
+  checked against the lower game's method bodies, and one whose target moved (a parameter added or dropped, a call
+  inside retyped, a parameter's type changed) is repaired by [Sinytra Adapter](https://github.com/Sinytra/Adapter)'s
+  dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
+  on 1.20.4.
+
+Over the whole corpus, 46 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 11942 (the
+network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
+injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). What holds the others back most, in order:
 mixins into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in
 code and in loot tables), `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`, loot tables by key.
 
@@ -151,7 +158,7 @@ rules. To run converted mods: put them with `out/converted/ladder-carried-1.20.4
 | Stage | What | State |
 |---|---|---|
 | 1 | Generated steps 1.21.1 → 1.20.4, the one-pass converter, strict checks, behaviour tests in the real 1.20.4 | ✅ done |
-| 2 | The hand-written parts of 1.20.6 → 1.20.4: block/item method splits, changed types and overrides of them, loader entry points, render buffers, mixins into changed methods, item data components, network payloads (done); mixins whose targets moved below, recipe inputs, loot keys (next) | 🔨 **now** |
+| 2 | The hand-written parts of 1.20.6 → 1.20.4: block/item method splits, changed types and overrides of them, loader entry points, render buffers, mixins into changed methods, item data components, network payloads, mixins whose targets moved below (done); the game's other item components, recipe inputs, loot keys (next) | 🔨 **now** |
 | 3 | Steps down to 1.20.1 (the version with the most mods), then 1.19.2, 1.18.2, 1.16.5 | ⬜ planned |
 | 4 | The step down to 1.12.2 | ⬜ planned |
 | 5 | Older mods brought up, Fabric mods, targets below 1.12.2 | ⬜ later |
