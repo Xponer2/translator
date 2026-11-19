@@ -94,7 +94,7 @@ public final class ComponentStore {
     /** the item's own value: its properties' (Item.Properties.component), else the game's for the item */
     @Nullable
     @SuppressWarnings("unchecked")
-    static <T> T prototype(ItemStack stack, DataComponentType<T> type) {
+    public static <T> T prototype(ItemStack stack, DataComponentType<T> type) {
         T own = (T) ItemDefaults.of(stack.getItem()).get(type);
         if (own != null) {
             return own;

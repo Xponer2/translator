@@ -17,6 +17,9 @@ import javax.annotation.Nullable;
 public interface DataComponentMap extends Iterable<TypedDataComponent<?>> {
     DataComponentMap EMPTY = new Snapshot(Map.of());
 
+    /** 1.20.5's {@code DataComponentMap.CODEC}: component id -> value, each by its type's codec */
+    com.mojang.serialization.Codec<DataComponentMap> CODEC = ComponentCodecs.MAP_CODEC;
+
     /** 1.20.5's {@code DataComponentMap.builder()}: the carried builder (its constructor is package-private there) */
     static ladder.carried.net.minecraft.core.component.DataComponentMap$Builder builder() {
         try {
@@ -39,6 +42,11 @@ public interface DataComponentMap extends Iterable<TypedDataComponent<?>> {
     default <T> TypedDataComponent<T> getTyped(DataComponentType<T> type) {
         T value = this.get(type);
         return value == null ? null : new TypedDataComponent<>(type, value);
+    }
+
+    /** 1.20.5's {@code stream()} */
+    default java.util.stream.Stream<TypedDataComponent<?>> stream() {
+        return java.util.stream.StreamSupport.stream(this.spliterator(), false);
     }
 
     default boolean has(DataComponentType<?> type) {

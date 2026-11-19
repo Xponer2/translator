@@ -39,10 +39,15 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  */
 @Mod("ladder_test_c")
 public final class LadderTestC {
+    static final String MODID = "ladder_test_c";
+
     public LadderTestC(IEventBus modBus) {
         modBus.addListener(LadderTestC::register);
+        Armour.register(modBus);
+        Recipes.register(modBus);
         if (FMLEnvironment.dist.isClient()) {
             ClientSide.init();
+            GuiClient.register(modBus);
         }
     }
 

@@ -54,6 +54,55 @@ public final class CustomData {
         return this.tag;
     }
 
+    /** 1.20.5's {@code getUnsafe()}: the tag itself (read only) */
+    public CompoundTag getUnsafe() {
+        return this.tag;
+    }
+
+    /** 1.20.5's {@code update(changer)}: a copy changed */
+    public CustomData update(java.util.function.Consumer<CompoundTag> changer) {
+        CompoundTag copy = this.tag.copy();
+        changer.accept(copy);
+        return new CustomData(copy);
+    }
+
+    /** 1.20.5's {@code CustomData.update(type, stack, changer)}: the stack's value of that component changed */
+    public static void update(DataComponentType<CustomData> type, net.minecraft.world.item.ItemStack stack, java.util.function.Consumer<CompoundTag> changer) {
+        CustomData before = (CustomData) ComponentStore.get((DataComponentHolder) (Object) stack, type);
+        CustomData after = (before == null ? EMPTY : before).update(changer);
+        ComponentStore.set(stack, type, after.isEmpty() ? null : after);
+    }
+
+    /** 1.20.5's {@code CustomData.set(type, stack, tag)} */
+    public static void set(DataComponentType<CustomData> type, net.minecraft.world.item.ItemStack stack, CompoundTag tag) {
+        ComponentStore.set(stack, type, tag.isEmpty() ? null : of(tag));
+    }
+
+    /** 1.20.5's {@code read(ops, decoder)}: the data read by a map decoder */
+    public <T> com.mojang.serialization.DataResult<T> read(com.mojang.serialization.DynamicOps<net.minecraft.nbt.Tag> ops,
+            com.mojang.serialization.MapDecoder<T> decoder) {
+        return ops.getMap(this.tag).flatMap(map -> decoder.decode(ops, map));
+    }
+
+    public <T> com.mojang.serialization.DataResult<T> read(com.mojang.serialization.MapDecoder<T> decoder) {
+        return this.read(net.minecraft.nbt.NbtOps.INSTANCE, decoder);
+    }
+
+    /** 1.20.5's {@code update(ops, encoder, value)}: a copy with the value written into it */
+    public <T> com.mojang.serialization.DataResult<CustomData> update(com.mojang.serialization.DynamicOps<net.minecraft.nbt.Tag> ops,
+            com.mojang.serialization.MapEncoder<T> encoder, T value) {
+        return encoder.encode(value, ops, ops.mapBuilder()).build(this.tag).map(tag -> new CustomData((CompoundTag) tag));
+    }
+
+    /** 1.20.5's {@code loadInto(entity)}: the entity's data with this merged in (keeping its UUID) */
+    public void loadInto(net.minecraft.world.entity.Entity entity) {
+        CompoundTag data = entity.saveWithoutId(new CompoundTag());
+        java.util.UUID id = entity.getUUID();
+        data.merge(this.tag);
+        entity.load(data);
+        entity.setUUID(id);
+    }
+
     @Override
     public boolean equals(Object other) {
         return other instanceof CustomData data && this.tag.equals(data.tag);

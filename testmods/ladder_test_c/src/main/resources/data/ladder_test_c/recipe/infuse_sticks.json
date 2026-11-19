@@ -1,0 +1,6 @@
+{
+  "type": "ladder_test_c:infusing",
+  "ingredient": {"item": "minecraft:stick"},
+  "count": 3,
+  "result": {"id": "minecraft:blaze_rod", "count": 2}
+}

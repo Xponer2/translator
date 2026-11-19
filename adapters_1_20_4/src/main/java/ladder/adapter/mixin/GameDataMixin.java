@@ -26,10 +26,14 @@ abstract class GameDataMixin {
     @Inject(method = "getRegistrationOrder", at = @At("RETURN"), cancellable = true)
     private static void ladder$componentsFirst(CallbackInfoReturnable<Set<ResourceLocation>> cir) {
         Set<ResourceLocation> order = cir.getReturnValue();
-        ResourceLocation components = ComponentRegistry.KEY.location();
-        if (order.contains(components)) {
-            Set<ResourceLocation> first = new LinkedHashSet<>();
-            first.add(components);
+        // the armour materials too: an armour item reads its material when it is made
+        Set<ResourceLocation> first = new LinkedHashSet<>();
+        for (ResourceLocation early : new ResourceLocation[] {ComponentRegistry.KEY.location(), ladder.adapter.armour.ArmourAdapters.KEY.location()}) {
+            if (order.contains(early)) {
+                first.add(early);
+            }
+        }
+        if (!first.isEmpty()) {
             first.addAll(order);
             cir.setReturnValue(first);
         }

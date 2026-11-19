@@ -106,7 +106,7 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
 - **Mods of two versions share one item** (test mod E): a mod made for 1.20.4 and running as it is, not converted,
   takes the stack a converted 1.21.1 mod (test mod B) left in a chest and changes it with 1.20.4's own API (an
   enchantment, a key of the stack's data, a new name). After a restart both mods read the same stack, and their
-  results are those of the same steps on the real 1.21.1 (with E's 1.21.1 twin): **B 114 + 119, E 6 + 6 results equal**.
+  results are those of the same steps on the real 1.21.1 (with E's 1.21.1 twin): **B 147 + 152, E 6 + 6 results equal**.
   The game's own item components 1.20.4 keeps elsewhere are read and written where 1.20.4 keeps them, so 1.20.4's
   code sees them too: dyed colour, enchantments, an enchanted book's stored ones, potion contents, lore, the model
   number, attribute modifiers, a container's items, block entity and entity data, block states, a bundle's
@@ -122,8 +122,8 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
   on 1.20.4.
 
-Over the whole corpus, 49 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 9880 (the
+Over the whole corpus, 57 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 8106 (the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). What holds the others back most, in order:
 mixins into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in

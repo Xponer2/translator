@@ -300,6 +300,8 @@ public class Stage0 {
         String[] interfaces;
         /** "name desc" of the class's own non-static methods (the converter's super calls) */
         Set<String> methods = new HashSet<>();
+        /** "name desc" of the class's own fields (one of the game's of the same name is hidden by it) */
+        Set<String> fields = new HashSet<>();
     }
 
     static Set<Ref> modRefs(Path jar, Version top, Map<String, Integer> libraryRefs) throws IOException {
@@ -493,8 +495,16 @@ public class Stage0 {
      * Filled from the adapters' N rows.
      */
     static final Set<String> notTheSame = new HashSet<>();
+    /**
+     * The version the N rows are about (the bottom one): there a class of the same name is another class too (1.20.5's
+     * ArmorMaterial record, 1.20.4's ArmorMaterial interface); above it the class is the same.
+     */
+    static String notTheSameAt;
 
     static String mapClass(Version from, Version to, String cls) {
+        if (notTheSame.contains(cls) && to.id.equals(notTheSameAt)) {
+            return null;
+        }
         if (to.classes.containsKey(cls)) {
             return cls;
         }

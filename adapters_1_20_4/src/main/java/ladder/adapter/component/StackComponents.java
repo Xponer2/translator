@@ -234,6 +234,10 @@ final class StackComponents {
         /** the item's own modifiers, as 1.20.4's item gives them for each slot */
         @Override
         public ItemAttributeModifiers prototype(ItemStack stack) {
+            if (stack.getItem() instanceof net.minecraft.world.item.ArmorItem) {
+                // 1.20.5's armour gives its modifiers by getDefaultAttributeModifiers(), not in the component (empty)
+                return ItemAttributeModifiers.EMPTY;
+            }
             List<ItemAttributeModifiers.Entry> entries = new ArrayList<>();
             for (EquipmentSlot slot : EquipmentSlot.values()) {
                 Multimap<Attribute, AttributeModifier> modifiers = stack.getItem().getDefaultAttributeModifiers(slot);

@@ -30,7 +30,21 @@ if [ "$RUN" = client ] && [ ! -f v1_20_4/run-client/options.txt ]; then
 fi
 ./gradlew ":v1_20_4:$TASK" "${EXTRA[@]}" --console=plain > "$LOG" 2>&1 &
 start=$(date +%s)
+# a stalled game (no new log lines, no result: stuck in a menu, a screen nobody answers, a hang) is stopped early
+STALL="${LADDER_STALL:-90}"
+echo "game: $(basename "$LOG"), timeout ${LIMIT}s, stall ${STALL}s" >&2
+last_size=-1
+last_change=$start
 while [ ! -f "$RESULT" ]; do
+    size=$(stat -c %s "$LOG" 2>/dev/null || echo 0)
+    if [ "$size" != "$last_size" ]; then
+        last_size=$size
+        last_change=$(date +%s)
+    elif [ $(( $(date +%s) - last_change )) -ge "$STALL" ]; then
+        echo "watchdog: stalled, no log output for ${STALL}s and no result (the test did not run: a menu, a dialog, a hang)" >&2
+        tail -3 "$LOG" >&2
+        break
+    fi
     if grep -q -E 'Exception in thread "main"|BUILD FAILED|Mod Loading has failed|Crash report saved|FAILURE:|Failed to (load|create) mod' "$LOG" 2>/dev/null; then
         break
     fi

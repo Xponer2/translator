@@ -9,11 +9,13 @@
 #                                             a call goes to the adapter's static method (receiver first)
 # R <class> <lower class>                     a class renamed below with the same members (NeoForge has no intermediary)
 # F <owner> <name> <desc> <adapter class> <getter>
-#                                             a static field the adapters give: its reads go to the getter
+#                                             a field the adapters give: its reads go to the getter (an instance
+#                                             field's getter takes the object)
 # K <owner> <upper desc> <lower desc> <adapter class> <lower parameters>
 #                                             a constructor that takes more below (new X(..) and super(..)): each
 #                                             lower parameter is an upper one ($0, $1..) or an adapter method's value,
-#                                             the method given all the upper arguments
+#                                             the method given all the upper arguments; ladder/bottom/<class> names
+#                                             the bottom class a top class of the same name hides
 # M <owner> <name> <desc> <lower name> <lower desc>
 #                                             the same hook (of the owner and its subclasses) under another name and
 #                                             descriptor below; the generated bridges take it from there
@@ -133,9 +135,6 @@ X	net/minecraft/network/chat/Component$Serializer	fromJsonLenient	(Ljava/lang/St
 X	net/minecraft/core/Holder	getRegisteredName	()Ljava/lang/String;	ladder/adapter/misc/MiscAdapters	getRegisteredName
 X	net/minecraft/core/Holder	is	(Lnet/minecraft/core/Holder;)Z	ladder/adapter/misc/MiscAdapters	is
 X	net/minecraft/core/Registry	getHolder	(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;	ladder/adapter/misc/MiscAdapters	getHolder
-X	net/minecraft/world/food/FoodProperties	nutrition	()I	ladder/adapter/misc/MiscAdapters	nutrition
-X	net/minecraft/world/food/FoodProperties	saturation	()F	ladder/adapter/misc/MiscAdapters	saturation
-X	net/minecraft/world/food/FoodProperties	eatSeconds	()F	ladder/adapter/misc/MiscAdapters	eatSeconds
 # 1.20.5's block entity load and save entries
 X	net/minecraft/world/level/block/entity/BlockEntity	loadWithComponents	(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V	ladder/adapter/misc/MiscAdapters	loadWithComponents
 X	net/minecraft/world/level/block/entity/BlockEntity	loadCustomOnly	(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V	ladder/adapter/misc/MiscAdapters	loadCustomOnly
@@ -298,3 +297,77 @@ X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holde
 X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;II)V	ladder/adapter/effect/EffectAdapters	create
 X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;IIZZ)V	ladder/adapter/effect/EffectAdapters	create
 X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;IIZZZ)V	ladder/adapter/effect/EffectAdapters	create
+# armour: 1.20.5's ArmorMaterial is a record in a registry (1.20.4: an interface the ArmorMaterials enum implements)
+N	net/minecraft/world/item/ArmorMaterial
+F	net/minecraft/core/registries/Registries	ARMOR_MATERIAL	Lnet/minecraft/resources/ResourceKey;	ladder/adapter/armour/ArmourAdapters	key
+F	net/minecraft/core/registries/BuiltInRegistries	ARMOR_MATERIAL	Lnet/minecraft/core/Registry;	ladder/adapter/armour/ArmourAdapters	registry
+F	net/minecraft/world/item/ArmorItem$Type	BODY	Lnet/minecraft/world/item/ArmorItem$Type;	ladder/adapter/armour/ArmourAdapters	bodyType
+X	net/minecraft/world/item/ArmorItem$Type	getDurability	(I)I	ladder/adapter/armour/ArmourAdapters	durability
+F	net/minecraft/tags/ItemTags	HEAD_ARMOR	Lnet/minecraft/tags/TagKey;	ladder/adapter/armour/ArmourAdapters	headArmor
+F	net/minecraft/tags/ItemTags	CHEST_ARMOR	Lnet/minecraft/tags/TagKey;	ladder/adapter/armour/ArmourAdapters	chestArmor
+F	net/minecraft/tags/ItemTags	LEG_ARMOR	Lnet/minecraft/tags/TagKey;	ladder/adapter/armour/ArmourAdapters	legArmor
+F	net/minecraft/tags/ItemTags	FOOT_ARMOR	Lnet/minecraft/tags/TagKey;	ladder/adapter/armour/ArmourAdapters	footArmor
+K	net/minecraft/world/item/ArmorItem	(Lnet/minecraft/core/Holder;Lnet/minecraft/world/item/ArmorItem$Type;Lnet/minecraft/world/item/Item$Properties;)V	(Lladder/bottom/net/minecraft/world/item/ArmorMaterial;Lnet/minecraft/world/item/ArmorItem$Type;Lnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/armour/ArmourMaterials	material,$1,$2
+X	net/minecraft/world/item/ArmorItem	getMaterial	()Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	getMaterial
+F	net/minecraft/world/item/ArmorMaterials	LEATHER	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	leather
+F	net/minecraft/world/item/ArmorMaterials	CHAIN	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	chain
+F	net/minecraft/world/item/ArmorMaterials	IRON	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	iron
+F	net/minecraft/world/item/ArmorMaterials	GOLD	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	gold
+F	net/minecraft/world/item/ArmorMaterials	DIAMOND	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	diamond
+F	net/minecraft/world/item/ArmorMaterials	TURTLE	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	turtle
+F	net/minecraft/world/item/ArmorMaterials	NETHERITE	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	netherite
+F	net/minecraft/world/item/ArmorMaterials	ARMADILLO	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	armadillo
+F	net/minecraft/world/item/ArmorItem	material	Lnet/minecraft/core/Holder;	ladder/adapter/armour/ArmourMaterials	getMaterial
+X	net/minecraft/world/entity/Mob	getBodyArmorItem	()Lnet/minecraft/world/item/ItemStack;	ladder/adapter/armour/BodyArmour	getBodyArmorItem
+X	net/minecraft/world/entity/Mob	setBodyArmorItem	(Lnet/minecraft/world/item/ItemStack;)V	ladder/adapter/armour/BodyArmour	setBodyArmorItem
+X	net/minecraft/world/entity/Mob	isWearingBodyArmor	()Z	ladder/adapter/armour/BodyArmour	isWearingBodyArmor
+X	net/minecraft/world/entity/Mob	isBodyArmorItem	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/adapter/armour/BodyArmour	isBodyArmorItem
+X	net/minecraft/world/entity/animal/Wolf	hasArmor	()Z	ladder/adapter/armour/BodyArmour	hasArmor
+X	net/minecraft/world/entity/LivingEntity	getArmorAndBodyArmorSlots	()Ljava/lang/Iterable;	ladder/adapter/armour/BodyArmour	getArmorAndBodyArmorSlots
+X	net/minecraft/world/item/ArmorItem	getDefaultAttributeModifiers	()Lnet/minecraft/world/item/component/ItemAttributeModifiers;	ladder/adapter/armour/BodyArmour	getDefaultAttributeModifiers
+N	net/minecraft/world/item/AnimalArmorItem
+F	net/minecraft/sounds/SoundEvents	WOLF_ARMOR_BREAK	Lnet/minecraft/sounds/SoundEvent;	ladder/adapter/armour/ArmourAdapters	wolfArmorBreak
+X	net/minecraft/world/entity/animal/horse/Horse	isBodyArmorItem	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/adapter/armour/BodyArmour	isBodyArmorItem
+X	net/minecraft/world/entity/animal/Wolf	isBodyArmorItem	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/adapter/armour/BodyArmour	isBodyArmorItem
+X	net/minecraft/world/entity/animal/horse/Llama	isBodyArmorItem	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/adapter/armour/BodyArmour	isBodyArmorItem
+P	net/minecraft/network/syncher/SynchedEntityData$Builder	ladder/adapter/entity/SynchedDataBuilder
+O	net/minecraft/world/entity/Entity	defineSynchedData	(Lnet/minecraft/network/syncher/SynchedEntityData$Builder;)V	ladder/adapter/entity/SynchedDataApi	ladder/adapter/entity/EntityDefaults	defineSynchedData	defineSynchedData ()V
+P	net/minecraft/client/gui/LayeredDraw$Layer	ladder/adapter/provided/GuiLayer
+P	net/neoforged/neoforge/client/event/RegisterGuiLayersEvent	ladder/adapter/provided/event/RegisterGuiLayersEvent
+P	net/neoforged/neoforge/client/event/RenderGuiLayerEvent	ladder/adapter/provided/event/RenderGuiLayerEvent
+P	net/neoforged/neoforge/client/event/RenderGuiLayerEvent$Pre	ladder/adapter/provided/event/RenderGuiLayerEvent$Pre
+P	net/neoforged/neoforge/client/event/RenderGuiLayerEvent$Post	ladder/adapter/provided/event/RenderGuiLayerEvent$Post
+P	net/neoforged/neoforge/client/gui/ConfigurationScreen	ladder/adapter/provided/ConfigurationScreen
+O	net/neoforged/neoforge/common/extensions/IItemExtension	getArmorTexture	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/EquipmentSlot;Lnet/minecraft/world/item/ArmorMaterial$Layer;Z)Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/armour/ArmourTextureApi	ladder/adapter/armour/ArmourTextureApi	defaultTexture
+P	net/minecraft/server/ReloadableServerRegistries$Holder	ladder/adapter/loot/ReloadableServerRegistries$Holder
+X	net/minecraft/server/MinecraftServer	reloadableRegistries	()Lnet/minecraft/server/ReloadableServerRegistries$Holder;	ladder/adapter/loot/ReloadableServerRegistries$Holder	of
+F	net/minecraft/core/registries/Registries	LOOT_TABLE	Lnet/minecraft/resources/ResourceKey;	ladder/adapter/loot/ReloadableServerRegistries	lootTableRegistry
+F	net/minecraft/core/registries/Registries	PREDICATE	Lnet/minecraft/resources/ResourceKey;	ladder/adapter/loot/ReloadableServerRegistries	predicateRegistry
+F	net/minecraft/core/registries/Registries	ITEM_MODIFIER	Lnet/minecraft/resources/ResourceKey;	ladder/adapter/loot/ReloadableServerRegistries	itemModifierRegistry
+F	net/minecraft/world/item/ItemStack	CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/component/ComponentCodecs	itemStack
+F	net/minecraft/world/item/ItemStack	STRICT_CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/recipe/ItemStackCodecs	strictCodec
+F	net/minecraft/world/item/ItemStack	OPTIONAL_CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/component/ComponentCodecs	optionalItemStack
+X	net/minecraft/world/item/ItemStack	consume	(ILnet/minecraft/world/entity/LivingEntity;)V	ladder/adapter/component/ComponentCodecs	consume
+X	net/minecraft/world/item/ItemStack	consumeAndReturn	(ILnet/minecraft/world/entity/LivingEntity;)Lnet/minecraft/world/item/ItemStack;	ladder/adapter/component/ComponentCodecs	consumeAndReturn
+P	net/minecraft/server/ReloadableServerRegistries	ladder/adapter/loot/ReloadableServerRegistries
+# recipes: 1.21 recipe serializers give a stream codec (1.20.4: fromNetwork / toNetwork)
+O	net/minecraft/world/item/crafting/RecipeSerializer	streamCodec	()Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/recipe/RecipeStreamApi	ladder/adapter/recipe/RecipeStreamApi	streamCodec
+# 1.20.5 item stack codecs beside the component ones (strict: stack size checked; single item: {id, components})
+F	net/minecraft/world/item/ItemStack	SINGLE_ITEM_CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/recipe/ItemStackCodecs	singleItemCodec
+F	net/minecraft/world/item/ItemStack	STRICT_SINGLE_ITEM_CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/recipe/ItemStackCodecs	strictSingleItemCodec
+F	net/minecraft/world/item/ItemStack	SIMPLE_ITEM_CODEC	Lcom/mojang/serialization/Codec;	ladder/adapter/recipe/ItemStackCodecs	simpleItemCodec
+X	net/minecraft/world/item/ItemStack	lenientOptionalFieldOf	(Ljava/lang/String;)Lcom/mojang/serialization/MapCodec;	ladder/adapter/recipe/ItemStackCodecs	lenientOptionalFieldOf
+X	net/minecraft/world/item/crafting/RecipeSerializer	streamCodec	()Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/recipe/RecipeStreams	streamCodec
+# recipes: getRecipeFor with the last recipe (1.20.4 gives a pair), stream codecs 1.20.4 has as toNetwork / fromNetwork
+X	net/minecraft/world/item/crafting/RecipeManager	getRecipeFor	(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/crafting/RecipeHolder;)Ljava/util/Optional;	ladder/adapter/recipe/RecipeLookups	getRecipeFor
+X	net/minecraft/world/item/crafting/RecipeManager	getRecipeFor	(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;	ladder/adapter/recipe/RecipeLookups	getRecipeFor
+F	net/minecraft/world/item/crafting/ShapedRecipePattern	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/recipe/RecipeLookups	shapedPattern
+F	net/minecraft/world/item/crafting/CraftingBookCategory	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/recipe/RecipeLookups	craftingBookCategory
+X	net/minecraft/world/item/crafting/RecipeManager	getRecipeFor	(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;)Ljava/util/Optional;	ladder/adapter/recipe/RecipeLookups	getRecipeFor
+# NeoForge 20.5's custom ingredients (ICustomIngredient, carried) as 20.4 ingredients; their types as 20.4's
+X	net/minecraft/world/item/crafting/Ingredient	<init>	(Lnet/neoforged/neoforge/common/crafting/ICustomIngredient;)V	ladder/adapter/recipe/CustomIngredients	of
+X	net/neoforged/neoforge/common/crafting/IngredientType	<init>	(Lcom/mojang/serialization/MapCodec;)V	ladder/adapter/recipe/CustomIngredients	type
+X	net/neoforged/neoforge/common/crafting/IngredientType	<init>	(Lcom/mojang/serialization/MapCodec;Lnet/minecraft/network/codec/StreamCodec;)V	ladder/adapter/recipe/CustomIngredients	type
+X	net/minecraft/world/item/crafting/Ingredient	isCustom	()Z	ladder/adapter/recipe/CustomIngredients	isCustom
+X	net/minecraft/world/item/crafting/Ingredient	getCustomIngredient	()Lnet/neoforged/neoforge/common/crafting/ICustomIngredient;	ladder/adapter/recipe/CustomIngredients	getCustomIngredient
+X	net/minecraft/world/item/crafting/Ingredient	hasNoItems	()Z	ladder/adapter/recipe/CustomIngredients	hasNoItems

@@ -8,15 +8,21 @@
     "ItemStackMixin",
     "BlockItemMixin",
     "EntityAccess",
+    "EntityMixin",
     "BeeAccess",
     "ArmorTrimMixin",
     "FireworkRocketEntityMixin",
     "SkullBlockEntityAccess",
     "ItemMixin",
-    "GameDataMixin"
+    "GameDataMixin",
+    "ArmourTypeAccess",
+    "ArmourTypeMixin",
+    "ArmourItemMixin",
+    "HorseArmourMixin"
   ],
   "client": [
-    "BufferBuilderMixin"
+    "BufferBuilderMixin",
+    "ArmourLayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

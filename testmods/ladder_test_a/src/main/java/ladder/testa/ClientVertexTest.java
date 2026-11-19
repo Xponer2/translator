@@ -138,6 +138,18 @@ public final class ClientVertexTest {
             float partial = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
             results.put("timerPartialInRange", String.valueOf(partial >= 0.0F && partial <= 1.0F));
             results.put("timerFixedOne", String.valueOf(net.minecraft.client.DeltaTracker.ONE.getGameTimeDeltaPartialTick(false)));
+            // a model part drawn with 1.21's colour int (1.20.6 took four floats): the vertex bytes it writes
+            net.minecraft.client.model.geom.builders.MeshDefinition modelMesh = new net.minecraft.client.model.geom.builders.MeshDefinition();
+            modelMesh.getRoot().addOrReplaceChild("cube", net.minecraft.client.model.geom.builders.CubeListBuilder.create().texOffs(0, 0)
+                    .addBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F), net.minecraft.client.model.geom.PartPose.ZERO);
+            net.minecraft.client.model.geom.ModelPart part = net.minecraft.client.model.geom.builders.LayerDefinition.create(modelMesh, 16, 16).bakeRoot();
+            for (int color : new int[] {0xFFFFFFFF, 0x80FF8040, 0x33669933, 0x01020304}) {
+                builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
+                part.render(new PoseStack(), builder, 0xF000F0, 0, color);
+                MeshData modelData = builder.buildOrThrow();
+                results.put("modelPart " + Integer.toHexString(color), modelData.drawState().vertexCount() + " " + hex(modelData.vertexBuffer()).substring(0, 96));
+                modelData.close();
+            }
             // nothing written: build() gives null
             builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
             MeshData empty = builder.build();

@@ -88,6 +88,17 @@ final class ClientSide {
             stack.set(DataComponents.CUSTOM_NAME, Component.literal("Shiny"));
             PacketDistributor.sendToServer(new Gift(stack, Component.literal("for you").withStyle(ChatFormatting.GOLD), Blocks.OAK_PLANKS));
             PacketDistributor.sendToServer(new Net(7));
+        } else if (ticks == SEND + 10) {
+            // armour drawn: a 1.20.5 material's layers (dyed, suffixed, inner model, an item's own texture), the game's own
+            ItemStack dyed = new ItemStack(Armour.HELMET.get());
+            dyed.set(DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(0x3366CC, true));
+            RESULTS.put("armourDrawn", ArmourClient.drawn(dyed, new ItemStack(Armour.LEGGINGS.get()), new ItemStack(Armour.BOOTS.get())));
+            RESULTS.put("armourDrawnVanilla", ArmourClient.drawn(new ItemStack(Items.LEATHER_HELMET), new ItemStack(Items.IRON_LEGGINGS),
+                    new ItemStack(Items.DIAMOND_CHESTPLATE)));
+        } else if (ticks == SEND + 15) {
+            RecipeChecks.run(RESULTS);
+        } else if (ticks == WRITE - 5) {
+            GuiClient.record(RESULTS);
         } else if (ticks == WRITE) {
             write();
             if (Boolean.getBoolean("ladder.test.c.drive")) {

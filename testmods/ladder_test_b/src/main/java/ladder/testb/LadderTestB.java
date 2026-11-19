@@ -45,6 +45,13 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
+import net.minecraft.world.item.ArmorMaterials;
+import net.minecraft.world.entity.animal.horse.Horse;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.Tiers;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
@@ -83,8 +90,99 @@ public final class LadderTestB {
     static final DeferredHolder<Item, Item> BLADE = ITEMS.register("test_blade",
             () -> new SwordItem(Tiers.IRON, new Item.Properties().attributes(SwordItem.createAttributes(Tiers.IRON, 4, -2.0F))));
     /** a food of the mod's own, with an effect */
+    // armour: a material of the mod's own (a record in the armour material registry) and two pieces of it
+    static final DeferredRegister<ArmorMaterial> MATERIALS = DeferredRegister.create(Registries.ARMOR_MATERIAL, "ladder_test_b");
+    static final DeferredHolder<ArmorMaterial, ArmorMaterial> STEEL = MATERIALS.register("steel", () -> new ArmorMaterial(
+            net.minecraft.Util.make(new java.util.EnumMap<>(ArmorItem.Type.class), m -> {
+                m.put(ArmorItem.Type.BOOTS, 2);
+                m.put(ArmorItem.Type.LEGGINGS, 5);
+                m.put(ArmorItem.Type.CHESTPLATE, 7);
+                m.put(ArmorItem.Type.HELMET, 3);
+                m.put(ArmorItem.Type.BODY, 9);
+            }), 12, SoundEvents.ARMOR_EQUIP_IRON, () -> Ingredient.of(Items.IRON_INGOT),
+            List.of(new ArmorMaterial.Layer(ResourceLocation.fromNamespaceAndPath("ladder_test_b", "steel"))), 1.5F, 0.05F));
+    static final DeferredHolder<Item, ArmorItem> STEEL_HELMET = ITEMS.register("steel_helmet",
+            () -> new ArmorItem(STEEL, ArmorItem.Type.HELMET, new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(20))));
+    static final DeferredHolder<Item, ArmorItem> STEEL_CHESTPLATE = ITEMS.register("steel_chestplate",
+            () -> new SteelChestplate(new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(20))));
+    // no durability (1.20.5's armour takes none of its material: the stack size stays), a field of its own named as ArmorItem's
+    static final DeferredHolder<Item, ArmorItem> STEEL_BOOTS = ITEMS.register("steel_boots", () -> new SteelBoots(new Item.Properties().stacksTo(16)));
+    static final DeferredHolder<Item, net.minecraft.world.item.AnimalArmorItem> STEEL_HORSE_ARMOR = ITEMS.register("steel_horse_armor",
+            () -> new net.minecraft.world.item.AnimalArmorItem(STEEL, net.minecraft.world.item.AnimalArmorItem.BodyType.EQUESTRIAN, false,
+                    new Item.Properties().stacksTo(1)));
+
+    static final class SteelBoots extends ArmorItem {
+        final Holder<ArmorMaterial> material = ArmorMaterials.GOLD;
+
+        SteelBoots(Item.Properties properties) {
+            super(STEEL, ArmorItem.Type.BOOTS, properties);
+        }
+
+        String ownMaterial() {
+            return this.material.unwrapKey().map(k -> k.location().toString()).orElse("?") + "/" + (((ArmorItem) this).getMaterial() == STEEL);
+        }
+    }
+
+    /** a mod's armour item of its own class (its super call takes the material holder) */
+    static final class SteelChestplate extends ArmorItem {
+        SteelChestplate(Item.Properties properties) {
+            super(STEEL, ArmorItem.Type.CHESTPLATE, properties);
+        }
+
+        int defenseOfMaterial() {
+            return this.material.value().getDefense(this.type);
+        }
+    }
+
     static final DeferredHolder<Item, Item> SNACK = ITEMS.register("test_snack", () -> new Item(new Item.Properties().food(new FoodProperties.Builder()
             .nutrition(3).saturationModifier(0.5F).effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0), 0.5F).build())));
+
+    /** entities of the mod's own with synched data: one right under Entity, one under the zombie */
+    static final DeferredRegister<net.minecraft.world.entity.EntityType<?>> ENTITIES = DeferredRegister.create(Registries.ENTITY_TYPE, "ladder_test_b");
+    static final DeferredHolder<net.minecraft.world.entity.EntityType<?>, net.minecraft.world.entity.EntityType<Marker>> MARKER = ENTITIES.register("marker",
+            () -> net.minecraft.world.entity.EntityType.Builder.<Marker>of(Marker::new, net.minecraft.world.entity.MobCategory.MISC).sized(0.5F, 0.5F).build("marker"));
+    static final DeferredHolder<net.minecraft.world.entity.EntityType<?>, net.minecraft.world.entity.EntityType<BigZombie>> BIG_ZOMBIE = ENTITIES.register("big_zombie",
+            () -> net.minecraft.world.entity.EntityType.Builder.<BigZombie>of(BigZombie::new, net.minecraft.world.entity.MobCategory.MONSTER).sized(0.6F, 1.95F)
+                    .build("big_zombie"));
+
+    static final class Marker extends net.minecraft.world.entity.Entity {
+        static final net.minecraft.network.syncher.EntityDataAccessor<Integer> MARK = net.minecraft.network.syncher.SynchedEntityData.defineId(Marker.class,
+                net.minecraft.network.syncher.EntityDataSerializers.INT);
+
+        Marker(net.minecraft.world.entity.EntityType<? extends Marker> type, net.minecraft.world.level.Level level) {
+            super(type, level);
+        }
+
+        @Override
+        protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+            builder.define(MARK, 7);
+        }
+
+        @Override
+        protected void readAdditionalSaveData(CompoundTag tag) {
+            this.entityData.set(MARK, tag.getInt("mark"));
+        }
+
+        @Override
+        protected void addAdditionalSaveData(CompoundTag tag) {
+            tag.putInt("mark", this.entityData.get(MARK));
+        }
+    }
+
+    static final class BigZombie extends net.minecraft.world.entity.monster.Zombie {
+        static final net.minecraft.network.syncher.EntityDataAccessor<String> TITLE = net.minecraft.network.syncher.SynchedEntityData.defineId(BigZombie.class,
+                net.minecraft.network.syncher.EntityDataSerializers.STRING);
+
+        BigZombie(net.minecraft.world.entity.EntityType<? extends BigZombie> type, net.minecraft.world.level.Level level) {
+            super(type, level);
+        }
+
+        @Override
+        protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+            super.defineSynchedData(builder);
+            builder.define(TITLE, "boss");
+        }
+    }
 
     record Owner(String name, int level) {
         static final Codec<Owner> CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -93,7 +191,11 @@ public final class LadderTestB {
 
     public LadderTestB(IEventBus modBus) {
         COMPONENTS.register(modBus);
+        MATERIALS.register(modBus);
         ITEMS.register(modBus);
+        ENTITIES.register(modBus);
+        modBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->
+                event.put(BIG_ZOMBIE.get(), net.minecraft.world.entity.monster.Zombie.createAttributes().build()));
         NeoForge.EVENT_BUS.register(this);
     }
 
@@ -183,7 +285,108 @@ public final class LadderTestB {
         results.put("rodZombie", String.valueOf(zombie.getAttributeValue(Attributes.ATTACK_DAMAGE)));
 
         blockComponents(results, level);
+        try {
+            Marker marker = MARKER.get().create(level);
+            results.put("entityMark", String.valueOf(marker.getEntityData().get(Marker.MARK)));
+            marker.getEntityData().set(Marker.MARK, 9);
+            CompoundTag markerTag = new CompoundTag();
+            marker.saveWithoutId(markerTag);
+            Marker markerBack = MARKER.get().create(level);
+            markerBack.load(markerTag);
+            results.put("entityMarkSaved", String.valueOf(markerBack.getEntityData().get(Marker.MARK)));
+            BigZombie big = BIG_ZOMBIE.get().create(level);
+            results.put("entityTitle", big.getEntityData().get(BigZombie.TITLE) + "/" + big.isBaby() + "/" + big.getEntityData().getNonDefaultValues().stream().map(v -> v.id() + "=" + v.value()).toList());
+            big.setBaby(true);
+            results.put("entityBaby", big.isBaby() + "/" + big.getEntityData().get(BigZombie.TITLE));
+        } catch (RuntimeException | LinkageError e) {
+            results.put("entity.error", e.toString());
+        }
+        try {
+            lootAndCodecs(results, level);
+        } catch (RuntimeException | LinkageError e) {
+            results.put("loot.error", e.toString());
+        }
         results.put("rarity", new ItemStack(Items.ENCHANTED_GOLDEN_APPLE).get(DataComponents.RARITY) + "/" + new ItemStack(Items.STICK).get(DataComponents.RARITY));
+
+        // armour: a mod's material and pieces, the game's materials, body armour
+        ArmorItem helmet = STEEL_HELMET.get();
+        SteelChestplate chestplate = (SteelChestplate) STEEL_CHESTPLATE.get();
+        results.put("armourDefense", helmet.getDefense() + "/" + chestplate.getDefense() + "/" + helmet.getToughness() + "/" + chestplate.defenseOfMaterial());
+        results.put("armourDurability", new ItemStack(helmet).getMaxDamage() + "/" + new ItemStack(chestplate).getMaxDamage() + "/"
+                + ArmorItem.Type.BODY.getDurability(4) + "/" + ArmorItem.Type.BOOTS.getDurability(3));
+        results.put("armourEnchantability", String.valueOf(helmet.getEnchantmentValue()));
+        results.put("armourRepair", helmet.isValidRepairItem(new ItemStack(helmet), new ItemStack(Items.IRON_INGOT)) + "/"
+                + helmet.isValidRepairItem(new ItemStack(helmet), new ItemStack(Items.STICK)));
+        Holder<ArmorMaterial> steel = helmet.getMaterial();
+        results.put("armourMaterial", (steel == STEEL) + "/" + steel.value().defense().get(ArmorItem.Type.HELMET) + "/" + steel.value().getDefense(ArmorItem.Type.BODY)
+                + "/" + steel.value().enchantmentValue() + "/" + steel.value().toughness() + "/" + steel.value().knockbackResistance());
+        results.put("armourTexture", steel.value().layers().get(0).texture(false) + " " + steel.value().layers().get(0).texture(true));
+        results.put("armourSound", String.valueOf(steel.value().equipSound().unwrapKey().map(k -> k.location().toString()).orElse("?")));
+        results.put("armourAttributes", attributes(new ItemStack(chestplate).get(DataComponents.ATTRIBUTE_MODIFIERS)));
+        Zombie armoured = EntityType.ZOMBIE.create(level);
+        armoured.setPos(8.5, 141.0, 8.5);
+        armoured.setItemSlot(EquipmentSlot.CHEST, new ItemStack(chestplate));
+        armoured.setItemSlot(EquipmentSlot.HEAD, new ItemStack(helmet));
+        armoured.tick();
+        results.put("armourZombie", armoured.getAttributeValue(Attributes.ARMOR) + "/" + armoured.getAttributeValue(Attributes.ARMOR_TOUGHNESS) + "/"
+                + armoured.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE));
+        ArmorItem ironHelmet = (ArmorItem) Items.IRON_HELMET;
+        results.put("vanillaMaterial", (ironHelmet.getMaterial() == ArmorMaterials.IRON) + "/" + ArmorMaterials.IRON.unwrapKey().map(k -> k.location().toString()).orElse("?")
+                + "/" + ArmorMaterials.IRON.value().getDefense(ArmorItem.Type.CHESTPLATE) + "/" + ArmorMaterials.IRON.value().getDefense(ArmorItem.Type.BODY)
+                + "/" + ArmorMaterials.DIAMOND.value().toughness() + "/" + ArmorMaterials.NETHERITE.value().knockbackResistance()
+                + "/" + ArmorMaterials.GOLD.value().enchantmentValue() + "/" + ArmorMaterials.LEATHER.value().layers().size());
+        results.put("vanillaRepair", ArmorMaterials.DIAMOND.value().repairIngredient().get().test(new ItemStack(Items.DIAMOND)) + "/"
+                + ArmorMaterials.DIAMOND.value().repairIngredient().get().test(new ItemStack(Items.IRON_INGOT)));
+        results.put("armourTypes", ArmorItem.Type.values().length + "/" + ArmorItem.Type.BODY.getName() + "/" + ArmorItem.Type.valueOf("BODY").getName());
+        results.put("armourRegistry", String.valueOf(level.registryAccess().registryOrThrow(Registries.ARMOR_MATERIAL).containsKey(
+                ResourceLocation.fromNamespaceAndPath("ladder_test_b", "steel"))));
+        Horse horse = EntityType.HORSE.create(level);
+        horse.setPos(8.5, 141.0, 8.5);
+        results.put("bodyArmourEmpty", horse.isWearingBodyArmor() + "/" + horse.getBodyArmorItem().isEmpty());
+        horse.setBodyArmorItem(new ItemStack(Items.IRON_HORSE_ARMOR));
+        results.put("bodyArmour", horse.isWearingBodyArmor() + "/" + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(horse.getBodyArmorItem().getItem())
+                + "/" + horse.isBodyArmorItem(new ItemStack(Items.IRON_HORSE_ARMOR)) + "/" + horse.isBodyArmorItem(new ItemStack(Items.IRON_HELMET)));
+        SteelBoots boots = (SteelBoots) STEEL_BOOTS.get();
+        results.put("armourStack", new ItemStack(boots).getMaxStackSize() + "/" + new ItemStack(boots).getMaxDamage() + "/" + boots.ownMaterial()
+                + "/" + boots.getDefense());
+        // body armour worn: its protection, after a save and a load, a mod's horse armour
+        horse.tick();
+        results.put("bodyArmourProtection", horse.getAttributeValue(Attributes.ARMOR) + "/" + horse.getAttributeValue(Attributes.ARMOR_TOUGHNESS));
+        results.put("bodyArmourReload", reloaded(level, horse));
+        Horse modHorse = EntityType.HORSE.create(level);
+        modHorse.setPos(8.5, 141.0, 8.5);
+        ItemStack steelHorseArmour = new ItemStack(STEEL_HORSE_ARMOR.get());
+        modHorse.setBodyArmorItem(steelHorseArmour);
+        modHorse.tick();
+        results.put("modBodyArmour", modHorse.isBodyArmorItem(steelHorseArmour) + "/" + modHorse.isWearingBodyArmor() + "/"
+                + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(modHorse.getBodyArmorItem().getItem()) + "/"
+                + modHorse.getAttributeValue(Attributes.ARMOR) + "/" + modHorse.getAttributeValue(Attributes.ARMOR_TOUGHNESS) + "/"
+                + STEEL_HORSE_ARMOR.get().getBodyType());
+        results.put("modBodyArmourReload", reloaded(level, modHorse));
+        net.minecraft.world.entity.animal.horse.Llama llama = EntityType.LLAMA.create(level);
+        llama.setPos(8.5, 141.0, 8.5);
+        ItemStack carpet = new ItemStack(Items.RED_CARPET);
+        llama.setBodyArmorItem(carpet);
+        CompoundTag llamaTag = new CompoundTag();
+        llama.saveWithoutId(llamaTag);
+        net.minecraft.world.entity.animal.horse.Llama llamaCopy = EntityType.LLAMA.create(level);
+        llamaCopy.load(llamaTag);
+        results.put("llamaBodyArmour", llama.isBodyArmorItem(carpet) + "/" + llama.isWearingBodyArmor() + "/"
+                + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(llama.getBodyArmorItem().getItem()) + "/" + llama.getSwag() + "/"
+                + llamaCopy.isWearingBodyArmor() + "/" + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(llamaCopy.getBodyArmorItem().getItem())
+                + "/" + llamaCopy.getSwag());
+    }
+
+    /** a horse saved and loaded again: what it wears, its protection */
+    static String reloaded(ServerLevel level, Horse horse) {
+        CompoundTag tag = new CompoundTag();
+        horse.saveWithoutId(tag);
+        Horse copy = EntityType.HORSE.create(level);
+        copy.load(tag);
+        copy.setPos(8.5, 141.0, 8.5);
+        copy.tick();
+        return copy.isWearingBodyArmor() + "/" + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(copy.getBodyArmorItem().getItem()) + "/"
+                + copy.getAttributeValue(Attributes.ARMOR);
     }
 
     /** containers, block entity and entity data, block states, a bundle, flags, the stack patch API */
@@ -390,6 +593,39 @@ public final class LadderTestB {
         mapped.applyComponents(marked.getComponents());
         results.put("mapApplied", mapped.get(CHARGE.get()) + "/" + mapped.getHoverName().getString());
         results.put("typed", String.valueOf(marked.getComponents().getTyped(CHARGE.get()).value()));
+    }
+
+    /** a loot table by its key (1.20.5's reloadable registries), and stacks through 1.21's codecs */
+    static void lootAndCodecs(Map<String, String> results, ServerLevel level) {
+        net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable> key = net.minecraft.resources.ResourceKey.create(
+                Registries.LOOT_TABLE, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_b", "test"));
+        net.minecraft.world.level.storage.loot.LootTable table = level.getServer().reloadableRegistries().getLootTable(key);
+        net.minecraft.world.level.storage.loot.LootParams params = new net.minecraft.world.level.storage.loot.LootParams.Builder(level)
+                .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN, net.minecraft.world.phys.Vec3.ZERO)
+                .create(net.minecraft.world.level.storage.loot.parameters.LootContextParamSets.CHEST);
+        List<String> loot = new ArrayList<>();
+        table.getRandomItems(params, 42L).forEach(s -> loot.add(s.getCount() + "x" + s.getItem()));
+        results.put("lootByKey", loot.toString());
+        results.put("lootKeys", String.valueOf(level.getServer().reloadableRegistries().getKeys(Registries.LOOT_TABLE)
+                .contains(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_b", "test"))));
+        results.put("lootMissing", String.valueOf(level.getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(
+                Registries.LOOT_TABLE, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_b", "none")))
+                == net.minecraft.world.level.storage.loot.LootTable.EMPTY));
+
+        com.mojang.serialization.DynamicOps<com.google.gson.JsonElement> ops = level.registryAccess().createSerializationContext(
+                com.mojang.serialization.JsonOps.INSTANCE);
+        ItemStack gem = new ItemStack(Items.DIAMOND, 5);
+        gem.set(DataComponents.CUSTOM_NAME, Component.literal("Gem"));
+        com.google.gson.JsonElement json = ItemStack.CODEC.encodeStart(ops, gem).result().orElseThrow();
+        results.put("codecJson", json.toString().replace("\\", ""));
+        ItemStack back = ItemStack.CODEC.parse(ops, json).result().orElseThrow();
+        results.put("codecBack", back.getCount() + "/" + back.getHoverName().getString() + "/" + ItemStack.isSameItemSameComponents(back, gem));
+        results.put("codecEmpty", String.valueOf(ItemStack.OPTIONAL_CODEC.encodeStart(ops, ItemStack.EMPTY).result().orElseThrow()));
+        com.google.gson.JsonElement plain = com.google.gson.JsonParser.parseString("{\"id\":\"minecraft:stick\"}");
+        results.put("codecPlain", String.valueOf(ItemStack.CODEC.parse(ops, plain).result().map(s -> s.getCount() + "x" + s.getItem()).orElse("none")));
+        ItemStack apple = new ItemStack(Items.APPLE, 3);
+        apple.consume(1, null);
+        results.put("consume", String.valueOf(apple.getCount()));
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)

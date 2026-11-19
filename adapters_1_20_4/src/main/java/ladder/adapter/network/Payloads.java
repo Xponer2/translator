@@ -103,7 +103,7 @@ public final class Payloads {
     }
 
     /** The buffer with the current registries (it shares the buffer's bytes and indices). */
-    static RegistryFriendlyByteBuf registryBuffer(FriendlyByteBuf buffer) {
+    public static RegistryFriendlyByteBuf registryBuffer(FriendlyByteBuf buffer) {
         return buffer instanceof RegistryFriendlyByteBuf registry ? registry : new RegistryFriendlyByteBuf(buffer, Conversions.registries());
     }
 }

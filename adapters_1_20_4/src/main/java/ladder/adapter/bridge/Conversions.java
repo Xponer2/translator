@@ -150,4 +150,30 @@ public final class Conversions {
         // a class's values can sit in one registry and not another value of it (two registries of one type): checked
         return ((Registry) found).getResourceKey(value).isPresent() ? found : null;
     }
+
+    /** 1.21's ARGB colour int -> 1.20.6's red, green, blue, alpha floats (0..1) */
+    public static float red(int color) {
+        return (color >> 16 & 255) / 255.0F;
+    }
+
+    public static float green(int color) {
+        return (color >> 8 & 255) / 255.0F;
+    }
+
+    public static float blue(int color) {
+        return (color & 255) / 255.0F;
+    }
+
+    public static float alpha(int color) {
+        return (color >>> 24) / 255.0F;
+    }
+
+    /** 1.20.6's four floats -> 1.21's ARGB int (FastColor.ARGB32.colorFromFloat: each channel floor(f * 255)) */
+    public static int color(float red, float green, float blue, float alpha) {
+        return channel(alpha) << 24 | channel(red) << 16 | channel(green) << 8 | channel(blue);
+    }
+
+    private static int channel(float value) {
+        return net.minecraft.util.Mth.floor(value * 255.0F) & 255;
+    }
 }

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["DD", "DD"],
+  "key": {"D": {"item": "minecraft:coarse_dirt"}},
+  "result": {"id": "minecraft:diamond", "count": 2}
+}
