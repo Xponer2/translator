@@ -24,13 +24,15 @@ There is no release for players yet.
    Fabric's intermediary names (the same in every version). A class or member whose Mojang name changed is found
    that way; the rest keep their names.
 2. **Carried code.** A class or static method that is new in the upper version is copied down as it is when its own
-   code works on the lower version: it needs only other carried code, reaches only public members below (a private
+   code works on the lower version (a new instance method of a class that exists below comes down as a static helper
+   with the receiver first, when nothing overrides it and it calls no super or private method): it needs only other carried code, reaches only public members below (a private
    static helper of its own class comes along), registers nothing, is no event (the lower game never posts it) and
    keeps the lower version's interface contracts. All carried code goes into one library per target
    (`ladder-carried-1.20.4.jar`, a game library in its own package tree), shared by every converted mod.
 3. **Generated bridges.** A member whose types changed between the versions, every change a known conversion
    (`Holder<X>` / `X`, `MapCodec` / `Codec`, `HolderLookup.Provider` / `RegistryAccess`, `ResourceKey<X>` / `X`,
-   `ResourceKey` / `ResourceLocation`, `X` / `Optional<X>`, a subtype below), gets a generated bridge that converts the
+   `ResourceKey` / `ResourceLocation`, `X` / `Optional<X>`, a colour as one ARGB int / four floats, a subtype below),
+   gets a generated bridge that converts the
    values and calls the lower member: field reads, method calls, method references and constructors (`new X(...)`
    becomes the bridge's factory). A mod's **override** of such a method gets the lower method generated in its own
    class (it converts the values and calls the mod's method), so the game calls it; a super call goes to the lower
@@ -41,7 +43,8 @@ There is no release for players yet.
    gained new state (an `ItemStack`'s data components), a method was split (1.20.5's `useItemOn` / `useWithoutItem`),
    a registry or a loader API changed. The converter applies them from a rules file (`ladder-rules.tsv`): provided
    classes, overrides of newer methods (the mod class gets the adapters' interface, 1.20.4's call sites call it through
-   mixins), call redirects. Each rule's target is checked against the built adapters.
+   mixins), call redirects, constructors that take more arguments below (each one an upper argument or an adapter's
+   value). Each rule's target is checked against the built adapters.
 5. **One pass.** The renames of all steps compose, so a mod is converted once, whatever its version.
 6. **Mojang's libraries are steps too.** DataFixerUpper and Brigadier are walked like the game, each version with its
    own jars (DFU 8 in 1.21, DFU 6 in 1.20.4); the adapters cover what changed, including what the descriptors hide (a
@@ -58,7 +61,8 @@ game's class; one copy of carried code per target; a member the game's class lac
 `tools/identity-test` checks them on the JVM (12 cases; without the dispatcher the first new method fails).
 
 **Strict.** A mod counts as converted only when nothing was stubbed, skipped or left unresolved, mixin selectors
-included. Formats the converter can't check yet (a mod's own recipe types) are listed apart.
+included. Formats the converter can't check yet (a mod's own recipe types) are listed apart, and so is the code of a
+mod's data generators (data providers run in `runData` only, never in the game).
 
 ## Where it is
 
@@ -91,17 +95,27 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dispatch over map codecs, validation, error messages), holders' names, food values, mixins into a method whose
   parameter changed, a block entity saving and loading through 1.20.5's registry-passing methods: **the same 48 results** natively on 1.21.1 and converted on
   1.20.4. On the client, 1.21's vertex API (`Tesselator.begin`, `addVertex` with its setters in any order, a wrapper
-  over two buffers, builders interleaved, posed normals, a missing element, `MeshData`) and `DeltaTracker`: **the same
-  15 results, the written vertex bytes included**.
+  over two buffers, builders interleaved, posed normals, a missing element, `MeshData`), `DeltaTracker`, and a model
+  part drawn with 1.21's one-int colour: **the same 19 results, the written vertex bytes included**.
 - **Item data components** (the first compatibility module; test mod B, made for 1.21.1): its own component types,
   an item's defaults, the game's own components; values set, updated, removed, copied, saved and read back; custom
   data whose keys clash with the game's; a stream codec; the stack handed to another mod in a chest and read by the
-  type's id, across a server restart: **the same 28 results** natively on 1.21.1 and converted on 1.20.4. A stack's
-  components live in its NBT (the one place its data is kept), with 1.21's defaults, overrides and removal markers.
+  type's id, across a server restart. A stack's components live in its NBT (the one place its data is kept), with
+  1.21's defaults, overrides and removal markers. The same test mod covers more of 1.21 on the server: a mod's own
+  entities defining their synched data the 1.20.5 way (`defineSynchedData(Builder)`, on an entity right under
+  `Entity` and on a zombie), a loot table looked up by its key from the mod's own data, stacks through 1.21's codecs
+  (`{id, count, components}` JSON). All of it: **the same 147 results, and 152 after a restart**, natively on 1.21.1
+  and converted on 1.20.4.
 - **Network payloads** (the second compatibility module; test mod C, made for 1.21.1): 1.20.5's payload types and
   registrar, stream codecs (`ByteBufCodecs` and the game's own `STREAM_CODEC`s carried down as real code), handlers on
-  the main thread, replies, `PacketDistributor`: **the same 25 results** natively on 1.21.1 and converted on 1.20.4,
-  in a single-player world and over a real connection to a dedicated server.
+  the main thread, replies, `PacketDistributor`, in a single-player world and over a real connection to a dedicated
+  server; armour made the 1.20.5 way (an armour material as a registry record, a mod's horse armour, dyed and layered
+  armour drawn on the client); 1.21's HUD layers and a mod's config screen: **27 of 27 results as natively on 1.21.1**
+  (the HUD layers and the config screen: 35 of 36, the last one fixed since and not yet run again).
+- **Armour** of 1.20.5 (armour materials as registry records, the body slot, animal armour, a horse's and a llama's
+  armour in their inventory) and **recipes on `RecipeInput`** (a mod's recipe types and serializers, calls and
+  overrides of `matches` / `assemble`, `RecipeManager` lookups, NeoForge's custom ingredients) are converted; the
+  recipe checks of test mod C are written and wait for their first run.
 
 - **Mods of two versions share one item** (test mod E): a mod made for 1.20.4 and running as it is, not converted,
   takes the stack a converted 1.21.1 mod (test mod B) left in a chest and changes it with 1.20.4's own API (an
@@ -125,9 +139,10 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
 Over the whole corpus, 57 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
 outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 8106 (the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
-injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). What holds the others back most, in order:
-mixins into game methods whose parameters changed (the 1.21 render and GUI methods most), item data components (in
-code and in loot tables), `HolderLookup.Provider` in saving and loading, recipes on `RecipeInput`, loot tables by key.
+injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). Most mods that are
+left wait for several mechanisms at once; the ones that free the most mods next: 1.21's GUI widgets and screen layout
+(config screen libraries), the loader's early bootstrap, the config API, resource packs, mixins whose target method
+is gone below, and the libraries many mods require (YUNG's API, Balm, Architectury...).
 
 1.20.5 has no step of its own: NeoForge only had betas for it, and 1.20.6 is its hotfix, so the step 1.20.6 → 1.20.4
 holds its changes.
@@ -139,7 +154,7 @@ holds its changes.
 | `v1_21_1`, `v1_21`, `v1_20_6`, `v1_20_4` | One Gradle project per version (ModDevGradle): the Mojang-named game + NeoForge jar of that version |
 | `v1_20_4/src` | `LadderProbe`, `LadderProbeClient`, `LadderFacts`: behaviour tests of converted mods on a real 1.20.4 server and client, and the facts compared with the 1.21.1 reference |
 | `adapters_1_20_4` | The hand-written adapters of the step down to 1.20.4 and their rules (`ladder-rules.tsv`) |
-| `testmods/ladder_test_a` | A test mod for NeoForge 1.21.1: run on its own version and converted, the results compared |
+| `testmods/ladder_test_a` … `ladder_test_e` | Test mods for NeoForge 1.21.1 (E also for 1.20.4): run on their own version and converted, the results compared |
 | `tools/stage0/Stage0.java` | Walks every reference of a mod corpus down the steps; writes per step the generated rows, what stops, what can be carried and the roots left for hand-written code |
 | `tools/convert/Convert.java` | Converts a mod (or a folder of mods) down to 1.20.4 in one pass: classes, carried code, bridges, the adapters' rules, mixin selectors, embedded jars, metadata, data (folders, recipe results, loot predicates); strict |
 | `tools/identity-test` | The shared-object rules as a bytecode rewrite and a checker |
@@ -171,7 +186,7 @@ rules. To run converted mods: put them with `out/converted/ladder-carried-1.20.4
 | Stage | What | State |
 |---|---|---|
 | 1 | Generated steps 1.21.1 → 1.20.4, the one-pass converter, strict checks, behaviour tests in the real 1.20.4 | ✅ done |
-| 2 | The hand-written parts of 1.20.6 → 1.20.4: block/item method splits, changed types and overrides of them, loader entry points, render buffers, mixins into changed methods, item data components, network payloads, mixins whose targets moved below (done); the game's other item components, recipe inputs, loot keys (next) | 🔨 **now** |
+| 2 | The hand-written parts of 1.20.6 → 1.20.4: block/item method splits, changed types and overrides of them, loader entry points, render buffers, mixins into changed methods, item data components (about 40 of the game's), network payloads, mixins whose targets moved below, armour, recipe inputs, loot keys, entity synched data, HUD layers, model colours (done); GUI widgets, the loader's bootstrap, config, resource packs, libraries (next) | 🔨 **now** |
 | 3 | Steps down to 1.20.1 (the version with the most mods), then 1.19.2, 1.18.2, 1.16.5 | ⬜ planned |
 | 4 | The step down to 1.12.2 | ⬜ planned |
 | 5 | Older mods brought up, Fabric mods, targets below 1.12.2 | ⬜ later |
