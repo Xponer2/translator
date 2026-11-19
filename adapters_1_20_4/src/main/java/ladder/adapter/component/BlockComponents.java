@@ -38,7 +38,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
  */
 final class BlockComponents {
     /** BlockEntityTag keys other components keep (not the block entity data's) */
-    static final Set<String> BLOCK_ENTITY_KEPT = Set.of("Items", "Bees");
+    static final Set<String> BLOCK_ENTITY_KEPT = Set.of("Items", "Bees", "note_block_sound", "Base");
     static final int HIDE_UNBREAKABLE = 4;
 
     private BlockComponents() {
@@ -558,6 +558,49 @@ final class BlockComponents {
                 list.add(tag);
             }
             stack.getOrCreateTag().put("effects", list);
+        }
+    }
+
+    /** a key of BlockEntityTag as a component (1.21's note_block_sound, a shield's base_color) */
+    static final class BlockEntityKey<T> implements DataComponentType.Vanilla<T> {
+        private final String key;
+        private final java.util.function.Function<Tag, T> read;
+        private final java.util.function.Function<T, Tag> write;
+        private final java.util.function.Predicate<ItemStack> on;
+
+        BlockEntityKey(String key, java.util.function.Predicate<ItemStack> on, java.util.function.Function<Tag, T> read, java.util.function.Function<T, Tag> write) {
+            this.key = key;
+            this.on = on;
+            this.read = read;
+            this.write = write;
+        }
+
+        @Override
+        public T get(ItemStack stack) {
+            CompoundTag block = stack.getTagElement("BlockEntityTag");
+            Tag value = block == null ? null : block.get(this.key);
+            return value == null ? null : this.read.apply(value);
+        }
+
+        @Override
+        public T prototype(ItemStack stack) {
+            return null;
+        }
+
+        @Override
+        public void set(ItemStack stack, T value) {
+            if (value == null) {
+                CompoundTag block = stack.getTagElement("BlockEntityTag");
+                if (block != null) {
+                    block.remove(this.key);
+                }
+                dropEmptyBlockEntityTag(stack);
+                return;
+            }
+            if (!this.on.test(stack)) {
+                throw new IllegalStateException("1.20.4 keeps " + this.key + " only on its own items: can't set it on " + stack);
+            }
+            stack.getOrCreateTagElement("BlockEntityTag").put(this.key, this.write.apply(value));
         }
     }
 }

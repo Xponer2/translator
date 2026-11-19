@@ -45,7 +45,8 @@ public final class ProfileAdapters {
     public static CompletableFuture<Optional<GameProfile>> fetchGameProfile(String name) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getProfileCache() == null) {
-            return CompletableFuture.completedFuture(Optional.empty());
+            // a client of another server: 1.20.4's own skull lookup by name (its cache is set up on the client too)
+            return ladder.adapter.mixin.SkullBlockEntityAccess.ladder$fetchGameProfile(name);
         }
         return server.getProfileCache().getAsync(name).thenCompose(found -> found.isEmpty() ? CompletableFuture.completedFuture(found)
                 : fetchGameProfile(found.get().getId()).thenApply(full -> full.isPresent() ? full : found));
@@ -54,11 +55,13 @@ public final class ProfileAdapters {
     /** SkullBlockEntity.fetchGameProfile(id): the profile with its textures, or empty when there is no server to ask */
     public static CompletableFuture<Optional<GameProfile>> fetchGameProfile(UUID id) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) {
+        com.mojang.authlib.minecraft.MinecraftSessionService sessions = server != null ? server.getSessionService()
+                : net.neoforged.fml.loading.FMLEnvironment.dist.isClient() ? ClientProfiles.sessionService() : null;
+        if (sessions == null) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
         return CompletableFuture.supplyAsync(() -> {
-            ProfileResult result = server.getSessionService().fetchProfile(id, true);
+            ProfileResult result = sessions.fetchProfile(id, true);
             return Optional.ofNullable(result).map(ProfileResult::profile);
         }, Util.backgroundExecutor());
     }

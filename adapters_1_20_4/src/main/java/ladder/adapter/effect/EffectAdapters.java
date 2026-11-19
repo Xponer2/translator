@@ -63,8 +63,12 @@ public final class EffectAdapters {
             return effect;
         }
         MobEffectInstance hidden = tag.contains("hidden_effect", net.minecraft.nbt.Tag.TAG_COMPOUND) ? load(tag.getCompound("hidden_effect")) : null;
-        return new MobEffectInstance(effect.getEffect(), effect.getDuration(), tag.getByte("amplifier") & 255, effect.isAmbient(), effect.isVisible(),
-                effect.showIcon(), hidden, effect.getFactorData());
+        MobEffectInstance unsigned = new MobEffectInstance(effect.getEffect(), effect.getDuration(), tag.getByte("amplifier") & 255, effect.isAmbient(),
+                effect.isVisible(), effect.showIcon(), hidden, effect.getFactorData());
+        // the cures the loaded one has (saved ones, or none), not the defaults the constructor fills in
+        unsigned.getCures().clear();
+        unsigned.getCures().addAll(effect.getCures());
+        return unsigned;
     }
 
     public static Codec<MobEffectInstance> codec() {

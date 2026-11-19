@@ -318,6 +318,45 @@ public final class LadderTestB {
         net.minecraft.world.item.component.SuspiciousStewEffects stewBack = savedBack(level, stew).get(DataComponents.SUSPICIOUS_STEW_EFFECTS);
         results.put("stew", stewBack.effects().size() + "/" + effects(List.of(stewBack.effects().get(0).createEffectInstance())));
 
+        // a fish in a bucket
+        ItemStack bucket = new ItemStack(Items.AXOLOTL_BUCKET);
+        results.put("bucketDefault", String.valueOf(bucket.get(DataComponents.BUCKET_ENTITY_DATA).isEmpty()));
+        CompoundTag fish = new CompoundTag();
+        fish.putInt("Variant", 3);
+        fish.putFloat("Health", 9.0F);
+        bucket.set(DataComponents.BUCKET_ENTITY_DATA, CustomData.of(fish));
+        ItemStack bucketBack = savedBack(level, bucket);
+        CompoundTag fishBack = bucketBack.get(DataComponents.BUCKET_ENTITY_DATA).copyTag();
+        results.put("bucket", fishBack.getInt("Variant") + "/" + fishBack.getFloat("Health") + "/" + bucketBack.has(DataComponents.CUSTOM_DATA));
+
+        // a goat horn, a head's note block sound, a shield's colour
+        ItemStack horn = new ItemStack(Items.GOAT_HORN);
+        horn.set(DataComponents.INSTRUMENT, level.registryAccess().registryOrThrow(Registries.INSTRUMENT)
+                .getHolderOrThrow(net.minecraft.world.item.Instruments.SEEK_GOAT_HORN));
+        results.put("instrument", savedBack(level, horn).get(DataComponents.INSTRUMENT).unwrapKey().map(k -> k.location().toString()).orElse("?"));
+        ItemStack skull = new ItemStack(Items.PLAYER_HEAD);
+        skull.set(DataComponents.NOTE_BLOCK_SOUND, net.minecraft.resources.ResourceLocation.withDefaultNamespace("block.note_block.bell"));
+        results.put("noteBlockSound", String.valueOf(savedBack(level, skull).get(DataComponents.NOTE_BLOCK_SOUND)));
+        ItemStack shield = new ItemStack(Items.SHIELD);
+        shield.set(DataComponents.BASE_COLOR, net.minecraft.world.item.DyeColor.LIME);
+        results.put("baseColor", String.valueOf(savedBack(level, shield).get(DataComponents.BASE_COLOR)));
+
+        // edge cases: a long flight, custom data beside stew effects, a trim on a stick
+        ItemStack longRocket = new ItemStack(Items.FIREWORK_ROCKET);
+        longRocket.set(DataComponents.FIREWORKS, new net.minecraft.world.item.component.Fireworks(200, List.of()));
+        results.put("longFlight", String.valueOf(savedBack(level, longRocket).get(DataComponents.FIREWORKS).flightDuration()));
+        ItemStack stewData = new ItemStack(Items.SUSPICIOUS_STEW);
+        stewData.set(DataComponents.SUSPICIOUS_STEW_EFFECTS, new net.minecraft.world.item.component.SuspiciousStewEffects(
+                List.of(new net.minecraft.world.item.component.SuspiciousStewEffects.Entry(MobEffects.NIGHT_VISION, 100))));
+        CompoundTag mine = new CompoundTag();
+        mine.putInt("mine", 1);
+        stewData.set(DataComponents.CUSTOM_DATA, CustomData.of(mine));
+        stewData.remove(DataComponents.CUSTOM_DATA);
+        results.put("stewKept", stewData.get(DataComponents.SUSPICIOUS_STEW_EFFECTS).effects().size() + "/" + stewData.has(DataComponents.CUSTOM_DATA));
+        ItemStack trimmedStick = new ItemStack(Items.STICK);
+        trimmedStick.set(DataComponents.TRIM, trim);
+        results.put("trimStick", String.valueOf(savedBack(level, trimmedStick).get(DataComponents.TRIM).equals(trim)));
+
         // the stack patch API
         ItemStack marked = new ItemStack(Items.STICK);
         results.put("patchEmpty", String.valueOf(marked.isComponentsPatchEmpty()));

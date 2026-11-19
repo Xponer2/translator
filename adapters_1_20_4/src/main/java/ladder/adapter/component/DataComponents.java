@@ -38,6 +38,9 @@ import ladder.carried.net.minecraft.world.item.enchantment.ItemEnchantments;
  * item's) fail when set.
  */
 public final class DataComponents {
+    /** a rocket's flight above 127: 1.20.4's Flight is a signed byte its rocket entity reads as such (kept at 127 there) */
+    static final String FLIGHT_KEY = "ladder:flight";
+
     /** where a stack's enchantment_glint_override is kept (1.20.4 has none: the ItemStack mixin reads it in hasFoil) */
     static final String GLINT_KEY = "ladder:enchantment_glint_override";
 
@@ -49,7 +52,17 @@ public final class DataComponents {
             "HideFlags", "RepairCost", "CanDestroy", "CanPlaceOn", "CustomModelData", "BlockEntityTag", "BlockStateTag", "EntityTag", "Potion",
             "CustomPotionEffects", "CustomPotionColor", "Trim", "SkullOwner", "Fireworks", "Explosion", "pages", "author", "title", "generation",
             "resolved", "Decorations", "map", "map_scale_direction", "LodestoneDimension", "LodestonePos", "LodestoneTracked", "Items", "Charged",
-            "ChargedProjectiles", "Recipes", "DebugProperty", "BucketVariantTag", "instrument", "ladder:components", CUSTOM_KEPT, GLINT_KEY);
+            "ChargedProjectiles", "Recipes", "DebugProperty", "BucketVariantTag", "instrument", "ladder:components", CUSTOM_KEPT, GLINT_KEY,
+            "effects", "filtered_pages", FLIGHT_KEY);
+
+    /** the keys a mob bucket keeps its entity's data under, at the root of 1.20.4's tag (Bucketable and its mobs) */
+    static final Set<String> BUCKET_KEYS = Set.of("NoAI", "Silent", "NoGravity", "Glowing", "Invulnerable", "Health", "Age", "Variant",
+            "HuntingCooldown", "BucketVariantTag");
+
+    /** a key of the stack's tag that is the game's own data (on a mob bucket, its entity's keys too) */
+    static boolean gameKey(ItemStack stack, String key) {
+        return GAME_KEYS.contains(key) || BUCKET_KEYS.contains(key) && stack.getItem() instanceof net.minecraft.world.item.MobBucketItem;
+    }
 
     public static final DataComponentType<CustomData> CUSTOM_DATA = new Game<>("custom_data", CustomData.CODEC, new DataComponentType.Vanilla<>() {
         @Override
@@ -60,7 +73,7 @@ public final class DataComponents {
             }
             CompoundTag own = new CompoundTag();
             for (String key : root.getAllKeys()) {
-                if (!GAME_KEYS.contains(key)) {
+                if (!gameKey(stack, key)) {
                     own.put(key, root.get(key).copy());
                 }
             }
@@ -80,7 +93,7 @@ public final class DataComponents {
         public void set(ItemStack stack, CustomData value) {
             CompoundTag root = stack.getOrCreateTag();
             for (String key : List.copyOf(root.getAllKeys())) {
-                if (!GAME_KEYS.contains(key)) {
+                if (!gameKey(stack, key)) {
                     root.remove(key);
                 }
             }
@@ -90,7 +103,7 @@ public final class DataComponents {
                 CompoundTag kept = new CompoundTag();
                 for (String key : own.getAllKeys()) {
                     // a key the game uses for its own data would change the stack (its damage, its name): kept apart
-                    (GAME_KEYS.contains(key) ? kept : root).put(key, own.get(key).copy());
+                    (gameKey(stack, key) ? kept : root).put(key, own.get(key).copy());
                 }
                 if (!kept.isEmpty()) {
                     root.put(CUSTOM_KEPT, kept);
@@ -476,7 +489,9 @@ public final class DataComponents {
                     for (int i = 0; i < list.size(); i++) {
                         explosions.add(explosion(list.getCompound(i)));
                     }
-                    return new ladder.carried.net.minecraft.world.item.component.Fireworks(tag.getByte("Flight") & 255, List.copyOf(explosions));
+                    CompoundTag root = stack.getTag();
+                    int flight = root.contains(FLIGHT_KEY, Tag.TAG_ANY_NUMERIC) ? root.getInt(FLIGHT_KEY) : tag.getByte("Flight") & 255;
+                    return new ladder.carried.net.minecraft.world.item.component.Fireworks(flight, List.copyOf(explosions));
                 }
 
                 @Override
@@ -488,10 +503,17 @@ public final class DataComponents {
                 public void set(ItemStack stack, ladder.carried.net.minecraft.world.item.component.Fireworks value) {
                     if (value == null) {
                         stack.removeTagKey("Fireworks");
+                        stack.removeTagKey(FLIGHT_KEY);
                         dropEmptyTag(stack);
                     } else {
                         CompoundTag tag = new CompoundTag();
-                        tag.putByte("Flight", (byte) value.flightDuration());
+                        // 1.20.4's rocket reads Flight as a signed byte: above 127 it would explode at once
+                        tag.putByte("Flight", (byte) Math.min(127, value.flightDuration()));
+                        if (value.flightDuration() > 127) {
+                            stack.getOrCreateTag().putInt(FLIGHT_KEY, value.flightDuration());
+                        } else {
+                            stack.removeTagKey(FLIGHT_KEY);
+                        }
                         ListTag list = new ListTag();
                         for (ladder.carried.net.minecraft.world.item.component.FireworkExplosion explosion : value.explosions()) {
                             list.add(explosion(explosion));
@@ -570,7 +592,9 @@ public final class DataComponents {
                         return null;
                     }
                     net.minecraft.core.RegistryAccess registries = ladder.adapter.bridge.Conversions.registries();
-                    return registries == null ? null : net.minecraft.world.item.armortrim.ArmorTrim.getTrim(registries, stack, true).orElse(null);
+                    return registries == null ? null : net.minecraft.world.item.armortrim.ArmorTrim.CODEC
+                            .parse(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries), stack.getTagElement("Trim"))
+                            .result().orElse(null);
                 }
 
                 @Override
@@ -587,9 +611,13 @@ public final class DataComponents {
                         return;
                     }
                     net.minecraft.core.RegistryAccess registries = ladder.adapter.bridge.Conversions.registries();
-                    if (registries == null || !net.minecraft.world.item.armortrim.ArmorTrim.setTrim(registries, stack, value)) {
-                        throw new IllegalStateException("1.20.4 can't keep the trim " + value + " on " + stack + " (no registries, or not trimmable)");
+                    if (registries == null) {
+                        throw new IllegalStateException("1.20.4 can't write the trim " + value + " without the registries");
                     }
+                    Tag trim = net.minecraft.world.item.armortrim.ArmorTrim.CODEC.encodeStart(
+                            net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries), value).getOrThrow(false, error -> {
+                            });
+                    stack.getOrCreateTag().put("Trim", trim);
                 }
             });
 
@@ -605,7 +633,94 @@ public final class DataComponents {
     public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects> SUSPICIOUS_STEW_EFFECTS = new Game<>(
             "suspicious_stew_effects", ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects.CODEC, new BlockComponents.Stew());
 
-    public static final List<DataComponentType<?>> ALL = List.of(CHARGED_PROJECTILES, WRITABLE_BOOK_CONTENT, MAP_ID, SUSPICIOUS_STEW_EFFECTS, TRIM, PROFILE, FIREWORKS, ENCHANTMENT_GLINT_OVERRIDE, FIREWORK_EXPLOSION, BEES, CONTAINER, BLOCK_ENTITY_DATA, ENTITY_DATA, BLOCK_STATE, BUNDLE_CONTENTS, UNBREAKABLE,
+    /** 1.21's bucket_entity_data: a mob bucket's entity keys at the root of 1.20.4's tag; a bucket has an empty one */
+    public static final DataComponentType<CustomData> BUCKET_ENTITY_DATA = new Game<>("bucket_entity_data", CustomData.CODEC,
+            new DataComponentType.Vanilla<>() {
+                @Override
+                public CustomData get(ItemStack stack) {
+                    CompoundTag root = stack.getTag();
+                    if (root == null || !(stack.getItem() instanceof net.minecraft.world.item.MobBucketItem)) {
+                        return null;
+                    }
+                    CompoundTag data = new CompoundTag();
+                    for (String key : BUCKET_KEYS) {
+                        if (root.contains(key)) {
+                            data.put(key, root.get(key).copy());
+                        }
+                    }
+                    return data.isEmpty() ? null : CustomData.of(data);
+                }
+
+                @Override
+                public CustomData prototype(ItemStack stack) {
+                    return stack.getItem() instanceof net.minecraft.world.item.MobBucketItem ? CustomData.EMPTY : null;
+                }
+
+                @Override
+                public void set(ItemStack stack, CustomData value) {
+                    if (!(stack.getItem() instanceof net.minecraft.world.item.MobBucketItem)) {
+                        if (value != null) {
+                            throw new IllegalStateException("1.20.4 keeps a bucket's entity data only on mob buckets: can't set it on " + stack);
+                        }
+                        return;
+                    }
+                    for (String key : BUCKET_KEYS) {
+                        stack.removeTagKey(key);
+                    }
+                    if (value != null) {
+                        CompoundTag data = value.copyTag();
+                        for (String key : data.getAllKeys()) {
+                            if (!BUCKET_KEYS.contains(key)) {
+                                throw new IllegalStateException("1.20.4's mob bucket has no place for the entity key " + key);
+                            }
+                            stack.getOrCreateTag().put(key, data.get(key).copy());
+                        }
+                    }
+                    dropEmptyTag(stack);
+                }
+            });
+
+    /** 1.21's note_block_sound: a player head's BlockEntityTag.note_block_sound */
+    public static final DataComponentType<ResourceLocation> NOTE_BLOCK_SOUND = new Game<>("note_block_sound", ResourceLocation.CODEC,
+            new BlockComponents.BlockEntityKey<>("note_block_sound", stack -> stack.is(Items.PLAYER_HEAD) || stack.getItem() instanceof net.minecraft.world.item.BlockItem item
+                    && item.getBlock() instanceof net.minecraft.world.level.block.SkullBlock,
+                    tag -> ResourceLocation.tryParse(tag.getAsString()), id -> net.minecraft.nbt.StringTag.valueOf(id.toString())));
+
+    /** 1.21's base_color: a shield's BlockEntityTag.Base (the dye's id) */
+    public static final DataComponentType<net.minecraft.world.item.DyeColor> BASE_COLOR = new Game<>("base_color", net.minecraft.world.item.DyeColor.CODEC,
+            new BlockComponents.BlockEntityKey<>("Base", stack -> stack.getItem() instanceof net.minecraft.world.item.ShieldItem,
+                    tag -> tag instanceof net.minecraft.nbt.NumericTag number ? net.minecraft.world.item.DyeColor.byId(number.getAsInt()) : null,
+                    color -> net.minecraft.nbt.IntTag.valueOf(color.getId())));
+
+    /** 1.21's instrument: a goat horn's instrument (1.20.4's instrument key, a built-in registry's id) */
+    public static final DataComponentType<Holder<net.minecraft.world.item.Instrument>> INSTRUMENT = new Game<>("instrument",
+            BuiltInRegistries.INSTRUMENT.holderByNameCodec(), new DataComponentType.Vanilla<>() {
+                @Override
+                public Holder<net.minecraft.world.item.Instrument> get(ItemStack stack) {
+                    CompoundTag tag = stack.getTag();
+                    ResourceLocation id = tag == null ? null : ResourceLocation.tryParse(tag.getString("instrument"));
+                    return id == null ? null : BuiltInRegistries.INSTRUMENT.getHolder(
+                            net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.INSTRUMENT, id)).orElse(null);
+                }
+
+                @Override
+                public Holder<net.minecraft.world.item.Instrument> prototype(ItemStack stack) {
+                    return null;
+                }
+
+                @Override
+                public void set(ItemStack stack, Holder<net.minecraft.world.item.Instrument> value) {
+                    if (value == null) {
+                        stack.removeTagKey("instrument");
+                        dropEmptyTag(stack);
+                    } else {
+                        stack.getOrCreateTag().putString("instrument", value.unwrapKey().map(k -> k.location())
+                                .orElseGet(() -> BuiltInRegistries.INSTRUMENT.getKey(value.value())).toString());
+                    }
+                }
+            });
+
+    public static final List<DataComponentType<?>> ALL = List.of(NOTE_BLOCK_SOUND, BASE_COLOR, INSTRUMENT, BUCKET_ENTITY_DATA, CHARGED_PROJECTILES, WRITABLE_BOOK_CONTENT, MAP_ID, SUSPICIOUS_STEW_EFFECTS, TRIM, PROFILE, FIREWORKS, ENCHANTMENT_GLINT_OVERRIDE, FIREWORK_EXPLOSION, BEES, CONTAINER, BLOCK_ENTITY_DATA, ENTITY_DATA, BLOCK_STATE, BUNDLE_CONTENTS, UNBREAKABLE,
             REPAIR_COST, HIDE_ADDITIONAL_TOOLTIP, RARITY, CUSTOM_DATA, CUSTOM_NAME, ITEM_NAME, DAMAGE, MAX_DAMAGE, MAX_STACK_SIZE,
             DYED_COLOR, ENCHANTMENTS, STORED_ENCHANTMENTS, POTION_CONTENTS, LORE, CUSTOM_MODEL_DATA, FOOD, ATTRIBUTE_MODIFIERS);
 

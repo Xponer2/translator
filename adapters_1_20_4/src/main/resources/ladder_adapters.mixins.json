@@ -9,6 +9,7 @@
     "BlockItemMixin",
     "EntityAccess",
     "BeeAccess",
+    "SkullBlockEntityAccess",
     "ItemMixin",
     "GameDataMixin"
   ],
