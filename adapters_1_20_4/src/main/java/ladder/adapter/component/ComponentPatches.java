@@ -40,7 +40,7 @@ public final class ComponentPatches {
                 if (prototype != null) {
                     builder.remove(type);
                 }
-            } else if (!Objects.equals(value, prototype)) {
+            } else if (!DataComponents.same(value, prototype)) {
                 builder.set(type, value);
             }
         }

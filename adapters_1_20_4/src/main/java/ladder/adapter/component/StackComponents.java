@@ -66,7 +66,7 @@ final class StackComponents {
             List<MobEffectInstance> effects = new ArrayList<>();
             ListTag list = tag.getList("CustomPotionEffects", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
-                MobEffectInstance effect = MobEffectInstance.load(list.getCompound(i));
+                MobEffectInstance effect = ladder.adapter.effect.EffectAdapters.load(list.getCompound(i));
                 if (effect != null) {
                     effects.add(effect);
                 }
@@ -182,7 +182,8 @@ final class StackComponents {
 
         @Override
         public FoodProperties prototype(ItemStack stack) {
-            return stack.getItem().getFoodProperties(stack, null);
+            // the item's own food, not the stack hook (a mod's getFoodProperties may read this component)
+            return stack.getItem().getFoodProperties();
         }
 
         @Override
@@ -246,7 +247,7 @@ final class StackComponents {
         @Override
         public void set(ItemStack stack, ItemAttributeModifiers value) {
             ItemAttributeModifiers own = ComponentStore.prototype(stack, DataComponents.ATTRIBUTE_MODIFIERS);
-            if (value == null || value.showInTooltip() && own != null && value.modifiers().equals(own.modifiers())) {
+            if (value == null || own != null && DataComponents.same(value, own.withTooltip(value.showInTooltip())) && value.showInTooltip()) {
                 // the item's own: nothing of the stack's
                 stack.removeTagKey("AttributeModifiers");
                 DataComponents.show(stack, HIDE_MODIFIERS, true);

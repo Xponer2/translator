@@ -2281,6 +2281,14 @@ public class Convert {
             all.append(upper[a].getDescriptor());
         }
         all.append(')');
+        // the lower arguments sit on the stack where the upper ones did, and an adapter call loads all the upper ones
+        // on top of those before it: room for both (the class is written with the method's own maxStack)
+        int lowerSize = 0;
+        for (Type t : lower) {
+            lowerSize += t.getSize();
+        }
+        int upperSize = next - m.maxLocals;
+        m.maxStack += lowerSize + upperSize;
         m.maxLocals = next;
         InsnList code = new InsnList();
         for (int a = upper.length - 1; a >= 0; a--) {

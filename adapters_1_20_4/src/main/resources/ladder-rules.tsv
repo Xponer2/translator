@@ -284,3 +284,17 @@ X	net/minecraft/world/item/ItemStack	<init>	(Lnet/minecraft/core/Holder;ILnet/mi
 X	net/minecraft/world/item/ItemStack	transmuteCopy	(Lnet/minecraft/world/level/ItemLike;I)Lnet/minecraft/world/item/ItemStack;	ladder/adapter/component/ComponentPatches	transmuteCopy
 F	net/minecraft/world/level/block/entity/BeehiveBlockEntity	IGNORED_BEE_TAGS	Ljava/util/List;	ladder/adapter/block/BeeAdapters	ignoredBeeTags
 X	net/minecraft/world/entity/animal/Bee	setHivePos	(Lnet/minecraft/core/BlockPos;)V	ladder/adapter/block/BeeAdapters	setHivePos
+F	net/minecraft/util/ExtraCodecs	UNSIGNED_BYTE	Lcom/mojang/serialization/Codec;	ladder/adapter/dfu/DfuAdapters	unsignedByte
+F	net/minecraft/util/ExtraCodecs	PLAYER_NAME	Lcom/mojang/serialization/Codec;	ladder/adapter/block/ProfileAdapters	playerName
+X	net/minecraft/world/level/block/entity/SkullBlockEntity	fetchGameProfile	(Ljava/util/UUID;)Ljava/util/concurrent/CompletableFuture;	ladder/adapter/block/ProfileAdapters	fetchGameProfile
+X	net/minecraft/world/level/block/entity/SkullBlockEntity	fetchGameProfile	(Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;	ladder/adapter/block/ProfileAdapters	fetchGameProfile
+X	net/minecraft/world/level/block/entity/SkullBlockEntity	getOwnerProfile	()Lnet/minecraft/world/item/component/ResolvableProfile;	ladder/adapter/block/ProfileAdapters	getOwnerProfile
+X	net/minecraft/world/level/block/entity/SkullBlockEntity	setOwner	(Lnet/minecraft/world/item/component/ResolvableProfile;)V	ladder/adapter/block/ProfileAdapters	setOwner
+X	net/minecraft/client/renderer/blockentity/SkullBlockRenderer	getRenderType	(Lnet/minecraft/world/level/block/SkullBlock$Type;Lnet/minecraft/world/item/component/ResolvableProfile;)Lnet/minecraft/client/renderer/RenderType;	ladder/adapter/render/SkullRenderAdapters	getRenderType
+X	net/minecraft/world/item/armortrim/ArmorTrim	<init>	(Lnet/minecraft/core/Holder;Lnet/minecraft/core/Holder;Z)V	ladder/adapter/item/TrimAdapters	create
+X	net/minecraft/world/item/armortrim/ArmorTrim	withTooltip	(Z)Lnet/minecraft/world/item/armortrim/ArmorTrim;	ladder/adapter/item/TrimAdapters	withTooltip
+X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;)V	ladder/adapter/effect/EffectAdapters	create
+X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;I)V	ladder/adapter/effect/EffectAdapters	create
+X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;II)V	ladder/adapter/effect/EffectAdapters	create
+X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;IIZZ)V	ladder/adapter/effect/EffectAdapters	create
+X	net/minecraft/world/effect/MobEffectInstance	<init>	(Lnet/minecraft/core/Holder;IIZZZ)V	ladder/adapter/effect/EffectAdapters	create

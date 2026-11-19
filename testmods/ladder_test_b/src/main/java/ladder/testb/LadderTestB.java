@@ -248,6 +248,76 @@ public final class LadderTestB {
         ItemStack hardBack2 = savedBack(level, hard);
         results.put("repairCost", hardBack2.get(DataComponents.REPAIR_COST) + "/" + hardBack2.has(DataComponents.HIDE_ADDITIONAL_TOOLTIP));
 
+        // fireworks and the glint
+        net.minecraft.world.item.component.FireworkExplosion burst = new net.minecraft.world.item.component.FireworkExplosion(
+                net.minecraft.world.item.component.FireworkExplosion.Shape.STAR, it.unimi.dsi.fastutil.ints.IntList.of(0xFF0000, 0x00FF00),
+                it.unimi.dsi.fastutil.ints.IntList.of(0x0000FF), true, false);
+        ItemStack star = new ItemStack(Items.FIREWORK_STAR);
+        star.set(DataComponents.FIREWORK_EXPLOSION, burst);
+        results.put("fireworkStar", String.valueOf(savedBack(level, star).get(DataComponents.FIREWORK_EXPLOSION).equals(burst)));
+        ItemStack rocket = new ItemStack(Items.FIREWORK_ROCKET);
+        net.minecraft.world.item.component.Fireworks rocketDefault = rocket.get(DataComponents.FIREWORKS);
+        results.put("rocketDefault", rocketDefault.flightDuration() + "/" + rocketDefault.explosions().size());
+        rocket.set(DataComponents.FIREWORKS, new net.minecraft.world.item.component.Fireworks(2, List.of(burst, burst)));
+        net.minecraft.world.item.component.Fireworks rocketBack = savedBack(level, rocket).get(DataComponents.FIREWORKS);
+        results.put("rocket", rocketBack.flightDuration() + "/" + rocketBack.explosions().size() + "/" + rocketBack.explosions().get(0).equals(burst));
+        ItemStack apple = new ItemStack(Items.ENCHANTED_GOLDEN_APPLE);
+        results.put("glintDefault", apple.get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE) + "/" + apple.hasFoil());
+        apple.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, false);
+        ItemStack shiny = new ItemStack(Items.STICK);
+        shiny.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        results.put("glint", savedBack(level, apple).hasFoil() + "/" + savedBack(level, shiny).hasFoil() + "/" + new ItemStack(Items.STICK).hasFoil());
+
+        // a player's head
+        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+        java.util.UUID someone = java.util.UUID.fromString("8667ba71-b85a-4004-af54-457a9734eed7");
+        head.set(DataComponents.PROFILE, new net.minecraft.world.item.component.ResolvableProfile(Optional.of("Steve"), Optional.of(someone),
+                new com.mojang.authlib.properties.PropertyMap()));
+        net.minecraft.world.item.component.ResolvableProfile headBack = savedBack(level, head).get(DataComponents.PROFILE);
+        results.put("profile", headBack.name().orElse("?") + "/" + headBack.id().map(Object::toString).orElse("?") + "/"
+                + headBack.gameProfile().getName() + "/" + headBack.isResolved());
+        ItemStack named = new ItemStack(Items.PLAYER_HEAD);
+        named.set(DataComponents.PROFILE, new net.minecraft.world.item.component.ResolvableProfile(Optional.of("Alex"), Optional.empty(),
+                new com.mojang.authlib.properties.PropertyMap()));
+        net.minecraft.world.item.component.ResolvableProfile namedBack = savedBack(level, named).get(DataComponents.PROFILE);
+        results.put("profileName", namedBack.name().orElse("?") + "/" + namedBack.id().isPresent());
+        results.put("headName", savedBack(level, head).getHoverName().getString());
+
+        // an armour trim
+        ItemStack plate = new ItemStack(Items.DIAMOND_CHESTPLATE);
+        net.minecraft.world.item.armortrim.ArmorTrim trim = new net.minecraft.world.item.armortrim.ArmorTrim(
+                level.registryAccess().registryOrThrow(Registries.TRIM_MATERIAL).getHolderOrThrow(net.minecraft.world.item.armortrim.TrimMaterials.GOLD),
+                level.registryAccess().registryOrThrow(Registries.TRIM_PATTERN).getHolderOrThrow(net.minecraft.world.item.armortrim.TrimPatterns.COAST));
+        plate.set(DataComponents.TRIM, trim);
+        net.minecraft.world.item.armortrim.ArmorTrim trimBack = savedBack(level, plate).get(DataComponents.TRIM);
+        results.put("trim", trimBack.material().unwrapKey().map(k -> k.location().toString()).orElse("?") + "/"
+                + trimBack.pattern().unwrapKey().map(k -> k.location().toString()).orElse("?") + "/" + trimBack.equals(trim));
+        results.put("trimDefault", String.valueOf(new ItemStack(Items.DIAMOND_CHESTPLATE).get(DataComponents.TRIM)));
+
+        // a crossbow's projectiles, a book's pages, a map's number, a stew's effects
+        ItemStack crossbow = new ItemStack(Items.CROSSBOW);
+        results.put("crossbowDefault", String.valueOf(crossbow.get(DataComponents.CHARGED_PROJECTILES).isEmpty()));
+        crossbow.set(DataComponents.CHARGED_PROJECTILES, net.minecraft.world.item.component.ChargedProjectiles.of(new ItemStack(Items.ARROW)));
+        ItemStack crossbowBack = savedBack(level, crossbow);
+        results.put("crossbow", crossbowBack.get(DataComponents.CHARGED_PROJECTILES).getItems().size() + "/"
+                + crossbowBack.get(DataComponents.CHARGED_PROJECTILES).contains(Items.ARROW) + "/" + net.minecraft.world.item.CrossbowItem.isCharged(crossbowBack));
+        ItemStack quill = new ItemStack(Items.WRITABLE_BOOK);
+        results.put("bookDefaultPages", String.valueOf(quill.get(DataComponents.WRITABLE_BOOK_CONTENT).pages().size()));
+        quill.set(DataComponents.WRITABLE_BOOK_CONTENT, new net.minecraft.world.item.component.WritableBookContent(
+                List.of(net.minecraft.server.network.Filterable.passThrough("page one"), net.minecraft.server.network.Filterable.passThrough("page two"))));
+        List<String> pages = new ArrayList<>();
+        savedBack(level, quill).get(DataComponents.WRITABLE_BOOK_CONTENT).getPages(false).forEach(pages::add);
+        results.put("bookPages", pages.toString());
+        ItemStack map = new ItemStack(Items.FILLED_MAP);
+        map.set(DataComponents.MAP_ID, new net.minecraft.world.level.saveddata.maps.MapId(7));
+        results.put("mapId", String.valueOf(savedBack(level, map).get(DataComponents.MAP_ID).id()));
+        ItemStack stew = new ItemStack(Items.SUSPICIOUS_STEW);
+        results.put("stewDefault", String.valueOf(stew.get(DataComponents.SUSPICIOUS_STEW_EFFECTS).effects().size()));
+        stew.set(DataComponents.SUSPICIOUS_STEW_EFFECTS, new net.minecraft.world.item.component.SuspiciousStewEffects(
+                List.of(new net.minecraft.world.item.component.SuspiciousStewEffects.Entry(MobEffects.NIGHT_VISION, 100))));
+        net.minecraft.world.item.component.SuspiciousStewEffects stewBack = savedBack(level, stew).get(DataComponents.SUSPICIOUS_STEW_EFFECTS);
+        results.put("stew", stewBack.effects().size() + "/" + effects(List.of(stewBack.effects().get(0).createEffectInstance())));
+
         // the stack patch API
         ItemStack marked = new ItemStack(Items.STICK);
         results.put("patchEmpty", String.valueOf(marked.isComponentsPatchEmpty()));

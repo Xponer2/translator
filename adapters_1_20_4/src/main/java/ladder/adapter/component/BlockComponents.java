@@ -92,7 +92,7 @@ final class BlockComponents {
 
         @Override
         public void set(ItemStack stack, ItemContainerContents value) {
-            if (value == null || value.getSlots() == 0) {
+            if (value == null || value.getSlots() == 0 && this.prototype(stack) != null) {
                 CompoundTag block = stack.getTagElement("BlockEntityTag");
                 if (block != null) {
                     block.remove("Items");
@@ -240,7 +240,7 @@ final class BlockComponents {
 
         @Override
         public void set(ItemStack stack, BlockItemStateProperties value) {
-            if (value == null || value.isEmpty()) {
+            if (value == null) {
                 stack.removeTagKey("BlockStateTag");
                 DataComponents.dropEmptyTag(stack);
             } else {
@@ -277,7 +277,7 @@ final class BlockComponents {
 
         @Override
         public void set(ItemStack stack, BundleContents value) {
-            if (value == null || value.isEmpty()) {
+            if (value == null || value.isEmpty() && this.prototype(stack) != null) {
                 stack.removeTagKey("Items");
                 DataComponents.dropEmptyTag(stack);
             } else {
@@ -384,7 +384,7 @@ final class BlockComponents {
 
         @Override
         public void set(ItemStack stack, List<BeehiveBlockEntity$Occupant> value) {
-            if (value == null || value.isEmpty()) {
+            if (value == null || value.isEmpty() && this.prototype(stack) != null) {
                 CompoundTag block = stack.getTagElement("BlockEntityTag");
                 if (block != null) {
                     block.remove("Bees");
@@ -401,6 +401,163 @@ final class BlockComponents {
                 stack.getOrCreateTagElement("BlockEntityTag").put("Bees", list);
             }
             dropEmptyBlockEntityTag(stack);
+        }
+    }
+
+    /** 1.21's charged_projectiles: 1.20.4's ChargedProjectiles list and Charged flag; a crossbow has none by default. */
+    static final class Projectiles implements DataComponentType.Vanilla<ladder.carried.net.minecraft.world.item.component.ChargedProjectiles> {
+        @Override
+        public ladder.carried.net.minecraft.world.item.component.ChargedProjectiles get(ItemStack stack) {
+            CompoundTag tag = stack.getTag();
+            if (tag == null || !tag.contains("ChargedProjectiles", Tag.TAG_LIST)) {
+                return null;
+            }
+            ListTag list = tag.getList("ChargedProjectiles", Tag.TAG_COMPOUND);
+            List<ItemStack> items = new ArrayList<>();
+            for (int i = 0; i < list.size(); i++) {
+                ItemStack item = ItemStack.of(list.getCompound(i));
+                if (!item.isEmpty()) {
+                    items.add(item);
+                }
+            }
+            return ladder.carried.net.minecraft.world.item.component.ChargedProjectiles.of(items);
+        }
+
+        @Override
+        public ladder.carried.net.minecraft.world.item.component.ChargedProjectiles prototype(ItemStack stack) {
+            return stack.is(Items.CROSSBOW) ? ladder.carried.net.minecraft.world.item.component.ChargedProjectiles.EMPTY : null;
+        }
+
+        @Override
+        public void set(ItemStack stack, ladder.carried.net.minecraft.world.item.component.ChargedProjectiles value) {
+            if (value == null || value.isEmpty() && this.prototype(stack) != null) {
+                stack.removeTagKey("ChargedProjectiles");
+                stack.removeTagKey("Charged");
+                DataComponents.dropEmptyTag(stack);
+                return;
+            }
+            ListTag list = new ListTag();
+            for (ItemStack item : value.getItems()) {
+                list.add(item.save(new CompoundTag()));
+            }
+            stack.getOrCreateTag().put("ChargedProjectiles", list);
+            stack.getOrCreateTag().putBoolean("Charged", !value.isEmpty());
+        }
+    }
+
+    /** 1.21's writable_book_content: 1.20.4's pages (strings) and filtered_pages ({page number: string}). */
+    static final class WritableBook implements DataComponentType.Vanilla<ladder.carried.net.minecraft.world.item.component.WritableBookContent> {
+        @Override
+        public ladder.carried.net.minecraft.world.item.component.WritableBookContent get(ItemStack stack) {
+            CompoundTag tag = stack.getTag();
+            if (tag == null || !tag.contains("pages", Tag.TAG_LIST)) {
+                return null;
+            }
+            ListTag list = tag.getList("pages", Tag.TAG_STRING);
+            CompoundTag filtered = tag.getCompound("filtered_pages");
+            List<ladder.carried.net.minecraft.server.network.Filterable<String>> pages = new ArrayList<>();
+            for (int i = 0; i < list.size(); i++) {
+                String key = String.valueOf(i);
+                pages.add(new ladder.carried.net.minecraft.server.network.Filterable<>(list.getString(i),
+                        filtered.contains(key, Tag.TAG_STRING) ? java.util.Optional.of(filtered.getString(key)) : java.util.Optional.empty()));
+            }
+            return new ladder.carried.net.minecraft.world.item.component.WritableBookContent(pages);
+        }
+
+        @Override
+        public ladder.carried.net.minecraft.world.item.component.WritableBookContent prototype(ItemStack stack) {
+            return stack.is(Items.WRITABLE_BOOK) ? ladder.carried.net.minecraft.world.item.component.WritableBookContent.EMPTY : null;
+        }
+
+        @Override
+        public void set(ItemStack stack, ladder.carried.net.minecraft.world.item.component.WritableBookContent value) {
+            stack.removeTagKey("filtered_pages");
+            if (value == null || value.pages().isEmpty() && this.prototype(stack) != null) {
+                stack.removeTagKey("pages");
+                DataComponents.dropEmptyTag(stack);
+                return;
+            }
+            ListTag list = new ListTag();
+            CompoundTag filtered = new CompoundTag();
+            for (int i = 0; i < value.pages().size(); i++) {
+                ladder.carried.net.minecraft.server.network.Filterable<String> page = value.pages().get(i);
+                list.add(net.minecraft.nbt.StringTag.valueOf(page.raw()));
+                int index = i;
+                page.filtered().ifPresent(text -> filtered.putString(String.valueOf(index), text));
+            }
+            stack.getOrCreateTag().put("pages", list);
+            if (!filtered.isEmpty()) {
+                stack.getOrCreateTag().put("filtered_pages", filtered);
+            }
+        }
+    }
+
+    /** 1.21's map_id: 1.20.4's map number. */
+    static final class MapNumber implements DataComponentType.Vanilla<ladder.carried.net.minecraft.world.level.saveddata.maps.MapId> {
+        @Override
+        public ladder.carried.net.minecraft.world.level.saveddata.maps.MapId get(ItemStack stack) {
+            CompoundTag tag = stack.getTag();
+            return tag != null && tag.contains("map", Tag.TAG_ANY_NUMERIC) ? new ladder.carried.net.minecraft.world.level.saveddata.maps.MapId(tag.getInt("map")) : null;
+        }
+
+        @Override
+        public ladder.carried.net.minecraft.world.level.saveddata.maps.MapId prototype(ItemStack stack) {
+            return null;
+        }
+
+        @Override
+        public void set(ItemStack stack, ladder.carried.net.minecraft.world.level.saveddata.maps.MapId value) {
+            if (value == null) {
+                stack.removeTagKey("map");
+                DataComponents.dropEmptyTag(stack);
+            } else {
+                stack.getOrCreateTag().putInt("map", value.id());
+            }
+        }
+    }
+
+    /** 1.21's suspicious_stew_effects: 1.20.4's effects ({id, duration}); a stew has none by default. */
+    static final class Stew implements DataComponentType.Vanilla<ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects> {
+        @Override
+        public ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects get(ItemStack stack) {
+            CompoundTag tag = stack.getTag();
+            if (tag == null || !tag.contains("effects", Tag.TAG_LIST)) {
+                return null;
+            }
+            ListTag list = tag.getList("effects", Tag.TAG_COMPOUND);
+            List<ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects.Entry> entries = new ArrayList<>();
+            for (int i = 0; i < list.size(); i++) {
+                CompoundTag entry = list.getCompound(i);
+                ResourceLocation id = ResourceLocation.tryParse(entry.getString("id"));
+                net.minecraft.world.effect.MobEffect effect = id == null ? null : BuiltInRegistries.MOB_EFFECT.get(id);
+                if (effect != null) {
+                    entries.add(new ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects.Entry(
+                            BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), entry.contains("duration", Tag.TAG_ANY_NUMERIC) ? entry.getInt("duration") : 160));
+                }
+            }
+            return new ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects(List.copyOf(entries));
+        }
+
+        @Override
+        public ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects prototype(ItemStack stack) {
+            return stack.is(Items.SUSPICIOUS_STEW) ? ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects.EMPTY : null;
+        }
+
+        @Override
+        public void set(ItemStack stack, ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects value) {
+            if (value == null || value.effects().isEmpty() && this.prototype(stack) != null) {
+                stack.removeTagKey("effects");
+                DataComponents.dropEmptyTag(stack);
+                return;
+            }
+            ListTag list = new ListTag();
+            for (ladder.carried.net.minecraft.world.item.component.SuspiciousStewEffects.Entry entry : value.effects()) {
+                CompoundTag tag = new CompoundTag();
+                tag.putString("id", BuiltInRegistries.MOB_EFFECT.getKey(entry.effect().value()).toString());
+                tag.putInt("duration", entry.duration());
+                list.add(tag);
+            }
+            stack.getOrCreateTag().put("effects", list);
         }
     }
 }

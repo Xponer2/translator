@@ -42,6 +42,15 @@ public abstract class ItemStackMixin implements ladder.adapter.component.DataCom
         }
     }
 
+    /** 1.20.5's enchantment_glint_override (the stack's, the item's properties', the game's items' own) decides the glint */
+    @Inject(method = "hasFoil", at = @At("HEAD"), cancellable = true)
+    private void ladder$glint(CallbackInfoReturnable<Boolean> cir) {
+        Boolean glint = ladder.adapter.component.ComponentStore.glintOverride((ItemStack) (Object) this);
+        if (glint != null) {
+            cir.setReturnValue(glint);
+        }
+    }
+
     @Redirect(method = "getTooltipLines", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/item/Item;appendHoverText(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Ljava/util/List;Lnet/minecraft/world/item/TooltipFlag;)V"))
     private void ladder$appendHoverText(Item item, ItemStack stack, @Nullable Level level, List<Component> lines, TooltipFlag flag) {

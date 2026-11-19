@@ -38,6 +38,12 @@ public final class ComponentStore {
     private ComponentStore() {
     }
 
+    /** the stack's enchantment_glint_override, or null (the item decides, as in 1.20.4) */
+    @Nullable
+    public static Boolean glintOverride(ItemStack stack) {
+        return read(stack, DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
+    }
+
     /** the custom name an item's properties give its stacks, when the stack has none of its own and hasn't it removed */
     @Nullable
     public static net.minecraft.network.chat.Component defaultName(ItemStack stack) {
@@ -117,7 +123,7 @@ public final class ComponentStore {
         DataComponentType.Vanilla<T> vanilla = type.vanilla();
         if (vanilla != null) {
             T value = vanilla.get(stack);
-            if (value != null && !value.equals(vanilla.prototype(stack))) {
+            if (value != null && !DataComponents.same(value, vanilla.prototype(stack))) {
                 return value;
             }
             // nothing of the stack's own: the item's value, unless the stack has it removed
@@ -199,7 +205,7 @@ public final class ComponentStore {
         String id = id(t);
         CompoundTag patch = patchForWrite(stack);
         patch.remove("!" + id);
-        if (Objects.equals(prototype(stack, t), value)) {
+        if (DataComponents.same(prototype(stack, t), value)) {
             // the item's own value: no entry (as 1.20.5's patched map has it)
             patch.remove(id);
         } else {

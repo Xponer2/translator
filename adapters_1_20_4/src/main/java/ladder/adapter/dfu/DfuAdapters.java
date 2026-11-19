@@ -170,4 +170,14 @@ public final class DfuAdapters {
     public static MapCodec<?> dispatchMap(Codec codec, String key, Function type, Function codecOf) {
         return codec.dispatchMap(key, type, asCodecs(codecOf));
     }
+
+    /** 1.20.5's ExtraCodecs.UNSIGNED_BYTE: a byte read as 0..255 */
+    private static final com.mojang.serialization.Codec<Integer> UNSIGNED_BYTE = com.mojang.serialization.Codec.BYTE.flatComapMap(
+            com.google.common.primitives.UnsignedBytes::toInt, value -> value > 255
+                    ? com.mojang.serialization.DataResult.error(() -> "Unsigned byte was too large: " + value + " > 255")
+                    : com.mojang.serialization.DataResult.success((byte) value.intValue()));
+
+    public static com.mojang.serialization.Codec<Integer> unsignedByte() {
+        return UNSIGNED_BYTE;
+    }
 }

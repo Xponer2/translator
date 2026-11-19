@@ -25,13 +25,23 @@ import net.minecraft.world.food.FoodProperties;
  */
 public final class FoodAdapters {
     /** 1.20.6's FoodProperties.DIRECT_CODEC */
-    private static final Codec<FoodProperties> DIRECT_CODEC = RecordCodecBuilder.create(i -> i.group(
+    private static final Codec<FoodProperties> FIELDS = RecordCodecBuilder.create(i -> i.group(
             ExtraCodecs.NON_NEGATIVE_INT.fieldOf("nutrition").forGetter(FoodAdapters::nutrition),
             Codec.FLOAT.fieldOf("saturation").forGetter(FoodAdapters::saturation),
             Codec.BOOL.optionalFieldOf("can_always_eat", false).forGetter(FoodProperties::canAlwaysEat),
             ExtraCodecs.POSITIVE_FLOAT.optionalFieldOf("eat_seconds", 1.6F).forGetter(FoodAdapters::eatSeconds),
             FoodProperties$PossibleEffect.CODEC.listOf().optionalFieldOf("effects", List.of()).forGetter(FoodAdapters::effects))
             .apply(i, FoodAdapters::create));
+
+    /** 1.21's using_converts_to (the item left after eating) has no place in 1.20.4's food: such data is refused, not cut */
+    private static final Codec<FoodProperties> DIRECT_CODEC = Codec.of(FIELDS, new com.mojang.serialization.Decoder<>() {
+        @Override
+        public <T> com.mojang.serialization.DataResult<Pair<FoodProperties, T>> decode(com.mojang.serialization.DynamicOps<T> ops, T input) {
+            boolean converts = ops.getMap(input).result().map(map -> map.get("using_converts_to") != null).orElse(false);
+            return converts ? com.mojang.serialization.DataResult.error(() -> "1.20.4's food can't turn into another item (using_converts_to)")
+                    : FIELDS.decode(ops, input);
+        }
+    });
 
     private FoodAdapters() {
     }
