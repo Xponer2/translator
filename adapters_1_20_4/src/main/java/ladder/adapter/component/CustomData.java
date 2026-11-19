@@ -13,6 +13,20 @@ import net.minecraft.nbt.CompoundTag;
 public final class CustomData {
     public static final CustomData EMPTY = new CustomData(new CompoundTag());
     public static final Codec<CustomData> CODEC = CompoundTag.CODEC.xmap(CustomData::new, data -> data.tag);
+    /** 1.21's {@code ByteBufCodecs.COMPOUND_TAG.map(CustomData::new, data -> data.tag)} */
+    public static final ladder.carried.net.minecraft.network.codec.StreamCodec<io.netty.buffer.ByteBuf, CustomData> STREAM_CODEC =
+            new ladder.carried.net.minecraft.network.codec.StreamCodec<>() {
+                @Override
+                public CustomData decode(io.netty.buffer.ByteBuf buf) {
+                    CompoundTag tag = new net.minecraft.network.FriendlyByteBuf(buf).readNbt();
+                    return new CustomData(tag == null ? new CompoundTag() : tag);
+                }
+
+                @Override
+                public void encode(io.netty.buffer.ByteBuf buf, CustomData data) {
+                    new net.minecraft.network.FriendlyByteBuf(buf).writeNbt(data.tag);
+                }
+            };
     private final CompoundTag tag;
 
     private CustomData(CompoundTag tag) {

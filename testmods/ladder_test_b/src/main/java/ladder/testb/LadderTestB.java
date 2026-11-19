@@ -182,7 +182,94 @@ public final class LadderTestB {
         zombie.tick();
         results.put("rodZombie", String.valueOf(zombie.getAttributeValue(Attributes.ATTACK_DAMAGE)));
 
+        blockComponents(results, level);
         results.put("rarity", new ItemStack(Items.ENCHANTED_GOLDEN_APPLE).get(DataComponents.RARITY) + "/" + new ItemStack(Items.STICK).get(DataComponents.RARITY));
+    }
+
+    /** containers, block entity and entity data, block states, a bundle, flags, the stack patch API */
+    static void blockComponents(Map<String, String> results, ServerLevel level) {
+        ItemStack box = new ItemStack(Items.SHULKER_BOX);
+        results.put("boxDefault", String.valueOf(box.get(DataComponents.CONTAINER).stream().count()));
+        net.minecraft.world.item.component.ItemContainerContents chestContents = new ItemStack(Items.CHEST).get(DataComponents.CONTAINER);
+        results.put("chestContainer", chestContents == null ? "null" : String.valueOf(chestContents.stream().count()));
+        results.put("potNoContainer", String.valueOf(new ItemStack(Items.DECORATED_POT).get(DataComponents.CONTAINER)));
+        box.set(DataComponents.CONTAINER, net.minecraft.world.item.component.ItemContainerContents.fromItems(
+                List.of(new ItemStack(Items.DIAMOND, 2), ItemStack.EMPTY, new ItemStack(Items.APPLE, 5))));
+        List<String> boxItems = new ArrayList<>();
+        savedBack(level, box).get(DataComponents.CONTAINER).stream().forEach(s -> boxItems.add(s.getCount() + "x" + s.getItem()));
+        results.put("boxItems", boxItems.toString());
+        results.put("boxNonEmpty", String.valueOf(box.get(DataComponents.CONTAINER).nonEmptyStream().count()));
+
+        ItemStack furnace = new ItemStack(Items.FURNACE);
+        CompoundTag furnaceData = new CompoundTag();
+        furnaceData.putString("id", "minecraft:furnace");
+        furnaceData.putShort("BurnTime", (short) 40);
+        furnace.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(furnaceData));
+        CompoundTag furnaceBack = savedBack(level, furnace).get(DataComponents.BLOCK_ENTITY_DATA).copyTag();
+        results.put("blockEntityData", furnaceBack.getString("id") + "/" + furnaceBack.getShort("BurnTime"));
+
+        ItemStack egg = new ItemStack(Items.ZOMBIE_SPAWN_EGG);
+        CompoundTag eggData = new CompoundTag();
+        eggData.putString("id", "minecraft:zombie");
+        eggData.putBoolean("NoAI", true);
+        egg.set(DataComponents.ENTITY_DATA, CustomData.of(eggData));
+        CompoundTag eggBack = savedBack(level, egg).get(DataComponents.ENTITY_DATA).copyTag();
+        results.put("entityData", eggBack.getString("id") + "/" + eggBack.getBoolean("NoAI"));
+
+        ItemStack lamp = new ItemStack(Items.REDSTONE_LAMP);
+        lamp.set(DataComponents.BLOCK_STATE, new net.minecraft.world.item.component.BlockItemStateProperties(Map.of("lit", "true")));
+        net.minecraft.world.item.component.BlockItemStateProperties lampState = savedBack(level, lamp).get(DataComponents.BLOCK_STATE);
+        results.put("blockState", lampState.properties() + "/" + lampState.apply(Blocks.REDSTONE_LAMP.defaultBlockState())
+                .getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT));
+
+        ItemStack bundle = new ItemStack(Items.BUNDLE);
+        results.put("bundleDefault", String.valueOf(bundle.get(DataComponents.BUNDLE_CONTENTS).isEmpty()));
+        bundle.set(DataComponents.BUNDLE_CONTENTS, new net.minecraft.world.item.component.BundleContents(
+                List.of(new ItemStack(Items.STONE, 3), new ItemStack(Items.STICK, 1))));
+        net.minecraft.world.item.component.BundleContents bundleBack = savedBack(level, bundle).get(DataComponents.BUNDLE_CONTENTS);
+        results.put("bundle", bundleBack.size() + "/" + bundleBack.weight() + "/" + bundleBack.getItemUnsafe(0).getItem());
+
+        ItemStack hive = new ItemStack(Items.BEEHIVE);
+        results.put("beesDefault", String.valueOf(hive.get(DataComponents.BEES)));
+        CompoundTag beeData = new CompoundTag();
+        beeData.putString("id", "minecraft:bee");
+        hive.set(DataComponents.BEES, List.of(new net.minecraft.world.level.block.entity.BeehiveBlockEntity.Occupant(CustomData.of(beeData), 10, 600)));
+        List<net.minecraft.world.level.block.entity.BeehiveBlockEntity.Occupant> beesBack = savedBack(level, hive).get(DataComponents.BEES);
+        results.put("bees", beesBack.size() + "/" + beesBack.get(0).entityData().copyTag().getString("id") + "/" + beesBack.get(0).ticksInHive()
+                + "/" + beesBack.get(0).minTicksInHive());
+
+        ItemStack hard = new ItemStack(Items.IRON_SWORD);
+        hard.set(DataComponents.UNBREAKABLE, new net.minecraft.world.item.component.Unbreakable(false));
+        ItemStack hardBack = savedBack(level, hard);
+        results.put("unbreakable", hardBack.get(DataComponents.UNBREAKABLE) + "/" + hardBack.isDamageableItem());
+        results.put("repairCostDefault", String.valueOf(hard.get(DataComponents.REPAIR_COST)));
+        hard.set(DataComponents.REPAIR_COST, 3);
+        hard.set(DataComponents.HIDE_ADDITIONAL_TOOLTIP, net.minecraft.util.Unit.INSTANCE);
+        ItemStack hardBack2 = savedBack(level, hard);
+        results.put("repairCost", hardBack2.get(DataComponents.REPAIR_COST) + "/" + hardBack2.has(DataComponents.HIDE_ADDITIONAL_TOOLTIP));
+
+        // the stack patch API
+        ItemStack marked = new ItemStack(Items.STICK);
+        results.put("patchEmpty", String.valueOf(marked.isComponentsPatchEmpty()));
+        marked.set(CHARGE.get(), 4);
+        marked.set(DataComponents.CUSTOM_NAME, Component.literal("Patched"));
+        net.minecraft.core.component.DataComponentPatch patch = marked.getComponentsPatch();
+        List<String> patched = new ArrayList<>();
+        patch.entrySet().forEach(e -> patched.add(String.valueOf(e.getKey())));
+        java.util.Collections.sort(patched);
+        results.put("patch", patched + "/" + marked.isComponentsPatchEmpty());
+        ItemStack applied = new ItemStack(Items.STICK);
+        applied.applyComponents(patch);
+        results.put("patchApplied", applied.get(CHARGE.get()) + "/" + applied.getHoverName().getString() + "/"
+                + ItemStack.isSameItemSameComponents(applied, marked));
+        ItemStack made = new ItemStack(Items.STICK.builtInRegistryHolder(), 2, patch);
+        results.put("patchMade", made.getCount() + "/" + made.get(CHARGE.get()));
+        ItemStack rod = marked.transmuteCopy(Items.BLAZE_ROD, 3);
+        results.put("transmuted", rod.getItem() + "/" + rod.getCount() + "/" + rod.get(CHARGE.get()) + "/" + rod.getHoverName().getString());
+        ItemStack mapped = new ItemStack(Items.STICK);
+        mapped.applyComponents(marked.getComponents());
+        results.put("mapApplied", mapped.get(CHARGE.get()) + "/" + mapped.getHoverName().getString());
+        results.put("typed", String.valueOf(marked.getComponents().getTyped(CHARGE.get()).value()));
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)

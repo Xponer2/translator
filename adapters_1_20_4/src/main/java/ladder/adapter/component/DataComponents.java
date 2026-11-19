@@ -340,7 +340,33 @@ public final class DataComponents {
     public static final DataComponentType<net.minecraft.world.item.Rarity> RARITY = new Game<>("rarity", StackComponents.ItemRarity.CODEC,
             new StackComponents.ItemRarity());
 
-    public static final List<DataComponentType<?>> ALL = List.of(RARITY, CUSTOM_DATA, CUSTOM_NAME, ITEM_NAME, DAMAGE, MAX_DAMAGE, MAX_STACK_SIZE,
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.ItemContainerContents> CONTAINER = new Game<>("container",
+            ladder.carried.net.minecraft.world.item.component.ItemContainerContents.CODEC, new BlockComponents.Container());
+
+    public static final DataComponentType<CustomData> BLOCK_ENTITY_DATA = new Game<>("block_entity_data", CustomData.CODEC,
+            new BlockComponents.BlockEntityData());
+
+    public static final DataComponentType<CustomData> ENTITY_DATA = new Game<>("entity_data", CustomData.CODEC, new BlockComponents.Compound("EntityTag"));
+
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.BlockItemStateProperties> BLOCK_STATE = new Game<>("block_state",
+            ladder.carried.net.minecraft.world.item.component.BlockItemStateProperties.CODEC, new BlockComponents.BlockState());
+
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.BundleContents> BUNDLE_CONTENTS = new Game<>("bundle_contents",
+            ladder.carried.net.minecraft.world.item.component.BundleContents.CODEC, new BlockComponents.Bundle());
+
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.Unbreakable> UNBREAKABLE = new Game<>("unbreakable",
+            ladder.carried.net.minecraft.world.item.component.Unbreakable.CODEC, new BlockComponents.Unbreaking());
+
+    public static final DataComponentType<Integer> REPAIR_COST = new Game<>("repair_cost", ExtraCodecs.NON_NEGATIVE_INT, new BlockComponents.RepairCost());
+
+    public static final DataComponentType<net.minecraft.util.Unit> HIDE_ADDITIONAL_TOOLTIP = new Game<>("hide_additional_tooltip",
+            Codec.unit(net.minecraft.util.Unit.INSTANCE), new BlockComponents.HideAdditional());
+
+    public static final DataComponentType<List<ladder.carried.net.minecraft.world.level.block.entity.BeehiveBlockEntity$Occupant>> BEES = new Game<>("bees",
+            ladder.carried.net.minecraft.world.level.block.entity.BeehiveBlockEntity$Occupant.LIST_CODEC, new BlockComponents.Bees());
+
+    public static final List<DataComponentType<?>> ALL = List.of(BEES, CONTAINER, BLOCK_ENTITY_DATA, ENTITY_DATA, BLOCK_STATE, BUNDLE_CONTENTS, UNBREAKABLE,
+            REPAIR_COST, HIDE_ADDITIONAL_TOOLTIP, RARITY, CUSTOM_DATA, CUSTOM_NAME, ITEM_NAME, DAMAGE, MAX_DAMAGE, MAX_STACK_SIZE,
             DYED_COLOR, ENCHANTMENTS, STORED_ENCHANTMENTS, POTION_CONTENTS, LORE, CUSTOM_MODEL_DATA, FOOD, ATTRIBUTE_MODIFIERS);
 
     private DataComponents() {

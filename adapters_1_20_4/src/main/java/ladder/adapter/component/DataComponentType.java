@@ -18,6 +18,27 @@ import net.minecraft.world.item.ItemStack;
  * The game's own components (DataComponents) read and write the stack's 1.20.4 data instead.
  */
 public interface DataComponentType<T> {
+    /**
+     * 1.20.5's {@code DataComponentType.STREAM_CODEC}: a type by its id in the component registry (1.21 sends the
+     * registry's number; both ends of a converted game have this registry, so the id names it the same).
+     */
+    StreamCodec<ladder.carried.net.minecraft.network.RegistryFriendlyByteBuf, DataComponentType<?>> STREAM_CODEC = new StreamCodec<>() {
+        @Override
+        public DataComponentType<?> decode(ladder.carried.net.minecraft.network.RegistryFriendlyByteBuf buf) {
+            net.minecraft.resources.ResourceLocation id = buf.readResourceLocation();
+            DataComponentType<?> type = ComponentRegistry.registry().get(id);
+            if (type == null) {
+                throw new io.netty.handler.codec.DecoderException("Unknown data component type: " + id);
+            }
+            return type;
+        }
+
+        @Override
+        public void encode(ladder.carried.net.minecraft.network.RegistryFriendlyByteBuf buf, DataComponentType<?> type) {
+            buf.writeResourceLocation(ComponentRegistry.registry().getKey(type));
+        }
+    };
+
     static <T> Builder<T> builder() {
         return new Builder<>();
     }

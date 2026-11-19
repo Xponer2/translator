@@ -275,3 +275,12 @@ K	net/minecraft/world/item/HoeItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraf
 K	net/minecraft/world/item/AxeItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/world/item/Item$Properties;)V	(Lnet/minecraft/world/item/Tier;FFLnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	$0,axeDamage,axeSpeed,$1
 K	net/minecraft/world/item/ShovelItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/world/item/Item$Properties;)V	(Lnet/minecraft/world/item/Tier;FFLnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	$0,shovelDamage,shovelSpeed,$1
 K	net/minecraft/world/item/DiggerItem	(Lnet/minecraft/world/item/Tier;Lnet/minecraft/tags/TagKey;Lnet/minecraft/world/item/Item$Properties;)V	(FFLnet/minecraft/world/item/Tier;Lnet/minecraft/tags/TagKey;Lnet/minecraft/world/item/Item$Properties;)V	ladder/adapter/item/ToolAdapters	diggerDamage,diggerSpeed,$0,$1,$2
+X	net/minecraft/world/item/ItemStack	getComponentsPatch	()Lnet/minecraft/core/component/DataComponentPatch;	ladder/adapter/component/ComponentPatches	getComponentsPatch
+X	net/minecraft/world/item/ItemStack	isComponentsPatchEmpty	()Z	ladder/adapter/component/ComponentPatches	isComponentsPatchEmpty
+X	net/minecraft/world/item/ItemStack	applyComponents	(Lnet/minecraft/core/component/DataComponentPatch;)V	ladder/adapter/component/ComponentPatches	applyComponents
+X	net/minecraft/world/item/ItemStack	applyComponents	(Lnet/minecraft/core/component/DataComponentMap;)V	ladder/adapter/component/ComponentPatches	applyComponents
+X	net/minecraft/world/item/ItemStack	applyComponentsAndValidate	(Lnet/minecraft/core/component/DataComponentPatch;)V	ladder/adapter/component/ComponentPatches	applyComponentsAndValidate
+X	net/minecraft/world/item/ItemStack	<init>	(Lnet/minecraft/core/Holder;ILnet/minecraft/core/component/DataComponentPatch;)V	ladder/adapter/component/ComponentPatches	create
+X	net/minecraft/world/item/ItemStack	transmuteCopy	(Lnet/minecraft/world/level/ItemLike;I)Lnet/minecraft/world/item/ItemStack;	ladder/adapter/component/ComponentPatches	transmuteCopy
+F	net/minecraft/world/level/block/entity/BeehiveBlockEntity	IGNORED_BEE_TAGS	Ljava/util/List;	ladder/adapter/block/BeeAdapters	ignoredBeeTags
+X	net/minecraft/world/entity/animal/Bee	setHivePos	(Lnet/minecraft/core/BlockPos;)V	ladder/adapter/block/BeeAdapters	setHivePos

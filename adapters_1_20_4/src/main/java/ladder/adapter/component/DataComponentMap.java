@@ -17,10 +17,29 @@ import javax.annotation.Nullable;
 public interface DataComponentMap extends Iterable<TypedDataComponent<?>> {
     DataComponentMap EMPTY = new Snapshot(Map.of());
 
+    /** 1.20.5's {@code DataComponentMap.builder()}: the carried builder (its constructor is package-private there) */
+    static ladder.carried.net.minecraft.core.component.DataComponentMap$Builder builder() {
+        try {
+            java.lang.reflect.Constructor<ladder.carried.net.minecraft.core.component.DataComponentMap$Builder> constructor =
+                    ladder.carried.net.minecraft.core.component.DataComponentMap$Builder.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("the carried DataComponentMap.Builder can't be made", e);
+        }
+    }
+
     @Nullable
     <T> T get(DataComponentType<? extends T> type);
 
     Set<DataComponentType<?>> keySet();
+
+    /** 1.20.5's {@code getTyped(type)}: the type with its value, or null */
+    @Nullable
+    default <T> TypedDataComponent<T> getTyped(DataComponentType<T> type) {
+        T value = this.get(type);
+        return value == null ? null : new TypedDataComponent<>(type, value);
+    }
 
     default boolean has(DataComponentType<?> type) {
         return this.get(type) != null;
