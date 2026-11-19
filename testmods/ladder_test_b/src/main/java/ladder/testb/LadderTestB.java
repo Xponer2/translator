@@ -353,6 +353,17 @@ public final class LadderTestB {
         stewData.set(DataComponents.CUSTOM_DATA, CustomData.of(mine));
         stewData.remove(DataComponents.CUSTOM_DATA);
         results.put("stewKept", stewData.get(DataComponents.SUSPICIOUS_STEW_EFFECTS).effects().size() + "/" + stewData.has(DataComponents.CUSTOM_DATA));
+        ItemStack hiddenTrim = new ItemStack(Items.IRON_CHESTPLATE);
+        hiddenTrim.set(DataComponents.TRIM, trim.withTooltip(false));
+        net.minecraft.world.item.armortrim.ArmorTrim hiddenBack = savedBack(level, hiddenTrim).get(DataComponents.TRIM);
+        results.put("trimHidden", hiddenBack.equals(trim.withTooltip(false)) + "/" + hiddenBack.equals(trim) + "/" + trim.equals(hiddenBack));
+        // a long flight's rocket lives as long (10 ticks per flight level, plus up to 11)
+        net.minecraft.world.entity.projectile.FireworkRocketEntity flying = new net.minecraft.world.entity.projectile.FireworkRocketEntity(
+                level, 8.5, 141.0, 8.5, longRocket);
+        CompoundTag flyingData = new CompoundTag();
+        flying.addAdditionalSaveData(flyingData);
+        int lifeTime = flyingData.getInt("LifeTime");
+        results.put("longFlightLife", String.valueOf(lifeTime >= 2010 && lifeTime <= 2021));
         ItemStack trimmedStick = new ItemStack(Items.STICK);
         trimmedStick.set(DataComponents.TRIM, trim);
         results.put("trimStick", String.valueOf(savedBack(level, trimmedStick).get(DataComponents.TRIM).equals(trim)));

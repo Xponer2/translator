@@ -9,6 +9,8 @@
     "BlockItemMixin",
     "EntityAccess",
     "BeeAccess",
+    "ArmorTrimMixin",
+    "FireworkRocketEntityMixin",
     "SkullBlockEntityAccess",
     "ItemMixin",
     "GameDataMixin"

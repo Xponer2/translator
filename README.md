@@ -106,7 +106,7 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
 - **Mods of two versions share one item** (test mod E): a mod made for 1.20.4 and running as it is, not converted,
   takes the stack a converted 1.21.1 mod (test mod B) left in a chest and changes it with 1.20.4's own API (an
   enchantment, a key of the stack's data, a new name). After a restart both mods read the same stack, and their
-  results are those of the same steps on the real 1.21.1 (with E's 1.21.1 twin): **B 112 + 117, E 6 + 6 results equal**.
+  results are those of the same steps on the real 1.21.1 (with E's 1.21.1 twin): **B 114 + 119, E 6 + 6 results equal**.
   The game's own item components 1.20.4 keeps elsewhere are read and written where 1.20.4 keeps them, so 1.20.4's
   code sees them too: dyed colour, enchantments, an enchanted book's stored ones, potion contents, lore, the model
   number, attribute modifiers, a container's items, block entity and entity data, block states, a bundle's

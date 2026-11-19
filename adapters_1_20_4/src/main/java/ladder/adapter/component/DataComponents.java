@@ -39,7 +39,7 @@ import ladder.carried.net.minecraft.world.item.enchantment.ItemEnchantments;
  */
 public final class DataComponents {
     /** a rocket's flight above 127: 1.20.4's Flight is a signed byte its rocket entity reads as such (kept at 127 there) */
-    static final String FLIGHT_KEY = "ladder:flight";
+    public static final String FLIGHT_KEY = "ladder:flight";
 
     /** where a stack's enchantment_glint_override is kept (1.20.4 has none: the ItemStack mixin reads it in hasFoil) */
     static final String GLINT_KEY = "ladder:enchantment_glint_override";
@@ -592,9 +592,11 @@ public final class DataComponents {
                         return null;
                     }
                     net.minecraft.core.RegistryAccess registries = ladder.adapter.bridge.Conversions.registries();
-                    return registries == null ? null : net.minecraft.world.item.armortrim.ArmorTrim.CODEC
+                    net.minecraft.world.item.armortrim.ArmorTrim trim = registries == null ? null : net.minecraft.world.item.armortrim.ArmorTrim.CODEC
                             .parse(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries), stack.getTagElement("Trim"))
                             .result().orElse(null);
+                    // the stack's HideFlags bit 128 is the trim's show_in_tooltip
+                    return trim == null || shown(stack, HIDE_UPGRADES) ? trim : ladder.adapter.item.TrimAdapters.withTooltip(trim, false);
                 }
 
                 @Override
@@ -618,6 +620,7 @@ public final class DataComponents {
                             net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries), value).getOrThrow(false, error -> {
                             });
                     stack.getOrCreateTag().put("Trim", trim);
+                    show(stack, HIDE_UPGRADES, ladder.adapter.item.TrimAdapters.shown(value));
                 }
             });
 
