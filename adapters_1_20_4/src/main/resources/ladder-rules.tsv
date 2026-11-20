@@ -142,7 +142,6 @@ X	net/minecraft/world/level/block/entity/BlockEntity	saveCustomOnly	(Lnet/minecr
 X	net/minecraft/world/level/block/entity/BlockEntity	saveCustomAndMetadata	(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/nbt/CompoundTag;	ladder/adapter/misc/MiscAdapters	saveCustomAndMetadata
 # 1.20.5 split BlockEntity.load into loadAdditional (the per-class hook, registries passed) and loadWithComponents
 M	net/minecraft/world/level/block/entity/BlockEntity	loadAdditional	(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V	load	(Lnet/minecraft/nbt/CompoundTag;)V
-X	net/minecraft/core/HolderLookup$Provider	createSerializationContext	(Lcom/mojang/serialization/DynamicOps;)Lnet/minecraft/resources/RegistryOps;	ladder/adapter/misc/MiscAdapters	createSerializationContext
 # Data components (the first compatibility module): types, the registry, a stack's values kept in its NBT
 P	net/minecraft/core/component/DataComponentType	ladder/adapter/component/DataComponentType
 P	net/minecraft/core/component/DataComponentType$Builder	ladder/adapter/component/DataComponentType$Builder
@@ -381,3 +380,7 @@ X	net/neoforged/fml/config/ConfigTracker	registerConfig	(Lnet/neoforged/fml/conf
 X	net/neoforged/fml/config/ConfigTracker	acceptSyncedConfig	(Lnet/neoforged/fml/config/ModConfig;[B)V	ladder/adapter/fml/ConfigAdapters	acceptSyncedConfig
 X	net/neoforged/fml/ModLoader	hasErrors	()Z	ladder/adapter/fml/ConfigAdapters	hasErrors
 X	net/neoforged/neoforge/common/ModConfigSpec$Builder	defineListAllowEmpty	(Ljava/lang/String;Ljava/util/function/Supplier;Ljava/util/function/Supplier;Ljava/util/function/Predicate;)Lnet/neoforged/neoforge/common/ModConfigSpec$ConfigValue;	ladder/adapter/fml/ConfigAdapters	defineListAllowEmpty
+X	net/minecraft/world/entity/player/Player	hasInfiniteMaterials	()Z	ladder/adapter/misc/MiscAdapters	hasInfiniteMaterials
+X	net/minecraft/world/entity/LivingEntity	hasInfiniteMaterials	()Z	ladder/adapter/misc/MiscAdapters	hasInfiniteMaterials
+X	net/minecraft/world/level/StructureManager	checkStructurePresence	(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/levelgen/structure/Structure;Lnet/minecraft/world/level/levelgen/structure/placement/StructurePlacement;Z)Lnet/minecraft/world/level/levelgen/structure/StructureCheckResult;	ladder/adapter/misc/MiscAdapters	checkStructurePresence
+F	net/minecraft/tags/ItemTags	SKULLS	Lnet/minecraft/tags/TagKey;	ladder/adapter/misc/MiscAdapters	skulls

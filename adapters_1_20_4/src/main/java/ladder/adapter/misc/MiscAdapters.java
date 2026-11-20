@@ -183,4 +183,33 @@ public final class MiscAdapters {
     public static int opaqueColor(int r, int g, int b) {
         return FastColor.ARGB32.color(255, r, g, b);
     }
+
+    /** 1.20.5's {@code LivingEntity.hasInfiniteMaterials()}: a player in creative (instabuild), no other entity */
+    public static boolean hasInfiniteMaterials(net.minecraft.world.entity.LivingEntity entity) {
+        return entity instanceof Player player && player.getAbilities().instabuild;
+    }
+
+    /** {@code Player.hasInfiniteMaterials()} */
+    public static boolean hasInfiniteMaterials(Player player) {
+        return player.getAbilities().instabuild;
+    }
+
+    /**
+     * 1.20.5's {@code StructureManager.checkStructurePresence(chunk, structure, placement, skipReferenced)}: the placement
+     * is 1.20.5's quick check before the chunk's own; 1.20.4 checks the chunk the same way without it
+     */
+    public static net.minecraft.world.level.levelgen.structure.StructureCheckResult checkStructurePresence(
+            net.minecraft.world.level.StructureManager manager, net.minecraft.world.level.ChunkPos chunk,
+            net.minecraft.world.level.levelgen.structure.Structure structure,
+            net.minecraft.world.level.levelgen.structure.placement.StructurePlacement placement, boolean skipReferenced) {
+        return manager.checkStructurePresence(chunk, structure, skipReferenced);
+    }
+
+    private static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item> SKULLS = net.minecraft.tags.TagKey.create(
+            net.minecraft.core.registries.Registries.ITEM, new net.minecraft.resources.ResourceLocation("skulls"));
+
+    /** 1.20.5's {@code ItemTags.SKULLS} (the tag the adapters' data gives: data/minecraft/tags/items/skulls.json) */
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> skulls() {
+        return SKULLS;
+    }
 }

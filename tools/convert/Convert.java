@@ -330,6 +330,58 @@ public class Convert {
         }
     }
 
+    static final String SUBSCRIBER = "Lnet/neoforged/fml/common/EventBusSubscriber;";
+
+    /**
+     * NeoForge 21's {@code @EventBusSubscriber} with no bus puts each listener on the bus of its event (a mod bus event on
+     * the mod's bus); FML 2's puts all of them on the game's bus, where a mod bus event is refused. A class whose events
+     * are all the mod bus's gets bus = MOD; one with events of both buses can't be one class on FML 2.
+     */
+    static void subscriberBus(ClassNode node) {
+        if (node.visibleAnnotations == null) {
+            return;
+        }
+        for (AnnotationNode a : node.visibleAnnotations) {
+            if (!a.desc.equals(SUBSCRIBER) || a.values != null && a.values.contains("bus")) {
+                continue;
+            }
+            int mod = 0, game = 0;
+            for (MethodNode m : node.methods) {
+                if ((m.access & Opcodes.ACC_STATIC) == 0 || m.visibleAnnotations == null
+                        || m.visibleAnnotations.stream().noneMatch(x -> x.desc.equals("Lnet/neoforged/bus/api/SubscribeEvent;"))) {
+                    continue;
+                }
+                Type[] params = Type.getArgumentTypes(m.desc);
+                if (params.length != 1 || params[0].getSort() != Type.OBJECT) {
+                    continue;
+                }
+                if (modBusEvent(params[0].getInternalName())) {
+                    mod++;
+                } else {
+                    game++;
+                }
+            }
+            if (mod > 0 && game == 0) {
+                if (a.values == null) {
+                    a.values = new ArrayList<>();
+                }
+                a.values.add("bus");
+                a.values.add(new String[] {"Lnet/neoforged/fml/common/EventBusSubscriber$Bus;", "MOD"});
+            } else if (mod > 0) {
+                problem("an event subscriber with events of both buses (FML 2 puts a class on one): " + node.name);
+            }
+        }
+    }
+
+    /** whether an event class is a mod bus event (IModBusEvent among its supertypes, in the mod's version or provided) */
+    static boolean modBusEvent(String event) {
+        String provided = Convert.provided.get(event);
+        if (provided != null) {
+            return adapterSupers.getOrDefault(provided, List.of()).contains("net/neoforged/fml/event/IModBusEvent");
+        }
+        return subtypeIn(versions.get(level), event, "net/neoforged/fml/event/IModBusEvent");
+    }
+
     /** reflection by name: the calls whose class and member name are constants just before them */
     static final Set<String> REFLECTION = Set.of(
             "net/neoforged/fml/util/ObfuscationReflectionHelper.findMethod", "net/neoforged/fml/util/ObfuscationReflectionHelper.findField",
@@ -765,6 +817,7 @@ public class Convert {
                     }
                     renameOwn(node);
                     checkReflection(node);
+                    subscriberBus(node);
                     List<MethodNode> lowerOverrides = overrideBridges(node);
                     applyRules(node, true);
                     redirectCarried(node);
@@ -1327,6 +1380,11 @@ public class Convert {
                         // new in the upper version and its code works below: carried, in its own package tree
                         schedule(i, new Stage0.Ref('C', cur, null, null));
                         cur = CARRIED + cur;
+                    } else if (i == level && !versions.get(i).classes.containsKey(cur) && !versions.get(i).bytes.containsKey(cur)) {
+                        // not in the mod's own version either (another loader's or another version's class, as in a mod
+                        // made for several): code that can't run natively, so nothing the step changes; listed apart
+                        unverified.add("a class its own version hasn't either: " + c);
+                        cur = c;
                     } else {
                         problem("missing class " + c + " (" + versions.get(i).id + " -> " + versions.get(i + 1).id + ")");
                         cur = c;
@@ -4069,6 +4127,10 @@ public class Convert {
             return object.toString();
         }
         String type = object.has("type") ? object.get("type").getAsString() : "";
+        if (!type.isEmpty() && !type.contains(":")) {
+            // an id without its namespace is the game's (crafting_shaped = minecraft:crafting_shaped)
+            type = "minecraft:" + type;
+        }
         JsonElement result = object.get("result");
         if (result != null && result.isJsonObject() && result.getAsJsonObject().has("components")) {
             problem("data components in a recipe result (no 1.20.4 form): " + path);
