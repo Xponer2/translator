@@ -9,11 +9,14 @@
     "EnchantCommandMixin",
     "ReloadableServerRegistriesMixin",
     "ItemStackTooltipMixin",
-    "PackOverlaysMixin"
+    "PackOverlaysMixin",
+    "SwingMixin",
+    "ServerPlayerMenuMixin"
   ],
   "client": [
     "HumanoidArmorLayerMixin",
-    "GuiOverlayMixin"
+    "GuiOverlayMixin",
+    "ClientPacketListenerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

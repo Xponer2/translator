@@ -1,0 +1,16 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="ladder_test_f"
+version="1.0.0"
+displayName="Ladder Test F (1.21.1)"
+description="NeoForge 21.1 additions the 1.21 rung adapts: a menu provider's client data, dimension transition screens."
+
+[[dependencies.ladder_test_f]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"

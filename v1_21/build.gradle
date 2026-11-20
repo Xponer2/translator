@@ -29,6 +29,7 @@ neoForge {
             jvmArgument '-Xmx4G'
             systemProperty 'ladder.test.client.out', file('run-client/test-a-client.json').absolutePath.replace(File.separator, '/')
             systemProperty 'ladder.test.c.out', file('run-client/test-c.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.f.out', file('run-client/test-f.json').absolutePath.replace(File.separator, '/')
             // no probe here: test C enters a fresh world itself (-Pladder.world) or connects to serverNet
             // (-Pladder.connect=host:port), records, writes and closes the game
             systemProperty 'ladder.test.c.drive', (project.hasProperty('ladder.world') || project.hasProperty('ladder.connect')) ? 'true' : 'false'

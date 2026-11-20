@@ -24,7 +24,8 @@
     "ArmourItemMixin",
     "HorseArmourMixin",
     "PackOverlaysMixin",
-    "DiggerItemMixin"
+    "DiggerItemMixin",
+    "SwingMixin"
   ],
   "client": [
     "AbstractSelectionListMixin",

@@ -449,3 +449,7 @@ D	net/minecraft/world/entity/Mob	finalizeSpawn	(Lnet/minecraft/world/level/Serve
 O	net/minecraft/world/entity/TamableAnimal	canFlyToOwner	()Z	ladder/adapter/entity/FlyToOwnerApi	ladder/adapter/entity/FlyToOwnerApi	canFlyToOwner
 X	net/minecraft/world/entity/TamableAnimal	canFlyToOwner	()Z	ladder/adapter/entity/FlyToOwnerApi	answer
 K	net/minecraft/world/entity/ai/goal/FollowOwnerGoal	(Lnet/minecraft/world/entity/TamableAnimal;DFF)V	(Lnet/minecraft/world/entity/TamableAnimal;DFFZ)V	ladder/adapter/entity/FlyToOwnerApi	$0,$1,$2,$3,followCanFly
+# NeoForge 21.1's onEntitySwing with the hand (20.4's takes none): a mod item's override is asked with the swinging hand (SwingMixin)
+O	net/neoforged/neoforge/common/extensions/IItemExtension	onEntitySwing	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;)Z	ladder/adapter/item/SwingApi	ladder/adapter/item/SwingApi	swingDefault
+X	net/neoforged/neoforge/common/extensions/IItemExtension	onEntitySwing	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;)Z	ladder/adapter/item/SwingApi	itemSwing
+X	net/neoforged/neoforge/common/extensions/IItemStackExtension	onEntitySwing	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;)Z	ladder/adapter/item/SwingApi	stackSwing

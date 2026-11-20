@@ -75,11 +75,11 @@ versions together on one target.
 
 | Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
 |---|---|---|---:|---:|---|
-| 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 251 | 258 | first, in work |
+| 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 237 | 260 | first, in work |
 | 1.21 → 1.20.6 | not yet (in the 1.20.4 set) | not yet | 2345 | 132 | next |
 | 1.20.6 → 1.20.4 | yes | yes: test mods A–E, corpus probes | 3089 | 114 | in work |
 
-Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **258 of 300 mods convert with nothing
+Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **260 of 300 mods convert with nothing
 left** with the rung's own adapters (242 before them); what is left there: attachment syncing, a menu's client data, a few
 mixins into 21.1-only code, the dimension transition screens.
 

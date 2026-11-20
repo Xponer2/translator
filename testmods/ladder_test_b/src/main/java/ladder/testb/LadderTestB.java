@@ -87,6 +87,15 @@ public final class LadderTestB {
             () -> new Item(new Item.Properties().component(DataComponents.CUSTOM_NAME, Component.literal("Named by default"))));
 
     /** a sword of the mod's own: its damage and speed are the properties' attribute modifiers */
+    /** NeoForge 21.1's onEntitySwing with the hand: the hand it was swung with, recorded */
+    static String swungWith = "-";
+    static final DeferredHolder<Item, Item> SWING_STICK = ITEMS.register("swing_stick", () -> new Item(new Item.Properties()) {
+        @Override
+        public boolean onEntitySwing(ItemStack stack, net.minecraft.world.entity.LivingEntity entity, net.minecraft.world.InteractionHand hand) {
+            swungWith = hand.name();
+            return super.onEntitySwing(stack, entity, hand);
+        }
+    });
     /** NeoForge 21.1's supportsEnchantment: a stick that takes sharpness, the rest as any item */
     static final DeferredHolder<Item, Item> SHARP_STICK = ITEMS.register("sharp_stick", () -> new Item(new Item.Properties()) {
         @Override
@@ -703,6 +712,10 @@ public final class LadderTestB {
         net.minecraft.world.entity.SpawnGroupData back = big.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), net.minecraft.world.entity.MobSpawnType.COMMAND,
                 new net.minecraft.world.entity.monster.Zombie.ZombieGroupData(true, false));
         results.put("spawnByMod", big.spawnSeen + " | returned " + (back == null ? "null" : back.getClass().getSimpleName()));
+        // a swing of the mod's item in the off hand: its override sees the hand
+        big.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, new ItemStack(SWING_STICK.get()));
+        big.swing(net.minecraft.world.InteractionHand.OFF_HAND);
+        results.put("swingHand", swungWith + "/" + new ItemStack(SWING_STICK.get()).onEntitySwing(big, net.minecraft.world.InteractionHand.MAIN_HAND) + "/" + swungWith);
         // tamed animals flying to their owner (1.21: canFlyToOwner, the parrot's and a mod animal's own), their follow goal
         FlyingCat cat = new FlyingCat(EntityType.CAT, level);
         net.minecraft.world.entity.ai.goal.FollowOwnerGoal goal = new net.minecraft.world.entity.ai.goal.FollowOwnerGoal(cat, 1.0, 10.0F, 2.0F);

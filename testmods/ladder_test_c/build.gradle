@@ -6,6 +6,8 @@ plugins {
 // the server (stream codecs of plain values, of registry-aware values, a payload handled on the network thread) and the
 // server answers through every way of sending; the client writes what arrived, on which thread. Run natively on 1.21.1
 // (the reference; the mod enters a world itself with -Dladder.test.c.drive=true) and converted on 1.20.4: same results.
+// test mod F runs with C: its source set must exist first
+evaluationDependsOn(':testmods:ladder_test_f')
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 base { archivesName = 'ladder-test-c-1.21.1' }
 version = '1.0.0'
@@ -17,11 +19,16 @@ neoForge {
             gameDirectory = file('run-client')
             systemProperty 'ladder.test.c.out', file('run-client/test-c.json').absolutePath.replace(File.separator, '/')
             systemProperty 'ladder.test.c.drive', 'true'
+            // test mod F runs with it (NeoForge 21.1's additions the 1.21 rung adapts)
+            systemProperty 'ladder.test.f.out', file('run-client/test-f.json').absolutePath.replace(File.separator, '/')
         }
     }
     mods {
         ladder_test_c {
             sourceSet sourceSets.main
+        }
+        ladder_test_f {
+            sourceSet project(':testmods:ladder_test_f').sourceSets.main
         }
     }
 }
