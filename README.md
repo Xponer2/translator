@@ -61,7 +61,8 @@ game's class; one copy of carried code per target; a member the game's class lac
 `tools/identity-test` checks them on the JVM (12 cases; without the dispatcher the first new method fails).
 
 **Strict.** A mod counts as converted only when nothing was stubbed, skipped or left unresolved, mixin selectors
-included. Formats the converter can't check yet (a mod's own recipe types) are listed apart, and so is the code of a
+included, and so is reflection by name on a game or loader member the lower version hasn't (unless the mod catches
+its failure). Formats the converter can't check yet (a mod's own recipe types) are listed apart, and so is the code of a
 mod's data generators (data providers run in `runData` only, never in the game).
 
 ## Where it is
@@ -137,8 +138,8 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
   on 1.20.4.
 
-Over the whole corpus, 58 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 8058 (the
+Over the whole corpus, 59 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 8047 (the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). Most mods that are
 left wait for several mechanisms at once; the ones that free the most mods next: 1.21's GUI widgets and screen layout

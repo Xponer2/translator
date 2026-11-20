@@ -330,6 +330,86 @@ public class Convert {
         }
     }
 
+    /** reflection by name: the calls whose class and member name are constants just before them */
+    static final Set<String> REFLECTION = Set.of(
+            "net/neoforged/fml/util/ObfuscationReflectionHelper.findMethod", "net/neoforged/fml/util/ObfuscationReflectionHelper.findField",
+            "net/neoforged/fml/util/ObfuscationReflectionHelper.getPrivateValue", "net/neoforged/fml/util/ObfuscationReflectionHelper.setPrivateValue",
+            "java/lang/Class.getDeclaredMethod", "java/lang/Class.getMethod", "java/lang/Class.getDeclaredField", "java/lang/Class.getField");
+
+    /**
+     * A mod that reaches a game or loader member by reflection (its class and name as constants) gets past the walk:
+     * when the bottom version has no member of that name in that class (or its supertypes), it fails when it runs
+     * (NoSuchMethodException), so it is a problem like a missing reference.
+     */
+    static void checkReflection(ClassNode node) {
+        Stage0.Version bottom = versions.get(versions.size() - 1);
+        for (MethodNode m : node.methods) {
+            String owner = null, name = null;
+            for (AbstractInsnNode insn : m.instructions) {
+                if (insn instanceof LdcInsnNode ldc) {
+                    if (ldc.cst instanceof Type t && t.getSort() == Type.OBJECT) {
+                        // the class reflected on comes before its member's name; the parameter types after it
+                        if (name == null) {
+                            owner = t.getInternalName();
+                        }
+                    } else if (ldc.cst instanceof String text && owner != null && name == null) {
+                        name = text;
+                    }
+                } else if (insn instanceof MethodInsnNode call && REFLECTION.contains(call.owner + "." + call.name)) {
+                    // a lookup in a try that catches its failure is the mod's own fallback (a mod for several versions)
+                    if (owner != null && name != null && (Stage0.platform(owner) || owner.startsWith("net/neoforged/fml/")) && !caught(m, call)) {
+                        String lower = lowerOwnerName(versions.get(level), bottom, owner);
+                        if (bottom.classes.containsKey(lower) && !hasMemberNamed(bottom, lower, name)) {
+                            problem("reflection on " + owner + "." + name + ", which the bottom version hasn't (" + node.name + ")");
+                        }
+                    }
+                    owner = null;
+                    name = null;
+                }
+            }
+        }
+    }
+
+    /** the failures of a reflective lookup a try block can catch */
+    static final Set<String> LOOKUP_FAILURES = Set.of("java/lang/NoSuchMethodException", "java/lang/NoSuchFieldException",
+            "java/lang/ReflectiveOperationException", "java/lang/Exception", "java/lang/Throwable", "java/lang/RuntimeException",
+            "net/neoforged/fml/util/ObfuscationReflectionHelper$UnableToFindMethodException",
+            "net/neoforged/fml/util/ObfuscationReflectionHelper$UnableToFindFieldException",
+            "net/neoforged/fml/util/ObfuscationReflectionHelper$UnableToAccessFieldException");
+
+    static boolean caught(MethodNode m, AbstractInsnNode at) {
+        int index = m.instructions.indexOf(at);
+        for (TryCatchBlockNode block : m.tryCatchBlocks) {
+            if (m.instructions.indexOf(block.start) <= index && index < m.instructions.indexOf(block.end)
+                    && block.type != null && LOOKUP_FAILURES.contains(block.type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean hasMemberNamed(Stage0.Version v, String cls, String name) {
+        for (String c = cls; c != null; ) {
+            Stage0.Cls info = v.classes.get(c);
+            if (info == null) {
+                // a supertype outside the platform (java/lang/Object...): its members aren't the game's
+                return c.equals(cls) || !Stage0.platform(c) && !c.startsWith("java/lang/Object");
+            }
+            for (String member : info.methods) {
+                if (member.startsWith(name + " ")) {
+                    return true;
+                }
+            }
+            for (String field : info.fields) {
+                if (field.startsWith(name + " ")) {
+                    return true;
+                }
+            }
+            c = info.superName;
+        }
+        return false;
+    }
+
     /**
      * A data generator's class: a data provider or sub-provider of the game or NeoForge (net/minecraft/data/...,
      * NeoForge's data and model generators) by its supertypes, a class nested in one, or a class of a "datagen"
@@ -684,6 +764,7 @@ public class Convert {
                         node.visibleAnnotations.removeIf(a -> a.desc.equals(MOD_ANNOTATION));
                     }
                     renameOwn(node);
+                    checkReflection(node);
                     List<MethodNode> lowerOverrides = overrideBridges(node);
                     applyRules(node, true);
                     redirectCarried(node);

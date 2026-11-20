@@ -376,3 +376,8 @@ F	net/minecraft/client/gui/screens/Screen	FOOTER_SEPARATOR	Lnet/minecraft/resour
 X	net/minecraft/client/gui/screens/Screen	renderMenuBackground	(Lnet/minecraft/client/gui/GuiGraphics;)V	ladder/adapter/render/ScreenAdapters	renderMenuBackground
 X	net/minecraft/client/gui/screens/Screen	renderBlurredBackground	(F)V	ladder/adapter/render/ScreenAdapters	renderBlurredBackground
 X	net/minecraft/client/gui/screens/Screen	renderPanorama	(Lnet/minecraft/client/gui/GuiGraphics;F)V	ladder/adapter/render/ScreenAdapters	renderPanorama
+X	net/neoforged/fml/config/ConfigTracker	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;Lnet/neoforged/fml/ModContainer;Ljava/lang/String;)Lnet/neoforged/fml/config/ModConfig;	ladder/adapter/fml/ConfigAdapters	registerConfig
+X	net/neoforged/fml/config/ConfigTracker	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;Lnet/neoforged/fml/ModContainer;)Lnet/neoforged/fml/config/ModConfig;	ladder/adapter/fml/ConfigAdapters	registerConfig
+X	net/neoforged/fml/config/ConfigTracker	acceptSyncedConfig	(Lnet/neoforged/fml/config/ModConfig;[B)V	ladder/adapter/fml/ConfigAdapters	acceptSyncedConfig
+X	net/neoforged/fml/ModLoader	hasErrors	()Z	ladder/adapter/fml/ConfigAdapters	hasErrors
+X	net/neoforged/neoforge/common/ModConfigSpec$Builder	defineListAllowEmpty	(Ljava/lang/String;Ljava/util/function/Supplier;Ljava/util/function/Supplier;Ljava/util/function/Predicate;)Lnet/neoforged/neoforge/common/ModConfigSpec$ConfigValue;	ladder/adapter/fml/ConfigAdapters	defineListAllowEmpty
