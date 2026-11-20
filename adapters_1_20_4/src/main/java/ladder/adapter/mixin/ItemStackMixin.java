@@ -61,4 +61,16 @@ public abstract class ItemStackMixin implements ladder.adapter.component.DataCom
             item.appendHoverText(stack, level, lines, flag);
         }
     }
+
+    /** 1.21's name of a stack: its custom name, else its item_name (ladder:item_name), else the item's */
+    @Inject(method = "getHoverName", at = @At("HEAD"), cancellable = true)
+    private void ladder$itemName(CallbackInfoReturnable<Component> cir) {
+        ItemStack self = (ItemStack) (Object) this;
+        if (!self.hasCustomHoverName()) {
+            Component own = ladder.adapter.component.DataComponents.itemName(self);
+            if (own != null) {
+                cir.setReturnValue(own);
+            }
+        }
+    }
 }

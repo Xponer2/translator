@@ -1,0 +1,137 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:potion",
+          "functions": [
+            {
+              "function": "minecraft:set_name",
+              "target": "custom_name",
+              "name": {
+                "text": "Brew",
+                "italic": false
+              }
+            },
+            {
+              "function": "minecraft:set_lore",
+              "lore": [
+                {
+                  "text": "first"
+                }
+              ],
+              "mode": "append"
+            },
+            {
+              "function": "minecraft:set_lore",
+              "lore": [
+                {
+                  "text": "second"
+                },
+                {
+                  "text": "third"
+                }
+              ],
+              "mode": "append"
+            },
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "minecraft:potion_contents": {
+                  "potion": "minecraft:strength",
+                  "custom_color": 1517120
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:diamond_sword",
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "minecraft:damage": 5,
+                "!minecraft:attribute_modifiers": {},
+                "minecraft:custom_model_data": 1
+              }
+            },
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "minecraft:custom_model_data": 7
+              }
+            },
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "minecraft:custom_model_data": 99
+              },
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.0
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "minecraft:rarity": "epic"
+              },
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 1.0
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_lore",
+              "lore": [
+                {
+                  "text": "old"
+                }
+              ],
+              "mode": "append"
+            },
+            {
+              "function": "minecraft:set_lore",
+              "lore": [
+                {
+                  "text": "only"
+                }
+              ],
+              "mode": "replace_all"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:golden_apple",
+          "functions": [
+            {
+              "function": "minecraft:set_name",
+              "name": "Shiny apple",
+              "target": "item_name"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

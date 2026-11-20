@@ -50,6 +50,7 @@ final class ClientSide {
     private static final Map<String, String> RESULTS = new TreeMap<>();
     private static int ticks;
     private static boolean titleSeen;
+    private static boolean written;
 
     private ClientSide() {
     }
@@ -61,13 +62,21 @@ final class ClientSide {
         }
     }
 
-    /** Natively the test enters a fresh world itself (on 1.20.4 the probe does). */
+    /** Natively (and on a target without the probe) the test enters a fresh world itself, or connects to a server. */
     private static void screen(ScreenEvent.Init.Post event) {
         if (titleSeen || !(event.getScreen() instanceof TitleScreen)) {
             return;
         }
         titleSeen = true;
         Minecraft minecraft = Minecraft.getInstance();
+        String connect = System.getProperty("ladder.test.c.connect", "");
+        if (!connect.isEmpty()) {
+            // onto a dedicated server instead (a real connection: the payloads' codecs run)
+            minecraft.tell(() -> net.minecraft.client.gui.screens.ConnectScreen.startConnecting(event.getScreen(), minecraft,
+                    net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(connect),
+                    new net.minecraft.client.multiplayer.ServerData("ladder", connect, net.minecraft.client.multiplayer.ServerData.Type.OTHER), false, null));
+            return;
+        }
         String name = "ladder-test-c-" + System.currentTimeMillis();
         LevelSettings settings = new LevelSettings(name, GameType.CREATIVE, false, Difficulty.PEACEFUL, true, new GameRules(),
                 WorldDataConfiguration.DEFAULT);
@@ -97,9 +106,15 @@ final class ClientSide {
                     new ItemStack(Items.DIAMOND_CHESTPLATE)));
         } else if (ticks == SEND + 15) {
             RecipeChecks.run(RESULTS);
+        } else if (ticks == SEND + 20) {
+            PackChecks.run(RESULTS);
+        } else if (ticks == SEND + 22) {
+            ShapeChecks.run(RESULTS);
         } else if (ticks == WRITE - 5) {
             GuiClient.record(RESULTS);
-        } else if (ticks == WRITE) {
+        } else if (ticks >= WRITE && !written && PackChecks.done()) {
+            // (after the resource reload the pack check started has ended)
+            written = true;
             write();
             if (Boolean.getBoolean("ladder.test.c.drive")) {
                 minecraft.stop();

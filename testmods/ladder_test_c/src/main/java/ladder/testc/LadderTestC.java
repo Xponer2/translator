@@ -45,6 +45,7 @@ public final class LadderTestC {
         modBus.addListener(LadderTestC::register);
         Armour.register(modBus);
         Recipes.register(modBus);
+        PackFinders.register(modBus);
         if (FMLEnvironment.dist.isClient()) {
             ClientSide.init();
             GuiClient.register(modBus);

@@ -84,10 +84,11 @@ left** before the rung has adapters of its own; the 58 left wait for NeoForge 21
 attachment syncing, item render hooks, data components registered the 21.1 way).
 
 Besides the rungs' own problems, 1933 more come from the checks against the bottom game (mixin injection points, a
-mod's reflection, classes of other loaders) in 158 mods. Right now only 1.20.4 runs as a target: a mod goes down
-from its own version (1.21.1, 1.21 or 1.20.6) to 1.20.4 in one pass. Running 1.21 and 1.20.6 as targets of their own
-comes with their rungs' adapters and game tests, top rung first: the converter already takes the target
-(`LADDER_TO=1.21 tools/ladder.sh convert ...`).
+mod's reflection, classes of other loaders) in 158 mods. Right now 1.20.4 is the target with adapters and game tests:
+a mod goes down from its own version (1.21.1, 1.21 or 1.20.6) to 1.20.4 in one pass. 1.21 and 1.20.6 run as games of
+their own now (dedicated server, client, a server and client over a real connection: `LADDER_TARGET=1.21
+tools/run-probe.sh ...`); their rungs' adapters and the test mods' runs there come next, top rung first: the converter
+already takes the target (`LADDER_TO=1.21 tools/ladder.sh convert ...`).
 
 ## Where it is
 
@@ -162,8 +163,8 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
   on 1.20.4.
 
-Over the whole corpus, 78 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 7475 (the
+Over the whole corpus, 82 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 7170 (loot tables of 1.21, resource packs and recipes on 1.21's inputs took the last few hundred; the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). Most mods that are
 left wait for several mechanisms at once; the ones that free the most mods next: 1.21's GUI widgets and screen layout

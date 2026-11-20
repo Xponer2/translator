@@ -17,6 +17,7 @@ public final class LadderAdapters {
         ladder.adapter.event.TickBridge.register();
         ladder.adapter.component.ComponentRegistry.register(modBus);
         ladder.adapter.armour.ArmourAdapters.register(modBus);
+        ladder.adapter.loot.SetComponentsFunction.register(modBus);
         ladder.adapter.component.ItemAttributes.register();
         ladder.adapter.network.PayloadBridge.register(modBus);
         if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {

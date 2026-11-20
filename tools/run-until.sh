@@ -3,10 +3,14 @@
 # (only the JVM started from this checkout: other checkouts' games keep running).
 #   tools/run-until.sh <gradle task> <result file> [seconds]
 #   e.g. tools/run-until.sh :testmods:ladder_test_d:runServer testmods/ladder_test_d/run-server/test-d.json
+#   or a log line: tools/run-until.sh :v1_21:runServer "log:Done \(" 300
 set -u
 cd "$(dirname "$0")/.."
 TASK="$1"
 RESULT="$2"
+# "log:<regex>": the run's result is a line of its log (a smoke run: the game started), not a file
+LOGWAIT=""
+case "$RESULT" in log:*) LOGWAIT="${RESULT#log:}"; RESULT="out/.run-until-$(echo "$TASK" | tr ':' '_').done";; esac
 LIMIT="${3:-300}"
 LOG="out/run-$(echo "$TASK" | tr ':' '_').log"
 mkdir -p out
@@ -34,6 +38,10 @@ echo "game: $(basename "$LOG"), timeout ${LIMIT}s, stall ${STALL}s" >&2
 last_size=-1
 last_change=$start
 while [ ! -f "$RESULT" ]; do
+    if [ -n "$LOGWAIT" ] && grep -q -E "$LOGWAIT" "$LOG" 2>/dev/null; then
+        grep -m1 -E "$LOGWAIT" "$LOG" > "$RESULT"
+        break
+    fi
     size=$(stat -c %s "$LOG" 2>/dev/null || echo 0)
     if [ "$size" != "$last_size" ]; then
         last_size=$size
@@ -53,10 +61,11 @@ while [ ! -f "$RESULT" ]; do
     sleep 2
 done
 sleep 2
-# this checkout's folder name is in the game JVM's command line (its run files)
+# this checkout's folder name is in the game JVM's command line (its run files), as a whole path part: translator-ladder
+# must not match translator-ladder-armour
 HERE=$(basename "$(pwd)")
 if command -v powershell >/dev/null 2>&1; then
-    powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -match 'RunVmArgs' -and \$_.CommandLine -like '*$HERE*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Confirm:\$false }" >/dev/null 2>&1
+    powershell -NoProfile -Command "\$b = [string][char]92 + [char]92; \$p = '[/' + \$b + ']' + [regex]::Escape('$HERE') + '[/' + \$b + ']'; Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -match 'RunVmArgs' -and \$_.CommandLine -match \$p } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Confirm:\$false }" >/dev/null 2>&1
 else
     pkill -f "/$HERE/.*RunVmArgs" 2>/dev/null
 fi

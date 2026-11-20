@@ -290,7 +290,7 @@ final class StackComponents {
     }
 
     /** 1.21's rarity: on the item in 1.20.4 (its rarity of a plain stack; enchanting raises the stack's, not this) */
-    static final class ItemRarity implements DataComponentType.Vanilla<net.minecraft.world.item.Rarity> {
+    public static final class ItemRarity implements DataComponentType.Vanilla<net.minecraft.world.item.Rarity> {
         static final com.mojang.serialization.Codec<net.minecraft.world.item.Rarity> CODEC = com.mojang.serialization.Codec.STRING.comapFlatMap(name -> {
             for (net.minecraft.world.item.Rarity rarity : net.minecraft.world.item.Rarity.values()) {
                 if (rarity.name().toLowerCase(java.util.Locale.ROOT).equals(name)) {
@@ -300,9 +300,20 @@ final class StackComponents {
             return com.mojang.serialization.DataResult.error(() -> "Unknown rarity: " + name);
         }, rarity -> rarity.name().toLowerCase(java.util.Locale.ROOT));
 
+        /** a stack's own rarity (1.21 sets it per stack: a loot table's set_components), kept beside the item's */
+        public static final String KEY = "ladder:rarity";
+
+        /** the stack's own rarity, or null (the item's) */
+        @javax.annotation.Nullable
+        public static net.minecraft.world.item.Rarity own(ItemStack stack) {
+            net.minecraft.nbt.CompoundTag tag = stack.getTag();
+            return tag == null || !tag.contains(KEY) ? null : CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, tag.get(KEY)).result().orElse(null);
+        }
+
         @Override
         public net.minecraft.world.item.Rarity get(ItemStack stack) {
-            return this.prototype(stack);
+            net.minecraft.world.item.Rarity own = own(stack);
+            return own != null ? own : this.prototype(stack);
         }
 
         @Override
@@ -312,9 +323,16 @@ final class StackComponents {
 
         @Override
         public void set(ItemStack stack, net.minecraft.world.item.Rarity value) {
-            if (value != this.prototype(stack)) {
-                throw new IllegalStateException("1.20.4 keeps the rarity on the item, not on the stack: can't set " + value);
+            if (value == null || value == this.prototype(stack)) {
+                if (stack.getTag() != null) {
+                    stack.getTag().remove(KEY);
+                    if (stack.getTag().isEmpty()) {
+                        stack.setTag(null);
+                    }
+                }
+                return;
             }
+            stack.getOrCreateTag().putString(KEY, value.name().toLowerCase(java.util.Locale.ROOT));
         }
     }
 }

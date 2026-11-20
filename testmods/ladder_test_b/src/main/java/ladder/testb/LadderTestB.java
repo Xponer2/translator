@@ -87,6 +87,13 @@ public final class LadderTestB {
             () -> new Item(new Item.Properties().component(DataComponents.CUSTOM_NAME, Component.literal("Named by default"))));
 
     /** a sword of the mod's own: its damage and speed are the properties' attribute modifiers */
+    /** NeoForge 21.1's supportsEnchantment: a stick that takes sharpness, the rest as any item */
+    static final DeferredHolder<Item, Item> SHARP_STICK = ITEMS.register("sharp_stick", () -> new Item(new Item.Properties()) {
+        @Override
+        public boolean supportsEnchantment(ItemStack stack, Holder<Enchantment> enchantment) {
+            return enchantment.is(Enchantments.SHARPNESS) || super.supportsEnchantment(stack, enchantment);
+        }
+    });
     static final DeferredHolder<Item, Item> BLADE = ITEMS.register("test_blade",
             () -> new SwordItem(Tiers.IRON, new Item.Properties().attributes(SwordItem.createAttributes(Tiers.IRON, 4, -2.0F))));
     /** a food of the mod's own, with an effect */
@@ -101,6 +108,44 @@ public final class LadderTestB {
                 m.put(ArmorItem.Type.BODY, 9);
             }), 12, SoundEvents.ARMOR_EQUIP_IRON, () -> Ingredient.of(Items.IRON_INGOT),
             List.of(new ArmorMaterial.Layer(ResourceLocation.fromNamespaceAndPath("ladder_test_b", "steel"))), 1.5F, 0.05F));
+    /** a tier of the mod's own: iron's incorrect blocks (1.20.5's Tier.getIncorrectBlocksForDrops) */
+    enum BronzeTier implements net.minecraft.world.item.Tier {
+        BRONZE;
+
+        @Override
+        public int getUses() {
+            return 200;
+        }
+
+        @Override
+        public float getSpeed() {
+            return 5.0F;
+        }
+
+        @Override
+        public float getAttackDamageBonus() {
+            return 1.5F;
+        }
+
+        @Override
+        public net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> getIncorrectBlocksForDrops() {
+            return net.minecraft.tags.BlockTags.INCORRECT_FOR_IRON_TOOL;
+        }
+
+        @Override
+        public int getEnchantmentValue() {
+            return 10;
+        }
+
+        @Override
+        public Ingredient getRepairIngredient() {
+            return Ingredient.of(Items.COPPER_INGOT);
+        }
+    }
+
+    static final DeferredHolder<Item, net.minecraft.world.item.PickaxeItem> BRONZE_PICKAXE = ITEMS.register("bronze_pickaxe",
+            () -> new net.minecraft.world.item.PickaxeItem(BronzeTier.BRONZE, new Item.Properties()));
+
     static final DeferredHolder<Item, ArmorItem> STEEL_HELMET = ITEMS.register("steel_helmet",
             () -> new ArmorItem(STEEL, ArmorItem.Type.HELMET, new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(20))));
     static final DeferredHolder<Item, ArmorItem> STEEL_CHESTPLATE = ITEMS.register("steel_chestplate",
@@ -213,6 +258,20 @@ public final class LadderTestB {
         protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
             super.defineSynchedData(builder);
             builder.define(TITLE, "boss");
+        }
+
+        /** what finalizeSpawn saw (1.20.4 passes a spawn NBT besides, which 1.20.5 dropped) and gave back */
+        String spawnSeen = "-";
+
+        @Override
+        public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor level,
+                net.minecraft.world.DifficultyInstance difficulty, net.minecraft.world.entity.MobSpawnType type,
+                @javax.annotation.Nullable net.minecraft.world.entity.SpawnGroupData data) {
+            net.minecraft.world.entity.SpawnGroupData out = super.finalizeSpawn(level, difficulty, type, data);
+            this.spawnSeen = type + " " + (data == null ? "null" : data instanceof net.minecraft.world.entity.monster.Zombie.ZombieGroupData z
+                    ? "zombie baby=" + z.isBaby + " jockey=" + z.canSpawnJockey : data.getClass().getSimpleName())
+                    + " -> " + (out == null ? "null" : out.getClass().getSimpleName()) + " baby=" + this.isBaby();
+            return out;
         }
     }
 
@@ -336,6 +395,8 @@ public final class LadderTestB {
         }
         try {
             lootAndCodecs(results, level);
+            mining(results);
+            spawning(results, level);
         } catch (RuntimeException | LinkageError e) {
             results.put("loot.error", e.toString());
         }
@@ -628,6 +689,78 @@ public final class LadderTestB {
         results.put("typed", String.valueOf(marked.getComponents().getTyped(CHARGE.get()).value()));
     }
 
+    /** a mod mob's finalizeSpawn: through the game's spawn (no spawn data), and called by the mod with spawn data */
+    static void spawning(Map<String, String> results, ServerLevel level) {
+        BlockPos pos = new BlockPos(8, 141, 8);
+        BigZombie spawned = (BigZombie) BIG_ZOMBIE.get().spawn(level, pos, net.minecraft.world.entity.MobSpawnType.SPAWN_EGG);
+        results.put("spawnByGame", spawned == null ? "none" : spawned.spawnSeen);
+        if (spawned != null) {
+            spawned.discard();
+        }
+        BigZombie big = BIG_ZOMBIE.get().create(level);
+        big.setPos(8.5, 141.0, 8.5);
+        net.minecraft.world.entity.SpawnGroupData back = big.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), net.minecraft.world.entity.MobSpawnType.COMMAND,
+                new net.minecraft.world.entity.monster.Zombie.ZombieGroupData(true, false));
+        results.put("spawnByMod", big.spawnSeen + " | returned " + (back == null ? "null" : back.getClass().getSimpleName()));
+        // tamed animals flying to their owner (1.21: canFlyToOwner, the parrot's and a mod animal's own), their follow goal
+        FlyingCat cat = new FlyingCat(EntityType.CAT, level);
+        net.minecraft.world.entity.ai.goal.FollowOwnerGoal goal = new net.minecraft.world.entity.ai.goal.FollowOwnerGoal(cat, 1.0, 10.0F, 2.0F);
+        results.put("flyToOwner", cat.canFlyToOwner() + "/" + cat.superFlies() + "/" + (goal != null));
+    }
+
+    /** a tamed animal of the mod's own that flies to its owner */
+    static final class FlyingCat extends net.minecraft.world.entity.animal.Cat {
+        FlyingCat(EntityType<? extends net.minecraft.world.entity.animal.Cat> type, net.minecraft.world.level.Level level) {
+            super(type, level);
+        }
+
+        @Override
+        public boolean canFlyToOwner() {
+            return true;
+        }
+
+        /** the game's own answer for a cat (a super call) */
+        boolean superFlies() {
+            return super.canFlyToOwner();
+        }
+    }
+
+    /** which blocks a tool drops: a mod tier's pickaxe (its incorrect tag), the game's own; the 1.20.5+ tags */
+    static void mining(Map<String, String> results) {
+        net.minecraft.world.level.block.Block[] blocks = {Blocks.OBSIDIAN, Blocks.DIAMOND_ORE, Blocks.IRON_ORE, Blocks.STONE, Blocks.DIRT};
+        for (Item tool : new Item[] {BRONZE_PICKAXE.get(), Items.IRON_PICKAXE, Items.WOODEN_PICKAXE, Items.NETHERITE_PICKAXE}) {
+            ItemStack stack = new ItemStack(tool);
+            StringBuilder b = new StringBuilder();
+            for (net.minecraft.world.level.block.Block block : blocks) {
+                b.append(stack.isCorrectToolForDrops(block.defaultBlockState()) ? "1" : "0");
+            }
+            results.put("mining." + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(tool).getPath(), b.toString());
+        }
+        results.put("miningTierTags", BronzeTier.BRONZE.getIncorrectBlocksForDrops().location() + " "
+                + net.minecraft.world.item.Tiers.IRON.getIncorrectBlocksForDrops().location() + " " + net.minecraft.world.item.Tiers.GOLD.getIncorrectBlocksForDrops().location());
+        results.put("tagsNew", Blocks.OBSIDIAN.defaultBlockState().is(net.minecraft.tags.BlockTags.INCORRECT_FOR_IRON_TOOL) + "/"
+                + Blocks.STONE.defaultBlockState().is(net.minecraft.tags.BlockTags.INCORRECT_FOR_WOODEN_TOOL) + "/"
+                + Blocks.DIAMOND_ORE.defaultBlockState().is(net.minecraft.tags.BlockTags.INCORRECT_FOR_NETHERITE_TOOL) + "/"
+                + Blocks.BEEHIVE.defaultBlockState().is(net.minecraft.tags.BlockTags.DOES_NOT_BLOCK_HOPPERS) + "/"
+                + new ItemStack(Items.DIAMOND_SWORD).is(net.minecraft.tags.ItemTags.SWORD_ENCHANTABLE) + "/"
+                + new ItemStack(Items.IRON_AXE).is(net.minecraft.tags.ItemTags.WEAPON_ENCHANTABLE) + "/"
+                + new ItemStack(Items.STICK).is(net.minecraft.tags.ItemTags.WEAPON_ENCHANTABLE));
+    }
+
+    /** a loot result: its item, count and the components the loot functions touch */
+    static String lootStack(ItemStack s) {
+        net.minecraft.world.item.component.ItemLore lore = s.get(DataComponents.LORE);
+        PotionContents potion = s.get(DataComponents.POTION_CONTENTS);
+        return s.getCount() + "x" + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(s.getItem())
+                + " name=" + (s.has(DataComponents.CUSTOM_NAME) ? s.get(DataComponents.CUSTOM_NAME).getString() : "-")
+                + " itemName=" + (s.has(DataComponents.ITEM_NAME) ? s.get(DataComponents.ITEM_NAME).getString() : "-") + " shown=" + s.getHoverName().getString()
+                + " lore=" + (lore == null ? "-" : lore.lines().stream().map(Component::getString).toList())
+                + " potion=" + (potion == null ? "-" : potion.potion().flatMap(p -> p.unwrapKey()).map(k -> k.location().toString()).orElse("?") + "/"
+                        + potion.customColor().map(String::valueOf).orElse("-"))
+                + " damage=" + s.getDamageValue() + " model=" + (s.has(DataComponents.CUSTOM_MODEL_DATA) ? s.get(DataComponents.CUSTOM_MODEL_DATA).value() : "-")
+                + " attributes=" + s.has(DataComponents.ATTRIBUTE_MODIFIERS) + " rarity=" + s.getRarity();
+    }
+
     /** a loot table by its key (1.20.5's reloadable registries), and stacks through 1.21's codecs */
     static void lootAndCodecs(Map<String, String> results, ServerLevel level) {
         net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable> key = net.minecraft.resources.ResourceKey.create(
@@ -639,6 +772,32 @@ public final class LadderTestB {
         List<String> loot = new ArrayList<>();
         table.getRandomItems(params, 42L).forEach(s -> loot.add(s.getCount() + "x" + s.getItem()));
         results.put("lootByKey", loot.toString());
+        // set_components (values, a removal, in turn, under conditions), set_lore modes, set_name's target; copy_components
+        net.minecraft.world.level.storage.loot.LootTable components = level.getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(
+                Registries.LOOT_TABLE, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_b", "components")));
+        List<String> made = new ArrayList<>();
+        components.getRandomItems(params, 42L).forEach(s -> made.add(lootStack(s)));
+        results.put("lootComponents", String.join(" | ", made));
+        for (String name : new String[] {"Named chest", null}) {
+            net.minecraft.world.level.block.entity.ChestBlockEntity chest = new net.minecraft.world.level.block.entity.ChestBlockEntity(BlockPos.ZERO,
+                    Blocks.CHEST.defaultBlockState());
+            if (name != null) {
+                CompoundTag tag = new CompoundTag();
+                tag.putString("CustomName", Component.Serializer.toJson(Component.literal(name), level.registryAccess()));
+                chest.loadCustomOnly(tag, level.registryAccess());
+            }
+            net.minecraft.world.level.storage.loot.LootParams blockParams = new net.minecraft.world.level.storage.loot.LootParams.Builder(level)
+                    .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN, net.minecraft.world.phys.Vec3.ZERO)
+                    .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_STATE, Blocks.CHEST.defaultBlockState())
+                    .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.TOOL, ItemStack.EMPTY)
+                    .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY, chest)
+                    .create(net.minecraft.world.level.storage.loot.parameters.LootContextParamSets.BLOCK);
+            List<String> drops = new ArrayList<>();
+            level.getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(Registries.LOOT_TABLE,
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_b", "named_block"))).getRandomItems(blockParams, 42L)
+                    .forEach(s -> drops.add(lootStack(s)));
+            results.put(name == null ? "lootCopyUnnamed" : "lootCopyNamed", drops.toString());
+        }
         results.put("lootKeys", String.valueOf(level.getServer().reloadableRegistries().getKeys(Registries.LOOT_TABLE)
                 .contains(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_b", "test"))));
         results.put("lootMissing", String.valueOf(level.getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(
@@ -763,6 +922,12 @@ public final class LadderTestB {
             results.put("bookSaved", String.valueOf(bookBack.get(DataComponents.STORED_ENCHANTMENTS).getLevel(sharpness)));
             results.put("bookNotOnItself", String.valueOf(bookBack.get(DataComponents.ENCHANTMENTS).getLevel(sharpness)));
             results.put("stickNoBook", String.valueOf(new ItemStack(Items.STICK).get(DataComponents.STORED_ENCHANTMENTS)));
+            Holder<Enchantment> efficiency = level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.EFFICIENCY);
+            ItemStack sharpStick = new ItemStack(SHARP_STICK.get());
+            results.put("supports.sharpStick", sharpStick.supportsEnchantment(sharpness) + "/" + sharpStick.supportsEnchantment(efficiency));
+            results.put("supports.canEnchant", sharpness.value().canEnchant(sharpStick) + "/" + efficiency.value().canEnchant(sharpStick));
+            results.put("supports.book", new ItemStack(Items.ENCHANTED_BOOK).supportsEnchantment(efficiency) + "/"
+                    + new ItemStack(Items.IRON_PICKAXE).supportsEnchantment(efficiency) + "/" + new ItemStack(Items.STICK).supportsEnchantment(sharpness));
             try {
                 moreComponents(results, level);
             } catch (RuntimeException | LinkageError e) {

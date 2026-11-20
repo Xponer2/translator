@@ -7,6 +7,10 @@ package ladder.adapter.render;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractSelectionList;
+import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
+import net.minecraft.client.gui.screens.OptionsScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.PanoramaRenderer;
@@ -31,6 +35,52 @@ public final class ScreenAdapters {
 
     public static ResourceLocation footerSeparator() {
         return SEPARATOR;
+    }
+
+    public static ResourceLocation inworldFooterSeparator() {
+        return SEPARATOR;
+    }
+
+    public static ResourceLocation inworldHeaderSeparator() {
+        return SEPARATOR;
+    }
+
+    /** Screen.MENU_BACKGROUND: 1.20.4's menus are drawn on its dirt background */
+    public static ResourceLocation menuBackground() {
+        return Screen.BACKGROUND_LOCATION;
+    }
+
+    /** a mod list's {@code super.renderListBackground(graphics)}: 1.20.4's own list background */
+    public static void renderListBackground(AbstractSelectionList<?> list, GuiGraphics graphics) {
+        ((ListRenderAccess) list).ladder$vanillaBackground(graphics);
+    }
+
+    /**
+     * OptionsScreen.layout: 1.20.5's options screen lays itself out in a header (61) and footer (33) layout over the
+     * whole screen; 1.20.4's puts the same buttons in a grid. The layout of the same size, arranged to the screen's size
+     * now, gives what mods read of it: its geometry only (the converter's F row lets nothing else be used; it holds
+     * none of the screen's widgets).
+     */
+    public static HeaderAndFooterLayout optionsLayout(OptionsScreen screen) {
+        HeaderAndFooterLayout layout = new HeaderAndFooterLayout(screen, 61, 33);
+        layout.arrangeElements();
+        return layout;
+    }
+
+    /** ConfirmLinkScreen.confirmLinkNow(screen, url, trusted): 1.20.4's own takes every link as trusted */
+    public static void confirmLinkNow(Screen screen, String url, boolean trusted) {
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.setScreen(new ConfirmLinkScreen(open -> {
+            if (open) {
+                net.minecraft.Util.getPlatform().openUri(url);
+            }
+            minecraft.setScreen(screen);
+        }, url, trusted));
+    }
+
+    /** a mod list's {@code super.renderListSeparators(graphics)}: 1.20.4's own shadows at the list's top and bottom */
+    public static void renderListSeparators(AbstractSelectionList<?> list, GuiGraphics graphics) {
+        ((ListRenderAccess) list).ladder$vanillaSeparators(graphics);
     }
 
     /** Screen.renderMenuBackground(graphics): 1.20.4's background of a menu, in a world or out of one */

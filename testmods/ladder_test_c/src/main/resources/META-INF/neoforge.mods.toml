@@ -8,6 +8,9 @@ version="1.0.0"
 displayName="Ladder Test C (1.21.1)"
 description="Network payloads both ways in a client world: stream codecs, handler threads, every way of sending."
 
+[[mixins]]
+config="ladder_test_c.mixins.json"
+
 [[dependencies.ladder_test_c]]
 modId="neoforge"
 type="required"

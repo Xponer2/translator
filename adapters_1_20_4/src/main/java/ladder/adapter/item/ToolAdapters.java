@@ -106,4 +106,40 @@ public final class ToolAdapters {
     public static float diggerSpeed(Tier tier, TagKey<Block> blocks, Item.Properties properties) {
         return speed(properties);
     }
+
+    /** 1.20.5's {@code tier.getIncorrectBlocksForDrops()} on any tier: a converted mod's own, a vanilla tier's tag, else by level */
+    public static net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> incorrectBlocksForDrops(net.minecraft.world.item.Tier tier) {
+        if (tier instanceof IncorrectBlocksApi own) {
+            return own.getIncorrectBlocksForDrops();
+        }
+        if (tier == net.minecraft.world.item.Tiers.GOLD) {
+            return ladder.adapter.tags.TagAdapters.INCORRECT_FOR_GOLD_TOOL;
+        }
+        return switch (tier.getLevel()) {
+            case 0 -> ladder.adapter.tags.TagAdapters.INCORRECT_FOR_WOODEN_TOOL;
+            case 1 -> ladder.adapter.tags.TagAdapters.INCORRECT_FOR_STONE_TOOL;
+            case 2 -> ladder.adapter.tags.TagAdapters.INCORRECT_FOR_IRON_TOOL;
+            case 3 -> ladder.adapter.tags.TagAdapters.INCORRECT_FOR_DIAMOND_TOOL;
+            default -> ladder.adapter.tags.TagAdapters.INCORRECT_FOR_NETHERITE_TOOL;
+        };
+    }
+
+    /** (a call through the vanilla tiers' enum) */
+    public static net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> incorrectBlocksForDrops(net.minecraft.world.item.Tiers tier) {
+        return incorrectBlocksForDrops((net.minecraft.world.item.Tier) tier);
+    }
+
+    /** the 1.20.4 level of a vanilla incorrect tag (0 for gold and any other tag: it fails what wood fails) */
+    static int levelOf(net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> incorrect) {
+        if (incorrect == null) {
+            return 0;
+        }
+        return switch (incorrect.location().getPath()) {
+            case "incorrect_for_stone_tool" -> 1;
+            case "incorrect_for_iron_tool" -> 2;
+            case "incorrect_for_diamond_tool" -> 3;
+            case "incorrect_for_netherite_tool" -> 4;
+            default -> 0;
+        };
+    }
 }

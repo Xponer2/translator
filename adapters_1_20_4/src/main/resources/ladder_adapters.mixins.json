@@ -2,11 +2,15 @@
   "required": true,
   "minVersion": "0.8",
   "package": "ladder.adapter.mixin",
+  "plugin": "ladder.adapter.shape.ShapePlugin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "BlockStateBaseMixin",
     "ItemStackMixin",
     "BlockItemMixin",
+    "AnvilEnchantMixin",
+    "EnchantRandomlyMixin",
+    "EnchantCommandMixin",
     "EntityAccess",
     "EntityMixin",
     "BeeAccess",
@@ -18,11 +22,16 @@
     "ArmourTypeAccess",
     "ArmourTypeMixin",
     "ArmourItemMixin",
-    "HorseArmourMixin"
+    "HorseArmourMixin",
+    "PackOverlaysMixin",
+    "DiggerItemMixin"
   ],
   "client": [
+    "AbstractSelectionListMixin",
     "BufferBuilderMixin",
-    "ArmourLayerMixin"
+    "ArmourLayerMixin",
+    "HumanoidArmorLayerMixin",
+    "ShapeTargetsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

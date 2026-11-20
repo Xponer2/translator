@@ -3,8 +3,45 @@ plugins {
     id 'net.neoforged.moddev'
 }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// Minecraft 1.20.6 (NeoForge 20.6) as a target of the ladder: the mods converted to it (and the adapters of the rung above it) run here, the
+// test mods' results compared with their native 1.21.1 runs. Runs as v1_20_4's (tools/run-until.sh, run-probe.sh and
+// run-net.sh with LADDER_TARGET=1.20.6), without its probe mod: a run ends when its result file is written.
 neoForge {
     version = '20.6.144'
+    runs {
+        // the converted mods in run-<name>/mods
+        server {
+            server()
+            gameDirectory = file('run-server')
+            programArgument '--nogui'
+            jvmArgument '-Xmx4G'
+            jvmArgument '-Dforge.logging.console.level=debug'
+            jvmArgument '-Dmixin.debug.export=true'
+            // the test mods' own results (testmods/*)
+            systemProperty 'ladder.test.out', file('run-server/test-a.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.b.out', file('run-server/test-b.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.e.out', file('run-server/test-e.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.d.out', file('run-server/test-d.json').absolutePath.replace(File.separator, '/')
+        }
+        client {
+            client()
+            gameDirectory = file('run-client')
+            jvmArgument '-Xmx4G'
+            systemProperty 'ladder.test.client.out', file('run-client/test-a-client.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.c.out', file('run-client/test-c.json').absolutePath.replace(File.separator, '/')
+            // no probe here: test C enters a fresh world itself (-Pladder.world) or connects to serverNet
+            // (-Pladder.connect=host:port), records, writes and closes the game
+            systemProperty 'ladder.test.c.drive', (project.hasProperty('ladder.world') || project.hasProperty('ladder.connect')) ? 'true' : 'false'
+            systemProperty 'ladder.test.c.connect', project.findProperty('ladder.connect') ?: ''
+        }
+        // a dedicated server that stays up for a client over a real connection: run-server-net, port 25570
+        serverNet {
+            server()
+            gameDirectory = file('run-server-net')
+            programArgument '--nogui'
+            jvmArgument '-Xmx3G'
+        }
+    }
 }
 configurations.configureEach {
     exclude group: 'io.netty', module: 'netty-transport-native-epoll'

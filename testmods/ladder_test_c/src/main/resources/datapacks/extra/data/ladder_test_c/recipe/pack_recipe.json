@@ -1,0 +1,6 @@
+{
+  "type": "ladder_test_c:infusing",
+  "ingredient": {"item": "minecraft:apple"},
+  "count": 2,
+  "result": {"id": "minecraft:golden_apple", "count": 1}
+}

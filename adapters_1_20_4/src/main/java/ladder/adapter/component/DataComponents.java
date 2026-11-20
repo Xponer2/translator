@@ -52,7 +52,7 @@ public final class DataComponents {
             "HideFlags", "RepairCost", "CanDestroy", "CanPlaceOn", "CustomModelData", "BlockEntityTag", "BlockStateTag", "EntityTag", "Potion",
             "CustomPotionEffects", "CustomPotionColor", "Trim", "SkullOwner", "Fireworks", "Explosion", "pages", "author", "title", "generation",
             "resolved", "Decorations", "map", "map_scale_direction", "LodestoneDimension", "LodestonePos", "LodestoneTracked", "Items", "Charged",
-            "ChargedProjectiles", "Recipes", "DebugProperty", "BucketVariantTag", "instrument", "ladder:components", CUSTOM_KEPT, GLINT_KEY,
+            "ChargedProjectiles", "Recipes", "DebugProperty", "BucketVariantTag", "instrument", "ladder:components", "ladder:item_name", "ladder:rarity", CUSTOM_KEPT, GLINT_KEY,
             "effects", "filtered_pages", FLIGHT_KEY);
 
     /** the keys a mob bucket keeps its entity's data under, at the root of 1.20.4's tag (Bucketable and its mobs) */
@@ -188,24 +188,42 @@ public final class DataComponents {
     });
 
     /** 1.20.5's item name: in 1.20.4 the item's own name (its description), kept on the item only */
+    /**
+     * 1.21.1's item_name: none of the item's (its name is its description's), a stack's own kept in its tag
+     * ({@link #ITEM_NAME_KEY}); 1.20.4 shows it as the stack's name below a custom name (ItemMixin).
+     */
+    public static final String ITEM_NAME_KEY = "ladder:item_name";
+
     public static final DataComponentType<Component> ITEM_NAME = new Game<>("item_name", ComponentSerialization.FLAT_CODEC, new DataComponentType.Vanilla<>() {
         @Override
         public Component get(ItemStack stack) {
-            return this.prototype(stack);
+            return itemName(stack);
         }
 
         @Override
         public Component prototype(ItemStack stack) {
-            return Component.translatable(stack.getItem().getDescriptionId(stack));
+            return null;
         }
 
         @Override
         public void set(ItemStack stack, Component value) {
-            if (!java.util.Objects.equals(value, this.prototype(stack))) {
-                throw new IllegalStateException("1.20.4 keeps the item name on the item, not on the stack: can't set " + value);
+            if (value == null) {
+                if (stack.getTag() != null) {
+                    stack.getTag().remove(ITEM_NAME_KEY);
+                    dropEmptyTag(stack);
+                }
+                return;
             }
+            stack.getOrCreateTag().putString(ITEM_NAME_KEY, Component.Serializer.toJson(value));
         }
     });
+
+    /** a stack's own item_name, or null */
+    @javax.annotation.Nullable
+    public static Component itemName(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return tag == null || !tag.contains(ITEM_NAME_KEY) ? null : Component.Serializer.fromJson(tag.getString(ITEM_NAME_KEY));
+    }
 
     public static final DataComponentType<Integer> MAX_DAMAGE = new Game<>("max_damage", ExtraCodecs.POSITIVE_INT, itemOnly("max_damage", true));
 

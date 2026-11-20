@@ -137,7 +137,10 @@ public final class ClientVertexTest {
             // the frame's time (1.21's DeltaTracker): a partial tick within a tick
             float partial = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
             results.put("timerPartialInRange", String.valueOf(partial >= 0.0F && partial <= 1.0F));
-            results.put("timerFixedOne", String.valueOf(net.minecraft.client.DeltaTracker.ONE.getGameTimeDeltaPartialTick(false)));
+            // the frame mixins (GameRenderer.render, parameters changed below): both ran each frame, the time in range
+            results.put("frameHooks", String.valueOf(ClientFrames.frames > 0 && ClientFrames.ends > 0 && ClientFrames.badPartial == 0
+                    && Math.abs(ClientFrames.frames - ClientFrames.ends) <= 1));
+            results.put("timerFixedOne",String.valueOf(net.minecraft.client.DeltaTracker.ONE.getGameTimeDeltaPartialTick(false)));
             // a model part drawn with 1.21's colour int (1.20.6 took four floats): the vertex bytes it writes
             net.minecraft.client.model.geom.builders.MeshDefinition modelMesh = new net.minecraft.client.model.geom.builders.MeshDefinition();
             modelMesh.getRoot().addOrReplaceChild("cube", net.minecraft.client.model.geom.builders.CubeListBuilder.create().texOffs(0, 0)

@@ -53,7 +53,7 @@ import net.neoforged.neoforge.common.util.FakePlayerFactory;
  */
 /**
  * The facts of the converted mods' blocks, items, entities and recipes on the real 1.20.4, in the form of the 1.21.1
- * reference (the same probes: D:/translator-reference's Recorder): compare_reference.py diffs the two, so a block that
+ * reference (the same probes, recorded on the reference version): compare_reference.py diffs the two, so a block that
  * drops, opens or holds something else than in 1.21.1 shows without a test of its own.
  */
 public final class LadderFacts {

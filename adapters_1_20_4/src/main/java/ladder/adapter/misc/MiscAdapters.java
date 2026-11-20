@@ -212,4 +212,9 @@ public final class MiscAdapters {
     public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> skulls() {
         return SKULLS;
     }
+
+    /** BlockEntity.isValidBlockState(state) of 1.21.1: its type's check (1.20.4 makes and sets block entities unchecked) */
+    public static boolean isValidBlockState(net.minecraft.world.level.block.entity.BlockEntity blockEntity, net.minecraft.world.level.block.state.BlockState state) {
+        return blockEntity.getType().isValid(state);
+    }
 }

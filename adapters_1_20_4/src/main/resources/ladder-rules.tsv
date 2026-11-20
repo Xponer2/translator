@@ -8,17 +8,25 @@
 # X <owner> <name> <desc> <adapter class> <adapter method>
 #                                             a call goes to the adapter's static method (receiver first)
 # R <class> <lower class>                     a class renamed below with the same members (NeoForge has no intermediary)
-# F <owner> <name> <desc> <adapter class> <getter>
+# F <owner> <name> <desc> <adapter class> <getter> [<methods>]
 #                                             a field the adapters give: its reads go to the getter (an instance
-#                                             field's getter takes the object)
+#                                             field's getter takes the object); with methods, the value's only uses
 # K <owner> <upper desc> <lower desc> <adapter class> <lower parameters>
 #                                             a constructor that takes more below (new X(..) and super(..)): each
 #                                             lower parameter is an upper one ($0, $1..) or an adapter method's value,
 #                                             the method given all the upper arguments; ladder/bottom/<class> names
 #                                             the bottom class a top class of the same name hides
+# D <owner> <name> <upper desc> <lower desc> <lower parameters>
+#                                             a method that takes more below: each lower parameter is an upper one ($0,
+#                                             $1..) or the default written here (false, true, a number, null)
 # M <owner> <name> <desc> <lower name> <lower desc>
 #                                             the same hook (of the owner and its subclasses) under another name and
 #                                             descriptor below; the generated bridges take it from there
+# U <owner> <name> <desc>                     a hook the lower game never calls (no counterpart): a mod's override is a
+#                                             method of its own below; its calls (super ones too) take the X row
+# A <owner> <name> <desc> <lower desc> <plan> the same method below with other parameters: a mixin handler's arguments
+#                                             from the lower method's, per upper parameter "$k" (lower k, converted)
+#                                             or "Class.method(k,..)" (an adapter of lower parameters k..)
 P	net/minecraft/world/item/Item$TooltipContext	ladder/adapter/provided/TooltipContext
 O	net/minecraft/world/level/block/state/BlockBehaviour	useItemOn	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/ItemInteractionResult;	ladder/adapter/block/BlockUseApi	ladder/adapter/block/BlockDefaults	useItemOn
 O	net/minecraft/world/level/block/state/BlockBehaviour	useWithoutItem	(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/InteractionResult;	ladder/adapter/block/BlockUseApi	ladder/adapter/block/BlockDefaults	useWithoutItem
@@ -26,6 +34,10 @@ O	net/minecraft/world/level/block/state/BlockBehaviour	isPathfindable	(Lnet/mine
 O	net/minecraft/world/level/block/Block	appendHoverText	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/Item$TooltipContext;Ljava/util/List;Lnet/minecraft/world/item/TooltipFlag;)V	ladder/adapter/item/HoverTextApi	ladder/adapter/block/BlockDefaults	appendHoverText
 O	net/minecraft/world/item/BlockItem	appendHoverText	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/Item$TooltipContext;Ljava/util/List;Lnet/minecraft/world/item/TooltipFlag;)V	ladder/adapter/item/HoverTextApi	ladder/adapter/item/ItemDefaults	blockItemAppendHoverText
 O	net/minecraft/world/item/Item	appendHoverText	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/Item$TooltipContext;Ljava/util/List;Lnet/minecraft/world/item/TooltipFlag;)V	ladder/adapter/item/HoverTextApi	ladder/adapter/item/ItemDefaults	appendHoverText
+# NeoForge 21.1's supportsEnchantment (1.20.4 asks Enchantment.canEnchant, EnchantmentMixin asks the override)
+O	net/neoforged/neoforge/common/extensions/IItemExtension	supportsEnchantment	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Holder;)Z	ladder/adapter/item/EnchantSupportApi	ladder/adapter/item/EnchantSupport	supportsEnchantment
+X	net/neoforged/neoforge/common/extensions/IItemExtension	supportsEnchantment	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Holder;)Z	ladder/adapter/item/EnchantSupport	itemSupportsEnchantment
+X	net/neoforged/neoforge/common/extensions/IItemStackExtension	supportsEnchantment	(Lnet/minecraft/core/Holder;)Z	ladder/adapter/item/EnchantSupport	stackSupportsEnchantment
 X	net/neoforged/fml/ModContainer	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;)V	ladder/adapter/fml/FmlAdapters	registerConfig
 X	net/neoforged/fml/ModContainer	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;Ljava/lang/String;)V	ladder/adapter/fml/FmlAdapters	registerConfig
 
@@ -136,6 +148,10 @@ X	net/minecraft/core/Holder	getRegisteredName	()Ljava/lang/String;	ladder/adapte
 X	net/minecraft/core/Holder	is	(Lnet/minecraft/core/Holder;)Z	ladder/adapter/misc/MiscAdapters	is
 X	net/minecraft/core/Registry	getHolder	(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;	ladder/adapter/misc/MiscAdapters	getHolder
 # 1.20.5's block entity load and save entries
+# 1.21.1 checks a block entity's state when it is made or set (BlockEntity.isValidBlockState, a mod may allow more);
+# 1.21 and 1.20.4 check none: a mod's override is its own method, calls take the type's own check
+X	net/minecraft/world/level/block/entity/BlockEntity	isValidBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)Z	ladder/adapter/misc/MiscAdapters	isValidBlockState
+U	net/minecraft/world/level/block/entity/BlockEntity	isValidBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)Z
 X	net/minecraft/world/level/block/entity/BlockEntity	loadWithComponents	(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V	ladder/adapter/misc/MiscAdapters	loadWithComponents
 X	net/minecraft/world/level/block/entity/BlockEntity	loadCustomOnly	(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V	ladder/adapter/misc/MiscAdapters	loadCustomOnly
 X	net/minecraft/world/level/block/entity/BlockEntity	saveCustomOnly	(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/nbt/CompoundTag;	ladder/adapter/misc/MiscAdapters	saveCustomOnly
@@ -375,6 +391,19 @@ F	net/minecraft/client/gui/screens/Screen	FOOTER_SEPARATOR	Lnet/minecraft/resour
 X	net/minecraft/client/gui/screens/Screen	renderMenuBackground	(Lnet/minecraft/client/gui/GuiGraphics;)V	ladder/adapter/render/ScreenAdapters	renderMenuBackground
 X	net/minecraft/client/gui/screens/Screen	renderBlurredBackground	(F)V	ladder/adapter/render/ScreenAdapters	renderBlurredBackground
 X	net/minecraft/client/gui/screens/Screen	renderPanorama	(Lnet/minecraft/client/gui/GuiGraphics;F)V	ladder/adapter/render/ScreenAdapters	renderPanorama
+F	net/minecraft/client/gui/screens/Screen	INWORLD_FOOTER_SEPARATOR	Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/render/ScreenAdapters	inworldFooterSeparator
+F	net/minecraft/client/gui/screens/options/OptionsScreen	layout	Lnet/minecraft/client/gui/layouts/HeaderAndFooterLayout;	ladder/adapter/render/ScreenAdapters	optionsLayout	getWidth,getHeight,getX,getY,getHeaderHeight,getFooterHeight
+X	net/minecraft/client/gui/screens/ConfirmLinkScreen	confirmLinkNow	(Lnet/minecraft/client/gui/screens/Screen;Ljava/lang/String;Z)V	ladder/adapter/render/ScreenAdapters	confirmLinkNow
+O	net/minecraft/client/gui/components/AbstractSelectionList	renderListSeparators	(Lnet/minecraft/client/gui/GuiGraphics;)V	ladder/adapter/render/ListRenderApi	ladder/adapter/render/ScreenAdapters	renderListSeparators
+O	net/minecraft/client/gui/components/AbstractSelectionList	renderListBackground	(Lnet/minecraft/client/gui/GuiGraphics;)V	ladder/adapter/render/ListRenderApi	ladder/adapter/render/ScreenAdapters	renderListBackground
+M	net/minecraft/client/gui/components/AbstractSelectionList	renderListItems	(Lnet/minecraft/client/gui/GuiGraphics;IIF)V	renderList	(Lnet/minecraft/client/gui/GuiGraphics;IIF)V
+F	net/minecraft/client/gui/screens/Screen	INWORLD_HEADER_SEPARATOR	Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/render/ScreenAdapters	inworldHeaderSeparator
+F	net/minecraft/client/gui/screens/Screen	MENU_BACKGROUND	Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/render/ScreenAdapters	menuBackground
+A	net/minecraft/client/renderer/LevelRenderer	renderLevel	(Lnet/minecraft/client/DeltaTracker;ZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V	(Lcom/mojang/blaze3d/vertex/PoseStack;FJZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;)V	$1 $3 $4 $5 $6 ladder/adapter/render/RenderArgs.frustum(0) $7
+A	net/minecraft/client/renderer/LevelRenderer	renderSectionLayer	(Lnet/minecraft/client/renderer/RenderType;DDDLorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V	(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V	$0 $2 $3 $4 ladder/adapter/render/RenderArgs.frustum(1) $5
+A	net/minecraft/client/renderer/LevelRenderer	renderSky	(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V	(Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V	ladder/adapter/render/RenderArgs.frustum(0) $1 $2 $3 $4 $5
+A	net/minecraft/client/renderer/LevelRenderer	prepareCullFrustum	(Lnet/minecraft/world/phys/Vec3;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V	(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/world/phys/Vec3;Lorg/joml/Matrix4f;)V	$1 ladder/adapter/render/RenderArgs.frustum(0) $2
+A	net/minecraft/client/renderer/entity/layers/HumanoidArmorLayer	renderArmorPiece	(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;ILnet/minecraft/client/model/HumanoidModel;FFFFFF)V	(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;ILnet/minecraft/client/model/HumanoidModel;)V	$0 $1 $2 $3 $4 $5 ladder/adapter/render/ArmorArgs.limbSwing() ladder/adapter/render/ArmorArgs.limbSwingAmount() ladder/adapter/render/ArmorArgs.partialTick() ladder/adapter/render/ArmorArgs.ageInTicks() ladder/adapter/render/ArmorArgs.netHeadYaw() ladder/adapter/render/ArmorArgs.headPitch()
 X	net/neoforged/fml/config/ConfigTracker	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;Lnet/neoforged/fml/ModContainer;Ljava/lang/String;)Lnet/neoforged/fml/config/ModConfig;	ladder/adapter/fml/ConfigAdapters	registerConfig
 X	net/neoforged/fml/config/ConfigTracker	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;Lnet/neoforged/fml/ModContainer;)Lnet/neoforged/fml/config/ModConfig;	ladder/adapter/fml/ConfigAdapters	registerConfig
 X	net/neoforged/fml/config/ConfigTracker	acceptSyncedConfig	(Lnet/neoforged/fml/config/ModConfig;[B)V	ladder/adapter/fml/ConfigAdapters	acceptSyncedConfig
@@ -384,3 +413,39 @@ X	net/minecraft/world/entity/player/Player	hasInfiniteMaterials	()Z	ladder/adapt
 X	net/minecraft/world/entity/LivingEntity	hasInfiniteMaterials	()Z	ladder/adapter/misc/MiscAdapters	hasInfiniteMaterials
 X	net/minecraft/world/level/StructureManager	checkStructurePresence	(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/levelgen/structure/Structure;Lnet/minecraft/world/level/levelgen/structure/placement/StructurePlacement;Z)Lnet/minecraft/world/level/levelgen/structure/StructureCheckResult;	ladder/adapter/misc/MiscAdapters	checkStructurePresence
 F	net/minecraft/tags/ItemTags	SKULLS	Lnet/minecraft/tags/TagKey;	ladder/adapter/misc/MiscAdapters	skulls
+# packs: 1.20.5 locates a pack by a PackLocationInfo (1.20.4: its id; the title and source are the Pack's) and selects it by a PackSelectionConfig
+X	net/minecraft/server/packs/repository/Pack	readMetaAndCreate	(Lnet/minecraft/server/packs/PackLocationInfo;Lnet/minecraft/server/packs/repository/Pack$ResourcesSupplier;Lnet/minecraft/server/packs/PackType;Lnet/minecraft/server/packs/PackSelectionConfig;)Lnet/minecraft/server/packs/repository/Pack;	ladder/adapter/pack/Packs	readMetaAndCreate
+X	net/minecraft/server/packs/repository/Pack	<init>	(Lnet/minecraft/server/packs/PackLocationInfo;Lnet/minecraft/server/packs/repository/Pack$ResourcesSupplier;Lnet/minecraft/server/packs/repository/Pack$Metadata;Lnet/minecraft/server/packs/PackSelectionConfig;)V	ladder/adapter/pack/Packs	create
+X	net/minecraft/server/packs/repository/Pack	location	()Lnet/minecraft/server/packs/PackLocationInfo;	ladder/adapter/pack/Packs	location
+X	net/minecraft/server/packs/repository/Pack	selectionConfig	()Lnet/minecraft/server/packs/PackSelectionConfig;	ladder/adapter/pack/Packs	selectionConfig
+X	net/minecraft/server/packs/PackResources	location	()Lnet/minecraft/server/packs/PackLocationInfo;	ladder/adapter/pack/Packs	location
+X	net/minecraft/server/packs/PackResources	knownPackInfo	()Ljava/util/Optional;	ladder/adapter/pack/Packs	knownPackInfo
+X	net/minecraft/server/packs/repository/BuiltInPackSource	fromName	(Ljava/util/function/Function;)Lnet/minecraft/server/packs/repository/Pack$ResourcesSupplier;	ladder/adapter/pack/Packs	fromName
+X	net/neoforged/neoforge/event/AddPackFindersEvent	addPackFinders	(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/server/packs/PackType;Lnet/minecraft/network/chat/Component;Lnet/minecraft/server/packs/repository/PackSource;ZLnet/minecraft/server/packs/repository/Pack$Position;)V	ladder/adapter/pack/Packs	addPackFinders
+K	net/minecraft/server/packs/AbstractPackResources	(Lnet/minecraft/server/packs/PackLocationInfo;)V	(Ljava/lang/String;Z)V	ladder/adapter/pack/Packs	id,builtin
+K	net/minecraft/server/packs/PathPackResources	(Lnet/minecraft/server/packs/PackLocationInfo;Ljava/nio/file/Path;)V	(Ljava/lang/String;Ljava/nio/file/Path;Z)V	ladder/adapter/pack/Packs	id,$1,builtin
+K	net/minecraft/server/packs/PathPackResources$PathResourcesSupplier	(Ljava/nio/file/Path;)V	(Ljava/nio/file/Path;Z)V	ladder/adapter/pack/Packs	$0,notBuiltin
+K	net/minecraft/server/packs/FilePackResources$FileResourcesSupplier	(Ljava/nio/file/Path;)V	(Ljava/nio/file/Path;Z)V	ladder/adapter/pack/Packs	$0,notBuiltin
+K	net/minecraft/server/packs/FilePackResources$FileResourcesSupplier	(Ljava/io/File;)V	(Ljava/io/File;Z)V	ladder/adapter/pack/Packs	$0,notBuiltin
+# a method that takes more below: its lower-only parameters get the defaults written here (D rows)
+D	net/minecraft/server/packs/repository/FolderRepositorySource	discoverPacks	(Ljava/nio/file/Path;Lnet/minecraft/world/level/validation/DirectoryValidator;Ljava/util/function/BiConsumer;)V	(Ljava/nio/file/Path;Lnet/minecraft/world/level/validation/DirectoryValidator;ZLjava/util/function/BiConsumer;)V	$0,$1,false,$2
+# 1.20.5+ tags 1.20.4 hasn't (their contents in the adapters' data); a tier's incorrect blocks (a mod tier's own: IncorrectBlocksApi)
+F	net/minecraft/tags/BlockTags	INCORRECT_FOR_WOODEN_TOOL	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	incorrectForWoodenTool
+F	net/minecraft/tags/BlockTags	INCORRECT_FOR_STONE_TOOL	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	incorrectForStoneTool
+F	net/minecraft/tags/BlockTags	INCORRECT_FOR_IRON_TOOL	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	incorrectForIronTool
+F	net/minecraft/tags/BlockTags	INCORRECT_FOR_GOLD_TOOL	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	incorrectForGoldTool
+F	net/minecraft/tags/BlockTags	INCORRECT_FOR_DIAMOND_TOOL	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	incorrectForDiamondTool
+F	net/minecraft/tags/BlockTags	INCORRECT_FOR_NETHERITE_TOOL	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	incorrectForNetheriteTool
+F	net/minecraft/tags/BlockTags	DOES_NOT_BLOCK_HOPPERS	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	doesNotBlockHoppers
+F	net/minecraft/tags/ItemTags	SWORD_ENCHANTABLE	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	swordEnchantable
+F	net/minecraft/tags/ItemTags	WEAPON_ENCHANTABLE	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	weaponEnchantable
+F	net/minecraft/tags/ItemTags	SHARP_WEAPON_ENCHANTABLE	Lnet/minecraft/tags/TagKey;	ladder/adapter/tags/TagAdapters	sharpWeaponEnchantable
+O	net/minecraft/world/item/Tier	getIncorrectBlocksForDrops	()Lnet/minecraft/tags/TagKey;	ladder/adapter/item/IncorrectBlocksApi	ladder/adapter/item/IncorrectBlocksApi	incorrectBlocks
+X	net/minecraft/world/item/Tier	getIncorrectBlocksForDrops	()Lnet/minecraft/tags/TagKey;	ladder/adapter/item/ToolAdapters	incorrectBlocksForDrops
+X	net/minecraft/world/item/Tiers	getIncorrectBlocksForDrops	()Lnet/minecraft/tags/TagKey;	ladder/adapter/item/ToolAdapters	incorrectBlocksForDrops
+# Mob.finalizeSpawn: 1.20.4 takes the spawn NBT besides (1.20.5 dropped it; ten native 1.20.4 calls pass null): its subclasses' overrides too
+D	net/minecraft/world/entity/Mob	finalizeSpawn	(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/world/DifficultyInstance;Lnet/minecraft/world/entity/MobSpawnType;Lnet/minecraft/world/entity/SpawnGroupData;)Lnet/minecraft/world/entity/SpawnGroupData;	(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/world/DifficultyInstance;Lnet/minecraft/world/entity/MobSpawnType;Lnet/minecraft/world/entity/SpawnGroupData;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/entity/SpawnGroupData;	$0,$1,$2,$3,null
+# FollowOwnerGoal: 1.21 asks the animal whether it flies to its owner (TamableAnimal.canFlyToOwner; the parrot); 1.20.4 takes it as the goal's canFly
+O	net/minecraft/world/entity/TamableAnimal	canFlyToOwner	()Z	ladder/adapter/entity/FlyToOwnerApi	ladder/adapter/entity/FlyToOwnerApi	canFlyToOwner
+X	net/minecraft/world/entity/TamableAnimal	canFlyToOwner	()Z	ladder/adapter/entity/FlyToOwnerApi	answer
+K	net/minecraft/world/entity/ai/goal/FollowOwnerGoal	(Lnet/minecraft/world/entity/TamableAnimal;DFF)V	(Lnet/minecraft/world/entity/TamableAnimal;DFFZ)V	ladder/adapter/entity/FlyToOwnerApi	$0,$1,$2,$3,followCanFly

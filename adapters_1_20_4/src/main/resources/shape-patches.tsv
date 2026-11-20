@@ -1,0 +1,8 @@
+# Shape patches (ladder.adapter.shape.ShapePatches): edits of 1.20.4 classes that give a 1.21 mod mixin its point and keep
+# 1.20.4 behaviour (the converter checks that on the bottom jar). Each class must be a target of ShapeTargetsMixin.
+# kind	owner	name	desc	super owner
+# PackEntry.mouseClicked ends with super.mouseClicked in 1.21 (libjf injects there); 1.20.4 returns false, which the super method returns
+super-return	net/minecraft/client/gui/screens/packs/TransferableSelectionList$PackEntry	mouseClicked	(DDI)Z	net/minecraft/client/gui/components/ObjectSelectionList$Entry
+# OptionsScreen lays itself out in repositionElements in 1.21, at the end of init and on a resize (MidnightLib and Puzzle
+# inject at its TAIL); 1.20.4's lays out in init and only inherits repositionElements (rebuilding the widgets)
+layout-hook	net/minecraft/client/gui/screens/OptionsScreen	repositionElements	()V	net/minecraft/client/gui/screens/Screen

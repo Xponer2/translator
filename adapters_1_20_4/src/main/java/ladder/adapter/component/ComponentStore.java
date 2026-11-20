@@ -123,6 +123,11 @@ public final class ComponentStore {
         DataComponentType.Vanilla<T> vanilla = type.vanilla();
         if (vanilla != null) {
             T value = vanilla.get(stack);
+            if ((Object) type == DataComponents.ATTRIBUTE_MODIFIERS && removed(stack, type) && value != null
+                    && ((ladder.carried.net.minecraft.world.item.component.ItemAttributeModifiers) value).modifiers().isEmpty()) {
+                // removed from the stack: 1.20.4 keeps an empty modifier list in its place (a native write replaces it)
+                return null;
+            }
             if (value != null && !DataComponents.same(value, vanilla.prototype(stack))) {
                 return value;
             }
@@ -223,8 +228,15 @@ public final class ComponentStore {
         Object before = read(stack, t);
         DataComponentType.Vanilla<Object> vanilla = t.vanilla();
         if (vanilla != null) {
-            vanilla.set(stack, null);
-            if (ItemDefaults.of(stack.getItem()).get(t) != null) {
+            Object own = vanilla.prototype(stack);
+            if ((Object) t == DataComponents.ATTRIBUTE_MODIFIERS && own != null
+                    && !((ladder.carried.net.minecraft.world.item.component.ItemAttributeModifiers) own).modifiers().isEmpty()) {
+                // 1.20.4 gives the item's modifiers when the stack has none of its own: an empty list of its own instead
+                vanilla.set(stack, ladder.carried.net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY);
+            } else {
+                vanilla.set(stack, null);
+            }
+            if (ItemDefaults.of(stack.getItem()).get(t) != null || own != null) {
                 // the item's own value (its properties'): the stack keeps it removed
                 patchForWrite(stack).put("!" + id(t), new CompoundTag());
                 tidy(stack);
@@ -293,6 +305,12 @@ public final class ComponentStore {
             root.getCompound(KEY).remove("!" + id(type));
             tidy(stack);
         }
+    }
+
+    /** a stack's own rarity (1.20.5's rarity component set on the stack), or null when it has the item's */
+    @javax.annotation.Nullable
+    public static net.minecraft.world.item.Rarity stackRarity(ItemStack stack) {
+        return StackComponents.ItemRarity.own(stack);
     }
 
     private static CompoundTag patchForWrite(ItemStack stack) {
