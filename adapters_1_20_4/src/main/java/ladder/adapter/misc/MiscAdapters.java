@@ -213,8 +213,20 @@ public final class MiscAdapters {
         return SKULLS;
     }
 
-    /** BlockEntity.isValidBlockState(state) of 1.21.1: its type's check (1.20.4 makes and sets block entities unchecked) */
+    /**
+     * BlockEntity.isValidBlockState(state) of 1.21.1, called: a converted mod block entity's own override, else its
+     * type's check (1.20.4 makes and sets block entities unchecked)
+     */
     public static boolean isValidBlockState(net.minecraft.world.level.block.entity.BlockEntity blockEntity, net.minecraft.world.level.block.state.BlockState state) {
+        if (blockEntity instanceof ladder.adapter.block.ValidStateApi api
+                && ladder.adapter.Dispatch.declares(blockEntity.getClass(), "isValidBlockState", net.minecraft.world.level.block.state.BlockState.class)) {
+            return api.isValidBlockState(state);
+        }
+        return blockEntity.getType().isValid(state);
+    }
+
+    /** a mod block entity's {@code super.isValidBlockState(state)}: its type's check */
+    public static boolean blockEntityValidBlockState(net.minecraft.world.level.block.entity.BlockEntity blockEntity, net.minecraft.world.level.block.state.BlockState state) {
         return blockEntity.getType().isValid(state);
     }
 }

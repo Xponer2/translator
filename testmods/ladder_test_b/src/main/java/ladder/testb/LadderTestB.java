@@ -693,7 +693,8 @@ public final class LadderTestB {
     static void spawning(Map<String, String> results, ServerLevel level) {
         BlockPos pos = new BlockPos(8, 141, 8);
         BigZombie spawned = (BigZombie) BIG_ZOMBIE.get().spawn(level, pos, net.minecraft.world.entity.MobSpawnType.SPAWN_EGG);
-        results.put("spawnByGame", spawned == null ? "none" : spawned.spawnSeen);
+        // (not whether it came out a baby: the game's spawn draws that at random)
+        results.put("spawnByGame", spawned == null ? "none" : spawned.spawnSeen.replaceAll(" baby=(true|false)$", ""));
         if (spawned != null) {
             spawned.discard();
         }

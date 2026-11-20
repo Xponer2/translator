@@ -1,0 +1,7 @@
+{
+  "neoforge.attribute.debug.base": "[%s%s]",
+  "neoforge.value.flat": "%s",
+  "neoforge.value.percent": "%s%%",
+  "neoforge.modifier.plus": "+%s %s",
+  "neoforge.modifier.take": "%s %s"
+}

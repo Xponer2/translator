@@ -75,20 +75,18 @@ versions together on one target.
 
 | Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
 |---|---|---|---:|---:|---|
-| 1.21.1 → 1.21 | being split out (its fixes run in the 1.20.4 set for now) | not yet | 108 | 269 | first, in work |
+| 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 251 | 258 | first, in work |
 | 1.21 → 1.20.6 | not yet (in the 1.20.4 set) | not yet | 2345 | 132 | next |
 | 1.20.6 → 1.20.4 | yes | yes: test mods A–E, corpus probes | 3089 | 114 | in work |
 
-Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **242 of 300 mods convert with nothing
-left** before the rung has adapters of its own; the 58 left wait for NeoForge 21.1's newer API (attribute tooltips,
-attachment syncing, item render hooks, data components registered the 21.1 way).
+Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **258 of 300 mods convert with nothing
+left** with the rung's own adapters (242 before them); what is left there: attachment syncing, a menu's client data, a few
+mixins into 21.1-only code, the dimension transition screens.
 
 Besides the rungs' own problems, 1933 more come from the checks against the bottom game (mixin injection points, a
-mod's reflection, classes of other loaders) in 158 mods. Right now 1.20.4 is the target with adapters and game tests:
-a mod goes down from its own version (1.21.1, 1.21 or 1.20.6) to 1.20.4 in one pass. 1.21 and 1.20.6 run as games of
-their own now (dedicated server, client, a server and client over a real connection: `LADDER_TARGET=1.21
-tools/run-probe.sh ...`); their rungs' adapters and the test mods' runs there come next, top rung first: the converter
-already takes the target (`LADDER_TO=1.21 tools/ladder.sh convert ...`).
+mod's reflection, classes of other loaders) in 158 mods. 1.21 and 1.20.4 are targets with their rungs' adapters and game tests (`LADDER_TO=1.21 tools/ladder.sh convert ...`,
+then `LADDER_TARGET=1.21 tools/run-probe.sh ...` or `tools/run-net.sh` for a dedicated server and a client over a real
+connection); 1.20.6 runs as a game of its own too, and its rung's adapters come next.
 
 ## Where it is
 
@@ -163,8 +161,8 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
   on 1.20.4.
 
-Over the whole corpus, 82 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 7170 (loot tables of 1.21, resource packs and recipes on 1.21's inputs took the last few hundred; the
+Over the whole corpus, 81 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 7366 (loot tables of 1.21, resource packs and recipes on 1.21's inputs took the last few hundred; the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). Most mods that are
 left wait for several mechanisms at once; the ones that free the most mods next: 1.21's GUI widgets and screen layout

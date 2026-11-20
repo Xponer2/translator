@@ -37,7 +37,25 @@ public class Convert {
     static final Map<String, Stage0.Ref> memberCache = new HashMap<>();
 
     /** Where carried code goes: its own package tree (a class can't join a package of the game's module). */
-    static final String CARRIED = "ladder/carried/";
+    /**
+     * The package of carried code: each target its own (a conversion to 1.21 carries 1.21.1's classes; one further
+     * down carries that rung's own and converts the upper rung's carried jar like any mod). -Dladder.to names the target.
+     */
+    static final String CARRIED = carriedPrefix(System.getProperty("ladder.to", "1.20.4"));
+
+    static String carriedPrefix(String target) {
+        return target.equals("1.20.4") ? "ladder/carried/" : "ladder/carried_" + target.replace('.', '_') + "/";
+    }
+
+    /** whether this conversion goes down the step from upper to lower (a rung's own changes apply only then) */
+    static boolean crosses(String upper, String lower) {
+        for (int i = 0; i + 1 < versions.size(); i++) {
+            if (versions.get(i).id.equals(upper) && versions.get(i + 1).id.equals(lower)) {
+                return true;
+            }
+        }
+        return false;
+    }
     /** The version (index) the code being converted is written against: 0 for the mods, a rung's for carried code. */
     static int level = 0;
     /** Per rung: the new things the converter can carry down there (classes; static methods of existing classes). */
@@ -860,11 +878,17 @@ public class Convert {
                     // a jar for both versions: the 1.21 metadata is the one converted, this one is the older loader's
                     continue;
                 } else if (name.equals("META-INF/neoforge.mods.toml")) {
-                    name = "META-INF/mods.toml";
+                    // (1.20.5 renamed the file: a target above keeps it)
+                    if (crosses("1.20.6", "1.20.4")) {
+                        name = "META-INF/mods.toml";
+                    }
                     data = modsToml(new String(data, StandardCharsets.UTF_8), bottom).getBytes(StandardCharsets.UTF_8);
                 } else if (name.endsWith("mixins.json") || name.endsWith("mixin.json")) {
                     // the bottom version's Java and Mixin (1.20.4: Java 17, Mixin 0.8.5; 1.21's configs ask for 0.8.7)
-                    String json = new String(data, StandardCharsets.UTF_8).replaceAll("\"JAVA_2[0-9]\"", "\"JAVA_17\"");
+                    String json = new String(data, StandardCharsets.UTF_8);
+                    if (crosses("1.20.6", "1.20.4")) {
+                        json = json.replaceAll("\"JAVA_2[0-9]\"", "\"JAVA_17\"");
+                    }
                     String mixin = MIXIN_VERSIONS.get(bottom);
                     if (mixin != null) {
                         json = json.replaceAll("(\"minVersion\"\\s*:\\s*)\"0\\.8\\.([6-9]|[1-9][0-9])[^\"]*\"", "$1\"" + mixin + "\"");
@@ -888,7 +912,8 @@ public class Convert {
                         // the jar has the older folder too (a jar for both versions): that one is 1.20.4's
                         continue;
                     }
-                    if (name.endsWith(".json")) {
+                    if (name.endsWith(".json") && crosses("1.20.6", "1.20.4")) {
+                        // (item stacks in data: 1.20.5's components, the step down to 1.20.4)
                         data = dataJson(renamed, new String(data, StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8);
                     }
                     name = renamed;
@@ -1115,6 +1140,36 @@ public class Convert {
     static final Set<String> unusedBelow = new HashSet<>();
     /** A rows: owner, name, upper desc, lower desc, plan */
     static final List<String[]> argumentPlans = new ArrayList<>();
+
+    /**
+     * The receiver type of an adapter call (an X row's, an O row's defaults): the member's declaring class, or, when that
+     * class is missing below (an interface new above that a game class implements, like NeoForge 21.1's
+     * IAttributeExtension on Attribute), the game class up the call owner's chain that implements it there.
+     */
+    static String adapterReceiver(String declaring, String owner) {
+        Stage0.Version here = versions.get(level), bottom = versions.get(versions.size() - 1);
+        if (!Stage0.platform(declaring) || Stage0.mapClass(here, bottom, declaring) != null || provided.containsKey(declaring)) {
+            // (a class the adapters provide, DataComponentHolder: the adapter takes its own)
+            return declaring;
+        }
+        Set<String> seen = new HashSet<>();
+        for (String c = owner; c != null && seen.add(c);) {
+            if (Stage0.platform(c)) {
+                Stage0.Cls info = here.classes.get(c);
+                if (info == null) {
+                    break;
+                }
+                if (Arrays.asList(info.interfaces).contains(declaring) && Stage0.mapClass(here, bottom, c) != null) {
+                    return c;
+                }
+                c = info.superName;
+            } else {
+                Stage0.ModClass mc = mod.get(c);
+                c = mc == null ? null : mc.superName;
+            }
+        }
+        return declaring;
+    }
 
     /** the plan's tokens for a handler fix (its upper descriptor in lower names, its lower member), or null */
     static String[] argumentPlan(String upperDesc, Stage0.Ref end) {
@@ -1497,7 +1552,8 @@ public class Convert {
                     x = null;
                 }
                 if (x != null) {
-                    String desc = call.getOpcode() == Opcodes.INVOKESTATIC ? call.desc : "(L" + ref.cls() + ";" + call.desc.substring(1);
+                    String desc = call.getOpcode() == Opcodes.INVOKESTATIC ? call.desc
+                            : "(L" + adapterReceiver(ref.cls(), call.owner) + ";" + call.desc.substring(1);
                     checkAdapter(x[0], x[1], desc, "X " + ref.key());
                     call.setOpcode(Opcodes.INVOKESTATIC);
                     call.owner = x[0];
@@ -1518,7 +1574,7 @@ public class Convert {
                     if (!ref.cls().equals(o[0]) && o[6] == null) {
                         problem("super call to " + ref.key() + ", overridden by the game's " + ref.cls() + ": no bridge for that override");
                     }
-                    String desc = "(L" + o[0] + ";" + call.desc.substring(1);
+                    String desc = "(L" + adapterReceiver(o[0], call.owner) + ";" + call.desc.substring(1);
                     checkAdapter(o[4], o[5], desc, "O " + o[0] + "." + o[1]);
                     call.setOpcode(Opcodes.INVOKESTATIC);
                     call.owner = o[4];
@@ -4426,7 +4482,11 @@ public class Convert {
                         gone.add(Type.getReturnType(x.upperDesc()));
                     }
                     Type value = Type.getReturnType(remapper.mapMethodDesc(x.desc()));
-                    return !gone.contains(value);
+                    // (a handler that captures the method's arguments after its value takes the upper ones: changed too)
+                    Type[] hp0 = Type.getArgumentTypes(remapper.mapMethodDesc(x.desc()));
+                    boolean captures = hp0.length > 1 && up0.length > 0 && !Arrays.equals(up0, low0)
+                            && Arrays.asList(hp0).subList(1, hp0.length).stream().anyMatch(Arrays.asList(up0)::contains);
+                    return !gone.contains(value) && !captures;
                 }
                 if (x.call() || x.annotation().equals("Lcom/llamalad7/mixinextras/injector/wrapmethod/WrapMethod;")) {
                     return false;
@@ -4508,8 +4568,14 @@ public class Convert {
                     h.exceptions.toArray(new String[0]));
             g.visibleAnnotations = h.visibleAnnotations;
             g.invisibleAnnotations = h.invisibleAnnotations;
-            g.visibleParameterAnnotations = h.visibleParameterAnnotations;
-            g.invisibleParameterAnnotations = h.invisibleParameterAnnotations;
+            // (parameter annotations, @Local and @Share on the handler's own parameters, follow their parameters into
+            // the wrapper's slots: an upper parameter to the lower one it comes from, the handler's own after the lower ones)
+            int[] placeOf = new int[hp.length];
+            for (int i = 0; i < hp.length; i++) {
+                placeOf[i] = i >= up.length ? low.length + i - up.length : plan == null && map[i] >= 0 ? map[i] : -1;
+            }
+            g.visibleParameterAnnotations = moveParameterAnnotations(h.visibleParameterAnnotations, placeOf, wrapped.length);
+            g.invisibleParameterAnnotations = moveParameterAnnotations(h.invisibleParameterAnnotations, placeOf, wrapped.length);
             h.visibleAnnotations = null;
             h.invisibleAnnotations = null;
             h.visibleParameterAnnotations = null;
@@ -4549,6 +4615,21 @@ public class Convert {
             g.maxStack = slot + 2 + 2 * up.length;
             out.methods.add(g);
         }
+    }
+
+    /** A method's parameter annotations at new places (placeOf[i] < 0: the parameter is gone); null when there were none. */
+    @SuppressWarnings("unchecked")
+    static List<AnnotationNode>[] moveParameterAnnotations(List<AnnotationNode>[] annotations, int[] placeOf, int count) {
+        if (annotations == null) {
+            return null;
+        }
+        List<AnnotationNode>[] moved = (List<AnnotationNode>[]) new List[count];
+        for (int i = 0; i < annotations.length && i < placeOf.length; i++) {
+            if (annotations[i] != null && placeOf[i] >= 0 && placeOf[i] < count) {
+                moved[placeOf[i]] = annotations[i];
+            }
+        }
+        return moved;
     }
 
     // ---------------------------------------------------------------- data
@@ -4641,15 +4722,22 @@ public class Convert {
             return path;
         }
         String rest = parts[2];
-        for (String[] f : folders) {
-            if (rest.startsWith(f[0] + "/")) {
-                return parts[0] + "/" + parts[1] + "/" + f[1] + rest.substring(f[0].length());
+        // 1.21's singular folders, the step down to 1.20.6
+        if (crosses("1.21", "1.20.6")) {
+            for (String[] f : folders) {
+                if (rest.startsWith(f[0] + "/")) {
+                    return parts[0] + "/" + parts[1] + "/" + f[1] + rest.substring(f[0].length());
+                }
             }
         }
-        // registries 1.20.4 fills from code or doesn't have (trim materials and patterns and damage types it reads: kept)
-        for (String gone : new String[] {"enchantment/", "enchantment_provider/", "jukebox_song/", "painting_variant/", "banner_pattern/",
-                "wolf_variant/"}) {
-            if (rest.startsWith(gone)) {
+        // registries the lower version fills from code or doesn't have (trim materials and patterns and damage types it
+        // reads: kept): 1.21's (enchantments, jukebox songs, paintings), 1.20.5's (banner patterns, wolf variants)
+        String[] gone = crosses("1.21", "1.20.6") && crosses("1.20.6", "1.20.4")
+                ? new String[] {"enchantment/", "enchantment_provider/", "jukebox_song/", "painting_variant/", "banner_pattern/", "wolf_variant/"}
+                : crosses("1.21", "1.20.6") ? new String[] {"enchantment/", "enchantment_provider/", "jukebox_song/", "painting_variant/"}
+                : crosses("1.20.6", "1.20.4") ? new String[] {"banner_pattern/", "wolf_variant/"} : new String[0];
+        for (String g : gone) {
+            if (rest.startsWith(g)) {
                 return null;
             }
         }
@@ -4951,7 +5039,12 @@ public class Convert {
 
     /** neoforge.mods.toml -> mods.toml with the bottom version's loader, NeoForge and Minecraft ranges. */
     static String modsToml(String toml, String bottom) {
-        String neoforge = bottom.equals("1.20.4") ? "[20.4,)" : "[" + bottom + ",)";
+        String neoforge = switch (bottom) {
+            case "1.20.4" -> "[20.4,)";
+            case "1.20.6" -> "[20.6,)";
+            case "1.21" -> "[21.0,)";
+            default -> "[" + bottom + ",)";
+        };
         StringBuilder out = new StringBuilder();
         String dependency = null;
         for (String line : toml.split("\r?\n", -1)) {

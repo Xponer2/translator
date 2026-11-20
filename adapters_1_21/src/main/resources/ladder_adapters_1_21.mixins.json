@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "ladder.rung121.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AnvilEnchantMixin",
+    "EnchantRandomlyMixin",
+    "EnchantCommandMixin",
+    "ReloadableServerRegistriesMixin",
+    "ItemStackTooltipMixin",
+    "PackOverlaysMixin"
+  ],
+  "client": [
+    "HumanoidArmorLayerMixin",
+    "GuiOverlayMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

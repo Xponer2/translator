@@ -1,0 +1,121 @@
+# The converter's rules for the hand-written adapters of the rung 1.21.1 -> 1.21 (1.21.1 names; tabs).
+# P <class>                                   a class the adapters provide (in place of carrying it)
+# N <class>                                   new above although its intermediary twin exists below (another class)
+# O <owner> <name> <desc> <interface> <defaults class> <defaults method>
+#                                             an override of a newer method: the mod class gets the interface (the
+#                                             adapters' mixins call it from 1.20.4's call sites); a super call into the
+#                                             game's own class goes to the defaults method (receiver first)
+# X <owner> <name> <desc> <adapter class> <adapter method>
+#                                             a call goes to the adapter's static method (receiver first)
+# R <class> <lower class>                     a class renamed below with the same members (NeoForge has no intermediary)
+# F <owner> <name> <desc> <adapter class> <getter> [<methods>]
+#                                             a field the adapters give: its reads go to the getter (an instance
+#                                             field's getter takes the object); with methods, the value's only uses
+# K <owner> <upper desc> <lower desc> <adapter class> <lower parameters>
+#                                             a constructor that takes more below (new X(..) and super(..)): each
+#                                             lower parameter is an upper one ($0, $1..) or an adapter method's value,
+#                                             the method given all the upper arguments; ladder/bottom/<class> names
+#                                             the bottom class a top class of the same name hides
+# D <owner> <name> <upper desc> <lower desc> <lower parameters>
+#                                             a method that takes more below: each lower parameter is an upper one ($0,
+#                                             $1..) or the default written here (false, true, a number, null)
+# M <owner> <name> <desc> <lower name> <lower desc>
+#                                             the same hook (of the owner and its subclasses) under another name and
+#                                             descriptor below; the generated bridges take it from there
+# U <owner> <name> <desc>                     a hook the lower game never calls (no counterpart): a mod's override is a
+#                                             method of its own below; its calls (super ones too) take the X row
+# A <owner> <name> <desc> <lower desc> <plan> the same method below with other parameters: a mixin handler's arguments
+#                                             from the lower method's, per upper parameter "$k" (lower k, converted)
+#                                             or "Class.method(k,..)" (an adapter of lower parameters k..)
+# NeoForge 21.1's supportsEnchantment (1.21 asks Enchantment.canEnchant at the anvil, enchant_randomly and /enchant)
+O	net/neoforged/neoforge/common/extensions/IItemExtension	supportsEnchantment	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Holder;)Z	ladder/rung121/EnchantSupportApi	ladder/rung121/EnchantSupport	supportsEnchantment
+X	net/neoforged/neoforge/common/extensions/IItemExtension	supportsEnchantment	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Holder;)Z	ladder/rung121/EnchantSupport	itemSupportsEnchantment
+X	net/neoforged/neoforge/common/extensions/IItemStackExtension	supportsEnchantment	(Lnet/minecraft/core/Holder;)Z	ladder/rung121/EnchantSupport	stackSupportsEnchantment
+# 1.21.1 checks a block entity's state when it is made or set; 1.21 checks none: a mod's calls reach its overrides
+X	net/minecraft/world/level/block/entity/BlockEntity	isValidBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)Z	ladder/rung121/BlockEntityAdapters	isValidBlockState
+O	net/minecraft/world/level/block/entity/BlockEntity	isValidBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)Z	ladder/rung121/ValidStateApi	ladder/rung121/BlockEntityAdapters	superValidBlockState
+# NeoForge 21.1 draws armour pieces with the entity's animation values (the layer's render keeps them: ArmorArgs)
+A	net/minecraft/client/renderer/entity/layers/HumanoidArmorLayer	renderArmorPiece	(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;ILnet/minecraft/client/model/HumanoidModel;FFFFFF)V	(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;ILnet/minecraft/client/model/HumanoidModel;)V	$0 $1 $2 $3 $4 $5 ladder/rung121/ArmorArgs.limbSwing() ladder/rung121/ArmorArgs.limbSwingAmount() ladder/rung121/ArmorArgs.partialTick() ladder/rung121/ArmorArgs.ageInTicks() ladder/rung121/ArmorArgs.netHeadYaw() ladder/rung121/ArmorArgs.headPitch()
+# NeoForge 21.1's small additions
+X	net/neoforged/neoforge/client/extensions/IKeyMappingExtension	getDisplayName	()Lnet/minecraft/network/chat/Component;	ladder/rung121/ClientAdapters	getDisplayName
+X	net/neoforged/neoforge/registries/IRegistryExtension	getKeyOrNull	(Ljava/lang/Object;)Lnet/minecraft/resources/ResourceLocation;	ladder/rung121/SmallAdapters	getKeyOrNull
+X	net/neoforged/neoforge/attachment/IAttachmentHolder	getExistingDataOrNull	(Lnet/neoforged/neoforge/attachment/AttachmentType;)Ljava/lang/Object;	ladder/rung121/SmallAdapters	getExistingDataOrNull
+X	net/neoforged/neoforge/attachment/IAttachmentHolder	getExistingDataOrNull	(Ljava/util/function/Supplier;)Ljava/lang/Object;	ladder/rung121/SmallAdapters	getExistingDataOrNull
+X	net/neoforged/neoforge/event/LootTableLoadEvent	getRegistries	()Lnet/minecraft/core/HolderLookup$Provider;	ladder/rung121/SmallAdapters	getRegistries
+# NeoForge 21.1's attribute tooltips (1.21 makes its own lines: ItemStackTooltipMixin makes them the 21.1 way)
+P	net/neoforged/neoforge/common/util/AttributeUtil	ladder/rung121/attribute/AttributeUtil
+P	net/neoforged/neoforge/common/util/AttributeTooltipContext	ladder/rung121/attribute/AttributeTooltipContext
+P	net/neoforged/neoforge/client/event/GatherSkippedAttributeTooltipsEvent	ladder/rung121/attribute/GatherSkippedAttributeTooltipsEvent
+P	net/neoforged/neoforge/client/event/AddAttributeTooltipsEvent	ladder/rung121/attribute/AddAttributeTooltipsEvent
+X	net/neoforged/neoforge/common/extensions/IAttributeExtension	toValueComponent	(Lnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;DLnet/minecraft/world/item/TooltipFlag;)Lnet/minecraft/network/chat/MutableComponent;	ladder/rung121/attribute/AttributeText	toValueComponent
+O	net/neoforged/neoforge/common/extensions/IAttributeExtension	toValueComponent	(Lnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;DLnet/minecraft/world/item/TooltipFlag;)Lnet/minecraft/network/chat/MutableComponent;	ladder/rung121/attribute/AttributeTextApi	ladder/rung121/attribute/AttributeText	superValueComponent
+X	net/neoforged/neoforge/common/extensions/IAttributeExtension	toComponent	(Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;Lnet/minecraft/world/item/TooltipFlag;)Lnet/minecraft/network/chat/MutableComponent;	ladder/rung121/attribute/AttributeText	toComponent
+O	net/neoforged/neoforge/common/extensions/IAttributeExtension	toComponent	(Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;Lnet/minecraft/world/item/TooltipFlag;)Lnet/minecraft/network/chat/MutableComponent;	ladder/rung121/attribute/AttributeTextApi	ladder/rung121/attribute/AttributeText	superComponent
+X	net/neoforged/neoforge/common/extensions/IAttributeExtension	getDebugInfo	(Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;Lnet/minecraft/world/item/TooltipFlag;)Lnet/minecraft/network/chat/Component;	ladder/rung121/attribute/AttributeText	getDebugInfo
+O	net/neoforged/neoforge/common/extensions/IAttributeExtension	getDebugInfo	(Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;Lnet/minecraft/world/item/TooltipFlag;)Lnet/minecraft/network/chat/Component;	ladder/rung121/attribute/AttributeTextApi	ladder/rung121/attribute/AttributeText	superDebugInfo
+X	net/neoforged/neoforge/common/extensions/IAttributeExtension	getBaseId	()Lnet/minecraft/resources/ResourceLocation;	ladder/rung121/attribute/AttributeText	getBaseId
+O	net/neoforged/neoforge/common/extensions/IAttributeExtension	getBaseId	()Lnet/minecraft/resources/ResourceLocation;	ladder/rung121/attribute/AttributeTextApi	ladder/rung121/attribute/AttributeText	superBaseId
+X	net/neoforged/neoforge/common/extensions/IAttributeExtension	toBaseComponent	(DDZLnet/minecraft/world/item/TooltipFlag;)Lnet/minecraft/network/chat/MutableComponent;	ladder/rung121/attribute/AttributeText	toBaseComponent
+O	net/neoforged/neoforge/common/extensions/IAttributeExtension	toBaseComponent	(DDZLnet/minecraft/world/item/TooltipFlag;)Lnet/minecraft/network/chat/MutableComponent;	ladder/rung121/attribute/AttributeTextApi	ladder/rung121/attribute/AttributeText	superBaseComponent
+X	net/neoforged/neoforge/common/extensions/IAttributeExtension	getMergedStyle	(Z)Lnet/minecraft/network/chat/TextColor;	ladder/rung121/attribute/AttributeText	getMergedStyle
+O	net/neoforged/neoforge/common/extensions/IAttributeExtension	getMergedStyle	(Z)Lnet/minecraft/network/chat/TextColor;	ladder/rung121/attribute/AttributeTextApi	ladder/rung121/attribute/AttributeText	superMergedStyle
+X	net/neoforged/neoforge/common/NeoForgeMod	enableMergedAttributeTooltips	()V	ladder/rung121/attribute/AttributeUtil	enableMergedAttributeTooltips
+X	net/neoforged/neoforge/common/NeoForgeMod	shouldMergeAttributeTooltips	()Z	ladder/rung121/attribute/AttributeUtil	shouldMergeAttributeTooltips
+# NeoForge 21.1's newer client item hooks (HumanoidArmorLayerMixin and GuiOverlayMixin ask a mod's overrides)
+O	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	setupModelAnimations	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/EquipmentSlot;Lnet/minecraft/client/model/Model;FFFFFF)V	ladder/rung121/client/ClientItemApi	ladder/rung121/client/ClientItemDefaults	setupModelAnimations
+O	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	getDefaultDyeColor	(Lnet/minecraft/world/item/ItemStack;)I	ladder/rung121/client/ClientItemApi	ladder/rung121/client/ClientItemDefaults	getDefaultDyeColor
+O	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	getArmorLayerTintColor	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ArmorMaterial$Layer;II)I	ladder/rung121/client/ClientItemApi	ladder/rung121/client/ClientItemDefaults	getArmorLayerTintColor
+O	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	getScopeOverlayTexture	(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/resources/ResourceLocation;	ladder/rung121/client/ClientItemApi	ladder/rung121/client/ClientItemDefaults	getScopeOverlayTexture
+O	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	renderHelmetOverlay	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V	ladder/rung121/client/ClientItemApi	ladder/rung121/client/ClientItemDefaults	renderHelmetOverlay
+# NeoForge 21.1's new common tags (generated: tools/local/gen of the lead-2 session; contents in data/c/tags)
+F	net/neoforged/neoforge/common/Tags$Biomes	IS_TEMPERATE	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	biomesIsTemperate
+F	net/neoforged/neoforge/common/Tags$Biomes	IS_TEMPERATE_END	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	biomesIsTemperateEnd
+F	net/neoforged/neoforge/common/Tags$Biomes	IS_TEMPERATE_NETHER	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	biomesIsTemperateNether
+F	net/neoforged/neoforge/common/Tags$Biomes	IS_TEMPERATE_OVERWORLD	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	biomesIsTemperateOverworld
+F	net/neoforged/neoforge/common/Tags$Blocks	OBSIDIANS_CRYING	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	blocksObsidiansCrying
+F	net/neoforged/neoforge/common/Tags$Blocks	OBSIDIANS_NORMAL	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	blocksObsidiansNormal
+F	net/neoforged/neoforge/common/Tags$Blocks	PUMPKINS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	blocksPumpkins
+F	net/neoforged/neoforge/common/Tags$Blocks	PUMPKINS_CARVED	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	blocksPumpkinsCarved
+F	net/neoforged/neoforge/common/Tags$Blocks	PUMPKINS_JACK_O_LANTERNS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	blocksPumpkinsJackOLanterns
+F	net/neoforged/neoforge/common/Tags$Blocks	PUMPKINS_NORMAL	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	blocksPumpkinsNormal
+F	net/neoforged/neoforge/common/Tags$Blocks	STRIPPED_LOGS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	blocksStrippedLogs
+F	net/neoforged/neoforge/common/Tags$Blocks	STRIPPED_WOODS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	blocksStrippedWoods
+F	net/neoforged/neoforge/common/Tags$Fluids	EXPERIENCE	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	fluidsExperience
+F	net/neoforged/neoforge/common/Tags$Items	ANIMAL_FOODS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsAnimalFoods
+F	net/neoforged/neoforge/common/Tags$Items	CROPS_CACTUS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsCropsCactus
+F	net/neoforged/neoforge/common/Tags$Items	CROPS_COCOA_BEAN	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsCropsCocoaBean
+F	net/neoforged/neoforge/common/Tags$Items	CROPS_MELON	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsCropsMelon
+F	net/neoforged/neoforge/common/Tags$Items	CROPS_PUMPKIN	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsCropsPumpkin
+F	net/neoforged/neoforge/common/Tags$Items	CROPS_SUGAR_CANE	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsCropsSugarCane
+F	net/neoforged/neoforge/common/Tags$Items	DRINKS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinks
+F	net/neoforged/neoforge/common/Tags$Items	DRINKS_HONEY	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinksHoney
+F	net/neoforged/neoforge/common/Tags$Items	DRINKS_JUICE	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinksJuice
+F	net/neoforged/neoforge/common/Tags$Items	DRINKS_MAGIC	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinksMagic
+F	net/neoforged/neoforge/common/Tags$Items	DRINKS_MILK	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinksMilk
+F	net/neoforged/neoforge/common/Tags$Items	DRINKS_OMINOUS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinksOminous
+F	net/neoforged/neoforge/common/Tags$Items	DRINKS_WATER	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinksWater
+F	net/neoforged/neoforge/common/Tags$Items	DRINKS_WATERY	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinksWatery
+F	net/neoforged/neoforge/common/Tags$Items	DRINK_CONTAINING_BOTTLE	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinkContainingBottle
+F	net/neoforged/neoforge/common/Tags$Items	DRINK_CONTAINING_BUCKET	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsDrinkContainingBucket
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_DOUGH	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsFoodsDough
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_PIE	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsFoodsPie
+F	net/neoforged/neoforge/common/Tags$Items	LOOM_PATTERNS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsLoomPatterns
+F	net/neoforged/neoforge/common/Tags$Items	OBSIDIANS_CRYING	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsObsidiansCrying
+F	net/neoforged/neoforge/common/Tags$Items	OBSIDIANS_NORMAL	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsObsidiansNormal
+F	net/neoforged/neoforge/common/Tags$Items	POTIONS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsPotions
+F	net/neoforged/neoforge/common/Tags$Items	POTION_BOTTLE	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsPotionBottle
+F	net/neoforged/neoforge/common/Tags$Items	PUMPKINS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsPumpkins
+F	net/neoforged/neoforge/common/Tags$Items	PUMPKINS_CARVED	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsPumpkinsCarved
+F	net/neoforged/neoforge/common/Tags$Items	PUMPKINS_JACK_O_LANTERNS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsPumpkinsJackOLanterns
+F	net/neoforged/neoforge/common/Tags$Items	PUMPKINS_NORMAL	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsPumpkinsNormal
+F	net/neoforged/neoforge/common/Tags$Items	SEEDS_TORCHFLOWER	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsSeedsTorchflower
+F	net/neoforged/neoforge/common/Tags$Items	STRIPPED_LOGS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsStrippedLogs
+F	net/neoforged/neoforge/common/Tags$Items	STRIPPED_WOODS	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsStrippedWoods
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_WRENCH	Lnet/minecraft/tags/TagKey;	ladder/rung121/tags/NewTags	itemsToolsWrench
+# calls of those hooks through IClientItemExtensions (a mod's override, else the default)
+X	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	setupModelAnimations	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/EquipmentSlot;Lnet/minecraft/client/model/Model;FFFFFF)V	ladder/rung121/client/ClientItemDefaults	callSetupModelAnimations
+X	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	getDefaultDyeColor	(Lnet/minecraft/world/item/ItemStack;)I	ladder/rung121/client/ClientItemDefaults	callGetDefaultDyeColor
+X	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	getArmorLayerTintColor	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ArmorMaterial$Layer;II)I	ladder/rung121/client/ClientItemDefaults	callGetArmorLayerTintColor
+X	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	getScopeOverlayTexture	(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/resources/ResourceLocation;	ladder/rung121/client/ClientItemDefaults	callGetScopeOverlayTexture
+X	net/neoforged/neoforge/client/extensions/common/IClientItemExtensions	renderHelmetOverlay	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V	ladder/rung121/client/ClientItemDefaults	callRenderHelmetOverlay
+X	net/neoforged/neoforge/registries/DeferredRegister	createDataComponents	(Lnet/minecraft/resources/ResourceKey;Ljava/lang/String;)Lnet/neoforged/neoforge/registries/DeferredRegister$DataComponents;	ladder/rung121/SmallAdapters	createDataComponents

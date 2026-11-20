@@ -149,9 +149,9 @@ X	net/minecraft/core/Holder	is	(Lnet/minecraft/core/Holder;)Z	ladder/adapter/mis
 X	net/minecraft/core/Registry	getHolder	(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;	ladder/adapter/misc/MiscAdapters	getHolder
 # 1.20.5's block entity load and save entries
 # 1.21.1 checks a block entity's state when it is made or set (BlockEntity.isValidBlockState, a mod may allow more);
-# 1.21 and 1.20.4 check none: a mod's override is its own method, calls take the type's own check
+# 1.21 and 1.20.4 check none: nothing below calls it, a mod's calls reach its overrides (the O row's interface)
 X	net/minecraft/world/level/block/entity/BlockEntity	isValidBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)Z	ladder/adapter/misc/MiscAdapters	isValidBlockState
-U	net/minecraft/world/level/block/entity/BlockEntity	isValidBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)Z
+O	net/minecraft/world/level/block/entity/BlockEntity	isValidBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)Z	ladder/adapter/block/ValidStateApi	ladder/adapter/misc/MiscAdapters	blockEntityValidBlockState
 X	net/minecraft/world/level/block/entity/BlockEntity	loadWithComponents	(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V	ladder/adapter/misc/MiscAdapters	loadWithComponents
 X	net/minecraft/world/level/block/entity/BlockEntity	loadCustomOnly	(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V	ladder/adapter/misc/MiscAdapters	loadCustomOnly
 X	net/minecraft/world/level/block/entity/BlockEntity	saveCustomOnly	(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/nbt/CompoundTag;	ladder/adapter/misc/MiscAdapters	saveCustomOnly

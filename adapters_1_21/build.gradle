@@ -1,0 +1,17 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// The hand-written adapters of the rung 1.21.1 -> 1.21: NeoForge 21.1's newer API on 1.21 (NeoForge 21.0). Compiled
+// against the real 1.21; a conversion further down converts this jar like any 1.21 mod (its rung's own package,
+// ladder.rung121, never clashes with a lower rung's adapters).
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base { archivesName = 'ladder-adapters-1.21' }
+version = '0.1.0'
+neoForge {
+    version = '21.0.167'
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
