@@ -77,6 +77,26 @@ public final class RecipeInputs {
         return CraftingInput.of(items.size(), 1, items);
     }
 
+    /**
+     * A recipe's remainders of its trimmed crafting input (1.21 trims the grid to the items' bounds) put back on 1.20.4's
+     * whole grid, which takes them slot by slot.
+     */
+    public static net.minecraft.core.NonNullList<ItemStack> remainders(Container container, net.minecraft.core.NonNullList<ItemStack> remainders) {
+        if (!(container instanceof CraftingContainer grid) || remainders.size() == grid.getContainerSize()) {
+            return remainders;
+        }
+        CraftingInput.Positioned positioned = positionedCraftingInput(grid);
+        CraftingInput input = positioned.input();
+        net.minecraft.core.NonNullList<ItemStack> whole = net.minecraft.core.NonNullList.withSize(grid.getContainerSize(), ItemStack.EMPTY);
+        for (int i = 0; i < remainders.size() && input.width() > 0; i++) {
+            int x = positioned.left() + i % input.width(), y = positioned.top() + i / input.width();
+            if (x < grid.getWidth() && y < grid.getHeight()) {
+                whole.set(x + y * grid.getWidth(), remainders.get(i));
+            }
+        }
+        return whole;
+    }
+
     /** 1.21's {@code CraftingContainer.asPositionedCraftInput()} */
     public static CraftingInput.Positioned positionedCraftingInput(CraftingContainer container) {
         return CraftingInput.ofPositioned(container.getWidth(), container.getHeight(), container.getItems());

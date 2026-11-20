@@ -371,3 +371,8 @@ X	net/neoforged/neoforge/common/crafting/IngredientType	<init>	(Lcom/mojang/seri
 X	net/minecraft/world/item/crafting/Ingredient	isCustom	()Z	ladder/adapter/recipe/CustomIngredients	isCustom
 X	net/minecraft/world/item/crafting/Ingredient	getCustomIngredient	()Lnet/neoforged/neoforge/common/crafting/ICustomIngredient;	ladder/adapter/recipe/CustomIngredients	getCustomIngredient
 X	net/minecraft/world/item/crafting/Ingredient	hasNoItems	()Z	ladder/adapter/recipe/CustomIngredients	hasNoItems
+F	net/minecraft/client/gui/screens/Screen	HEADER_SEPARATOR	Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/render/ScreenAdapters	headerSeparator
+F	net/minecraft/client/gui/screens/Screen	FOOTER_SEPARATOR	Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/render/ScreenAdapters	footerSeparator
+X	net/minecraft/client/gui/screens/Screen	renderMenuBackground	(Lnet/minecraft/client/gui/GuiGraphics;)V	ladder/adapter/render/ScreenAdapters	renderMenuBackground
+X	net/minecraft/client/gui/screens/Screen	renderBlurredBackground	(F)V	ladder/adapter/render/ScreenAdapters	renderBlurredBackground
+X	net/minecraft/client/gui/screens/Screen	renderPanorama	(Lnet/minecraft/client/gui/GuiGraphics;F)V	ladder/adapter/render/ScreenAdapters	renderPanorama

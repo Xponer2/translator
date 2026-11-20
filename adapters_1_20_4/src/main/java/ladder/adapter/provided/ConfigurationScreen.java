@@ -52,6 +52,11 @@ public class ConfigurationScreen extends Screen {
         this.rows.clear();
         for (Map.Entry<ModConfig.Type, Set<ModConfig>> set : ConfigTracker.INSTANCE.configSets().entrySet()) {
             for (ModConfig config : set.getValue()) {
+                // a server's config is the server's: edited here only in this player's own world, not published (as 1.21)
+                boolean serverHere = this.minecraft.getSingleplayerServer() != null && !this.minecraft.getSingleplayerServer().isPublished();
+                if (set.getKey() == ModConfig.Type.SERVER && !serverHere) {
+                    continue;
+                }
                 if (config.getModId().equals(this.mod.getModId()) && config.getSpec() instanceof ModConfigSpec spec && spec.isLoaded()) {
                     this.collect(spec, spec.getValues(), set.getKey().name().toLowerCase(java.util.Locale.ROOT));
                 }

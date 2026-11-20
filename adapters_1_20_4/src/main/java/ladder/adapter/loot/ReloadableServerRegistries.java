@@ -68,14 +68,5 @@ public class ReloadableServerRegistries {
             LootDataType<?> type = registry.equals(PREDICATE) ? LootDataType.PREDICATE : registry.equals(ITEM_MODIFIER) ? LootDataType.MODIFIER : LootDataType.TABLE;
             return this.data().getKeys(type);
         }
-
-        /** the server's registries (1.20.5 gives the reloadable ones; their loot entries are the data above) */
-        public net.minecraft.core.HolderGetter.Provider lookup() {
-            return this.server.registryAccess().asGetterLookup();
-        }
-
-        public RegistryAccess.Frozen get() {
-            return this.server.registryAccess();
-        }
     }
 }

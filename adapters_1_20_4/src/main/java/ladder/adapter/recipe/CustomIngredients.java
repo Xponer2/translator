@@ -60,7 +60,8 @@ public final class CustomIngredients {
 
     /** {@code ingredient.hasNoItems()} */
     public static boolean hasNoItems(Ingredient ingredient) {
-        return ingredient.getItems().length == 0;
+        // 1.20.4 shows an empty tag as a barrier named "Empty Tag": its own check knows it (as 1.21's hasNoItems)
+        return net.neoforged.neoforge.common.CommonHooks.hasNoElements(ingredient);
     }
 
     /** a 20.5 custom ingredient as a 20.4 ingredient */

@@ -110,12 +110,13 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   registrar, stream codecs (`ByteBufCodecs` and the game's own `STREAM_CODEC`s carried down as real code), handlers on
   the main thread, replies, `PacketDistributor`, in a single-player world and over a real connection to a dedicated
   server; armour made the 1.20.5 way (an armour material as a registry record, a mod's horse armour, dyed and layered
-  armour drawn on the client); 1.21's HUD layers and a mod's config screen: **27 of 27 results as natively on 1.21.1**
-  (the HUD layers and the config screen: 35 of 36, the last one fixed since and not yet run again).
+  armour drawn on the client); recipes of a mod's own type crafted from data files and sent over the network; 1.21's
+  HUD layers and a mod's config screen: **44 of 44 results as natively on 1.21.1**
+  (recipes, armour, HUD layers and the config screen included).
 - **Armour** of 1.20.5 (armour materials as registry records, the body slot, animal armour, a horse's and a llama's
   armour in their inventory) and **recipes on `RecipeInput`** (a mod's recipe types and serializers, calls and
-  overrides of `matches` / `assemble`, `RecipeManager` lookups, NeoForge's custom ingredients) are converted; the
-  recipe checks of test mod C are written and wait for their first run.
+  overrides of `matches` / `assemble`, `RecipeManager` lookups, NeoForge's custom ingredients) are converted and checked
+  by test mod C.
 
 - **Mods of two versions share one item** (test mod E): a mod made for 1.20.4 and running as it is, not converted,
   takes the stack a converted 1.21.1 mod (test mod B) left in a chest and changes it with 1.20.4's own API (an
@@ -136,8 +137,8 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
   on 1.20.4.
 
-Over the whole corpus, 57 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 8106 (the
+Over the whole corpus, 58 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 8058 (the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). Most mods that are
 left wait for several mechanisms at once; the ones that free the most mods next: 1.21's GUI widgets and screen layout

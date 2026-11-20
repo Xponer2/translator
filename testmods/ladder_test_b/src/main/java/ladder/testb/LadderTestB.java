@@ -169,6 +169,38 @@ public final class LadderTestB {
         }
     }
 
+    /** a mod's abstract base right under Entity, and a concrete entity of it */
+    abstract static class MarkerBase extends net.minecraft.world.entity.Entity {
+        static final net.minecraft.network.syncher.EntityDataAccessor<Integer> LEVEL = net.minecraft.network.syncher.SynchedEntityData.defineId(MarkerBase.class,
+                net.minecraft.network.syncher.EntityDataSerializers.INT);
+
+        MarkerBase(net.minecraft.world.entity.EntityType<?> type, net.minecraft.world.level.Level level) {
+            super(type, level);
+        }
+
+        @Override
+        protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+            builder.define(LEVEL, 3);
+        }
+
+        @Override
+        protected void readAdditionalSaveData(CompoundTag tag) {
+        }
+
+        @Override
+        protected void addAdditionalSaveData(CompoundTag tag) {
+        }
+    }
+
+    static final class SubMarker extends MarkerBase {
+        SubMarker(net.minecraft.world.entity.EntityType<? extends SubMarker> type, net.minecraft.world.level.Level level) {
+            super(type, level);
+        }
+    }
+
+    static final DeferredHolder<net.minecraft.world.entity.EntityType<?>, net.minecraft.world.entity.EntityType<SubMarker>> SUB_MARKER = ENTITIES.register("sub_marker",
+            () -> net.minecraft.world.entity.EntityType.Builder.<SubMarker>of(SubMarker::new, net.minecraft.world.entity.MobCategory.MISC).sized(0.5F, 0.5F).build("sub_marker"));
+
     static final class BigZombie extends net.minecraft.world.entity.monster.Zombie {
         static final net.minecraft.network.syncher.EntityDataAccessor<String> TITLE = net.minecraft.network.syncher.SynchedEntityData.defineId(BigZombie.class,
                 net.minecraft.network.syncher.EntityDataSerializers.STRING);
@@ -294,6 +326,7 @@ public final class LadderTestB {
             Marker markerBack = MARKER.get().create(level);
             markerBack.load(markerTag);
             results.put("entityMarkSaved", String.valueOf(markerBack.getEntityData().get(Marker.MARK)));
+            results.put("entitySubMarker", String.valueOf(SUB_MARKER.get().create(level).getEntityData().get(MarkerBase.LEVEL)));
             BigZombie big = BIG_ZOMBIE.get().create(level);
             results.put("entityTitle", big.getEntityData().get(BigZombie.TITLE) + "/" + big.isBaby() + "/" + big.getEntityData().getNonDefaultValues().stream().map(v -> v.id() + "=" + v.value()).toList());
             big.setBaby(true);

@@ -1127,7 +1127,8 @@ public class Convert {
                         m.access = (m.access & ~(Opcodes.ACC_PROTECTED | Opcodes.ACC_PRIVATE)) | Opcodes.ACC_PUBLIC;
                     }
                 }
-                if (o[6] != null && (node.access & Opcodes.ACC_ABSTRACT) == 0 && abstractBelow(node.superName, o[6])) {
+                // (an abstract mod base right under Entity gets it too: its concrete subclasses inherit it)
+                if (o[6] != null && (node.access & Opcodes.ACC_INTERFACE) == 0 && abstractBelow(node.superName, o[6])) {
                     String[] lower = o[6].split(" ");
                     if (node.methods.stream().noneMatch(m -> m.name.equals(lower[0]) && m.desc.equals(lower[1]))) {
                         MethodNode stub = new MethodNode(Opcodes.ACC_PROTECTED, lower[0], lower[1], null, null);
@@ -3121,9 +3122,17 @@ public class Convert {
         }
         code.add(new MethodInsnNode(itf ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL, remapper.map(node.name), ownName, ownDesc, itf));
         convertDown(code, upRet, lowRet);
+        if (end.name().equals("getRemainingItems") && low.length == 1 && low[0].getInternalName().equals(CONTAINER)
+                && lowRet.getInternalName().equals("net/minecraft/core/NonNullList")) {
+            // the mod's remainders are of its trimmed input: 1.20.4 takes them slot by slot of the whole grid
+            code.add(new VarInsnNode(Opcodes.ALOAD, slots[0]));
+            code.add(new InsnNode(Opcodes.SWAP));
+            code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, RECIPE_INPUT_CONVERSIONS, "remainders",
+                    "(L" + CONTAINER + ";Lnet/minecraft/core/NonNullList;)Lnet/minecraft/core/NonNullList;", false));
+        }
         code.add(new InsnNode(lowRet.getOpcode(Opcodes.IRETURN)));
         g.maxLocals = slot;
-        g.maxStack = slot + 2 + 2 * up.length;
+        g.maxStack = slot + 4 + 2 * up.length;
         return g;
     }
 
@@ -3893,6 +3902,8 @@ public class Convert {
                 if (map[i] >= 0) {
                     code.add(new VarInsnNode(low[map[i]].getOpcode(Opcodes.ILOAD), slots[map[i]]));
                     convertUp(code, low[map[i]], up[i]);
+                } else if (map[i] <= -2) {
+                    packColor(code, slots, -map[i] - 2);
                 } else {
                     supplyContext(code, up[i]);
                 }

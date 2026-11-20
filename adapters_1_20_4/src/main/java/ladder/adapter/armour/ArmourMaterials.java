@@ -103,8 +103,19 @@ public final class ArmourMaterials {
     }
 
     /** the holder of the game's material of that name (1.20.5's {@code ArmorMaterials.X}): one object per name */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static synchronized Holder<ArmorMaterial> holder(String name) {
-        return HOLDERS.computeIfAbsent(name, n -> DeferredHolder.create(ArmourAdapters.typedKey(), id(n)));
+        // once registered, the registry's own reference (as 1.21's ArmorMaterials.X are): equal to any holder of it
+        // the registry or data gives; before that a holder bound to it when it is registered
+        Holder<ArmorMaterial> early = HOLDERS.computeIfAbsent(name, n -> DeferredHolder.create(ArmourAdapters.typedKey(), id(n)));
+        if (early instanceof DeferredHolder<?, ?> deferred && deferred.isBound()) {
+            java.util.Optional<?> reference = ArmourAdapters.registry().getHolder(
+                    net.minecraft.resources.ResourceKey.create((net.minecraft.resources.ResourceKey) ArmourAdapters.KEY, id(name)));
+            if (reference.isPresent()) {
+                return (Holder<ArmorMaterial>) reference.get();
+            }
+        }
+        return early;
     }
 
     /** the holder of a 1.20.4 ArmorMaterials constant (its 1.20.5 name) */

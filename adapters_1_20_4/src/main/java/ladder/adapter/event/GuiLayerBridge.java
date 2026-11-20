@@ -35,7 +35,7 @@ public final class GuiLayerBridge {
                 {"effects", "potion_icons"}, {"boss_overlay", "boss_event_progress"}, {"sleep_overlay", "sleep_fade"},
                 {"debug_overlay", "debug_screen"}, {"scoreboard_sidebar", "scoreboard"}, {"overlay_message", "record_overlay"},
                 {"title", "title_text"}, {"chat", "chat_panel"}, {"tab_list", "player_list"}, {"subtitle_overlay", "subtitles"},
-                {"saved_indicator", "chat_panel"}};
+                {"saving_indicator", "chat_panel"}};
         for (String[] n : names) {
             LOWER.put(n[0], n[1]);
             UPPER.putIfAbsent(n[1], n[0]);
