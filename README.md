@@ -65,6 +65,30 @@ included, and so is reflection by name on a game or loader member the lower vers
 its failure). Formats the converter can't check yet (a mod's own recipe types) are listed apart, and so is the code of a
 mod's data generators (data providers run in `runData` only, never in the game).
 
+## Rungs
+
+Every rung is one step between neighbouring versions, with its own tables, its own adapters (hand-written code for
+what really changed, written against the lower version) and its own tests in the lower version's real game. A mod
+converted further down passes every rung on the way, and the adapters of the rungs above go down with it like any mod,
+so every pair works: a 1.21 mod to 1.20.6, a 1.21.1 mod to 1.21, a 1.21.1 mod to 1.20.4, and mods of different
+versions together on one target.
+
+| Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
+|---|---|---|---:|---:|---|
+| 1.21.1 → 1.21 | being split out (its fixes run in the 1.20.4 set for now) | not yet | 108 | 269 | first, in work |
+| 1.21 → 1.20.6 | not yet (in the 1.20.4 set) | not yet | 2345 | 132 | next |
+| 1.20.6 → 1.20.4 | yes | yes: test mods A–E, corpus probes | 3089 | 114 | in work |
+
+Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **242 of 300 mods convert with nothing
+left** before the rung has adapters of its own; the 58 left wait for NeoForge 21.1's newer API (attribute tooltips,
+attachment syncing, item render hooks, data components registered the 21.1 way).
+
+Besides the rungs' own problems, 1933 more come from the checks against the bottom game (mixin injection points, a
+mod's reflection, classes of other loaders) in 158 mods. Right now only 1.20.4 runs as a target: a mod goes down
+from its own version (1.21.1, 1.21 or 1.20.6) to 1.20.4 in one pass. Running 1.21 and 1.20.6 as targets of their own
+comes with their rungs' adapters and game tests, top rung first: the converter already takes the target
+(`LADDER_TO=1.21 tools/ladder.sh convert ...`).
+
 ## Where it is
 
 Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
@@ -138,8 +162,8 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
   on 1.20.4.
 
-Over the whole corpus, 63 of 300 mods convert with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 7994 (the
+Over the whole corpus, 78 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 7475 (the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). Most mods that are
 left wait for several mechanisms at once; the ones that free the most mods next: 1.21's GUI widgets and screen layout
