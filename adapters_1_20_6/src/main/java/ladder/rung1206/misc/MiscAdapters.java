@@ -145,4 +145,60 @@ public final class MiscAdapters {
         }
         return stack;
     }
+
+    /** 1.21's {@code Enchantment.description()}: its translated name */
+    public static net.minecraft.network.chat.Component description(net.minecraft.world.item.enchantment.Enchantment enchantment) {
+        return net.minecraft.network.chat.Component.translatable(enchantment.getDescriptionId());
+    }
+
+    /** 1.21's {@code Enchantment.areCompatible(a, b)} */
+    public static boolean areCompatible(net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> a,
+            net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> b) {
+        return !a.equals(b) && a.value().isCompatibleWith(b.value());
+    }
+
+    /** 1.21's {@code CrossbowItem.getChargeDuration(stack, entity)} */
+    public static int getChargeDuration(net.minecraft.world.item.ItemStack stack, net.minecraft.world.entity.LivingEntity entity) {
+        return net.minecraft.world.item.CrossbowItem.getChargeDuration(stack);
+    }
+
+    /** 1.21's {@code WorldBorder.clampToBounds(pos)} */
+    public static net.minecraft.core.BlockPos clampToBounds(net.minecraft.world.level.border.WorldBorder border, net.minecraft.core.BlockPos pos) {
+        return border.clampToBounds(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    /** NeoForge 21's {@code ModConfigSpec.Builder.gameRestart()}: a value the game must restart for (shown nowhere below) */
+    public static net.neoforged.neoforge.common.ModConfigSpec.Builder gameRestart(net.neoforged.neoforge.common.ModConfigSpec.Builder builder) {
+        return builder.worldRestart();
+    }
+
+    /** 1.21's {@code AttributeMap.removeAttributeModifiers(modifiers)}: by attribute holder, each modifier by its id */
+    public static void removeAttributeModifiers(net.minecraft.world.entity.ai.attributes.AttributeMap map,
+            com.google.common.collect.Multimap<net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute>,
+                    net.minecraft.world.entity.ai.attributes.AttributeModifier> modifiers) {
+        modifiers.forEach((attribute, modifier) -> {
+            net.minecraft.world.entity.ai.attributes.AttributeInstance instance = map.getInstance(attribute);
+            if (instance != null) {
+                instance.removeModifier(modifier.id());
+            }
+        });
+    }
+
+    /** 1.21's {@code AttributeMap.addTransientAttributeModifiers(modifiers)}: a modifier of the same id replaced */
+    public static void addTransientAttributeModifiers(net.minecraft.world.entity.ai.attributes.AttributeMap map,
+            com.google.common.collect.Multimap<net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute>,
+                    net.minecraft.world.entity.ai.attributes.AttributeModifier> modifiers) {
+        modifiers.forEach((attribute, modifier) -> {
+            net.minecraft.world.entity.ai.attributes.AttributeInstance instance = map.getInstance(attribute);
+            if (instance != null) {
+                instance.removeModifier(modifier.id());
+                instance.addTransientModifier(modifier);
+            }
+        });
+    }
+
+    /** 1.21's {@code Options.getMenuBackgroundBlurriness()}: 0-10 (1.20.6 keeps 0-1) */
+    public static int getMenuBackgroundBlurriness(net.minecraft.client.Options options) {
+        return (int) Math.round(options.getMenuBackgroundBlurriness() * 10.0);
+    }
 }

@@ -196,3 +196,17 @@ X	net/minecraft/server/level/ServerEntity	getLastSentYRot	()F	ladder/rung1206/en
 X	net/minecraft/server/level/ServerEntity	getLastSentXRot	()F	ladder/rung1206/entity/AddEntityPacketApi	getLastSentXRot
 X	net/minecraft/server/level/ServerEntity	getLastSentYHeadRot	()F	ladder/rung1206/entity/AddEntityPacketApi	getLastSentYHeadRot
 X	net/minecraft/server/level/ServerEntity	getLastSentMovement	()Lnet/minecraft/world/phys/Vec3;	ladder/rung1206/entity/AddEntityPacketApi	getLastSentMovement
+# more small members of 1.21 and NeoForge 21 (enchantments, crossbow, world border, config, attribute maps)
+X	net/minecraft/world/item/enchantment/Enchantment	description	()Lnet/minecraft/network/chat/Component;	ladder/rung1206/misc/MiscAdapters	description
+X	net/minecraft/world/item/enchantment/Enchantment	areCompatible	(Lnet/minecraft/core/Holder;Lnet/minecraft/core/Holder;)Z	ladder/rung1206/misc/MiscAdapters	areCompatible
+X	net/minecraft/world/item/CrossbowItem	getChargeDuration	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)I	ladder/rung1206/misc/MiscAdapters	getChargeDuration
+X	net/minecraft/world/level/border/WorldBorder	clampToBounds	(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/core/BlockPos;	ladder/rung1206/misc/MiscAdapters	clampToBounds
+X	net/neoforged/neoforge/common/ModConfigSpec$Builder	gameRestart	()Lnet/neoforged/neoforge/common/ModConfigSpec$Builder;	ladder/rung1206/misc/MiscAdapters	gameRestart
+X	net/minecraft/world/entity/ai/attributes/AttributeMap	removeAttributeModifiers	(Lcom/google/common/collect/Multimap;)V	ladder/rung1206/misc/MiscAdapters	removeAttributeModifiers
+X	net/minecraft/world/entity/ai/attributes/AttributeMap	addTransientAttributeModifiers	(Lcom/google/common/collect/Multimap;)V	ladder/rung1206/misc/MiscAdapters	addTransientAttributeModifiers
+X	net/minecraft/client/Options	getMenuBackgroundBlurriness	()I	ladder/rung1206/misc/MiscAdapters	getMenuBackgroundBlurriness
+# 1.21's enchantment effects and tags: the curses (1.20.6: enchantment classes; the tags come with the adapters' data)
+P	net/minecraft/world/item/enchantment/EnchantmentEffectComponents	ladder/rung1206/provided/EnchantmentEffectComponents
+X	net/minecraft/world/item/enchantment/EnchantmentHelper	has	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType;)Z	ladder/rung1206/misc/EnchantmentEffects	has
+F	net/minecraft/tags/EnchantmentTags	CURSE	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/EnchantmentEffects	curse
+F	net/minecraft/tags/EnchantmentTags	TREASURE	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/EnchantmentEffects	treasure

@@ -963,6 +963,13 @@ public final class LadderTestB {
             ItemStack bootsBack = ItemStack.parseOptional(level.registryAccess(), (CompoundTag) boots.save(level.registryAccess()));
             results.put("dyedSaved", String.valueOf(bootsBack.get(DataComponents.DYED_COLOR)));
             Holder<Enchantment> sharpness = level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.SHARPNESS);
+            // 1.21's curses as enchantment effects and a tag
+            Holder<Enchantment> binding = level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.BINDING_CURSE);
+            ItemStack cursed = new ItemStack(Items.IRON_HELMET);
+            cursed.enchant(binding, 1);
+            results.put("curses", EnchantmentHelper.has(cursed, net.minecraft.world.item.enchantment.EnchantmentEffectComponents.PREVENT_ARMOR_CHANGE) + "/"
+                    + EnchantmentHelper.has(cursed, net.minecraft.world.item.enchantment.EnchantmentEffectComponents.PREVENT_EQUIPMENT_DROP) + "/"
+                    + binding.is(net.minecraft.tags.EnchantmentTags.CURSE) + "/" + sharpness.is(net.minecraft.tags.EnchantmentTags.CURSE));
             ItemStack blade = new ItemStack(Items.DIAMOND_SWORD);
             results.put("enchDefault", String.valueOf(blade.get(DataComponents.ENCHANTMENTS).isEmpty()));
             blade.enchant(sharpness, 3);
