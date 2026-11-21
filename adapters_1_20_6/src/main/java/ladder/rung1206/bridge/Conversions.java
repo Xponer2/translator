@@ -176,4 +176,37 @@ public final class Conversions {
     private static int channel(float value) {
         return net.minecraft.util.Mth.floor(value * 255.0F) & 255;
     }
+
+    /**
+     * The callback a mixin handler of the upper method gets when the method's result changed between numbers (1.21's
+     * float, 1.20.6's double): the lower callback's value as the upper number ("F", "D", "I"...).
+     */
+    public static org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> callback(
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> lower, String upper) {
+        Object value = lower.getReturnValue();
+        return new org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<>(lower.getId(), lower.isCancellable(),
+                value instanceof Number n ? number(n, upper) : value);
+    }
+
+    /** what the handler set on the upper callback (a cancel with a value), on the lower one as the lower number */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static void result(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> upper,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> lower, String type) {
+        if (upper.isCancelled()) {
+            Object value = upper.getReturnValue();
+            ((org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable) lower).setReturnValue(
+                    value instanceof Number n ? number(n, type) : value);
+        }
+    }
+
+    private static Object number(Number n, String type) {
+        return switch (type) {
+            case "B" -> n.byteValue();
+            case "S" -> n.shortValue();
+            case "I" -> n.intValue();
+            case "J" -> n.longValue();
+            case "F" -> n.floatValue();
+            default -> n.doubleValue();
+        };
+    }
 }

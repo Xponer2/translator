@@ -1060,6 +1060,30 @@ public final class LadderTestB {
                 results.put("fit.error", e.toString());
             }
             try {
+                // the entity tick events around a tick (the second Pre cancelled: no tick, no Post)
+                net.minecraft.world.entity.decoration.ArmorStand stand = new net.minecraft.world.entity.decoration.ArmorStand(level, 0.5, 70, 0.5);
+                int[] seen = new int[2];
+                java.util.function.Consumer<net.neoforged.neoforge.event.tick.EntityTickEvent.Pre> pre = tickPre -> {
+                    if (tickPre.getEntity() == stand && ++seen[0] == 2) {
+                        tickPre.setCanceled(true);
+                    }
+                };
+                java.util.function.Consumer<net.neoforged.neoforge.event.tick.EntityTickEvent.Post> post = tickPost -> {
+                    if (tickPost.getEntity() == stand) {
+                        seen[1]++;
+                    }
+                };
+                NeoForge.EVENT_BUS.addListener(pre);
+                NeoForge.EVENT_BUS.addListener(post);
+                level.tickNonPassenger(stand);
+                level.tickNonPassenger(stand);
+                NeoForge.EVENT_BUS.unregister(pre);
+                NeoForge.EVENT_BUS.unregister(post);
+                results.put("entityTick", seen[0] + "/" + seen[1] + "/" + stand.tickCount);
+            } catch (RuntimeException | LinkageError e) {
+                results.put("entityTick", "error " + e);
+            }
+            try {
                 // a chest's loot table (container_loot) kept over a save; fire resistance as the items have it
                 ItemStack lootChest = new ItemStack(Items.CHEST);
                 lootChest.set(DataComponents.CONTAINER_LOOT, new net.minecraft.world.item.component.SeededContainerLoot(

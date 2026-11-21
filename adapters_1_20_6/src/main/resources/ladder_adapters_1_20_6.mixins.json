@@ -17,14 +17,22 @@
     "UseDurationSites$Brush",
     "UseDurationSites$GameMode",
     "UseDurationSites$Witch",
-    "PostHurtMixin"
+    "PostHurtMixin",
+    "ChunkStorageAccess",
+    "JukeboxEntityMixin",
+    "JukeboxBlockMixin",
+    "DamagePostMixin"
   ],
   "client": [
     "BufferBuilderMixin",
     "ClientExtensionsMixin",
     "UseDurationClientSites$HandRenderer",
     "UseDurationClientSites$Properties",
-    "ParticleEngineMixin"
+    "ParticleEngineMixin",
+    "RenderTypeAccess",
+    "JukeboxMusicMixin",
+    "SingleQuadParticleMixin",
+    "OptionsSubScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

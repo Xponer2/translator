@@ -5,7 +5,11 @@
  */
 package ladder.rung1206.client;
 
+import java.util.function.BiFunction;
+
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.Material;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
@@ -41,4 +45,17 @@ public final class ModelAdapters {
     public static BakedModel getModel(ModelManager models, ModelResourceLocation location) {
         return STANDALONE.equals(location.getVariant()) ? models.getModel(id(location)) : models.getModel(location);
     }
+
+    /** 1.21's sprite getter of ModelBakery.bakeModels (an A row's plan), over 1.20.6's function of a location and a material */
+    public static ladder.carried_1_20_6.net.minecraft.client.resources.model.ModelBakery$TextureGetter textureGetter(
+            BiFunction<ResourceLocation, Material, TextureAtlasSprite> sprites) {
+        return sprites::apply;
+    }
+
+    /** the model location 1.20.6's bake takes and 1.21's doesn't (a D row's default: 1.21's callers name none) */
+    public static ResourceLocation unknownModel() {
+        return UNKNOWN;
+    }
+
+    private static final ResourceLocation UNKNOWN = new ResourceLocation("ladder", "unknown_model");
 }

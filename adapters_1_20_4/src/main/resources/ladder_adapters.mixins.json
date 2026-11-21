@@ -50,7 +50,8 @@
     "CarriedBundleFitMixin",
     "ParticlePacketMixin",
     "ExplosionParticleMixin",
-    "EntityParticleDataMixin"
+    "EntityParticleDataMixin",
+    "EntityTickEventMixin"
   ],
   "client": [
     "TransitionScreenMixin",
@@ -63,7 +64,8 @@
     "UseDurationClientSites$HandRenderer",
     "UseDurationClientSites$Properties",
     "ParticleEngineMixin",
-    "ModelViewApplyMixin"
+    "ModelViewApplyMixin",
+    "ClientEntityTickEventMixin"
   ],
   "injectors": {
     "defaultRequire": 1

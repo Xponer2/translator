@@ -46,4 +46,25 @@ public class LivingIncomingDamageEvent extends LivingEvent implements ICancellab
     public void setInvulnerabilityTicks(int ticks) {
         this.getEntity().invulnerableTime = ticks;
     }
+
+    /** NeoForge 21's container of this hit: its new damage is this event's amount */
+    public ladder.rung1206.provided.DamageContainer getContainer() {
+        LivingIncomingDamageEvent event = this;
+        return new ladder.rung1206.provided.DamageContainer(this.source, this.original) {
+            @Override
+            public float getNewDamage() {
+                return event.amount;
+            }
+
+            @Override
+            public void setNewDamage(float damage) {
+                event.amount = damage;
+            }
+
+            @Override
+            public void setPostAttackInvulnerabilityTicks(int ticks) {
+                event.setInvulnerabilityTicks(ticks);
+            }
+        };
+    }
 }

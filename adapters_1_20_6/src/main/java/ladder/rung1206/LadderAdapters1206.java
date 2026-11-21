@@ -14,6 +14,9 @@ import net.neoforged.fml.loading.FMLEnvironment;
 public final class LadderAdapters1206 {
     public LadderAdapters1206(IEventBus modBus) {
         ladder.rung1206.event.DamageEvents.register();
+        ladder.rung1206.jukebox.Jukebox.register(modBus);
+        ladder.rung1206.painting.Paintings.register(modBus);
+        modBus.addListener(ladder.rung1206.provided.event.BlockEntityTypeAddBlocksEvent::onCommonSetup);
         if (FMLEnvironment.dist.isClient()) {
             // the frame's time for the trackers made of a partial tick
             ladder.rung1206.provided.DeltaTracker.Client.timer = ladder.rung1206.render.TimeAdapters.TIMER;

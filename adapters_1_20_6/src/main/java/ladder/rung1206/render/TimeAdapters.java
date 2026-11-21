@@ -56,4 +56,14 @@ public final class TimeAdapters {
     public static ladder.rung1206.provided.DeltaTracker getPartialTick(net.neoforged.neoforge.client.event.RenderFrameEvent event) {
         return new ladder.rung1206.provided.DeltaTracker.PartialTick(event.getPartialTick());
     }
+
+    /** the partial tick 1.20.6's GameRenderer.render and renderLevel take, of 1.21's DeltaTracker (D rows) */
+    public static float partialTick(DeltaTracker tracker) {
+        return tracker.getGameTimeDeltaPartialTick(true);
+    }
+
+    /** the frame's start 1.20.6's GameRenderer.render and renderLevel take (1.21's take none) */
+    public static long nanos() {
+        return net.minecraft.Util.getNanos();
+    }
 }

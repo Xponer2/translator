@@ -161,4 +161,33 @@ public final class AttributeAdapters {
     public static EquipmentSlot bodySlot() {
         return EquipmentSlot.CHEST;
     }
+
+    // 1.20.5's attributes NeoForge 20.4 has as its own (the same bases): block and entity interaction range (reach), step
+    // height, gravity
+
+    public static net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> blockInteractionRange() {
+        return net.neoforged.neoforge.common.NeoForgeMod.BLOCK_REACH;
+    }
+
+    public static net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> entityInteractionRange() {
+        return net.neoforged.neoforge.common.NeoForgeMod.ENTITY_REACH;
+    }
+
+    public static net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> stepHeight() {
+        return net.neoforged.neoforge.common.NeoForgeMod.STEP_HEIGHT;
+    }
+
+    public static net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> gravity() {
+        return net.neoforged.neoforge.common.NeoForgeMod.ENTITY_GRAVITY;
+    }
+
+    /** 1.20.5's {@code player.blockInteractionRange()}: NeoForge 20.4's block reach */
+    public static double blockInteractionRange(net.minecraft.world.entity.player.Player player) {
+        return player.getBlockReach();
+    }
+
+    /** 1.20.5's {@code player.entityInteractionRange()}: NeoForge 20.4's entity reach */
+    public static double entityInteractionRange(net.minecraft.world.entity.player.Player player) {
+        return player.getEntityReach();
+    }
 }

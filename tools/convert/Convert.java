@@ -1218,7 +1218,7 @@ public class Convert {
         if (row == null || !row[0].equals(lowerDesc)) {
             return null;
         }
-        String[] spec = row[1].split(",");
+        String[] spec = specTokens(row[1]);
         int[] from = new int[spec.length];
         for (int j = 0; j < spec.length; j++) {
             from[j] = spec[j].startsWith("$") ? Integer.parseInt(spec[j].substring(1)) : -1;
@@ -1247,6 +1247,64 @@ public class Convert {
     }
 
     /** a D row's default for a lower parameter of that type */
+    /** a D row's lower parameters: its commas outside an adapter call's parentheses split them (none: no parameters) */
+    static String[] specTokens(String spec) {
+        if (spec.trim().equals("-")) {
+            // (a lower method without parameters: the row writes "-")
+            return new String[0];
+        }
+        List<String> tokens = new ArrayList<>();
+        int depth = 0, start = 0;
+        for (int i = 0; i < spec.length(); i++) {
+            char c = spec.charAt(i);
+            if (c == '(') {
+                depth++;
+            } else if (c == ')') {
+                depth--;
+            } else if (c == ',' && depth == 0) {
+                tokens.add(spec.substring(start, i).trim());
+                start = i + 1;
+            }
+        }
+        String last = spec.substring(start).trim();
+        if (!last.isEmpty() || !tokens.isEmpty()) {
+            tokens.add(last);
+        }
+        return tokens.toArray(new String[0]);
+    }
+
+    /**
+     * A D row's default of a lower parameter: a constant, or an adapter's value "owner.method(args)" of the receiver
+     * ("this": the member's object, typed as the row's owner) and upper parameters ("$k", of their upper types).
+     */
+    static void pushDefault(InsnList code, String value, Type type, Type[] up, int[] upSlots, String receiver) {
+        int open = value.indexOf('(');
+        if (open < 0) {
+            pushDefault(code, value, type);
+            return;
+        }
+        String call = value.substring(0, open), args = value.substring(open + 1, value.length() - 1).trim();
+        StringBuilder desc = new StringBuilder("(");
+        for (String a : args.isEmpty() ? new String[0] : args.split(",")) {
+            a = a.trim();
+            if (a.equals("this")) {
+                if (receiver == null) {
+                    throw new IllegalArgumentException("D row default " + value + " of a static member");
+                }
+                code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                desc.append('L').append(receiver).append(';');
+            } else {
+                int k = Integer.parseInt(a.substring(1));
+                code.add(new VarInsnNode(up[k].getOpcode(Opcodes.ILOAD), upSlots[k]));
+                desc.append(up[k].getDescriptor());
+            }
+        }
+        desc.append(')').append(type.getDescriptor());
+        String owner = call.substring(0, call.lastIndexOf('.')), name = call.substring(call.lastIndexOf('.') + 1);
+        checkAdapter(owner, name, desc.toString(), "D default " + value);
+        code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, name, desc.toString(), false));
+    }
+
     static void pushDefault(InsnList code, String value, Type type) {
         switch (type.getSort()) {
             case Type.BOOLEAN, Type.BYTE, Type.CHAR, Type.SHORT, Type.INT -> code.add(new LdcInsnNode(
@@ -1274,6 +1332,42 @@ public class Convert {
      * class is missing below (an interface new above that a game class implements, like NeoForge 21.1's
      * IAttributeExtension on Attribute), the game class up the call owner's chain that implements it there.
      */
+    /**
+     * The X row of a supertype's instance method that a class's own method overrides: {the row's owner, adapter class,
+     * adapter method}; null when none covers it.
+     */
+    static String[] inheritedX(Stage0.Ref ref) {
+        if (ref.kind() != 'M' || ref.name().startsWith("<") || redirects.isEmpty()) {
+            return null;
+        }
+        Stage0.Version here = versions.get(level);
+        Stage0.Cls own = here.classes.get(ref.cls());
+        if (own == null || own.staticMethods.contains(ref.name() + " " + ref.desc())) {
+            return null;
+        }
+        Deque<String> todo = new ArrayDeque<>();
+        todo.add(own.superName == null ? "" : own.superName);
+        todo.addAll(Arrays.asList(own.interfaces));
+        Set<String> seen = new HashSet<>();
+        while (!todo.isEmpty()) {
+            String c = todo.poll();
+            if (c.isEmpty() || !seen.add(c)) {
+                continue;
+            }
+            String[] x = redirects.get(c + "." + ref.name() + " " + ref.desc());
+            Stage0.Cls info = here.classes.get(c);
+            if (x != null && info != null && info.methods.contains(ref.name() + " " + ref.desc())
+                    && !info.staticMethods.contains(ref.name() + " " + ref.desc())) {
+                return new String[] {c, x[0], x[1]};
+            }
+            if (info != null) {
+                todo.add(info.superName == null ? "" : info.superName);
+                todo.addAll(Arrays.asList(info.interfaces));
+            }
+        }
+        return null;
+    }
+
     static String adapterReceiver(String declaring, String owner) {
         Stage0.Version here = versions.get(level), bottom = versions.get(versions.size() - 1);
         if (!Stage0.platform(declaring) || Stage0.mapClass(here, bottom, declaring) != null || provided.containsKey(declaring)) {
@@ -1287,7 +1381,8 @@ public class Convert {
                 if (info == null) {
                     break;
                 }
-                if (Arrays.asList(info.interfaces).contains(declaring) && Stage0.mapClass(here, bottom, c) != null) {
+                if ((Arrays.asList(info.interfaces).contains(declaring) || declaring.equals(info.superName)) && Stage0.mapClass(here, bottom, c) != null) {
+                    // (or a superclass new above: 1.21's GenerationChunkHolder over ChunkHolder)
                     return c;
                 }
                 c = info.superName;
@@ -1301,13 +1396,33 @@ public class Convert {
 
     /** the plan's tokens for a handler fix (its upper descriptor in lower names, its lower member), or null */
     static String[] argumentPlan(String upperDesc, Stage0.Ref end) {
+        String[] row = argumentPlanRow(upperDesc, end);
+        return row == null ? null : row[4].trim().split(" +");
+    }
+
+    /**
+     * The A row of a lower member: its owner's own, else one of a class it extends below (an override of the same
+     * method: Zombie.dropCustomDeathLoot under LivingEntity's row); null when none covers it.
+     */
+    static String[] argumentPlanRow(String upperDesc, Stage0.Ref end) {
+        return argumentPlanRow(upperDesc, end, end.name());
+    }
+
+    /** (the row names the upper method: a hook renamed below, canUsePortal as canChangeDimensions, by its upper name) */
+    static String[] argumentPlanRow(String upperDesc, Stage0.Ref end, String upperName) {
+        String[] inherited = null;
         for (String[] a : argumentPlans) {
-            if (a[1].equals(end.name()) && a[3].equals(end.desc()) && remapper.mapMethodDesc(a[2]).equals(upperDesc)
-                    && remapper.map(a[0]).equals(end.cls())) {
-                return a[4].trim().split(" +");
+            if ((a[1].equals(end.name()) || a[1].equals(upperName)) && a[3].equals(end.desc()) && remapper.mapMethodDesc(a[2]).equals(upperDesc)) {
+                String owner = remapper.map(a[0]);
+                if (owner.equals(end.cls())) {
+                    return a;
+                }
+                if (inherited == null && subtypeIn(versions.get(versions.size() - 1), end.cls(), owner)) {
+                    inherited = a;
+                }
             }
         }
-        return null;
+        return inherited;
     }
     /** M rows: owner, name, desc (top names), lower name, lower desc (bottom names): the same hook below, renamed */
     static final List<String[]> memberMoves = new ArrayList<>();
@@ -1370,7 +1485,7 @@ public class Convert {
                     case "K" -> constructorArguments.put(c[1] + ".<init> " + c[2], new String[] {c[3], c[4], c[5]});
                     // a method that takes more below: each lower parameter is an upper one ($0, $1..) or a default written
                     // in the row (false, true, a number, null); calls, overrides and mixin selectors go to the lower one
-                    case "D" -> lowerDefaults.put(c[1] + "." + c[2] + " " + c[3], new String[] {c[4], c[5]});
+                    case "D" -> lowerDefaults.put(c[1] + "." + c[2] + " " + c[3], new String[] {c[4], c[5], c[1]});
                     // a class renamed below with the same members: its uses get the lower name
                     case "R" -> NEOFORGE_MOVES.put(c[1], c[2]);
                     // a member (of the owner and its subclasses) that is another one below: bridged to it
@@ -1386,6 +1501,8 @@ public class Convert {
                     // the arguments of a method whose parameters changed below, from the lower method's (a mixin
                     // handler's wrapper): per upper parameter "$k" (the lower one, converted) or "Class.method(k,...)"
                     case "A" -> argumentPlans.add(new String[] {c[1], c[2], c[3], c[4], c[5]});
+                    // a data folder the adapters give a place below (a data pack registry they add: jukebox_song)
+                    case "G" -> adapterDataFolders.add(c[1]);
                     default -> throw new IOException("unknown rule " + line);
                 }
             }
@@ -1449,8 +1566,42 @@ public class Convert {
         for (MethodNode m : c.methods) {
             if (MixinPoints.annotations(m).stream().anyMatch(a -> a.desc.equals("Lorg/spongepowered/asm/mixin/Overwrite;"))) {
                 targets.forEach(t -> adapterOverwrites.computeIfAbsent(t, k -> new ArrayList<>()).add(m));
+            } else if (!targets.isEmpty() && (c.access & Opcodes.ACC_INTERFACE) == 0 && added(m)) {
+                // a method the mixin merges into its target (a member the game below hasn't, in the upper game's shape):
+                // the mods' references to it are the target's own, and the mixin checks see it there
+                targets.forEach(t -> adapterAdded.computeIfAbsent(t, k -> new ArrayList<>()).add(m));
             }
         }
+        if (!targets.isEmpty() && (c.access & Opcodes.ACC_INTERFACE) == 0) {
+            for (org.objectweb.asm.tree.FieldNode f : c.fields) {
+                boolean annotated = (f.visibleAnnotations != null && !f.visibleAnnotations.isEmpty())
+                        || (f.invisibleAnnotations != null && !f.invisibleAnnotations.isEmpty());
+                if (!annotated && !f.name.startsWith("ladder$") && (f.access & Opcodes.ACC_SYNTHETIC) == 0) {
+                    // a field the mixin merges into its target (1.21's OptionsSubScreen.list on 1.20.6)
+                    targets.forEach(t -> adapterAddedFields.add(t + " " + f.name + " " + f.desc));
+                }
+            }
+        }
+    }
+
+    /** the fields the adapters' mixins add to the game's classes: "class name desc" */
+    static final Set<String> adapterAddedFields = new HashSet<>();
+
+    /** the methods the adapters' mixins add to the game's classes (not their handlers, shadows or own helpers) */
+    static final Map<String, List<MethodNode>> adapterAdded = new HashMap<>();
+
+    static boolean added(MethodNode m) {
+        if (m.name.startsWith("<") || m.name.startsWith("ladder$") || m.name.startsWith("lambda$") || (m.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_SYNTHETIC)) != 0) {
+            return false;
+        }
+        // annotated: an injector, a shadow, an accessor... (a plain method is merged as it is)
+        return MixinPoints.annotations(m).stream().noneMatch(a -> a.desc.startsWith("Lorg/spongepowered/asm/mixin/")
+                || a.desc.startsWith("Lcom/llamalad7/mixinextras/"));
+    }
+
+    /** whether an adapters' mixin adds this method to the class (the game below hasn't it otherwise) */
+    static boolean adapterAddsMethod(String cls, String name, String desc) {
+        return adapterAdded.getOrDefault(cls, List.of()).stream().anyMatch(m -> m.name.equals(name) && m.desc.equals(desc));
     }
 
     /** the adapters' classes (a provided class is a mixin target below: checked on its own code) */
@@ -1749,6 +1900,16 @@ public class Convert {
                     continue;
                 }
                 String[] x = redirects.get(ref.cls() + "." + ref.name() + " " + ref.desc());
+                String xOwner = ref.cls();
+                if (x == null && call.getOpcode() != Opcodes.INVOKESTATIC && call.getOpcode() != Opcodes.INVOKESPECIAL) {
+                    // a class's own override of a member an X row covers on its supertype (NeoForge 21's
+                    // QuadBakingVertexConsumer.addVertex under VertexConsumer's): the same adapter, which dispatches
+                    String[] inherited = inheritedX(ref);
+                    if (inherited != null) {
+                        xOwner = inherited[0];
+                        x = new String[] {inherited[1], inherited[2]};
+                    }
+                }
                 if (x != null && call.getOpcode() == Opcodes.INVOKESPECIAL && overrideRule(ref.cls(), ref.name(), ref.desc()) != null) {
                     // a super call of a member with both rows: the O row's defaults (the X row's adapter dispatches to the
                     // override, which would call itself)
@@ -1756,7 +1917,7 @@ public class Convert {
                 }
                 if (x != null) {
                     String desc = call.getOpcode() == Opcodes.INVOKESTATIC ? call.desc
-                            : "(L" + adapterReceiver(ref.cls(), call.owner) + ";" + call.desc.substring(1);
+                            : "(L" + adapterReceiver(xOwner, call.owner) + ";" + call.desc.substring(1);
                     checkAdapter(x[0], x[1], desc, "X " + ref.key());
                     call.setOpcode(Opcodes.INVOKESTATIC);
                     call.owner = x[0];
@@ -1911,10 +2072,57 @@ public class Convert {
         for (String start : starts(owner)) {
             String decl = here.declaring(start, name, desc, method);
             if (decl != null) {
+                if (method && !decl.equals(start) && declaredLowerBelow(start, decl, name, desc)) {
+                    // missing below in its declaring class but declared below in a class between it and the reference's
+                    // (1.20.4's Block.propagatesSkylightDown, 1.21's BlockBehaviour's): the reference's own class
+                    // resolves it there (walk retries from it)
+                    return new Stage0.Ref('M', start, name, desc);
+                }
                 return new Stage0.Ref(method ? 'M' : 'F', decl, name, desc);
             }
         }
         return null;
+    }
+
+    /** "start decl.name desc" -> whether the member moved down the hierarchy below (declaredLowerBelow) */
+    static final Map<String, Boolean> declaredLower = new HashMap<>();
+
+    /**
+     * Whether a method the top version declares in decl, which a reference reaches from start (a subclass), is missing
+     * in decl's class at some rung but resolved there from start's class (a class between them declares it below). No
+     * rule may cover the member (a rule keyed by its declaring class is meant for it).
+     */
+    static boolean declaredLowerBelow(String start, String decl, String name, String desc) {
+        String cacheKey = level + " " + start + " " + decl + "." + name + " " + desc;
+        Boolean known = declaredLower.get(cacheKey);
+        if (known != null) {
+            return known;
+        }
+        boolean result = false;
+        String key = decl + "." + name + " " + desc;
+        if (!redirects.containsKey(key) && !lowerDefaults.containsKey(key) && !unusedBelow.contains(key) && overrideRule(decl, name, desc) == null
+                && memberMoves.stream().noneMatch(m -> m[0].equals(decl) && m[1].equals(name) && m[2].equals(desc))
+                && !provided.containsKey(decl)) {
+            Stage0.Ref cur = new Stage0.Ref('M', decl, name, desc);
+            String from = start;
+            for (int i = level; i + 1 < versions.size() && cur != null && from != null; i++) {
+                Stage0.Version a = versions.get(i), b = versions.get(i + 1);
+                Stage0.Step st = memberStep(a, b, cur);
+                if (st.outcome() == Stage0.Outcome.SAME || st.outcome() == Stage0.Outcome.RENAMED) {
+                    cur = st.to();
+                    from = Stage0.mapClass(a, b, from);
+                    continue;
+                }
+                if (st.outcome() == Stage0.Outcome.MISSING_MEMBER) {
+                    Stage0.Step again = memberStep(a, b, new Stage0.Ref('M', from, cur.name(), cur.desc()));
+                    result = (again.outcome() == Stage0.Outcome.SAME || again.outcome() == Stage0.Outcome.RENAMED)
+                            && !again.to().cls().equals(Stage0.mapClass(a, b, cur.cls()));
+                }
+                break;
+            }
+        }
+        declaredLower.put(cacheKey, result);
+        return result;
     }
 
     /** whether a mod class met before the game's classes (the field lookup's order) declares the field */
@@ -1996,6 +2204,9 @@ public class Convert {
 
     static Stage0.Ref walkUncached(Stage0.Ref ref, String key) {
         Stage0.Ref cur = ref;
+        // the reference's own class, at each rung's version: a member missing in its declaring class may be declared
+        // below in a class between (declaredLowerBelow)
+        String start = ref.cls();
         for (int i = level; i + 1 < versions.size() && cur != null; i++) {
             if (provided.containsKey(cur.cls())) {
                 // a class the adapters provide: its members are theirs, at every rung (whatever the versions between do)
@@ -2003,6 +2214,13 @@ public class Convert {
             }
             Stage0.Version from = versions.get(i), to = versions.get(i + 1);
             Stage0.Step s = memberStep(from, to, cur);
+            if (s.outcome() == Stage0.Outcome.MISSING_MEMBER && cur.kind() == 'M' && start != null && !start.equals(cur.cls())) {
+                Stage0.Step again = memberStep(from, to, new Stage0.Ref('M', start, cur.name(), cur.desc()));
+                if (again.outcome() == Stage0.Outcome.SAME || again.outcome() == Stage0.Outcome.RENAMED) {
+                    s = again;
+                }
+            }
+            start = start == null ? null : Stage0.mapClass(from, to, start);
             switch (s.outcome()) {
                 case SAME, RENAMED -> cur = s.to();
                 case CHANGED -> {
@@ -2015,6 +2233,11 @@ public class Convert {
                     if (ref.kind() == 'F' && ruled(ref.key())) {
                         // a field read an F row's getter takes (a method's X row covers calls, not overrides: no skip)
                         return cur;
+                    }
+                    if (datagenApi(cur.cls())) {
+                        // the data generators' API runs in runData only, never in the game
+                        unverified.add("data generation API " + cur.key() + ", changed (" + from.id + " -> " + to.id + ")");
+                        return null;
                     }
                     problem("changed descriptor, no bridge yet: " + cur.key() + " -> " + s.to().name() + s.to().desc() + " (" + from.id + " -> " + to.id + ")");
                     cur = s.to();
@@ -2048,6 +2271,16 @@ public class Convert {
                         }
                         problem("changed below (an M row), no bridge: " + cur.key() + " -> " + moved.name() + moved.desc());
                         return null;
+                    }
+                    if (i + 2 == versions.size() && cur.kind() == 'F' && adapterAddedFields.contains((Stage0.mapClass(from, to, cur.cls()) == null ? cur.cls()
+                            : Stage0.mapClass(from, to, cur.cls())) + " " + cur.name() + " " + cur.desc())) {
+                        // the adapters' mixin gives the bottom class this field
+                        return cur;
+                    }
+                    if (i + 2 == versions.size() && cur.kind() == 'M' && adapterAddsMethod(Stage0.mapClass(from, to, cur.cls()) == null ? cur.cls()
+                            : Stage0.mapClass(from, to, cur.cls()), cur.name(), cur.desc())) {
+                        // the adapters' mixin gives the bottom class this method (in the upper game's shape)
+                        return cur;
                     }
                     Set<String> ok = carriable(i);
                     if (Stage0.mapClass(from, to, cur.cls()) == null) {
@@ -2171,8 +2404,12 @@ public class Convert {
             return false;
         }
         String rest = key.substring(2);
-        return key.charAt(0) == 'M' && (redirects.containsKey(rest) || constructorArguments.containsKey(rest))
-                || key.charAt(0) == 'F' && fieldRedirects.containsKey(rest);
+        if (key.charAt(0) == 'M' && !redirects.containsKey(rest) && !constructorArguments.containsKey(rest)) {
+            // (an override of a supertype's member an X row covers)
+            int space = rest.indexOf(' '), dot = rest.lastIndexOf('.', space);
+            return space > 0 && dot > 0 && inheritedX(new Stage0.Ref('M', rest.substring(0, dot), rest.substring(dot + 1, space), rest.substring(space + 1))) != null;
+        }
+        return key.charAt(0) == 'M' || key.charAt(0) == 'F' && fieldRedirects.containsKey(rest);
     }
 
     static Set<String> carriable(int i) {
@@ -2886,6 +3123,11 @@ public class Convert {
         if (upper.equals(lower)) {
             return 0;
         }
+        if (upper.getSort() == Type.VOID && lower.getSort() != Type.VOID) {
+            // a result the upper member hasn't (1.20.6's MultiLineLabel.renderCentered gives its height): a call drops it;
+            // an override or a lambda can't make one (overriddenReturn)
+            return 14;
+        }
         if (upper.getSort() == Type.FLOAT && lower.getSort() == Type.DOUBLE) {
             // 1.21's float where the lower member takes a double (a vertex's position)
             return 12;
@@ -2932,6 +3174,11 @@ public class Convert {
         if (isSubtype(l, u)) {
             // the lower type is the upper one's subtype (a DefaultedRegistry for a Registry): read as it is, passed cast
             return 8;
+        }
+        if (isSubtype(u, l)) {
+            // the upper type is the lower one's subtype (1.21's MultiLineLabel.create of a Component, 1.20.6's of a
+            // FormattedText): passed as it is, read cast
+            return 15;
         }
         return -1;
     }
@@ -2992,8 +3239,18 @@ public class Convert {
         return false;
     }
 
+    static final String CALLBACK_RETURNABLE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
+    /** the primitive number descriptors a callback's value converts between */
+    static final String NUMBERS = "BSIJFD";
+
     static boolean convertible(Type upper, Type lower) {
         return conversion(upper, lower) >= 0;
+    }
+
+    /** whether the result of a mod's method (an override, a lambda) of the upper type is the lower member's */
+    static boolean overriddenReturn(Type upper, Type lower) {
+        int c = conversion(upper, lower);
+        return c >= 0 && c != 14;
     }
 
     /**
@@ -3079,10 +3336,11 @@ public class Convert {
         int k = 0;
         for (int j = 0; j < up.length; j++) {
             boolean context = up[j].getSort() == Type.OBJECT && CONTEXT_PARAMETERS.contains(up[j].getInternalName());
-            if (colorAt(up, j, low, k)) {
-                // 1.21's ARGB colour int where the lower member takes red, green, blue, alpha floats: -(k + 2)
+            int channels = colorChannels(up, j, low, k);
+            if (channels > 0) {
+                // 1.21's ARGB colour int where the lower member takes red, green, blue (, alpha) floats: -(k + 2)
                 map[j] = -(k + 2);
-                k += 4;
+                k += channels;
                 continue;
             }
             // a context parameter stays only when the lower member has the same one there
@@ -3103,29 +3361,47 @@ public class Convert {
      * rest of both lining up.
      */
     static boolean colorAt(Type[] up, int j, Type[] low, int k) {
-        if (up[j].getSort() != Type.INT || k + 4 > low.length || up.length - j - 1 != low.length - k - 4) {
-            return false;
-        }
-        for (int c = 0; c < 4; c++) {
-            if (low[k + c].getSort() != Type.FLOAT) {
-                return false;
-            }
-        }
-        return true;
+        return colorChannels(up, j, low, k) > 0;
     }
 
-    /** the colour int in the local at slot, as the four floats (red, green, blue, alpha) on the stack */
-    static void unpackColor(InsnList code, int slot) {
-        for (String channel : new String[] {"red", "green", "blue", "alpha"}) {
+    /**
+     * The lower floats a colour int of the upper member at j is, at k: 4 (red, green, blue, alpha), 3 (red, green, blue:
+     * 1.20.6's RenderLayer.renderColoredCutoutModel, opaque) or 0 (not a colour), the rest of both lining up.
+     */
+    static int colorChannels(Type[] up, int j, Type[] low, int k) {
+        if (up[j].getSort() != Type.INT) {
+            return 0;
+        }
+        for (int n = 4; n >= 3; n--) {
+            if (k + n > low.length || up.length - j - 1 != low.length - k - n) {
+                continue;
+            }
+            boolean floats = true;
+            for (int c = 0; c < n; c++) {
+                floats &= low[k + c].getSort() == Type.FLOAT;
+            }
+            if (floats) {
+                return n;
+            }
+        }
+        return 0;
+    }
+
+    /** the colour int in the local at slot, as its floats (red, green, blue, and alpha of 4 channels) on the stack */
+    static void unpackColor(InsnList code, int slot, int channels) {
+        for (String channel : Arrays.copyOf(new String[] {"red", "green", "blue", "alpha"}, channels)) {
             code.add(new VarInsnNode(Opcodes.ILOAD, slot));
             code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, channel, "(I)F", false));
         }
     }
 
-    /** the four floats in the locals at slots[k..k+3], as the colour int on the stack */
-    static void packColor(InsnList code, int[] slots, int k) {
-        for (int c = 0; c < 4; c++) {
+    /** the floats in the locals at slots[k..] (red, green, blue, alpha; opaque of 3 channels), as the colour int on the stack */
+    static void packColor(InsnList code, int[] slots, int k, int channels) {
+        for (int c = 0; c < channels; c++) {
             code.add(new VarInsnNode(Opcodes.FLOAD, slots[k + c]));
+        }
+        if (channels == 3) {
+            code.add(new LdcInsnNode(1.0F));
         }
         code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "color", "(FFFF)I", false));
     }
@@ -3138,6 +3414,7 @@ public class Convert {
     /** A value of the upper type on the stack becomes the lower type's. */
     static void convertDown(InsnList code, Type upper, Type lower) {
         switch (conversion(upper, lower)) {
+            case 14 -> throw new IllegalStateException("no " + lower + " result of a void method");
             case 1, 2 -> {
                 code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "unwrap", "(L" + HOLDER + ";)Ljava/lang/Object;", false));
                 code.add(new TypeInsnNode(Opcodes.CHECKCAST, lower.getInternalName()));
@@ -3213,7 +3490,8 @@ public class Convert {
             // protected: a static bridge in its own package couldn't call it; overrides and super calls need none, and
             // a subclass's calls go through a private helper of its own (protectedCall)
             Type[] ua = Type.getArgumentTypes(upper.desc()), la = Type.getArgumentTypes(lower.desc());
-            if (paramMap(ua, la) == null || !convertible(Type.getReturnType(upper.desc()), Type.getReturnType(lower.desc()))) {
+            boolean defaultedProtected = defaultedLower(upper.cls() + "." + upper.name() + " " + upper.desc(), lower.desc()) != null;
+            if (!defaultedProtected && paramMap(ua, la) == null || !convertible(Type.getReturnType(upper.desc()), Type.getReturnType(lower.desc()))) {
                 return null;
             }
             String[] bridge = {PROTECTED + lower.cls(), upper.name() + "$" + Integer.toHexString(upper.desc().hashCode())};
@@ -3650,7 +3928,18 @@ public class Convert {
         Type[] up = isStatic ? all : Arrays.copyOfRange(all, 1, all.length);
         Type upRet = Type.getReturnType(desc), lowRet = Type.getReturnType(end.desc());
         int[] map = paramMap(up, low);
-        if (map == null || !convertible(upRet, lowRet)) {
+        // (a D row's method: the lower parameters are upper ones or the row's defaults, of the receiver too)
+        String[] row = null;
+        if (map == null) {
+            for (String start : starts(call.owner)) {
+                Stage0.Ref ref = resolve(start, call.name, call.desc, true);
+                if (ref != null && defaultedLower(ref.cls() + "." + call.name + " " + call.desc, end.desc()) != null) {
+                    row = defaultsRow(ref.cls() + "." + call.name + " " + call.desc);
+                    break;
+                }
+            }
+        }
+        if (map == null && row == null || !convertible(upRet, lowRet)) {
             return null;
         }
         String name = "ladder$call$" + call.name + "$" + Integer.toHexString(topDesc.hashCode());
@@ -3667,12 +3956,37 @@ public class Convert {
             code.add(new VarInsnNode(Opcodes.ALOAD, 0));
             slot = 1;
         }
+        if (row != null) {
+            String[] spec = specTokens(row[1]);
+            int[] from = defaultedLower(row[2] + "." + call.name + " " + call.desc, end.desc());
+            if (from == null) {
+                from = new int[spec.length];
+                for (int j = 0; j < spec.length; j++) {
+                    from[j] = spec[j].startsWith("$") ? Integer.parseInt(spec[j].substring(1)) : -1;
+                }
+            }
+            int[] slots = new int[up.length];
+            for (int a = 0; a < up.length; a++) {
+                slots[a] = slot;
+                slot += up[a].getSize();
+            }
+            for (int j = 0; j < low.length; j++) {
+                if (from[j] >= 0) {
+                    code.add(new VarInsnNode(up[from[j]].getOpcode(Opcodes.ILOAD), slots[from[j]]));
+                    convertDown(code, up[from[j]], low[j]);
+                } else {
+                    pushDefault(code, spec[j], low[j], up, slots, isStatic ? null : remapper.map(row[2]));
+                }
+            }
+            map = new int[0];
+            up = new Type[0];
+        }
         for (int a = 0; a < up.length; a++) {
             if (map[a] >= 0) {
                 code.add(new VarInsnNode(up[a].getOpcode(Opcodes.ILOAD), slot));
                 convertDown(code, up[a], low[map[a]]);
             } else if (map[a] <= -2) {
-                unpackColor(code, slot);
+                unpackColor(code, slot, colorChannels(up, a, low, -map[a] - 2));
             }
             slot += up[a].getSize();
         }
@@ -3730,7 +4044,8 @@ public class Convert {
         int slot = 1;
         if (from != null) {
             // a D row: the lower parameters in their order, each an upper one or the row's default
-            String[] spec = defaultsRow(defaultsKey)[1].split(",");
+            String[] row = defaultsRow(defaultsKey);
+            String[] spec = specTokens(row[1]);
             int[] slots = new int[up.length];
             for (int a = 0; a < up.length; a++) {
                 slots[a] = slot;
@@ -3741,7 +4056,7 @@ public class Convert {
                     code.add(new VarInsnNode(up[from[j]].getOpcode(Opcodes.ILOAD), slots[from[j]]));
                     convertDown(code, up[from[j]], low[j]);
                 } else {
-                    pushDefault(code, spec[j], low[j]);
+                    pushDefault(code, spec[j], low[j], up, slots, remapper.map(row[2]));
                 }
             }
             map = new int[0];
@@ -3752,7 +4067,7 @@ public class Convert {
                 code.add(new VarInsnNode(up[a].getOpcode(Opcodes.ILOAD), slot));
                 convertDown(code, up[a], low[map[a]]);
             } else if (map[a] <= -2) {
-                unpackColor(code, slot);
+                unpackColor(code, slot, colorChannels(up, a, low, -map[a] - 2));
             }
             slot += up[a].getSize();
         }
@@ -3897,7 +4212,7 @@ public class Convert {
                     continue;
                 }
                 Type[] up = Type.getArgumentTypes(remapper.mapMethodDesc(sam)), low = Type.getArgumentTypes(end.desc());
-                if (paramMap(up, low) == null || !convertible(Type.getReturnType(remapper.mapMethodDesc(sam)), Type.getReturnType(end.desc()))) {
+                if (paramMap(up, low) == null || !overriddenReturn(Type.getReturnType(remapper.mapMethodDesc(sam)), Type.getReturnType(end.desc()))) {
                     problem("a lambda of " + ref.key() + ", whose parameters changed below: no bridge for it (it would never be called)");
                     continue;
                 }
@@ -3975,7 +4290,7 @@ public class Convert {
                     code.add(new TypeInsnNode(Opcodes.CHECKCAST, up[a].getInternalName()));
                 }
             } else if (map[a] <= -2) {
-                packColor(code, slots, -map[a] - 2);
+                packColor(code, slots, -map[a] - 2, colorChannels(up, a, low, -map[a] - 2));
             } else {
                 supplyContext(code, up[a]);
             }
@@ -4008,7 +4323,14 @@ public class Convert {
             // a D row's method (it takes more below): each upper parameter is the lower one it is passed as
             map = defaultedOverride(node.name, m.name, m.desc, end.desc(), up.length);
         }
-        if (map == null || !convertible(upRet, lowRet)) {
+        // else an A row's: each upper parameter made of the lower ones (or of the object: a level it is in)
+        String[] planRow = map == null ? argumentPlanRow(ownDesc, end, m.name) : null;
+        String[] plan = planRow == null ? null : planRow[4].trim().split(" +");
+        if (plan != null && plan.length != up.length) {
+            problem("an A row's plan for " + end.key() + " has " + plan.length + " arguments, not " + up.length);
+            plan = null;
+        }
+        if (map == null && plan == null || !overriddenReturn(upRet, lowRet)) {
             return null;
         }
         int access = Opcodes.ACC_PUBLIC;
@@ -4029,12 +4351,14 @@ public class Convert {
         }
         Type[] wanted = castTypes(m, up);
         for (int a = 0; a < up.length; a++) {
-            if (map[a] >= 0) {
+            if (plan != null) {
+                planArgument(code, plan[a], low, slots, up[a], 0, remapper.map(planRow[0]));
+            } else if (map[a] >= 0) {
                 code.add(new VarInsnNode(low[map[a]].getOpcode(Opcodes.ILOAD), slots[map[a]]));
                 // (a javac bridge's erased recipe input: made of the type the method casts it to)
                 convertUp(code, low[map[a]], wanted[a] != null ? wanted[a] : up[a]);
             } else if (map[a] <= -2) {
-                packColor(code, slots, -map[a] - 2);
+                packColor(code, slots, -map[a] - 2, colorChannels(up, a, low, -map[a] - 2));
             } else {
                 supplyContext(code, up[a]);
             }
@@ -4176,7 +4500,8 @@ public class Convert {
             // a D row: the lower parameters are upper ones or the row's defaults
             Type[] ua = Type.getArgumentTypes(upperDesc), la = Type.getArgumentTypes(lowerDesc);
             int[] from = defaultedLower(d[1] + "." + d[2] + " " + upperDesc, lowerDesc);
-            String[] spec = defaultsRow(d[1] + "." + d[2] + " " + upperDesc)[1].split(",");
+            String[] row = defaultsRow(d[1] + "." + d[2] + " " + upperDesc);
+            String[] spec = specTokens(row[1]);
             int[] slots = new int[ua.length];
             StringBuilder b = new StringBuilder("(");
             if (!lowerStatic) {
@@ -4196,7 +4521,7 @@ public class Convert {
                     code.add(new VarInsnNode(ua[from[j]].getOpcode(Opcodes.ILOAD), slots[from[j]]));
                     convertDown(code, ua[from[j]], la[j]);
                 } else {
-                    pushDefault(code, spec[j], la[j]);
+                    pushDefault(code, spec[j], la[j], ua, slots, lowerStatic ? null : remapper.map(row[2]));
                 }
                 stack += la[j].getSize();
             }
@@ -4222,7 +4547,7 @@ public class Convert {
                     stack += ua[a].getSize();
                     convertDown(code, ua[a], la[map[a]]);
                 } else if (map[a] <= -2) {
-                    unpackColor(code, locals);
+                    unpackColor(code, locals, colorChannels(ua, a, la, -map[a] - 2));
                     stack += 4;
                 }
                 locals += ua[a].getSize();
@@ -4244,6 +4569,8 @@ public class Convert {
     /** A value of the lower type on the stack becomes the upper type's. */
     static void convertUp(InsnList code, Type lower, Type upper) {
         switch (conversion(upper, lower)) {
+            case 14 -> code.add(new InsnNode(lower.getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
+            case 15 -> code.add(new TypeInsnNode(Opcodes.CHECKCAST, upper.getInternalName()));
             case 1 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "holder", "(Ljava/lang/Object;)L" + HOLDER + ";", false));
             case 2 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "reference", "(Ljava/lang/Object;)L" + REFERENCE + ";", false));
             case 3 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "mapCodec", "(L" + CODEC + ";)L" + MAP_CODEC + ";", false));
@@ -4540,6 +4867,14 @@ public class Convert {
                 return Optional.of(c);
             }).orElse(null);
         }
+        List<MethodNode> addedHere = adapterAdded.get(name);
+        if (node != null && addedHere != null && addedClasses.add(name)) {
+            for (MethodNode a : addedHere) {
+                if (node.methods.stream().noneMatch(m -> m.name.equals(a.name) && m.desc.equals(a.desc))) {
+                    node.methods.add(a);
+                }
+            }
+        }
         List<MethodNode> overwrites = adapterOverwrites.get(name);
         if (node != null && overwrites != null && overwrittenClasses.add(name)) {
             for (MethodNode o : overwrites) {
@@ -4579,6 +4914,7 @@ public class Convert {
                 && patched.methods.stream().anyMatch(m -> m.name.equals(name) && m.desc.equals(desc));
     }
     static final Set<String> overwrittenClasses = new HashSet<>();
+    static final Set<String> addedClasses = new HashSet<>();
     static final Map<String, Optional<ClassNode>> unpatchedBottom = new HashMap<>();
 
     static ClassNode unpatchedBottomClass(String name) {
@@ -5039,16 +5375,38 @@ public class Convert {
 
     /** one upper argument of an A row's plan on the stack: "$k" (lower parameter k, converted) or "Class.method(k,...)" */
     static void planArgument(InsnList code, String token, Type[] low, int[] slots, Type up) {
+        planArgument(code, token, low, slots, up, -1, null);
+    }
+
+    /**
+     * An upper argument by an A row's plan token: "$k" (the lower parameter k, converted up) or an adapter's value
+     * "owner.method(args)" of lower parameters (k) and of the member's object ("this": in the local receiverSlot, typed
+     * as receiver; none for a static member).
+     */
+    static void planArgument(InsnList code, String token, Type[] low, int[] slots, Type up, int receiverSlot, String receiver) {
         if (token.startsWith("$")) {
             int k = Integer.parseInt(token.substring(1));
             code.add(new VarInsnNode(low[k].getOpcode(Opcodes.ILOAD), slots[k]));
             convertUp(code, low[k], up);
             return;
         }
+        if (token.indexOf('(') < 0) {
+            // a value the lower method hasn't: the constant the upper game passes there (1.0: white)
+            pushDefault(code, token, up);
+            return;
+        }
         String call = token.substring(0, token.indexOf('('));
         String args = token.substring(token.indexOf('(') + 1, token.length() - 1);
         StringBuilder desc = new StringBuilder("(");
         for (String a : args.isEmpty() ? new String[0] : args.split(",")) {
+            if (a.trim().equals("this")) {
+                if (receiver == null || receiverSlot < 0) {
+                    throw new IllegalArgumentException("A plan " + token + " of a static member");
+                }
+                code.add(new VarInsnNode(Opcodes.ALOAD, receiverSlot));
+                desc.append('L').append(receiver).append(';');
+                continue;
+            }
             int k = Integer.parseInt(a.trim());
             code.add(new VarInsnNode(low[k].getOpcode(Opcodes.ILOAD), slots[k]));
             desc.append(low[k].getDescriptor());
@@ -5162,6 +5520,8 @@ public class Convert {
             boolean takesAll = !f.call() && hp.length >= up.length && up.length > 0 && Arrays.equals(Arrays.copyOf(hp, up.length), up);
             holdsChanged |= takesAll && low.length != up.length;
             String[] plan = f.call() ? null : argumentPlan(f.upperDesc(), f.end());
+            String[] planRow = argumentPlanRow(f.upperDesc(), f.end());
+            String planOwner = planRow == null ? null : remapper.map(planRow[0]);
             if (plan != null && plan.length != up.length) {
                 problem("an A row's plan for " + f.end().key() + " has " + plan.length + " arguments, not " + up.length);
                 continue;
@@ -5181,10 +5541,22 @@ public class Convert {
                             || f.annotation().equals("Lorg/spongepowered/asm/mixin/injection/Redirect;"))
                     && Arrays.equals(Arrays.copyOfRange(hp, 1, 1 + up.length), up);
             if (callShape) {
-                callBridge(out, h, hp, up, low, callPlan);
+                callBridge(out, h, hp, up, low, callPlan, planOwner);
                 continue;
             }
-            if (f.call() || !inject || !prefix || returnChanged || !distinct) {
+            // an @Inject whose method's result changed between numbers (1.21's Camera.getMaxZoom(F)F, 1.20.6's (D)D): its
+            // CallbackInfoReturnable gets the upper number, and what it sets goes back as the lower one
+            Type upRet = Type.getReturnType(f.upperDesc()), lowRet = Type.getReturnType(f.end().desc());
+            int callback = -1;
+            for (int i = up.length; i < hp.length && returnChanged; i++) {
+                if (hp[i].getSort() == Type.OBJECT && hp[i].getInternalName().equals(CALLBACK_RETURNABLE)) {
+                    callback = i;
+                    break;
+                }
+            }
+            boolean numberResult = returnChanged && inject && !f.call() && callback >= 0 && NUMBERS.indexOf(upRet.getDescriptor()) >= 0
+                    && NUMBERS.indexOf(lowRet.getDescriptor()) >= 0 && upRet.getDescriptor().length() == 1 && lowRet.getDescriptor().length() == 1;
+            if (f.call() || !inject || !prefix || returnChanged && !numberResult || !distinct) {
                 problem("mixin handler " + where + " takes types that changed below (" + f.upperDesc() + " -> " + f.end().desc()
                         + "): no handler bridge for it");
                 continue;
@@ -5229,22 +5601,42 @@ public class Convert {
             }
             for (int i = 0; i < up.length; i++) {
                 if (plan != null) {
-                    planArgument(code, plan[i], low, slots, up[i]);
+                    planArgument(code, plan[i], low, slots, up[i], isStatic ? -1 : 0, planOwner);
                 } else if (map[i] >= 0) {
                     code.add(new VarInsnNode(low[map[i]].getOpcode(Opcodes.ILOAD), slots[map[i]]));
                     convertUp(code, low[map[i]], up[i]);
                 } else if (map[i] <= -2) {
-                    packColor(code, slots, -map[i] - 2);
+                    packColor(code, slots, -map[i] - 2, colorChannels(up, i, low, -map[i] - 2));
                 } else {
                     supplyContext(code, up[i]);
                 }
             }
+            int upperCallback = slot;
             for (int i = low.length; i < wrapped.length; i++) {
                 code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slots[i]));
+                if (numberResult && i - low.length + up.length == callback) {
+                    // the upper callback: the lower one's value as the upper number (kept in a local of its own)
+                    code.add(new LdcInsnNode(upRet.getDescriptor()));
+                    checkAdapter(CONVERSIONS, "callback", "(L" + CALLBACK_RETURNABLE + ";Ljava/lang/String;)L" + CALLBACK_RETURNABLE + ";", where);
+                    code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "callback",
+                            "(L" + CALLBACK_RETURNABLE + ";Ljava/lang/String;)L" + CALLBACK_RETURNABLE + ";", false));
+                    code.add(new InsnNode(Opcodes.DUP));
+                    code.add(new VarInsnNode(Opcodes.ASTORE, upperCallback));
+                }
             }
             boolean privateHandler = (h.access & Opcodes.ACC_PRIVATE) != 0;
             code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : privateHandler ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, out.name,
                     h.name, h.desc, false));
+            if (numberResult) {
+                // what the handler set (a cancel with a value) goes to the lower callback as the lower number
+                code.add(new VarInsnNode(Opcodes.ALOAD, upperCallback));
+                code.add(new VarInsnNode(Opcodes.ALOAD, slots[low.length + callback - up.length]));
+                code.add(new LdcInsnNode(lowRet.getDescriptor()));
+                checkAdapter(CONVERSIONS, "result", "(L" + CALLBACK_RETURNABLE + ";L" + CALLBACK_RETURNABLE + ";Ljava/lang/String;)V", where);
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "result",
+                        "(L" + CALLBACK_RETURNABLE + ";L" + CALLBACK_RETURNABLE + ";Ljava/lang/String;)V", false));
+                slot++;
+            }
             code.add(new InsnNode(Type.getReturnType(h.desc).getOpcode(Opcodes.IRETURN)));
             g.maxLocals = slot;
             g.maxStack = slot + 2 + 2 * up.length;
@@ -5257,7 +5649,7 @@ public class Convert {
      * the handler's own): it takes the lower call's, makes the upper arguments by the A row's plan and calls the handler.
      * The injector's annotation moves to the wrapper; the handler keeps its name and descriptor.
      */
-    static void callBridge(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan) {
+    static void callBridge(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan, String planOwner) {
         Type[] wrapped = new Type[1 + low.length + hp.length - 1 - up.length];
         wrapped[0] = hp[0];
         System.arraycopy(low, 0, wrapped, 1, low.length);
@@ -5291,7 +5683,8 @@ public class Convert {
         code.add(new VarInsnNode(wrapped[0].getOpcode(Opcodes.ILOAD), slots[0]));
         int[] lowSlots = Arrays.copyOfRange(slots, 1, 1 + low.length);
         for (int i = 0; i < up.length; i++) {
-            planArgument(code, plan[i], low, lowSlots, up[i]);
+            // (the member's object: the call's receiver)
+            planArgument(code, plan[i], low, lowSlots, up[i], slots[0], planOwner);
         }
         for (int i = 1 + low.length; i < wrapped.length; i++) {
             code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slots[i]));
@@ -5425,12 +5818,15 @@ public class Convert {
                 : crosses("1.21", "1.20.6") ? new String[] {"enchantment/", "enchantment_provider/", "jukebox_song/", "painting_variant/"}
                 : crosses("1.20.6", "1.20.4") ? new String[] {"banner_pattern/", "wolf_variant/"} : new String[0];
         for (String g : gone) {
-            if (rest.startsWith(g)) {
+            if (rest.startsWith(g) && adapterDataFolders.stream().noneMatch(f -> rest.startsWith(f + "/"))) {
                 return null;
             }
         }
         return path;
     }
+
+    /** G rows: data folders (under data/<namespace>/) whose registry the adapters add below */
+    static final Set<String> adapterDataFolders = new HashSet<>();
 
     static final Set<String> SHAPED_RESULT = Set.of("minecraft:crafting_shaped", "minecraft:crafting_shapeless", "minecraft:smithing_transform");
     static final Set<String> COOKING = Set.of("minecraft:smelting", "minecraft:blasting", "minecraft:smoking", "minecraft:campfire_cooking");

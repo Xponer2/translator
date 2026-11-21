@@ -18,7 +18,9 @@
 #                                             the bottom class a top class of the same name hides
 # D <owner> <name> <upper desc> <lower desc> <lower parameters>
 #                                             a method that takes more below: each lower parameter is an upper one ($0,
-#                                             $1..) or the default written here (false, true, a number, null)
+#                                             $1..) or the default written here (false, true, a number, null, or an
+#                                             adapter's value "Class.method(this,$k,..)" of the object and upper ones);
+#                                             "-" for a lower method without parameters
 # M <owner> <name> <desc> <lower name> <lower desc>
 #                                             the same hook (of the owner and its subclasses) under another name and
 #                                             descriptor below; the generated bridges take it from there
@@ -26,7 +28,10 @@
 #                                             method of its own below; its calls (super ones too) take the X row
 # A <owner> <name> <desc> <lower desc> <plan> the same method below with other parameters: a mixin handler's arguments
 #                                             from the lower method's, per upper parameter "$k" (lower k, converted)
-#                                             or "Class.method(k,..)" (an adapter of lower parameters k..)
+#                                             or "Class.method(k,..)" (an adapter of lower parameters k.., and of the
+#                                             object: "this"); a mod's override is called by the plan too
+# G <folder>                                  a data folder (data/<namespace>/<folder>/) the adapters give a place below:
+#                                             the registry they add (its files stay as they are)
 # S <owner> <name> <lower desc>               a lower abstract method the upper type hasn't: a mod's concrete class
 #                                             under the owner gets an empty one (void, or returning itself)
 # NeoForge 21.1's supportsEnchantment (1.21 asks Enchantment.canEnchant at the anvil, enchant_randomly and /enchant)
@@ -224,3 +229,134 @@ X	net/neoforged/neoforge/common/extensions/IItemStackExtension	getAttributeModif
 O	net/minecraft/client/particle/ParticleRenderType	begin	(Lcom/mojang/blaze3d/vertex/Tesselator;Lnet/minecraft/client/renderer/texture/TextureManager;)Lcom/mojang/blaze3d/vertex/BufferBuilder;	ladder/rung1206/render/ParticleTypeApi	ladder/rung1206/render/ParticleTypeApi	begin
 S	net/minecraft/client/particle/ParticleRenderType	begin	(Lcom/mojang/blaze3d/vertex/BufferBuilder;Lnet/minecraft/client/renderer/texture/TextureManager;)V
 S	net/minecraft/client/particle/ParticleRenderType	end	(Lcom/mojang/blaze3d/vertex/Tesselator;)V
+# 1.21's server level for an entity's death drops and spawn enchantments (1.20.6: the looting level computed from the blow)
+D	net/minecraft/world/entity/LivingEntity	dropCustomDeathLoot	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V	(Lnet/minecraft/world/damagesource/DamageSource;IZ)V	$1,ladder/rung1206/entity/EntityArgs.looting(this,$1),$2
+A	net/minecraft/world/entity/LivingEntity	dropCustomDeathLoot	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V	(Lnet/minecraft/world/damagesource/DamageSource;IZ)V	ladder/rung1206/entity/EntityArgs.level(this) $0 $2
+D	net/minecraft/world/entity/LivingEntity	dropAllDeathLoot	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V	(Lnet/minecraft/world/damagesource/DamageSource;)V	$1
+A	net/minecraft/world/entity/LivingEntity	dropAllDeathLoot	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V	(Lnet/minecraft/world/damagesource/DamageSource;)V	ladder/rung1206/entity/EntityArgs.level(this) $0
+D	net/minecraft/world/entity/Mob	populateDefaultEquipmentEnchantments	(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/DifficultyInstance;)V	(Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/DifficultyInstance;)V	$1,$2
+A	net/minecraft/world/entity/Mob	populateDefaultEquipmentEnchantments	(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/DifficultyInstance;)V	(Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/DifficultyInstance;)V	ladder/rung1206/entity/EntityArgs.levelAccessor(this) $0 $1
+# 1.21's hitbox colour (1.20.6 draws it white), armour foil buffer (1.20.6: of an entity's armour), camera roll (none)
+D	net/minecraft/client/renderer/entity/EntityRenderDispatcher	renderHitbox	(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;FFFF)V	(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;F)V	$0,$1,$2,$3
+A	net/minecraft/client/renderer/entity/EntityRenderDispatcher	renderHitbox	(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;FFFF)V	(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;F)V	$0 $1 $2 $3 1.0 1.0 1.0
+D	net/minecraft/client/renderer/entity/ItemRenderer	getArmorFoilBuffer	(Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/renderer/RenderType;Z)Lcom/mojang/blaze3d/vertex/VertexConsumer;	(Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/renderer/RenderType;ZZ)Lcom/mojang/blaze3d/vertex/VertexConsumer;	$0,$1,false,$2
+A	net/minecraft/client/renderer/entity/ItemRenderer	getArmorFoilBuffer	(Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/renderer/RenderType;Z)Lcom/mojang/blaze3d/vertex/VertexConsumer;	(Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/renderer/RenderType;ZZ)Lcom/mojang/blaze3d/vertex/VertexConsumer;	$0 $1 $3
+A	net/minecraft/client/Camera	setRotation	(FFF)V	(FF)V	$0 $1 0.0
+# 1.21's food of an eaten stack, the broken item, the respawn's reason, an arrow's weapon (1.20.6: none of them)
+D	net/minecraft/world/entity/LivingEntity	eat	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/food/FoodProperties;)Lnet/minecraft/world/item/ItemStack;	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/ItemStack;	$0,$1
+A	net/minecraft/world/entity/LivingEntity	eat	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/food/FoodProperties;)Lnet/minecraft/world/item/ItemStack;	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/ItemStack;	$0 $1 ladder/rung1206/entity/EntityArgs.food(this,1)
+D	net/minecraft/world/entity/LivingEntity	onEquippedItemBroken	(Lnet/minecraft/world/item/Item;Lnet/minecraft/world/entity/EquipmentSlot;)V	(Lnet/minecraft/world/entity/EquipmentSlot;)V	$1
+A	net/minecraft/world/entity/LivingEntity	onEquippedItemBroken	(Lnet/minecraft/world/item/Item;Lnet/minecraft/world/entity/EquipmentSlot;)V	(Lnet/minecraft/world/entity/EquipmentSlot;)V	ladder/rung1206/entity/EntityArgs.brokenItem(this,0) $0
+D	net/minecraft/server/players/PlayerList	respawn	(Lnet/minecraft/server/level/ServerPlayer;ZLnet/minecraft/world/entity/Entity$RemovalReason;)Lnet/minecraft/server/level/ServerPlayer;	(Lnet/minecraft/server/level/ServerPlayer;Z)Lnet/minecraft/server/level/ServerPlayer;	$0,$1
+A	net/minecraft/server/players/PlayerList	respawn	(Lnet/minecraft/server/level/ServerPlayer;ZLnet/minecraft/world/entity/Entity$RemovalReason;)Lnet/minecraft/server/level/ServerPlayer;	(Lnet/minecraft/server/level/ServerPlayer;Z)Lnet/minecraft/server/level/ServerPlayer;	$0 $1 ladder/rung1206/entity/EntityArgs.respawnReason(1)
+K	net/minecraft/world/entity/projectile/AbstractArrow	(Lnet/minecraft/world/entity/EntityType;DDDLnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)V	(Lnet/minecraft/world/entity/EntityType;DDDLnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)V	ladder/rung1206/entity/EntityArgs	$0,$1,$2,$3,$4,$5
+K	net/minecraft/world/entity/projectile/AbstractArrow	(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)V	(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)V	ladder/rung1206/entity/EntityArgs	$0,$1,$2,$3
+A	net/minecraft/world/entity/projectile/AbstractArrow	<init>	(Lnet/minecraft/world/entity/EntityType;DDDLnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)V	(Lnet/minecraft/world/entity/EntityType;DDDLnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)V	$0 $1 $2 $3 $4 $5 null
+A	net/minecraft/world/entity/projectile/AbstractArrow	<init>	(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)V	(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)V	$0 $1 $2 $3 null
+# 1.21's model baking without the model's location (1.20.6 takes it: a placeholder), chunk reading with the region info
+D	net/minecraft/client/resources/model/UnbakedModel	bake	(Lnet/minecraft/client/resources/model/ModelBaker;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;)Lnet/minecraft/client/resources/model/BakedModel;	(Lnet/minecraft/client/resources/model/ModelBaker;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/client/resources/model/BakedModel;	$0,$1,$2,ladder/rung1206/client/ModelAdapters.unknownModel()
+D	net/neoforged/neoforge/client/model/geometry/IUnbakedGeometry	bake	(Lnet/neoforged/neoforge/client/model/geometry/IGeometryBakingContext;Lnet/minecraft/client/resources/model/ModelBaker;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;Lnet/minecraft/client/renderer/block/model/ItemOverrides;)Lnet/minecraft/client/resources/model/BakedModel;	(Lnet/neoforged/neoforge/client/model/geometry/IGeometryBakingContext;Lnet/minecraft/client/resources/model/ModelBaker;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;Lnet/minecraft/client/renderer/block/model/ItemOverrides;Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/client/resources/model/BakedModel;	$0,$1,$2,$3,$4,ladder/rung1206/client/ModelAdapters.unknownModel()
+A	net/minecraft/client/resources/model/ModelBakery	bakeModels	(Lnet/minecraft/client/resources/model/ModelBakery$TextureGetter;)V	(Ljava/util/function/BiFunction;)V	ladder/rung1206/client/ModelAdapters.textureGetter(0)
+D	net/minecraft/world/level/chunk/storage/ChunkSerializer	read	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/ai/village/poi/PoiManager;Lnet/minecraft/world/level/chunk/storage/RegionStorageInfo;Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/level/chunk/ProtoChunk;	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/ai/village/poi/PoiManager;Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/level/chunk/ProtoChunk;	$0,$1,$3,$4
+A	net/minecraft/world/level/chunk/storage/ChunkSerializer	read	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/ai/village/poi/PoiManager;Lnet/minecraft/world/level/chunk/storage/RegionStorageInfo;Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/level/chunk/ProtoChunk;	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/ai/village/poi/PoiManager;Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/level/chunk/ProtoChunk;	$0 $1 ladder/rung1206/misc/ChunkArgs.storageInfo(0) $2 $3
+# NeoForge 21's QuadBakingVertexConsumer: made empty, its quad asked for (20.6: a consumer of quads); its own vertex setters
+X	net/neoforged/neoforge/client/model/pipeline/QuadBakingVertexConsumer	<init>	()V	ladder/rung1206/render/QuadBaking	create
+X	net/neoforged/neoforge/client/model/pipeline/QuadBakingVertexConsumer	bakeQuad	()Lnet/minecraft/client/renderer/block/model/BakedQuad;	ladder/rung1206/render/QuadBaking	bakeQuad
+# 1.21's GameRenderer.render and renderLevel of the DeltaTracker (1.20.6: the partial tick and the frame's start)
+D	net/minecraft/client/renderer/GameRenderer	renderLevel	(Lnet/minecraft/client/DeltaTracker;)V	(FJ)V	ladder/rung1206/render/TimeAdapters.partialTick($0),ladder/rung1206/render/TimeAdapters.nanos()
+A	net/minecraft/client/renderer/GameRenderer	renderLevel	(Lnet/minecraft/client/DeltaTracker;)V	(FJ)V	ladder/rung1206/bridge/Conversions.deltaTracker(0)
+D	net/minecraft/client/renderer/GameRenderer	render	(Lnet/minecraft/client/DeltaTracker;Z)V	(FJZ)V	ladder/rung1206/render/TimeAdapters.partialTick($0),ladder/rung1206/render/TimeAdapters.nanos(),$1
+A	net/minecraft/client/renderer/GameRenderer	render	(Lnet/minecraft/client/DeltaTracker;Z)V	(FJZ)V	ladder/rung1206/bridge/Conversions.deltaTracker(0) $2
+# 1.21's enchantment effects of an attack and an enchantment tag on a stack (1.20.6's post hurt/damage hooks, damage bonus)
+X	net/minecraft/world/item/enchantment/EnchantmentHelper	doPostAttackEffects	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;)V	ladder/rung1206/misc/EnchantmentEffects	doPostAttackEffects
+X	net/minecraft/world/item/enchantment/EnchantmentHelper	doPostAttackEffectsWithItemSource	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/item/ItemStack;)V	ladder/rung1206/misc/EnchantmentEffects	doPostAttackEffectsWithItemSource
+X	net/minecraft/world/item/enchantment/EnchantmentHelper	modifyDamage	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;F)F	ladder/rung1206/misc/EnchantmentEffects	modifyDamage
+X	net/minecraft/world/item/enchantment/EnchantmentHelper	hasTag	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/tags/TagKey;)Z	ladder/rung1206/misc/EnchantmentEffects	hasTag
+# 1.21's dimension transitions (1.20.6: its intermediary twin PortalInfo, a level and a teleporter) and changeDimension
+X	net/minecraft/world/level/portal/DimensionTransition	<init>	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;FFLnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;)V	ladder/rung1206/portal/PortalAdapters	transition
+X	net/minecraft/world/level/portal/DimensionTransition	<init>	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;FFZLnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;)V	ladder/rung1206/portal/PortalAdapters	transition
+X	net/minecraft/world/level/portal/DimensionTransition	<init>	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;)V	ladder/rung1206/portal/PortalAdapters	transition
+X	net/minecraft/world/level/portal/DimensionTransition	missingRespawnBlock	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;)Lnet/minecraft/world/level/portal/DimensionTransition;	ladder/rung1206/portal/PortalAdapters	missingRespawnBlock
+X	net/minecraft/world/level/portal/DimensionTransition	newLevel	()Lnet/minecraft/server/level/ServerLevel;	ladder/rung1206/portal/PortalAdapters	newLevel
+X	net/minecraft/world/level/portal/DimensionTransition	missingRespawnBlock	()Z	ladder/rung1206/portal/PortalAdapters	missingRespawnBlock
+X	net/minecraft/world/level/portal/DimensionTransition	postDimensionTransition	()Lnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;	ladder/rung1206/portal/PortalAdapters	postDimensionTransition
+F	net/minecraft/world/level/portal/DimensionTransition	DO_NOTHING	Lnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;	ladder/rung1206/portal/PortalAdapters	doNothing
+F	net/minecraft/world/level/portal/DimensionTransition	PLAY_PORTAL_SOUND	Lnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;	ladder/rung1206/portal/PortalAdapters	playPortalSound
+F	net/minecraft/world/level/portal/DimensionTransition	PLACE_PORTAL_TICKET	Lnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;	ladder/rung1206/portal/PortalAdapters	placePortalTicket
+X	net/minecraft/world/entity/Entity	changeDimension	(Lnet/minecraft/world/level/portal/DimensionTransition;)Lnet/minecraft/world/entity/Entity;	ladder/rung1206/portal/PortalAdapters	changeDimension
+# 1.21's saddle stack, portal use with passengers, an arrow's weapon (1.20.6: none of them)
+D	net/minecraft/world/entity/Saddleable	equipSaddle	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/sounds/SoundSource;)V	(Lnet/minecraft/sounds/SoundSource;)V	$1
+A	net/minecraft/world/entity/Saddleable	equipSaddle	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/sounds/SoundSource;)V	(Lnet/minecraft/sounds/SoundSource;)V	ladder/rung1206/entity/EntityArgs.saddle() $0
+D	net/minecraft/world/entity/Entity	canUsePortal	(Z)Z	()Z	-
+A	net/minecraft/world/entity/Entity	canUsePortal	(Z)Z	()Z	false
+D	net/minecraft/world/item/ProjectileWeaponItem	customArrow	(Lnet/minecraft/world/entity/projectile/AbstractArrow;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	(Lnet/minecraft/world/entity/projectile/AbstractArrow;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	$0,$1
+A	net/minecraft/world/item/ProjectileWeaponItem	customArrow	(Lnet/minecraft/world/entity/projectile/AbstractArrow;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	(Lnet/minecraft/world/entity/projectile/AbstractArrow;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	$0 $1 ladder/rung1206/entity/EntityArgs.weaponOf(0)
+D	net/minecraft/world/item/ArrowItem	createArrow	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	$0,$1,$2
+A	net/minecraft/world/item/ArrowItem	createArrow	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	$0 $1 $2 ladder/rung1206/entity/EntityArgs.weapon(2)
+D	net/minecraft/world/entity/projectile/ProjectileUtil	getMobArrow	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;FLnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;F)Lnet/minecraft/world/entity/projectile/AbstractArrow;	$0,$1,$2
+D	net/minecraft/world/entity/monster/AbstractSkeleton	getArrow	(Lnet/minecraft/world/item/ItemStack;FLnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	(Lnet/minecraft/world/item/ItemStack;F)Lnet/minecraft/world/entity/projectile/AbstractArrow;	$0,$1
+A	net/minecraft/world/entity/monster/AbstractSkeleton	getArrow	(Lnet/minecraft/world/item/ItemStack;FLnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/projectile/AbstractArrow;	(Lnet/minecraft/world/item/ItemStack;F)Lnet/minecraft/world/entity/projectile/AbstractArrow;	$0 $1 ladder/rung1206/entity/EntityArgs.skeletonWeapon(this)
+# small members of 1.21: the server directory, ARGB colours, an enchantment's full name, paintings in blocks, the tab's
+# background, a framed map of a stack, custom data with ops, all enchantments with the registry, a crop's growth speed
+X	net/minecraft/server/MinecraftServer	getServerDirectory	()Ljava/nio/file/Path;	ladder/rung1206/misc/SmallAdapters	getServerDirectory
+X	net/minecraft/world/entity/animal/Sheep	getColor	(Lnet/minecraft/world/item/DyeColor;)I	ladder/rung1206/misc/SmallAdapters	sheepColor
+X	net/minecraft/world/level/block/entity/BeaconBlockEntity$BeaconBeamSection	getColor	()I	ladder/rung1206/misc/SmallAdapters	beamColor
+X	net/minecraft/world/item/enchantment/Enchantment	getFullname	(Lnet/minecraft/core/Holder;I)Lnet/minecraft/network/chat/Component;	ladder/rung1206/misc/SmallAdapters	getFullname
+K	net/minecraft/world/entity/decoration/PaintingVariant	(IILnet/minecraft/resources/ResourceLocation;)V	(II)V	ladder/rung1206/misc/SmallAdapters	paintingWidth,paintingHeight
+X	net/minecraft/world/entity/decoration/PaintingVariant	width	()I	ladder/rung1206/misc/SmallAdapters	paintingWidth
+X	net/minecraft/world/entity/decoration/PaintingVariant	height	()I	ladder/rung1206/misc/SmallAdapters	paintingHeight
+X	net/minecraft/world/entity/decoration/PaintingVariant	assetId	()Lnet/minecraft/resources/ResourceLocation;	ladder/rung1206/misc/SmallAdapters	paintingAsset
+X	net/minecraft/world/item/CreativeModeTab	getBackgroundTexture	()Lnet/minecraft/resources/ResourceLocation;	ladder/rung1206/misc/SmallAdapters	getBackgroundTexture
+X	net/minecraft/world/item/CreativeModeTab$Builder	backgroundTexture	(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/world/item/CreativeModeTab$Builder;	ladder/rung1206/misc/SmallAdapters	backgroundTexture
+X	net/minecraft/world/entity/decoration/ItemFrame	getFramedMapId	(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/level/saveddata/maps/MapId;	ladder/rung1206/misc/SmallAdapters	getFramedMapId
+D	net/minecraft/world/item/component/CustomData	read	(Lcom/mojang/serialization/DynamicOps;Lcom/mojang/serialization/MapDecoder;)Lcom/mojang/serialization/DataResult;	(Lcom/mojang/serialization/MapDecoder;)Lcom/mojang/serialization/DataResult;	$1
+D	net/minecraft/world/item/component/CustomData	update	(Lcom/mojang/serialization/DynamicOps;Lcom/mojang/serialization/MapEncoder;Ljava/lang/Object;)Lcom/mojang/serialization/DataResult;	(Lcom/mojang/serialization/MapEncoder;Ljava/lang/Object;)Lcom/mojang/serialization/DataResult;	$1,$2
+D	net/neoforged/neoforge/common/extensions/IItemStackExtension	getAllEnchantments	(Lnet/minecraft/core/HolderLookup$RegistryLookup;)Lnet/minecraft/world/item/enchantment/ItemEnchantments;	()Lnet/minecraft/world/item/enchantment/ItemEnchantments;	-
+D	net/neoforged/neoforge/common/extensions/IItemExtension	getAllEnchantments	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/HolderLookup$RegistryLookup;)Lnet/minecraft/world/item/enchantment/ItemEnchantments;	(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/enchantment/ItemEnchantments;	$0
+A	net/neoforged/neoforge/common/extensions/IItemExtension	getAllEnchantments	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/HolderLookup$RegistryLookup;)Lnet/minecraft/world/item/enchantment/ItemEnchantments;	(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/enchantment/ItemEnchantments;	$0 ladder/rung1206/misc/SmallAdapters.enchantmentLookup()
+D	net/minecraft/world/level/block/CropBlock	getGrowthSpeed	(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)F	(Lnet/minecraft/world/level/block/Block;Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)F	ladder/rung1206/misc/SmallAdapters.block($0),$1,$2
+# crash reports of a type, chessboard distance to a position, an item parser's patch, the campfire's damage, model baking
+X	net/minecraft/CrashReport	getFriendlyReport	(Lnet/minecraft/ReportType;)Ljava/lang/String;	ladder/rung1206/misc/SmallAdapters	getFriendlyReport
+X	net/minecraft/CrashReport	saveToFile	(Ljava/nio/file/Path;Lnet/minecraft/ReportType;)Z	ladder/rung1206/misc/SmallAdapters	saveToFile
+X	net/minecraft/world/level/ChunkPos	getChessboardDistance	(II)I	ladder/rung1206/misc/SmallAdapters	getChessboardDistance
+X	net/minecraft/commands/arguments/item/ItemParser$ItemResult	components	()Lnet/minecraft/core/component/DataComponentPatch;	ladder/rung1206/misc/SmallAdapters	components
+X	net/minecraft/commands/arguments/item/ItemInput	<init>	(Lnet/minecraft/core/Holder;Lnet/minecraft/core/component/DataComponentPatch;)V	ladder/rung1206/misc/SmallAdapters	itemInput
+X	net/minecraft/world/damagesource/DamageSources	campfire	()Lnet/minecraft/world/damagesource/DamageSource;	ladder/rung1206/misc/SmallAdapters	campfire
+D	net/minecraft/client/renderer/block/model/BlockModel	bake	(Lnet/minecraft/client/resources/model/ModelBaker;Lnet/minecraft/client/renderer/block/model/BlockModel;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;Z)Lnet/minecraft/client/resources/model/BakedModel;	(Lnet/minecraft/client/resources/model/ModelBaker;Lnet/minecraft/client/renderer/block/model/BlockModel;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;Lnet/minecraft/resources/ResourceLocation;Z)Lnet/minecraft/client/resources/model/BakedModel;	$0,$1,$2,$3,ladder/rung1206/client/ModelAdapters.unknownModel(),$4
+K	net/minecraft/client/gui/screens/options/VideoSettingsScreen	(Lnet/minecraft/client/gui/screens/Screen;Lnet/minecraft/client/Minecraft;Lnet/minecraft/client/Options;)V	(Lnet/minecraft/client/gui/screens/Screen;Lnet/minecraft/client/Options;)V	ladder/rung1206/misc/SmallAdapters	$0,$2
+# 1.21's render type: sortOnUpload public (1.20.6: private), a finished mesh drawn with the type's state
+X	net/minecraft/client/renderer/RenderType	sortOnUpload	()Z	ladder/rung1206/render/RenderTypes	sortOnUpload
+F	net/minecraft/client/renderer/RenderType	sortOnUpload	Z	ladder/rung1206/render/RenderTypes	sortOnUpload
+X	net/minecraft/client/renderer/RenderType	draw	(Lcom/mojang/blaze3d/vertex/MeshData;)V	ladder/rung1206/render/RenderTypes	draw
+# 1.21's jukebox songs (a data pack registry and an item component of the adapters'; the jukebox plays them: mixin.Jukebox*Mixin)
+P	net/minecraft/world/item/JukeboxSong	ladder/rung1206/provided/JukeboxSong
+P	net/minecraft/world/item/JukeboxPlayable	ladder/rung1206/provided/JukeboxPlayable
+F	net/minecraft/core/registries/Registries	JUKEBOX_SONG	Lnet/minecraft/resources/ResourceKey;	ladder/rung1206/jukebox/Jukebox	jukeboxSongRegistry
+F	net/minecraft/core/component/DataComponents	JUKEBOX_PLAYABLE	Lnet/minecraft/core/component/DataComponentType;	ladder/rung1206/jukebox/Jukebox	jukeboxPlayable
+X	net/minecraft/world/item/Item$Properties	jukeboxPlayable	(Lnet/minecraft/resources/ResourceKey;)Lnet/minecraft/world/item/Item$Properties;	ladder/rung1206/jukebox/Jukebox	jukeboxPlayable
+# data folders the 1.20.6 adapters give a place (registries they add or fill from data)
+G	jukebox_song
+G	painting_variant
+# NeoForge 21's names of the target change event's targets
+M	net/neoforged/neoforge/event/entity/living/LivingChangeTargetEvent	getNewAboutToBeSetTarget	()Lnet/minecraft/world/entity/LivingEntity;	getNewTarget	()Lnet/minecraft/world/entity/LivingEntity;
+M	net/neoforged/neoforge/event/entity/living/LivingChangeTargetEvent	setNewAboutToBeSetTarget	(Lnet/minecraft/world/entity/LivingEntity;)V	setNewTarget	(Lnet/minecraft/world/entity/LivingEntity;)V
+M	net/neoforged/neoforge/event/entity/living/LivingChangeTargetEvent	getOriginalAboutToBeSetTarget	()Lnet/minecraft/world/entity/LivingEntity;	getOriginalTarget	()Lnet/minecraft/world/entity/LivingEntity;
+# NeoForge 21's creative tab entries by where they show (20.6's event keeps one map)
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	getParentEntries	()Lit/unimi/dsi/fastutil/objects/ObjectSortedSet;	ladder/rung1206/event/TabEntries	getParentEntries
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	getSearchEntries	()Lit/unimi/dsi/fastutil/objects/ObjectSortedSet;	ladder/rung1206/event/TabEntries	getSearchEntries
+# 1.21's GenerationChunkHolder is the generation half of ChunkHolder (1.20.6 has ChunkHolder alone, the same members by other names)
+R	net/minecraft/server/level/GenerationChunkHolder	net/minecraft/server/level/ChunkHolder
+M	net/minecraft/server/level/GenerationChunkHolder	getLatestStatus	()Lnet/minecraft/world/level/chunk/status/ChunkStatus;	getLastAvailableStatus	()Lnet/minecraft/world/level/chunk/status/ChunkStatus;
+M	net/minecraft/server/level/GenerationChunkHolder	getLatestChunk	()Lnet/minecraft/world/level/chunk/ChunkAccess;	getLastAvailable	()Lnet/minecraft/world/level/chunk/ChunkAccess;
+M	net/minecraft/server/level/GenerationChunkHolder	getPersistedStatus	()Lnet/minecraft/world/level/chunk/status/ChunkStatus;	getLastAvailableStatus	()Lnet/minecraft/world/level/chunk/status/ChunkStatus;
+# 1.21's options list of a sub screen (its height is the screen's contents)
+K	net/minecraft/client/gui/components/OptionsList	(Lnet/minecraft/client/Minecraft;ILnet/minecraft/client/gui/screens/options/OptionsSubScreen;)V	(Lnet/minecraft/client/Minecraft;IILnet/minecraft/client/gui/screens/OptionsSubScreen;)V	ladder/rung1206/client/OptionsAdapters	$0,$1,listHeight,$2
+# NeoForge 21's damage container and the damage taken event (posted when 20.6's actuallyHurt ends)
+P	net/neoforged/neoforge/common/damagesource/DamageContainer	ladder/rung1206/provided/DamageContainer
+P	net/neoforged/neoforge/event/entity/living/LivingDamageEvent$Post	ladder/rung1206/provided/event/LivingDamagePost
+F	net/minecraft/util/Unit	CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/misc/SmallAdapters	unitCodec
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_SHEAR	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	toolsShear
+# 1.21's BlockAttachedEntity (the base of hanging things and leash knots) is 1.20.6's HangingEntity
+R	net/minecraft/world/entity/decoration/BlockAttachedEntity	net/minecraft/world/entity/decoration/HangingEntity
+# NeoForge 21's event adding blocks to block entity types (posted at the common setup)
+P	net/neoforged/neoforge/event/BlockEntityTypeAddBlocksEvent	ladder/rung1206/provided/event/BlockEntityTypeAddBlocksEvent

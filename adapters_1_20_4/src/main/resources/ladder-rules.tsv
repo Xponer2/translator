@@ -594,3 +594,14 @@ X	net/minecraft/nbt/NbtUtils	readBlockPos	(Lnet/minecraft/nbt/CompoundTag;Ljava/
 X	net/minecraft/world/item/SpawnEggItem	getType	(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/EntityType;	ladder/adapter/misc/MiscAdapters	getType
 X	net/minecraft/util/FastColor$ARGB32	color	(II)I	ladder/adapter/misc/MiscAdapters	color
 X	net/minecraft/world/Container	getMaxStackSize	(Lnet/minecraft/world/item/ItemStack;)I	ladder/adapter/misc/MiscAdapters	getMaxStackSize
+# 1.20.5's attributes that NeoForge 20.4 has as its own
+F	net/minecraft/world/entity/ai/attributes/Attributes	BLOCK_INTERACTION_RANGE	Lnet/minecraft/core/Holder;	ladder/adapter/misc/AttributeAdapters	blockInteractionRange
+F	net/minecraft/world/entity/ai/attributes/Attributes	ENTITY_INTERACTION_RANGE	Lnet/minecraft/core/Holder;	ladder/adapter/misc/AttributeAdapters	entityInteractionRange
+F	net/minecraft/world/entity/ai/attributes/Attributes	STEP_HEIGHT	Lnet/minecraft/core/Holder;	ladder/adapter/misc/AttributeAdapters	stepHeight
+F	net/minecraft/world/entity/ai/attributes/Attributes	GRAVITY	Lnet/minecraft/core/Holder;	ladder/adapter/misc/AttributeAdapters	gravity
+X	net/minecraft/world/entity/player/Player	blockInteractionRange	()D	ladder/adapter/misc/AttributeAdapters	blockInteractionRange
+X	net/minecraft/world/entity/player/Player	entityInteractionRange	()D	ladder/adapter/misc/AttributeAdapters	entityInteractionRange
+# NeoForge 20.5's entity tick events (posted around 1.20.4's entity ticks)
+P	net/neoforged/neoforge/event/tick/EntityTickEvent	ladder/adapter/provided/event/EntityTickEvent
+P	net/neoforged/neoforge/event/tick/EntityTickEvent$Pre	ladder/adapter/provided/event/EntityTickEvent$Pre
+P	net/neoforged/neoforge/event/tick/EntityTickEvent$Post	ladder/adapter/provided/event/EntityTickEvent$Post

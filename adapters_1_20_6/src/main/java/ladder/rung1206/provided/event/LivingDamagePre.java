@@ -40,4 +40,24 @@ public class LivingDamagePre extends LivingEvent {
     public void setNewDamage(float damage) {
         this.damage = damage;
     }
+
+    /** NeoForge 21's container of this hit: its new damage is this event's */
+    public ladder.rung1206.provided.DamageContainer getContainer() {
+        LivingDamagePre event = this;
+        return new ladder.rung1206.provided.DamageContainer(this.source, this.original) {
+            {
+                super.setNewDamage(event.damage);
+            }
+
+            @Override
+            public float getNewDamage() {
+                return event.damage;
+            }
+
+            @Override
+            public void setNewDamage(float damage) {
+                event.damage = damage;
+            }
+        };
+    }
 }

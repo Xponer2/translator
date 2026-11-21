@@ -34,6 +34,18 @@ public final class DamageEvents {
             LivingDamagePre pre = new LivingDamagePre(event.getEntity(), event.getSource(), event.getAmount());
             NeoForge.EVENT_BUS.post(pre);
             event.setAmount(pre.getNewDamage());
+            TAKEN.put(event.getEntity(), new float[] {pre.getOriginalDamage(), pre.getNewDamage()});
         });
+    }
+
+    /** an entity's hit being taken: its first damage and the one it took (20.6's damage event, then actuallyHurt's end) */
+    static final java.util.Map<net.minecraft.world.entity.LivingEntity, float[]> TAKEN = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    /** when 20.6's actuallyHurt ends: NeoForge 21's LivingDamageEvent.Post, if the hit was taken (not cancelled) */
+    public static void afterHurt(net.minecraft.world.entity.LivingEntity entity, net.minecraft.world.damagesource.DamageSource source) {
+        float[] taken = TAKEN.remove(entity);
+        if (taken != null && taken[1] > 0.0F) {
+            NeoForge.EVENT_BUS.post(new ladder.rung1206.provided.event.LivingDamagePost(entity, source, taken[0], taken[1]));
+        }
     }
 }
