@@ -76,8 +76,20 @@ versions together on one target.
 | Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
 |---|---|---|---:|---:|---|
 | 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C, E and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 0 | 300 | done (offline; game-tested by the test mods) |
-| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A–C, E and F on the real 1.20.6, the same results as on 1.21.1 | 1230 | 139 of 262 (rung 1's output) | in work |
-| 1.20.6 → 1.20.4 | yes | yes: test mods A–E, corpus probes | 3118 | 115 | in work |
+| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A–C, E and F on the real 1.20.6, the same results as on 1.21.1 | 1885 | 152 of 302 (rung 1's output) | in work |
+| 1.20.6 → 1.20.4 | yes (`adapters_1_20_4`) | yes: test mods A–C, E and F on the real 1.20.4, the same results as on 1.21.1 | – | – | in work (counted on the whole path below) |
+
+A mod goes down every rung between its version and the target, so a path is the rungs on it. What a 1.21.1 mod gets on
+each target (the corpus of 300 mods):
+
+| Path | Rungs it passes | Mods with nothing left (of 300) | Tested in that game |
+|---|---|---:|---|
+| 1.21.1 → 1.21 | 1.21.1 → 1.21 | 300 | test mods A–C, E, F: the same results as on 1.21.1 |
+| 1.21.1 → 1.20.6 | 1.21.1 → 1.21 → 1.20.6 | 152 of 302 jars (the 300 mods and rung 1's own jars) | test mods A–C, E, F: the same |
+| 1.21.1 → 1.20.4 | all three | 90 | test mods A–C, E, F: the same |
+
+A mod "with nothing left" converts with no known problem on every rung of its path; the others still have places that
+would fail or do nothing in the lower game. Whole modpacks have not been run in the lower games yet, only the test mods.
 
 Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **all 300 mods convert with nothing
 left** with the rung's own adapters (242 before them). The last ones took attachment syncing, shape patches of 1.21's
