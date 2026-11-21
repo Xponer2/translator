@@ -55,7 +55,7 @@ client_cf() { # <target> <dir> <mods...>
     cp "$@" "$dir/run-client/mods/"
     LADDER_TARGET="$target" bash tools/run-probe.sh client-world 300 > /dev/null 2>&1
     compare "$NATIVE/client/test-c.json" "$dir/run-client/test-c.json"
-    [ -f "$NATIVE/client/test-f.json" ] && [ "$target" != 1.20.4 ] && compare "$NATIVE/client/test-f.json" "$dir/run-client/test-f.json"
+    [ -f "$NATIVE/client/test-f.json" ] && compare "$NATIVE/client/test-f.json" "$dir/run-client/test-f.json"
 }
 # rung 1: every test mod to 1.21
 R1="$WORK/r1"
@@ -92,13 +92,13 @@ for target in "${TARGETS[@]}"; do
             IN="$WORK/r4in" OUT4="$WORK/r4"
             rm -rf "${IN:?}" "${OUT4:?}"
             mkdir -p "$IN" "$OUT4"
-            for t in a b c e; do cp "$(jar ladder_test_$t)" "$IN/"; done
+            for t in a b c e f; do cp "$(jar ladder_test_$t)" "$IN/"; done
             [ -n "${LADDER_CARRIED_1204:-}" ] && cp "$LADDER_CARRIED_1204" "$OUT4/"
             bash tools/ladder.sh convert "$IN" "$OUT4" "$OUT4.tsv" > "$OUT4.log" 2>&1
             tail -1 "$OUT4.log"
             A1204="$(ls adapters_1_20_4/build/libs/ladder-adapters-1.20.4-*.jar | head -1)"
             server_run 1.20.4 v1_20_4 "$OUT4"/ladder-test-{a,b,e}-*.jar "$OUT4/ladder-carried-1.20.4.jar" "$A1204"
             client_a 1.20.4 v1_20_4 "$OUT4"/ladder-test-a-*.jar "$OUT4/ladder-carried-1.20.4.jar" "$A1204"
-            client_cf 1.20.4 v1_20_4 "$OUT4"/ladder-test-c-*.jar "$OUT4/ladder-carried-1.20.4.jar" "$A1204" ;;
+            client_cf 1.20.4 v1_20_4 "$OUT4"/ladder-test-{c,f}-*.jar "$OUT4/ladder-carried-1.20.4.jar" "$A1204" ;;
     esac
 done

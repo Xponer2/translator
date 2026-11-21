@@ -60,6 +60,21 @@ public final class EnchantSupport {
         return enchantment.canEnchant(stack);
     }
 
+    /** a shape-patched call site's {@code stack.supportsEnchantment(holder)}: the mod item's override, else 21.0's own check */
+    public static boolean supportsHere(ItemStack stack, Holder<Enchantment> enchantment) {
+        if (stack.getItem() instanceof EnchantSupportApi api
+                && Dispatch.declares(stack.getItem().getClass(), "supportsEnchantment", ItemStack.class, Holder.class)) {
+            return api.supportsEnchantment(stack, enchantment);
+        }
+        return enchantment.value().canEnchant(stack);
+    }
+
+    /** the enchantment's registry holder, else a direct one (no registries yet) */
+    public static Holder<Enchantment> holderOf(Enchantment enchantment) {
+        Holder<Enchantment> holder = holder(enchantment);
+        return holder != null ? holder : Holder.direct(enchantment);
+    }
+
     /** the registry's holder of an enchantment (1.21's are data: the running server's registry, else the client's) */
     static Holder<Enchantment> holder(Enchantment enchantment) {
         RegistryAccess access = ServerLifecycleHooks.getCurrentServer() != null ? ServerLifecycleHooks.getCurrentServer().registryAccess()

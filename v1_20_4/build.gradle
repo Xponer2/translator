@@ -44,6 +44,7 @@ neoForge {
             // the test mods' client results (testmods/*)
             systemProperty 'ladder.test.client.out', file('run-client/test-a-client.json').absolutePath.replace(File.separator, '/')
             systemProperty 'ladder.test.c.out', file('run-client/test-c.json').absolutePath.replace(File.separator, '/')
+            systemProperty 'ladder.test.f.out', file('run-client/test-f.json').absolutePath.replace(File.separator, '/')
             // -Pladder.world: a fresh world is made and entered, the inventory opened, before the results
             systemProperty 'ladder.probe.client.world', project.hasProperty('ladder.world') ? 'true' : 'false'
             // -Pladder.connect=host:port: onto a dedicated server instead (serverNet), over a real connection

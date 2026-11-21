@@ -12,13 +12,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 import net.minecraft.server.packs.OverlayMetadataSection;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.metadata.MetadataSectionSerializer;
-import net.minecraft.server.packs.metadata.MetadataSectionType;
 import net.minecraft.server.packs.repository.Pack;
 
 /**
@@ -28,10 +24,6 @@ import net.minecraft.server.packs.repository.Pack;
  */
 @Mixin(Pack.class)
 abstract class PackOverlaysMixin {
-    private static final MetadataSectionType<OverlayMetadataSection> LADDER_NEOFORGE_OVERLAYS = MetadataSectionType.fromCodec("neoforge:overlays",
-            RecordCodecBuilder.create(i -> i.group(OverlayMetadataSection.OverlayEntry.CODEC.listOf().fieldOf("entries").forGetter(OverlayMetadataSection::overlays))
-                    .apply(i, OverlayMetadataSection::new)));
-
     @Redirect(method = "readPackMetadata", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/packs/PackResources;getMetadataSection(Lnet/minecraft/server/packs/metadata/MetadataSectionSerializer;)Ljava/lang/Object;"))
     private static Object ladder$neoforgeOverlays(PackResources resources, MetadataSectionSerializer<?> type) throws java.io.IOException {
@@ -39,7 +31,7 @@ abstract class PackOverlaysMixin {
         if (type != OverlayMetadataSection.TYPE) {
             return section;
         }
-        OverlayMetadataSection neoforge = resources.getMetadataSection(LADDER_NEOFORGE_OVERLAYS);
+        OverlayMetadataSection neoforge = resources.getMetadataSection(ladder.rung121.Overlays.NEOFORGE_TYPE);
         if (neoforge == null) {
             return section;
         }

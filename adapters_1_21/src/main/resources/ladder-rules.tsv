@@ -129,3 +129,43 @@ P	net/neoforged/neoforge/client/DimensionTransitionScreenManager$ReceivingLevelS
 P	net/neoforged/neoforge/client/event/RegisterDimensionTransitionScreenEvent	ladder/rung121/client/RegisterDimensionTransitionScreenEvent
 # NeoForge 21.1's writeClientSideData (a menu provider's data sent with its menu; 21.0 has none): written by ServerPlayerMenuMixin
 O	net/neoforged/neoforge/client/extensions/IMenuProviderExtension	writeClientSideData	(Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/network/RegistryFriendlyByteBuf;)V	ladder/rung121/MenuDataApi	ladder/rung121/MenuDataApi	writeNothing
+# NeoForge 21.1's attachment syncing (1.21 syncs none): the handler provided, AttachmentSync sends and the client sets
+P	net/neoforged/neoforge/attachment/AttachmentSyncHandler	ladder/rung121/attachment/AttachmentSyncHandler
+X	net/neoforged/neoforge/attachment/AttachmentType$Builder	sync	(Lnet/neoforged/neoforge/attachment/AttachmentSyncHandler;)Lnet/neoforged/neoforge/attachment/AttachmentType$Builder;	ladder/rung121/attachment/AttachmentSync	sync
+X	net/neoforged/neoforge/attachment/AttachmentType$Builder	sync	(Lnet/minecraft/network/codec/StreamCodec;)Lnet/neoforged/neoforge/attachment/AttachmentType$Builder;	ladder/rung121/attachment/AttachmentSync	sync
+X	net/neoforged/neoforge/attachment/AttachmentType$Builder	sync	(Ljava/util/function/BiPredicate;Lnet/minecraft/network/codec/StreamCodec;)Lnet/neoforged/neoforge/attachment/AttachmentType$Builder;	ladder/rung121/attachment/AttachmentSync	sync
+X	net/neoforged/neoforge/attachment/IAttachmentHolder	syncData	(Lnet/neoforged/neoforge/attachment/AttachmentType;)V	ladder/rung121/attachment/AttachmentSync	syncData
+X	net/neoforged/neoforge/attachment/IAttachmentHolder	syncData	(Ljava/util/function/Supplier;)V	ladder/rung121/attachment/AttachmentSync	syncData
+# NeoForge 21.1's small overloads on 21.0's
+X	net/neoforged/neoforge/common/extensions/ITagBuilderExtension	removeElement	(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/tags/TagBuilder;	ladder/rung121/SmallAdapters	removeElement
+X	net/neoforged/neoforge/common/extensions/ITagBuilderExtension	removeTag	(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/tags/TagBuilder;	ladder/rung121/SmallAdapters	removeTag
+X	net/neoforged/neoforge/common/CommonHooks	canMobEffectBeApplied	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/effect/MobEffectInstance;Lnet/minecraft/world/entity/Entity;)Z	ladder/rung121/SmallAdapters	canMobEffectBeApplied
+X	net/neoforged/neoforge/client/model/lighting/QuadLighter	computeLightingForQuad	([IZ)V	ladder/rung121/ClientAdapters	computeLightingForQuad
+# NeoForge 21.1's queries of the client extensions registered (21.0 keeps them in ClientExtensionsManager)
+X	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	isBlockRegistered	(Lnet/minecraft/world/level/block/Block;)Z	ladder/rung121/ClientAdapters	isBlockRegistered
+X	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	isItemRegistered	(Lnet/minecraft/world/item/Item;)Z	ladder/rung121/ClientAdapters	isItemRegistered
+X	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	isMobEffectRegistered	(Lnet/minecraft/world/effect/MobEffect;)Z	ladder/rung121/ClientAdapters	isMobEffectRegistered
+X	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	isFluidTypeRegistered	(Lnet/neoforged/neoforge/fluids/FluidType;)Z	ladder/rung121/ClientAdapters	isFluidTypeRegistered
+# more of NeoForge 21.1 (sprite source types, the config breadcrumb, intrusive holders, data pack registries, fluid faces, container items, client extensions by holder)
+X	net/neoforged/neoforge/client/event/RegisterSpriteSourceTypesEvent	register	(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/renderer/texture/atlas/SpriteSourceType;)V	ladder/rung121/MoreAdapters	registerSpriteSourceType
+F	net/neoforged/neoforge/client/gui/ConfigurationScreen	CRUMB_SEPARATOR	Lnet/minecraft/network/chat/Component;	ladder/rung121/MoreAdapters	crumbSeparator
+X	net/neoforged/neoforge/registries/RegistryBuilder	withIntrusiveHolders	()Lnet/neoforged/neoforge/registries/RegistryBuilder;	ladder/rung121/MoreAdapters	withIntrusiveHolders
+X	net/neoforged/neoforge/registries/DataPackRegistryEvent$NewRegistry	dataPackRegistry	(Lnet/minecraft/resources/ResourceKey;Lcom/mojang/serialization/Codec;Lcom/mojang/serialization/Codec;Ljava/util/function/Consumer;)V	ladder/rung121/MoreAdapters	dataPackRegistry
+O	net/neoforged/neoforge/common/extensions/IBlockExtension	shouldHideAdjacentFluidFace	(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;Lnet/minecraft/world/level/material/FluidState;)Z	ladder/rung121/FluidFaceApi	ladder/rung121/FluidFaceApi	shouldHideAdjacentFluidFace
+X	net/neoforged/neoforge/common/extensions/IBlockExtension	shouldHideAdjacentFluidFace	(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;Lnet/minecraft/world/level/material/FluidState;)Z	ladder/rung121/MoreAdapters	shouldHideAdjacentFluidFace
+X	net/neoforged/neoforge/common/extensions/IBlockStateExtension	shouldHideAdjacentFluidFace	(Lnet/minecraft/core/Direction;Lnet/minecraft/world/level/material/FluidState;)Z	ladder/rung121/MoreAdapters	shouldHideAdjacentFluidFace
+O	net/neoforged/neoforge/common/extensions/IItemExtension	canFitInsideContainerItems	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/rung121/ContainerFitApi	ladder/rung121/ContainerFitApi	canFitInsideContainerItems
+X	net/neoforged/neoforge/common/extensions/IItemExtension	canFitInsideContainerItems	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/rung121/MoreAdapters	canFitInsideContainerItems
+X	net/neoforged/neoforge/common/extensions/IItemStackExtension	canFitInsideContainerItems	()Z	ladder/rung121/MoreAdapters	canFitInsideContainerItems
+X	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	registerItem	(Lnet/neoforged/neoforge/client/extensions/common/IClientItemExtensions;[Lnet/minecraft/core/Holder;)V	ladder/rung121/MoreAdapters	registerItem
+X	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	registerBlock	(Lnet/neoforged/neoforge/client/extensions/common/IClientBlockExtensions;[Lnet/minecraft/core/Holder;)V	ladder/rung121/MoreAdapters	registerBlock
+X	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	registerMobEffect	(Lnet/neoforged/neoforge/client/extensions/common/IClientMobEffectExtensions;[Lnet/minecraft/core/Holder;)V	ladder/rung121/MoreAdapters	registerMobEffect
+X	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	registerFluidType	(Lnet/neoforged/neoforge/client/extensions/common/IClientFluidTypeExtensions;[Lnet/minecraft/core/Holder;)V	ladder/rung121/MoreAdapters	registerFluidType
+P	net/neoforged/neoforge/registries/datamaps/builtin/BiomeVillagerType	ladder/rung121/provided/BiomeVillagerType
+F	net/neoforged/neoforge/registries/datamaps/builtin/NeoForgeDataMaps	VILLAGER_TYPES	Lnet/neoforged/neoforge/registries/datamaps/DataMapType;	ladder/rung121/VillagerTypes	villagerTypes
+X	net/neoforged/fml/loading/FMLLoader	getBindings	()Lnet/neoforged/fml/IBindingsProvider;	ladder/rung121/MoreAdapters	getBindings
+# NeoForge 21.1's material atlases and point of interest extensions (posted by the adapters)
+P	net/neoforged/neoforge/client/event/RegisterMaterialAtlasesEvent	ladder/rung121/provided/RegisterMaterialAtlasesEvent
+P	net/neoforged/neoforge/common/world/poi/ExtendPoiTypesEvent	ladder/rung121/provided/ExtendPoiTypesEvent
+# NeoForge 21.1's neoforge:overlays pack section
+F	net/minecraft/server/packs/OverlayMetadataSection	NEOFORGE_TYPE	Lnet/minecraft/server/packs/metadata/MetadataSectionType;	ladder/rung121/Overlays	neoforgeType

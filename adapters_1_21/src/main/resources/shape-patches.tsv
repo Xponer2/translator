@@ -1,0 +1,9 @@
+# Shape patches (ladder.rung121.shape.ShapePatches): edits of NeoForge 21.0 classes that give a 1.21.1 mod mixin its point
+# (the converter applies them to the bottom jar it checks mixins against). Each class must be a target of ShapeTargetsMixin.
+# kind	owner	name	desc	-
+# 21.1 asks stack.supportsEnchantment(holder) at the anvil, enchant_randomly and /enchant (fabric's item API wraps those
+# calls); 21.0 asks enchantment.canEnchant(stack). ItemStack gets the method, the three calls become it.
+supports-method	net/minecraft/world/item/ItemStack	-	-	-
+supports-call	net/minecraft/world/inventory/AnvilMenu	createResult	()V	-
+supports-call	net/minecraft/server/commands/EnchantCommand	enchant	(Lnet/minecraft/commands/CommandSourceStack;Ljava/util/Collection;Lnet/minecraft/core/Holder;I)I	-
+supports-call	net/minecraft/world/level/storage/loot/functions/EnchantRandomlyFunction	lambda$run$4	(ZLnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Holder;)Z	-

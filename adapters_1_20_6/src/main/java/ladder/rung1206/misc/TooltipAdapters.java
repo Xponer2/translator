@@ -82,4 +82,10 @@ public final class TooltipAdapters {
             }
         }
     }
+
+    /** NeoForge 21's {@code stack.getAttributeModifiers()}: the stack's modifiers, else its item's */
+    public static ItemAttributeModifiers getAttributeModifiers(ItemStack stack) {
+        ItemAttributeModifiers modifiers = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
+        return modifiers.modifiers().isEmpty() ? stack.getItem().getDefaultAttributeModifiers() : modifiers;
+    }
 }

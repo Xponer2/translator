@@ -3,5 +3,6 @@
   "neoforge.value.flat": "%s",
   "neoforge.value.percent": "%s%%",
   "neoforge.modifier.plus": "+%s %s",
-  "neoforge.modifier.take": "%s %s"
+  "neoforge.modifier.take": "%s %s",
+  "neoforge.configuration.uitext.breadcrumb.separator": " > "
 }

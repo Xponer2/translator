@@ -5,6 +5,9 @@
   "plugin": "ladder.adapter.shape.ShapePlugin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "AttachmentBuilderMixin",
+    "AttachmentChunkMapAccess",
+    "AttachmentTrackedEntityAccess",
     "BlockStateBaseMixin",
     "ItemStackMixin",
     "BlockItemMixin",
@@ -37,9 +40,17 @@
     "UseDurationSites$Crossbow",
     "UseDurationSites$Brush",
     "UseDurationSites$GameMode",
-    "UseDurationSites$Witch"
+    "UseDurationSites$Witch",
+    "PostHurtMixin",
+    "ShulkerSlotFitMixin",
+    "ShulkerBoxFitMixin",
+    "BundleSlotFitMixin",
+    "BundleAddFitMixin",
+    "ShulkerWrapperFitMixin",
+    "CarriedBundleFitMixin"
   ],
   "client": [
+    "TransitionScreenMixin",
     "AbstractSelectionListMixin",
     "BufferBuilderMixin",
     "ArmourLayerMixin",
@@ -47,7 +58,8 @@
     "ShapeTargetsMixin",
     "ClientExtensionsMixin",
     "UseDurationClientSites$HandRenderer",
-    "UseDurationClientSites$Properties"
+    "UseDurationClientSites$Properties",
+    "ParticleEngineMixin"
   ],
   "injectors": {
     "defaultRequire": 1

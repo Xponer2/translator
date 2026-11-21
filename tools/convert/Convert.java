@@ -399,9 +399,87 @@ public class Convert {
                 a.values.add("bus");
                 a.values.add(new String[] {"Lnet/neoforged/fml/common/EventBusSubscriber$Bus;", "MOD"});
             } else if (mod > 0) {
+                // (splitSubscribers moved the mod bus's listeners into a class of their own before: none should be left)
                 problem("an event subscriber with events of both buses (FML 2 puts a class on one): " + node.name);
             }
         }
+    }
+
+    /**
+     * An {@code @EventBusSubscriber} with no bus whose listeners take events of both buses: NeoForge 21.1 puts each on its
+     * event's bus, FML 4.0.23 (1.21) and older put the whole class on one. The mod bus's listeners move to a generated
+     * subscriber of their own ({@code <class>$LadderModBus}, bus = MOD, the same mod id and sides), static methods that
+     * call them; the class keeps the game bus's. The new class is converted like the mod's own.
+     */
+    static void splitSubscribers(Map<String, byte[]> entries) {
+        Map<String, byte[]> added = new LinkedHashMap<>();
+        for (var e : entries.entrySet()) {
+            if (!e.getKey().endsWith(".class") || e.getKey().startsWith("META-INF/")) {
+                continue;
+            }
+            ClassNode node = new ClassNode();
+            new ClassReader(e.getValue()).accept(node, 0);
+            AnnotationNode subscriber = node.visibleAnnotations == null ? null
+                    : node.visibleAnnotations.stream().filter(a -> a.desc.equals(SUBSCRIBER)).findFirst().orElse(null);
+            if (subscriber == null || subscriber.values != null && subscriber.values.contains("bus")) {
+                continue;
+            }
+            List<MethodNode> modListeners = new ArrayList<>();
+            boolean game = false;
+            for (MethodNode m : node.methods) {
+                if ((m.access & Opcodes.ACC_STATIC) == 0 || m.visibleAnnotations == null
+                        || m.visibleAnnotations.stream().noneMatch(x -> x.desc.equals("Lnet/neoforged/bus/api/SubscribeEvent;"))) {
+                    continue;
+                }
+                Type[] params = Type.getArgumentTypes(m.desc);
+                if (params.length != 1 || params[0].getSort() != Type.OBJECT) {
+                    continue;
+                }
+                if (modBusEvent(params[0].getInternalName())) {
+                    modListeners.add(m);
+                } else {
+                    game = true;
+                }
+            }
+            if (modListeners.isEmpty() || !game) {
+                continue;
+            }
+            String companion = node.name + "$LadderModBus";
+            ClassNode split = new ClassNode();
+            split.visit(Opcodes.V21, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL | Opcodes.ACC_SUPER, companion, null, "java/lang/Object", null);
+            AnnotationNode copy = new AnnotationNode(SUBSCRIBER);
+            copy.values = new ArrayList<>(subscriber.values == null ? List.of() : subscriber.values);
+            copy.values.add("bus");
+            copy.values.add(new String[] {"Lnet/neoforged/fml/common/EventBusSubscriber$Bus;", "MOD"});
+            split.visibleAnnotations = new ArrayList<>(List.of(copy));
+            for (MethodNode m : modListeners) {
+                AnnotationNode listen = m.visibleAnnotations.stream().filter(x -> x.desc.equals("Lnet/neoforged/bus/api/SubscribeEvent;")).findFirst().get();
+                m.visibleAnnotations.remove(listen);
+                // the companion calls it: no longer private
+                m.access = (m.access & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PUBLIC;
+                MethodNode f = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, m.name, m.desc, m.signature, null);
+                f.visibleAnnotations = new ArrayList<>(List.of(listen));
+                f.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                f.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, node.name, m.name, m.desc, (node.access & Opcodes.ACC_INTERFACE) != 0));
+                f.instructions.add(new InsnNode(Opcodes.RETURN));
+                f.maxStack = 1;
+                f.maxLocals = 1;
+                split.methods.add(f);
+            }
+            ClassWriter w = new ClassWriter(0);
+            node.accept(w);
+            e.setValue(w.toByteArray());
+            ClassWriter sw = new ClassWriter(0);
+            split.accept(sw);
+            added.put(companion + ".class", sw.toByteArray());
+        }
+        entries.putAll(added);
+    }
+
+    /** a class of the data generators' API (net.minecraft.data, NeoForge's data events and providers) */
+    static boolean datagenApi(String cls) {
+        return cls.startsWith("net/minecraft/data/") || cls.startsWith("net/neoforged/neoforge/data/")
+                || cls.startsWith("net/neoforged/neoforge/common/data/");
     }
 
     /** whether an event class is a mod bus event (IModBusEvent among its supertypes, in the mod's version or provided) */
@@ -442,7 +520,8 @@ public class Convert {
                     // a lookup in a try that catches its failure is the mod's own fallback (a mod for several versions)
                     if (owner != null && name != null && (Stage0.platform(owner) || owner.startsWith("net/neoforged/fml/")) && !caught(m, call)) {
                         String lower = lowerOwnerName(versions.get(level), bottom, owner);
-                        if (bottom.classes.containsKey(lower) && !hasMemberNamed(bottom, lower, name)) {
+                        // a member the mod's own version hasn't either is the mod's dead path there too (it fails the same natively)
+                        if (bottom.classes.containsKey(lower) && !hasMemberNamed(bottom, lower, name) && hasMemberNamed(versions.get(level), owner, name)) {
                             problem("reflection on " + owner + "." + name + ", which the bottom version hasn't (" + node.name + ")");
                         }
                     }
@@ -831,6 +910,7 @@ public class Convert {
                 problem("jarjar names " + path + ", which the jar hasn't");
             }
         }
+        splitSubscribers(entries);
         try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(out))) {
             for (var e : entries.entrySet()) {
                 String name = e.getKey();
@@ -846,6 +926,7 @@ public class Convert {
                     List<Boolean> shadowsAbove = null;
                     if (mixinTargets.containsKey(node.name)) {
                         MixinPoints.modClasses = mod::containsKey;
+                        shadowsByArgumentPlans(node, mixinTargets.get(node.name));
                         landsAbove = MixinPoints.check(node, mixinTargets.get(node.name), Convert::topClass);
                         remapMixinSelectors(node, remapper);
                     }
@@ -1317,8 +1398,11 @@ public class Convert {
                         continue;
                     }
                     try (InputStream s = zip.getInputStream(e)) {
+                        byte[] bytes = s.readAllBytes();
                         ClassNode node = new ClassNode();
-                        new ClassReader(s).accept(node, ClassReader.SKIP_CODE);
+                        new ClassReader(bytes).accept(node, ClassReader.SKIP_CODE);
+                        adapterBytes.put(node.name, bytes);
+                        collectOverwrites(bytes);
                         Set<String> methods = new HashSet<>();
                         node.methods.forEach(m -> methods.add(m.name + " " + m.desc));
                         // fields too, marked (a provided class's fields are checked like its methods)
@@ -1338,6 +1422,40 @@ public class Convert {
             loadShapePatches(Path.of(jar));
         }
     }
+
+    /**
+     * The adapters' {@code @Overwrite}s of game methods (a method made the upper version's shape, so the mods' injectors
+     * into it land): target class -> the overwriting methods. The mixin checks see the game class with these bodies.
+     */
+    static final Map<String, List<MethodNode>> adapterOverwrites = new HashMap<>();
+
+    static void collectOverwrites(byte[] bytes) {
+        ClassNode c = new ClassNode();
+        new ClassReader(bytes).accept(c, 0);
+        List<String> targets = new ArrayList<>();
+        for (AnnotationNode a : c.invisibleAnnotations == null ? List.<AnnotationNode>of() : c.invisibleAnnotations) {
+            if (!a.desc.equals("Lorg/spongepowered/asm/mixin/Mixin;") || a.values == null) {
+                continue;
+            }
+            for (int i = 0; i + 1 < a.values.size(); i += 2) {
+                Object v = a.values.get(i + 1);
+                if (a.values.get(i).equals("value") && v instanceof List<?> l) {
+                    l.forEach(t -> targets.add(((Type) t).getInternalName()));
+                } else if (a.values.get(i).equals("targets") && v instanceof List<?> l) {
+                    l.forEach(t -> targets.add(((String) t).replace('.', '/')));
+                }
+            }
+        }
+        for (MethodNode m : c.methods) {
+            if (MixinPoints.annotations(m).stream().anyMatch(a -> a.desc.equals("Lorg/spongepowered/asm/mixin/Overwrite;"))) {
+                targets.forEach(t -> adapterOverwrites.computeIfAbsent(t, k -> new ArrayList<>()).add(m));
+            }
+        }
+    }
+
+    /** the adapters' classes (a provided class is a mixin target below: checked on its own code) */
+    static final Map<String, byte[]> adapterBytes = new HashMap<>();
+    static final Map<String, Optional<ClassNode>> adapterClasses = new HashMap<>();
 
     /** the adapters' interfaces: a static call into one (an O row's defaults, an X row's adapter there) is an interface call */
     static final Set<String> adapterInterfaces = new HashSet<>();
@@ -1380,9 +1498,9 @@ public class Convert {
         }
         try {
             ClassLoader loader = new java.net.URLClassLoader(new java.net.URL[] {jar.toUri().toURL()}, Convert.class.getClassLoader());
-            Class<?> type = Class.forName("ladder.adapter.shape.ShapePatches", true, loader);
+            Class<?> type = Class.forName(ADAPTERS.replace('/', '.') + "shape.ShapePatches", true, loader);
             List<Object> patches = (List<Object>) type.getMethod("parse", String.class).invoke(null, tsv);
-            java.lang.reflect.Method verify = type.getMethod("verify", Class.forName("ladder.adapter.shape.ShapePatches$Patch", true, loader),
+            java.lang.reflect.Method verify = type.getMethod("verify", Class.forName(ADAPTERS.replace('/', '.') + "shape.ShapePatches$Patch", true, loader),
                     java.util.function.Function.class);
             shapeApply = type.getMethod("apply", ClassNode.class, List.class);
             for (Object patch : patches) {
@@ -1522,6 +1640,17 @@ public class Convert {
                     // a method reference to an X row's member (idMap::getIdOrThrow): to the adapter, the receiver first
                     // (the lambda's captured or first argument, as for a call)
                     for (int a = 0; a < indy.bsmArgs.length; a++) {
+                        if (indy.bsmArgs[a] instanceof Handle h && h.getTag() == Opcodes.H_NEWINVOKESPECIAL && Stage0.platform(h.getOwner())) {
+                            // a constructor reference (ReceivingLevelScreen::new) of an X row's constructor: its factory
+                            Stage0.Ref ref = resolve(h.getOwner(), "<init>", h.getDesc(), true);
+                            String[] x = ref == null ? null : redirects.get(ref.cls() + "." + ref.name() + " " + ref.desc());
+                            if (x != null) {
+                                String desc = h.getDesc().substring(0, h.getDesc().indexOf(')') + 1) + "L" + h.getOwner() + ";";
+                                checkAdapter(x[0], x[1], desc, "X " + ref.key() + " (constructor reference)");
+                                indy.bsmArgs[a] = new Handle(Opcodes.H_INVOKESTATIC, x[0], x[1], desc, false);
+                            }
+                            continue;
+                        }
                         if (!(indy.bsmArgs[a] instanceof Handle h) || h.getName().startsWith("<") || h.getOwner().startsWith("[")
                                 || h.getTag() != Opcodes.H_INVOKEVIRTUAL && h.getTag() != Opcodes.H_INVOKEINTERFACE && h.getTag() != Opcodes.H_INVOKESTATIC) {
                             continue;
@@ -1640,7 +1769,10 @@ public class Convert {
                 if (o == null) {
                     continue;
                 }
-                if (call.getOpcode() == Opcodes.INVOKESPECIAL && Stage0.platform(call.owner)) {
+                boolean throughMod = call.getOpcode() == Opcodes.INVOKESPECIAL && !Stage0.platform(call.owner)
+                        && !modChainDeclares(call.owner, call.name + " " + call.desc);
+                if (call.getOpcode() == Opcodes.INVOKESPECIAL && (Stage0.platform(call.owner) || throughMod)) {
+                    // (a super call through a mod class that doesn't declare it lands on the game's: the same defaults)
                     // super into the game's class: exact when that class doesn't override it in the newer version
                     // (an O row of its own covers the ones that do, like BlockItem.appendHoverText)
                     // (a row whose lower hook 1.20.4 runs for every game class itself, defineSynchedData(), has defaults
@@ -1661,6 +1793,21 @@ public class Convert {
                 // through a mod class: it has the method (its own, or the interface's default)
             }
         }
+    }
+
+    /** whether a mod class or one of the mod's superclasses above it (up to the first game class) declares the method */
+    static boolean modChainDeclares(String cls, String method) {
+        for (int depth = 0; cls != null && depth < 32; depth++) {
+            Stage0.ModClass mc = mod.get(cls);
+            if (mc == null) {
+                return false;
+            }
+            if (mc.methods.contains(method)) {
+                return true;
+            }
+            cls = mc.superName;
+        }
+        return false;
     }
 
     /**
@@ -1711,6 +1858,9 @@ public class Convert {
                         // not in the mod's own version either (another loader's or another version's class, as in a mod
                         // made for several): code that can't run natively, so nothing the step changes; listed apart
                         unverified.add("a class its own version hasn't either: " + c);
+                        cur = c;
+                    } else if (datagenApi(c)) {
+                        unverified.add("data generation API class " + c + " (" + versions.get(i).id + " -> " + versions.get(i + 1).id + ")");
                         cur = c;
                     } else {
                         problem("missing class " + c + " (" + versions.get(i).id + " -> " + versions.get(i + 1).id + ")");
@@ -1888,6 +2038,10 @@ public class Convert {
                     if (moved != null) {
                         // an M row: the same hook below under another name and descriptor, bridged to it
                         String[] bridge = bridgeFor(i, cur, moved);
+                        if (bridge == null && i + 2 < versions.size()) {
+                            // the hook found at the bottom (missing on the way down): bridged across the last step to it
+                            bridge = bridgeFor(versions.size() - 2, cur, moved);
+                        }
                         if (bridge != null) {
                             callRedirect.put(key, bridge);
                             return new Stage0.Ref(cur.kind(), bridge[0], bridge[1], cur.desc());
@@ -1924,6 +2078,11 @@ public class Convert {
                             return new Stage0.Ref(cur.kind(), bridge[0], bridge[1], cur.desc());
                         }
                     }
+                    if (datagenApi(cur.cls())) {
+                        // the data generators' API runs in runData only, never in the game (GatherDataEvent's members)
+                        unverified.add("data generation API " + cur.key() + " (" + from.id + " -> " + to.id + ")");
+                        return null;
+                    }
                     problem("missing " + cur.key() + " (" + from.id + " -> " + to.id + ")");
                     return null;
                 }
@@ -1945,6 +2104,13 @@ public class Convert {
             if (row[1].equals(cur.name()) && row[2].equals(cur.desc()) && (cur.cls().equals(row[0]) || extendsClass(from, cur.cls(), row[0]))) {
                 String lowerOwner = Stage0.mapClass(from, to, cur.cls());
                 String decl = lowerOwner == null ? null : to.declaring(lowerOwner, row[3], row[4], true);
+                if (decl == null) {
+                    // the hook is missing on the way down but there at the bottom (NeoForge 21.0 has no writeClientSideData,
+                    // 20.4 has its FriendlyByteBuf form): the bottom's
+                    Stage0.Version bottom = versions.get(versions.size() - 1);
+                    String bottomOwner = Stage0.mapClass(from, bottom, cur.cls());
+                    decl = bottomOwner == null ? null : bottom.declaring(bottomOwner, row[3], row[4], true);
+                }
                 return decl == null ? null : new Stage0.Ref('M', decl, row[3], row[4]);
             }
         }
@@ -2754,6 +2920,10 @@ public class Convert {
             // 1.20.5's pack location where 1.20.4 passes the pack's id (Packs: the id down, the location up)
             return 11;
         }
+        if ((u.equals(REGISTRY_BUFFER) || u.equals(CARRIED + REGISTRY_BUFFER)) && l.equals(FRIENDLY_BUFFER)) {
+            // 1.20.5's buffer with the registries where 1.20.4 passes its plain one (Payloads.registryBuffer wraps it)
+            return 13;
+        }
         if (RECIPE_INPUTS.contains(u) && RECIPE_CONTAINERS.contains(l)) {
             // 1.21's recipe inputs where 1.20.4's recipes take a container (RecipeInputs: a container over the input,
             // the input of the recipe's type made of a container)
@@ -2770,6 +2940,8 @@ public class Convert {
     static final String PACK_LOCATION = "net/minecraft/server/packs/PackLocationInfo";
     static final Set<String> PACK_LOCATIONS = Set.of(PACK_LOCATION, CARRIED + PACK_LOCATION);
     static final String RECIPE_INPUT_CONVERSIONS = ADAPTERS + "recipe/RecipeInputs";
+    static final String REGISTRY_BUFFER = "net/minecraft/network/RegistryFriendlyByteBuf";
+    static final String FRIENDLY_BUFFER = "net/minecraft/network/FriendlyByteBuf";
     static final String CONTAINER = "net/minecraft/world/Container";
     static final Set<String> RECIPE_CONTAINERS = Set.of(CONTAINER, "net/minecraft/world/inventory/CraftingContainer");
     /** 1.21's recipe input types, in the top's and the carried names */
@@ -2980,6 +3152,9 @@ public class Convert {
             case 7 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "location", "(L" + RESOURCE_KEY + ";)L" + RESOURCE_LOCATION + ";", false));
             case 8 -> code.add(new TypeInsnNode(Opcodes.CHECKCAST, lower.getInternalName()));
             case 11 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PACKS, "id", "(Ljava/lang/Object;)Ljava/lang/String;", false));
+            case 13 -> {
+                // a registry buffer is a FriendlyByteBuf: passed as it is
+            }
             case 10 -> {
                 code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, RECIPE_INPUT_CONVERSIONS, "container", "(Ljava/lang/Object;)Lnet/minecraft/world/inventory/CraftingContainer;", false));
                 if (!lower.getInternalName().equals("net/minecraft/world/inventory/CraftingContainer")) {
@@ -4080,6 +4255,8 @@ public class Convert {
             case 7 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "lootTableKey", "(L" + RESOURCE_LOCATION + ";)L" + RESOURCE_KEY + ";", false));
             case 9 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "deltaTracker", "(F)" + upper.getDescriptor(), false));
             case 12 -> code.add(new InsnNode(Opcodes.D2F));
+            case 13 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ADAPTERS + "network/Payloads", "registryBuffer",
+                    "(L" + FRIENDLY_BUFFER + ";)L" + CARRIED + REGISTRY_BUFFER + ";", false));
             case 11 -> {
                 code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PACKS, "location", "(Ljava/lang/String;)Ljava/lang/Object;", false));
                 code.add(new TypeInsnNode(Opcodes.CHECKCAST, CARRIED + PACK_LOCATION));
@@ -4355,6 +4532,26 @@ public class Convert {
     @SuppressWarnings("unchecked")
     static ClassNode bottomClass(String name) {
         ClassNode node = parsed(bottomClasses, versions.get(versions.size() - 1), name);
+        if (node == null && adapterBytes.containsKey(name)) {
+            // a class the adapters provide (a P row's): a mixin into the upper game's class lands on it below
+            return adapterClasses.computeIfAbsent(name, n -> {
+                ClassNode c = new ClassNode();
+                new ClassReader(adapterBytes.get(n)).accept(c, ClassReader.EXPAND_FRAMES);
+                return Optional.of(c);
+            }).orElse(null);
+        }
+        List<MethodNode> overwrites = adapterOverwrites.get(name);
+        if (node != null && overwrites != null && overwrittenClasses.add(name)) {
+            for (MethodNode o : overwrites) {
+                for (MethodNode m : node.methods) {
+                    if (m.name.equals(o.name) && m.desc.equals(o.desc)) {
+                        m.instructions = o.instructions;
+                        m.tryCatchBlocks = o.tryCatchBlocks;
+                        m.localVariables = o.localVariables;
+                    }
+                }
+            }
+        }
         List<Object> patches = shapePatches.get(name);
         if (node != null && patches != null && shapedClasses.add(name)) {
             try {
@@ -4371,6 +4568,17 @@ public class Convert {
     }
 
     static final Set<String> shapedClasses = new HashSet<>();
+
+    /** whether a shape patch adds the method to the bottom class (the unpatched class hasn't it) */
+    static boolean shapeAdded(String owner, String name, String desc) {
+        if (!shapePatches.containsKey(owner)) {
+            return false;
+        }
+        ClassNode unpatched = unpatchedBottomClass(owner), patched = bottomClass(owner);
+        return unpatched != null && patched != null && unpatched.methods.stream().noneMatch(m -> m.name.equals(name) && m.desc.equals(desc))
+                && patched.methods.stream().anyMatch(m -> m.name.equals(name) && m.desc.equals(desc));
+    }
+    static final Set<String> overwrittenClasses = new HashSet<>();
     static final Map<String, Optional<ClassNode>> unpatchedBottom = new HashMap<>();
 
     static ClassNode unpatchedBottomClass(String name) {
@@ -4541,6 +4749,15 @@ public class Convert {
                         + mixin + "." + h + ")");
                 continue;
             }
+            boolean matchesNothingAbove = deferred.getOrDefault(h, List.of()).stream().anyMatch(t -> t.contains(" matches nothing in " + versions.get(0).id));
+            // (per injector: its mod runs without it in the upper game, the same below, whatever its mixin's other
+            // injectors do; one that matches above but not below stays a problem)
+            if (!landsAbove && !landsBelow && matchesNothingAbove) {
+                // an injector whose selector matches nothing in the mod's own game (another version's names, another
+                // loader's): inert there (the mod runs without it), and inert below too, so the same
+                unverified.add("mixin injector that applies neither in " + versions.get(0).id + " nor below (" + mixin + "." + h + ")");
+                continue;
+            }
             deferred.getOrDefault(h, List.of()).forEach(Convert::report);
             if (landsAbove) {
                 report((MixinPoints.INACTIVE.equals(below.get(lower)) ? "mixin into a class the bottom game hasn't" : "mixin injection point moved below: " + below.get(lower)) + " (" + mixin + "." + h + ")"
@@ -4548,6 +4765,48 @@ public class Convert {
             }
         }
         return result;
+    }
+
+    /**
+     * A mixin's {@code @Shadow} of a method an A row changed (the same method below with fewer parameters, the plan
+     * passing the first ones as they are, the rest made by the adapters): the shadow becomes the lower method, and the
+     * mixin's calls of it drop the trailing values the lower one doesn't take (21.1's renderArmorPiece with the animation
+     * values, 21.0's without). Before the names (top names).
+     */
+    static void shadowsByArgumentPlans(ClassNode mixin, List<String> targets) {
+        for (MethodNode m : mixin.methods) {
+            if (shadowOf(MixinPoints.annotations(m)) == null) {
+                continue;
+            }
+            for (String[] a : argumentPlans) {
+                if (!a[1].equals(m.name) || !a[2].equals(m.desc) || targets.stream().noneMatch(t -> t.equals(a[0]) || extendsClass(versions.get(0), t, a[0]))) {
+                    continue;
+                }
+                String[] plan = a[4].trim().split(" +");
+                Type[] up = Type.getArgumentTypes(a[2]), low = Type.getArgumentTypes(a[3]);
+                boolean prefix = plan.length == up.length && low.length < up.length;
+                for (int i = 0; prefix && i < low.length; i++) {
+                    prefix = plan[i].equals("$" + i) && low[i].equals(up[i]);
+                }
+                if (!prefix) {
+                    continue;
+                }
+                String upper = m.desc;
+                m.desc = a[3];
+                for (MethodNode caller : mixin.methods) {
+                    for (AbstractInsnNode insn : caller.instructions.toArray()) {
+                        if (insn instanceof MethodInsnNode call && call.owner.equals(mixin.name) && call.name.equals(m.name) && call.desc.equals(upper)) {
+                            // the trailing values the lower method doesn't take, off the stack (the last first)
+                            for (int i = up.length - 1; i >= low.length; i--) {
+                                caller.instructions.insertBefore(call, new InsnNode(up[i].getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
+                            }
+                            call.desc = a[3];
+                        }
+                    }
+                }
+                break;
+            }
+        }
     }
 
     /** The string selectors of a mixin's injectors (method = ..., @At(target = ...)) in the bottom version's names. */
@@ -4601,10 +4860,19 @@ public class Convert {
             return;
         }
         boolean at = a.desc.equals("Lorg/spongepowered/asm/mixin/injection/At;");
+        // a MixinExtras expression's definition names the calls and fields it means as an @At target does (an
+        // inherited member through the class the code calls it on), not methods of the mixin's targets
+        boolean definition = a.desc.equals("Lcom/llamalad7/mixinextras/expression/Definition;");
         for (int i = 0; i + 1 < a.values.size(); i += 2) {
             String key = (String) a.values.get(i);
             Object value = a.values.get(i + 1);
-            if (key.equals("method") && value instanceof List<?> selectors) {
+            if (definition && (key.equals("method") || key.equals("field")) && value instanceof List<?> refs) {
+                List<Object> mapped = new ArrayList<>();
+                for (Object r : refs) {
+                    mapped.add(r instanceof String ref ? targetSelector(ref, remapper, where) : r);
+                }
+                a.values.set(i + 1, mapped);
+            } else if (key.equals("method") && value instanceof List<?> selectors) {
                 List<Object> mapped = new ArrayList<>();
                 for (Object s : selectors) {
                     mapped.add(s instanceof String sel ? methodSelector(sel, targets, remapper, where) : s);
@@ -4731,6 +4999,10 @@ public class Convert {
             unverified.add("mixin target without descriptor " + target + " in " + where);
             return "L" + remapper.map(owner) + ";" + rest;
         }
+        if (!field && shapeAdded(owner, name, desc)) {
+            // a method the adapters' shape patches give the bottom class (and its game calls): the mixin's point there
+            return "L" + remapper.map(owner) + ";" + rest;
+        }
         String newName;
         if (name.equals("<init>")) {
             validateConstructor(owner, desc);
@@ -4814,7 +5086,16 @@ public class Convert {
             list.removeIf(x -> {
                 boolean inject = x.annotation().equals("Lorg/spongepowered/asm/mixin/injection/Inject;");
                 if (inject) {
-                    return x.call();
+                    if (x.call()) {
+                        return true;
+                    }
+                    // a handler that takes the lower method's parameters (then its CallbackInfo) already fits it: a
+                    // name-only selector that also names the upper overload the lower one stands for (21.1's
+                    // renderArmorPiece of 6 parameters beside the one of 12; 21.0's is the 6 alone)
+                    Type[] hp0 = Type.getArgumentTypes(remapper.mapMethodDesc(x.desc())), low0 = Type.getArgumentTypes(x.end().desc());
+                    Type[] up0 = Type.getArgumentTypes(x.upperDesc());
+                    return !Arrays.equals(up0, low0) && hp0.length > low0.length && Arrays.equals(Arrays.copyOf(hp0, low0.length), low0)
+                            && hp0[low0.length].getSort() == Type.OBJECT && hp0[low0.length].getInternalName().startsWith("org/spongepowered/asm/mixin/injection/callback/");
                 }
                 if (!x.call() && VALUE_INJECTORS.contains(x.annotation())) {
                     // a value injector modifies a local, an argument or the return value of the method: of a changed
@@ -4893,6 +5174,16 @@ public class Convert {
             boolean inject = f.annotation().equals("Lorg/spongepowered/asm/mixin/injection/Inject;");
             boolean prefix = hp.length >= up.length && Arrays.equals(Arrays.copyOf(hp, up.length), up);
             boolean distinct = list.stream().allMatch(x -> x.upperDesc().equals(f.upperDesc()) && x.end().equals(f.end()) && x.call() == f.call());
+            String[] callPlan = f.call() ? argumentPlan(f.upperDesc(), f.end()) : null;
+            boolean callShape = callPlan != null && callPlan.length == up.length && !returnChanged && distinct && hp.length > up.length
+                    && (f.annotation().equals("Lcom/llamalad7/mixinextras/injector/v2/WrapWithCondition;")
+                            || f.annotation().equals("Lcom/llamalad7/mixinextras/injector/WrapWithCondition;")
+                            || f.annotation().equals("Lorg/spongepowered/asm/mixin/injection/Redirect;"))
+                    && Arrays.equals(Arrays.copyOfRange(hp, 1, 1 + up.length), up);
+            if (callShape) {
+                callBridge(out, h, hp, up, low, callPlan);
+                continue;
+            }
             if (f.call() || !inject || !prefix || returnChanged || !distinct) {
                 problem("mixin handler " + where + " takes types that changed below (" + f.upperDesc() + " -> " + f.end().desc()
                         + "): no handler bridge for it");
@@ -4959,6 +5250,59 @@ public class Convert {
             g.maxStack = slot + 2 + 2 * up.length;
             out.methods.add(g);
         }
+    }
+
+    /**
+     * A call injector's wrapper (a @WrapWithCondition's, a @Redirect's handler: the call's receiver, its arguments, then
+     * the handler's own): it takes the lower call's, makes the upper arguments by the A row's plan and calls the handler.
+     * The injector's annotation moves to the wrapper; the handler keeps its name and descriptor.
+     */
+    static void callBridge(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan) {
+        Type[] wrapped = new Type[1 + low.length + hp.length - 1 - up.length];
+        wrapped[0] = hp[0];
+        System.arraycopy(low, 0, wrapped, 1, low.length);
+        System.arraycopy(hp, 1 + up.length, wrapped, 1 + low.length, hp.length - 1 - up.length);
+        MethodNode g = new MethodNode(h.access, "ladder$wrap$" + h.name, Type.getMethodDescriptor(Type.getReturnType(h.desc), wrapped), null,
+                h.exceptions.toArray(new String[0]));
+        g.visibleAnnotations = h.visibleAnnotations;
+        g.invisibleAnnotations = h.invisibleAnnotations;
+        int[] placeOf = new int[hp.length];
+        for (int i = 0; i < hp.length; i++) {
+            placeOf[i] = i == 0 ? 0 : i > up.length ? 1 + low.length + i - 1 - up.length : -1;
+        }
+        g.visibleParameterAnnotations = moveParameterAnnotations(h.visibleParameterAnnotations, placeOf, wrapped.length);
+        g.invisibleParameterAnnotations = moveParameterAnnotations(h.invisibleParameterAnnotations, placeOf, wrapped.length);
+        h.visibleAnnotations = null;
+        h.invisibleAnnotations = null;
+        h.visibleParameterAnnotations = null;
+        h.invisibleParameterAnnotations = null;
+        boolean isStatic = (h.access & Opcodes.ACC_STATIC) != 0;
+        InsnList code = g.instructions;
+        int slot = 0;
+        if (!isStatic) {
+            code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            slot = 1;
+        }
+        int[] slots = new int[wrapped.length];
+        for (int i = 0; i < wrapped.length; i++) {
+            slots[i] = slot;
+            slot += wrapped[i].getSize();
+        }
+        code.add(new VarInsnNode(wrapped[0].getOpcode(Opcodes.ILOAD), slots[0]));
+        int[] lowSlots = Arrays.copyOfRange(slots, 1, 1 + low.length);
+        for (int i = 0; i < up.length; i++) {
+            planArgument(code, plan[i], low, lowSlots, up[i]);
+        }
+        for (int i = 1 + low.length; i < wrapped.length; i++) {
+            code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slots[i]));
+        }
+        boolean privateHandler = (h.access & Opcodes.ACC_PRIVATE) != 0;
+        code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : privateHandler ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, out.name,
+                h.name, h.desc, false));
+        code.add(new InsnNode(Type.getReturnType(h.desc).getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 2 + 2 * up.length;
+        out.methods.add(g);
     }
 
     /** A method's parameter annotations at new places (placeOf[i] < 0: the parameter is gone); null when there were none. */

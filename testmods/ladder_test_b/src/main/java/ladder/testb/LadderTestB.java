@@ -108,11 +108,32 @@ public final class LadderTestB {
             return net.minecraft.world.item.UseAnim.BOW;
         }
     });
+    /** 1.21's postHurtEnemy: called after a hit that counted */
+    static String hits = "";
+    static final DeferredHolder<Item, Item> HIT_STICK = ITEMS.register("hit_stick", () -> new Item(new Item.Properties()) {
+        @Override
+        public boolean hurtEnemy(ItemStack stack, net.minecraft.world.entity.LivingEntity target, net.minecraft.world.entity.LivingEntity attacker) {
+            hits += "hurt;";
+            return true;
+        }
+
+        @Override
+        public void postHurtEnemy(ItemStack stack, net.minecraft.world.entity.LivingEntity target, net.minecraft.world.entity.LivingEntity attacker) {
+            hits += "post;";
+        }
+    });
     /** NeoForge 21.1's supportsEnchantment: a stick that takes sharpness, the rest as any item */
     static final DeferredHolder<Item, Item> SHARP_STICK = ITEMS.register("sharp_stick", () -> new Item(new Item.Properties()) {
         @Override
         public boolean supportsEnchantment(ItemStack stack, Holder<Enchantment> enchantment) {
             return enchantment.is(Enchantments.SHARPNESS) || super.supportsEnchantment(stack, enchantment);
+        }
+    });
+    /** NeoForge 21.1's canFitInsideContainerItems(stack): a pouch that fits a container unless it is named */
+    static final DeferredHolder<Item, Item> POUCH = ITEMS.register("test_pouch", () -> new Item(new Item.Properties()) {
+        @Override
+        public boolean canFitInsideContainerItems(ItemStack stack) {
+            return !stack.has(DataComponents.CUSTOM_NAME);
         }
     });
     static final DeferredHolder<Item, Item> BLADE = ITEMS.register("test_blade",
@@ -410,6 +431,13 @@ public final class LadderTestB {
         zombie.setItemSlot(EquipmentSlot.MAINHAND, rod.copy());
         zombie.tick();
         results.put("rodZombie", String.valueOf(zombie.getAttributeValue(Attributes.ATTACK_DAMAGE)));
+        // a player's hit with the stick: hurtEnemy, then postHurtEnemy (1.21)
+        net.minecraft.server.level.ServerPlayer hitter = net.neoforged.neoforge.common.util.FakePlayerFactory.getMinecraft(level);
+        hitter.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(HIT_STICK.get()));
+        Zombie target = EntityType.ZOMBIE.create(level);
+        target.setPos(8.5, 141.0, 8.5);
+        hitter.attack(target);
+        results.put("postHurt", hits);
         // damage through NeoForge 21's events: 10 coming in, halved, taken
         Zombie halved = EntityType.ZOMBIE.create(level);
         halved.setPos(8.5, 141.0, 8.5);
@@ -997,6 +1025,40 @@ public final class LadderTestB {
             results.put("supports.canEnchant", sharpness.value().canEnchant(sharpStick) + "/" + efficiency.value().canEnchant(sharpStick));
             results.put("supports.book", new ItemStack(Items.ENCHANTED_BOOK).supportsEnchantment(efficiency) + "/"
                     + new ItemStack(Items.IRON_PICKAXE).supportsEnchantment(efficiency) + "/" + new ItemStack(Items.STICK).supportsEnchantment(sharpness));
+            try {
+                // the anvil asks the stack (21.1), so the stick takes a sharpness book and not an efficiency one
+                net.minecraft.server.level.ServerPlayer smith = net.neoforged.neoforge.common.util.FakePlayerFactory.getMinecraft(level);
+                StringBuilder anvil = new StringBuilder();
+                for (Holder<Enchantment> e : List.of(sharpness, efficiency)) {
+                    net.minecraft.world.inventory.AnvilMenu menu = new net.minecraft.world.inventory.AnvilMenu(0, smith.getInventory(),
+                            net.minecraft.world.inventory.ContainerLevelAccess.create(level, BlockPos.ZERO));
+                    ItemStack enchBook = new ItemStack(Items.ENCHANTED_BOOK);
+                    ItemEnchantments.Mutable bookEnch = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+                    bookEnch.set(e, 2);
+                    enchBook.set(DataComponents.STORED_ENCHANTMENTS, bookEnch.toImmutable());
+                    menu.getSlot(0).set(new ItemStack(SHARP_STICK.get()));
+                    menu.getSlot(1).set(enchBook);
+                    menu.createResult();
+                    ItemStack anvilOut = menu.getSlot(2).getItem();
+                    anvil.append(anvilOut.isEmpty() ? "none" : String.valueOf(anvilOut.getEnchantments().getLevel(e))).append(';');
+                }
+                results.put("supports.anvil", anvil.toString());
+            } catch (RuntimeException | LinkageError e) {
+                results.put("supports.anvil", "error " + e);
+            }
+            try {
+                // the containers ask the stack (21.1): a named pouch fits neither a shulker box nor a bundle
+                ItemStack pouch = new ItemStack(POUCH.get());
+                ItemStack namedPouch = new ItemStack(POUCH.get());
+                namedPouch.set(DataComponents.CUSTOM_NAME, Component.literal("full"));
+                net.minecraft.world.inventory.ShulkerBoxSlot slot = new net.minecraft.world.inventory.ShulkerBoxSlot(new net.minecraft.world.SimpleContainer(27), 0, 0, 0);
+                results.put("fit.shulkerSlot", slot.mayPlace(pouch) + "/" + slot.mayPlace(namedPouch));
+                results.put("fit.bundle", new net.minecraft.world.item.component.BundleContents.Mutable(net.minecraft.world.item.component.BundleContents.EMPTY).tryInsert(pouch.copy())
+                        + "/" + new net.minecraft.world.item.component.BundleContents.Mutable(net.minecraft.world.item.component.BundleContents.EMPTY).tryInsert(namedPouch.copy()));
+                results.put("fit.stack", pouch.canFitInsideContainerItems() + "/" + namedPouch.canFitInsideContainerItems());
+            } catch (RuntimeException | LinkageError e) {
+                results.put("fit.error", e.toString());
+            }
             try {
                 moreComponents(results, level);
             } catch (RuntimeException | LinkageError e) {

@@ -16,13 +16,15 @@
     "UseDurationSites$Crossbow",
     "UseDurationSites$Brush",
     "UseDurationSites$GameMode",
-    "UseDurationSites$Witch"
+    "UseDurationSites$Witch",
+    "PostHurtMixin"
   ],
   "client": [
     "BufferBuilderMixin",
     "ClientExtensionsMixin",
     "UseDurationClientSites$HandRenderer",
-    "UseDurationClientSites$Properties"
+    "UseDurationClientSites$Properties",
+    "ParticleEngineMixin"
   ],
   "injectors": {
     "defaultRequire": 1

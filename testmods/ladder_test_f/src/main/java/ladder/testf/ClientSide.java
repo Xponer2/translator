@@ -59,6 +59,9 @@ final class ClientSide {
         written = true;
         Map<String, String> results = new TreeMap<>();
         results.put("menuClientData", LadderTestF.clientMenu);
+        results.put("attachPlayer", String.valueOf(minecraft.player.getData(LadderTestF.MARK)));
+        net.minecraft.world.entity.Entity pig = minecraft.level.getEntity(LadderTestF.pigId);
+        results.put("attachPig", pig == null ? "none" : String.valueOf(pig.getData(LadderTestF.MARK)));
         results.put("transitionNether", String.valueOf(DimensionTransitionScreenManager.getScreen(Level.NETHER, Level.OVERWORLD) == NETHER_SCREEN));
         results.put("clientExtensions", String.valueOf(IClientItemExtensions.of(Items.STICK) == STICK_EXTENSIONS));
         results.put("transitionEnd", String.valueOf(DimensionTransitionScreenManager.getScreen(Level.END, Level.OVERWORLD) == NETHER_SCREEN));

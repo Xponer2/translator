@@ -57,4 +57,20 @@ public final class SmallAdapters {
         }
         return net.neoforged.neoforge.registries.DeferredRegister.createDataComponents(modid);
     }
+
+    /** {@code ITagBuilderExtension.removeElement(id)} of 21.1: 21.0's with a source (only shown in logs) */
+    public static net.minecraft.tags.TagBuilder removeElement(net.neoforged.neoforge.common.extensions.ITagBuilderExtension self, ResourceLocation id) {
+        return self.removeElement(id, "unknown");
+    }
+
+    /** {@code ITagBuilderExtension.removeTag(id)} of 21.1 */
+    public static net.minecraft.tags.TagBuilder removeTag(net.neoforged.neoforge.common.extensions.ITagBuilderExtension self, ResourceLocation id) {
+        return self.removeTag(id, "unknown");
+    }
+
+    /** {@code CommonHooks.canMobEffectBeApplied(entity, effect, source)} of 21.1: 21.0's event has no source */
+    public static boolean canMobEffectBeApplied(net.minecraft.world.entity.LivingEntity entity, net.minecraft.world.effect.MobEffectInstance effect,
+            @javax.annotation.Nullable net.minecraft.world.entity.Entity source) {
+        return net.neoforged.neoforge.common.CommonHooks.canMobEffectBeApplied(entity, effect);
+    }
 }

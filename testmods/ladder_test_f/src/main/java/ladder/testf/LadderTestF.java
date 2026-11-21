@@ -24,6 +24,12 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Marker;
+import net.minecraft.world.entity.animal.Pig;
 
 /**
  * NeoForge 21.1 additions: a menu provider's client data (writeClientSideData: the client's menu is made of it) and the
@@ -32,6 +38,13 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 @Mod("ladder_test_f")
 public final class LadderTestF {
     static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, "ladder_test_f");
+    /** NeoForge 21.1's synced attachments: a number the server sets, the client reads */
+    static final DeferredRegister<AttachmentType<?>> ATTACHMENTS = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, "ladder_test_f");
+    static final java.util.function.Supplier<AttachmentType<Integer>> MARK = ATTACHMENTS.register("mark",
+            () -> AttachmentType.builder(() -> 0).sync(ByteBufCodecs.VAR_INT).build());
+    /** the pig the server marks (its id on the server) */
+    static volatile int pigId = -1;
+    private static Pig pig;
     static final DeferredHolder<MenuType<?>, MenuType<DataMenu>> DATA_MENU = MENUS.register("data",
             () -> IMenuTypeExtension.create((id, inventory, buffer) -> new DataMenu(id, buffer.readVarInt(), buffer.readUtf())));
 
@@ -42,6 +55,7 @@ public final class LadderTestF {
 
     public LadderTestF(IEventBus modBus) {
         MENUS.register(modBus);
+        ATTACHMENTS.register(modBus);
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent.class, event -> {
             if (event.getEntity() instanceof ServerPlayer player) {
                 joined = player;
@@ -49,6 +63,29 @@ public final class LadderTestF {
             }
         });
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post.class, event -> {
+            if (joined != null && ticks == 0) {
+                // synced attachments: the player's own (synced on a change), a pig's set before the client sees it (the
+                // first sync), a marker's (an entity no client tracks: nothing may reach the client)
+                joined.setData(MARK, 7);
+                joined.syncData(MARK);
+                pig = EntityType.PIG.create(joined.serverLevel());
+                pig.moveTo(joined.getX() + 2, joined.getY(), joined.getZ());
+                pig.setNoAi(true);
+                pig.setData(MARK, 11);
+                joined.serverLevel().addFreshEntity(pig);
+                pigId = pig.getId();
+                Marker marker = EntityType.MARKER.create(joined.serverLevel());
+                marker.moveTo(joined.getX(), joined.getY(), joined.getZ() + 2);
+                joined.serverLevel().addFreshEntity(marker);
+                marker.setData(MARK, 5);
+                marker.syncData(MARK);
+            }
+            if (pig != null && joined == null && ++ticks == 40) {
+                // a change after the first sync
+                pig.setData(MARK, 12);
+                pig.syncData(MARK);
+                pig = null;
+            }
             if (joined != null && ++ticks == 20) {
                 // the provider's own data first, then the opener's (21.1's order)
                 joined.openMenu(new DataProvider(), buffer -> buffer.writeUtf("opener"));

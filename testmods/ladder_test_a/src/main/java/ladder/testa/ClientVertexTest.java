@@ -164,6 +164,20 @@ public final class ClientVertexTest {
                 }
             }
             results.put("ownConsumer", counting.toString());
+            // a builder over a byte buffer of the caller's own (1.21), and a buffer source over one
+            com.mojang.blaze3d.vertex.ByteBufferBuilder bytes = new com.mojang.blaze3d.vertex.ByteBufferBuilder(256);
+            BufferBuilder own = new BufferBuilder(bytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            for (int v = 0; v < 4; v++) {
+                own.addVertex(v, 3, 0).setColor(0xFF223344);
+            }
+            MeshData ownMesh = own.buildOrThrow();
+            results.put("byteBufferBuilder", ownMesh.drawState().vertexCount() + " " + hex(ownMesh.vertexBuffer()));
+            ownMesh.close();
+            net.minecraft.client.renderer.MultiBufferSource.BufferSource source = net.minecraft.client.renderer.MultiBufferSource.immediate(bytes);
+            com.mojang.blaze3d.vertex.VertexConsumer lines = source.getBuffer(net.minecraft.client.renderer.RenderType.lines());
+            results.put("immediateSource", String.valueOf(lines != null));
+            source.endBatch();
+            bytes.close();
             // nothing written: build() gives null
             builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
             MeshData empty = builder.build();

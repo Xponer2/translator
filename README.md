@@ -75,17 +75,19 @@ versions together on one target.
 
 | Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
 |---|---|---|---:|---:|---|
-| 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C, E and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 239 | 260 | in work |
+| 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C, E and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 0 | 300 | done (offline; game-tested by the test mods) |
 | 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A–C, E and F on the real 1.20.6, the same results as on 1.21.1 | 1230 | 139 of 262 (rung 1's output) | in work |
 | 1.20.6 → 1.20.4 | yes | yes: test mods A–E, corpus probes | 3118 | 115 | in work |
 
-Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **260 of 300 mods convert with nothing
-left** with the rung's own adapters (242 before them); what is left there: attachment syncing, a few mixins into
-21.1-only code, data generators.
+Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **all 300 mods convert with nothing
+left** with the rung's own adapters (242 before them). The last ones took attachment syncing, shape patches of 1.21's
+own classes (the anvil, enchant_randomly and /enchant ask the stack as 21.1 does, so mixins aimed at those calls land),
+mod pack metadata read in 21.1's shape, per-stack container checks, bridges for call injectors whose target lost
+parameters, and MixinExtras expression definitions resolved like injection targets.
 
 The rung 1.21 → 1.20.6 on its own takes what a 1.21 game would have: the 260 mods rung 1 converted, its adapters and its
 carried library (`LADDER_FROM=1.21 LADDER_TO=1.20.6 tools/ladder.sh convert ...`; `tools/rung-chain.sh` runs the corpus
-down both rungs). **139 of those 262 jars convert with nothing left** (84 before the rung's adapters). Its adapters
+down both rungs). **139 of those 262 jars convert with nothing left** (counted on rung 1's earlier output of 260 mods) (84 before the rung's adapters). Its adapters
 cover 1.21's vertex API and formats, the frame's DeltaTracker and the GUI layers, recipe inputs, attribute modifier ids,
 use durations with the user, the config screen, leads, client extensions, standalone models, spawn packets, NeoForge
 21's damage events and more; most of them serve the 1.20.4 rung too. Rung 1's own adapters go down with the mods and
@@ -170,8 +172,8 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
   on 1.20.4.
 
-Over the whole corpus, 84 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 6808 (loot tables of 1.21, resource packs and recipes on 1.21's inputs took the last few hundred; the
+Over the whole corpus, 87 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 6518 (loot tables of 1.21, resource packs and recipes on 1.21's inputs took the last few hundred; the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). Most mods that are
 left wait for several mechanisms at once; the ones that free the most mods next: 1.21's GUI widgets and screen layout

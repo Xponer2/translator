@@ -544,3 +544,38 @@ P	net/minecraft/world/item/enchantment/EnchantmentEffectComponents	ladder/adapte
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	has	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType;)Z	ladder/adapter/misc/EnchantmentEffects	has
 F	net/minecraft/tags/EnchantmentTags	CURSE	Lnet/minecraft/tags/TagKey;	ladder/adapter/misc/EnchantmentEffects	curse
 F	net/minecraft/tags/EnchantmentTags	TREASURE	Lnet/minecraft/tags/TagKey;	ladder/adapter/misc/EnchantmentEffects	treasure
+# 1.21's byte buffers under the builders and buffer sources (1.20.4's builders keep their own memory)
+X	com/mojang/blaze3d/vertex/BufferBuilder	<init>	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V	ladder/adapter/render/ByteBuffers	create
+X	net/minecraft/client/renderer/MultiBufferSource	immediate	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;)Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;	ladder/adapter/render/ByteBuffers	immediate
+X	net/minecraft/client/renderer/MultiBufferSource	immediateWithBuffers	(Ljava/util/SequencedMap;Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;)Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;	ladder/adapter/render/ByteBuffers	immediateWithBuffers
+X	net/minecraft/client/renderer/MultiBufferSource$BufferSource	<init>	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Ljava/util/SequencedMap;)V	ladder/adapter/render/ByteBuffers	bufferSource
+# 1.21's postHurtEnemy (an item's wear after a hit that counted; 1.20.4's items wear in hurtEnemy)
+O	net/minecraft/world/item/Item	postHurtEnemy	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;)V	ladder/adapter/item/PostHurtApi	ladder/adapter/item/PostHurtApi	postHurtEnemy
+X	net/minecraft/world/item/Item	postHurtEnemy	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;)V	ladder/adapter/item/PostHurtApi	call
+X	net/minecraft/world/item/ItemStack	postHurtEnemy	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/player/Player;)V	ladder/adapter/item/PostHurtApi	stackCall
+# 1.21's particle render types (begin with the tesselator, the batch given back; 1.20.4: begin with the builder, end)
+O	net/minecraft/client/particle/ParticleRenderType	begin	(Lcom/mojang/blaze3d/vertex/Tesselator;Lnet/minecraft/client/renderer/texture/TextureManager;)Lcom/mojang/blaze3d/vertex/BufferBuilder;	ladder/adapter/render/ParticleTypeApi	ladder/adapter/render/ParticleTypeApi	begin
+S	net/minecraft/client/particle/ParticleRenderType	begin	(Lcom/mojang/blaze3d/vertex/BufferBuilder;Lnet/minecraft/client/renderer/texture/TextureManager;)V
+S	net/minecraft/client/particle/ParticleRenderType	end	(Lcom/mojang/blaze3d/vertex/Tesselator;)V
+# NeoForge 21.1's dimension transition screens and 1.20.5's loading screen reason (1.20.4 has neither): provided; TransitionScreenMixin asks them where 1.20.4 makes its loading screen
+P	net/neoforged/neoforge/client/DimensionTransitionScreenManager	ladder/adapter/client/DimensionTransitionScreenManager
+P	net/neoforged/neoforge/client/DimensionTransitionScreenManager$ReceivingLevelScreenFactory	ladder/adapter/client/DimensionTransitionScreenManager$ReceivingLevelScreenFactory
+P	net/neoforged/neoforge/client/event/RegisterDimensionTransitionScreenEvent	ladder/adapter/client/RegisterDimensionTransitionScreenEvent
+P	net/minecraft/client/gui/screens/ReceivingLevelScreen$Reason	ladder/adapter/provided/ReceivingLevelReason
+X	net/minecraft/client/gui/screens/ReceivingLevelScreen	<init>	(Ljava/util/function/BooleanSupplier;Lnet/minecraft/client/gui/screens/ReceivingLevelScreen$Reason;)V	ladder/adapter/client/TransitionScreens	receivingLevelScreen
+# NeoForge 20.4's menu hooks take its plain buffer where 21.1's take the registry buffer (Payloads.registryBuffer wraps it)
+M	net/neoforged/neoforge/client/extensions/IMenuProviderExtension	writeClientSideData	(Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/network/RegistryFriendlyByteBuf;)V	writeClientSideData	(Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/network/FriendlyByteBuf;)V
+M	net/neoforged/neoforge/network/IContainerFactory	create	(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/network/RegistryFriendlyByteBuf;)Lnet/minecraft/world/inventory/AbstractContainerMenu;	create	(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/network/FriendlyByteBuf;)Lnet/minecraft/world/inventory/AbstractContainerMenu;
+X	net/minecraft/server/level/ServerPlayer	openMenu	(Lnet/minecraft/world/MenuProvider;Ljava/util/function/Consumer;)Ljava/util/OptionalInt;	ladder/adapter/network/MenuOpening	openMenu
+X	net/neoforged/neoforge/common/extensions/IPlayerExtension	openMenu	(Lnet/minecraft/world/MenuProvider;Ljava/util/function/Consumer;)Ljava/util/OptionalInt;	ladder/adapter/network/MenuOpening	openMenu
+# NeoForge 21.1's canFitInsideContainerItems per stack (1.20.4 asks the item; the game's checks ask the stack: mixin.*FitMixin)
+O	net/neoforged/neoforge/common/extensions/IItemExtension	canFitInsideContainerItems	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/adapter/item/ContainerFitApi	ladder/adapter/item/ContainerFitApi	canFitInsideContainerItems
+X	net/neoforged/neoforge/common/extensions/IItemExtension	canFitInsideContainerItems	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/adapter/item/ContainerFitApi	itemFits
+X	net/neoforged/neoforge/common/extensions/IItemStackExtension	canFitInsideContainerItems	()Z	ladder/adapter/item/ContainerFitApi	stackFits
+# NeoForge 21.1's attachment syncing (20.4 syncs none): the handler provided, AttachmentSync sends (a 20.4 payload) and the client sets
+P	net/neoforged/neoforge/attachment/AttachmentSyncHandler	ladder/adapter/attachment/AttachmentSyncHandler
+X	net/neoforged/neoforge/attachment/AttachmentType$Builder	sync	(Lnet/neoforged/neoforge/attachment/AttachmentSyncHandler;)Lnet/neoforged/neoforge/attachment/AttachmentType$Builder;	ladder/adapter/attachment/AttachmentSync	sync
+X	net/neoforged/neoforge/attachment/AttachmentType$Builder	sync	(Lnet/minecraft/network/codec/StreamCodec;)Lnet/neoforged/neoforge/attachment/AttachmentType$Builder;	ladder/adapter/attachment/AttachmentSync	sync
+X	net/neoforged/neoforge/attachment/AttachmentType$Builder	sync	(Ljava/util/function/BiPredicate;Lnet/minecraft/network/codec/StreamCodec;)Lnet/neoforged/neoforge/attachment/AttachmentType$Builder;	ladder/adapter/attachment/AttachmentSync	sync
+X	net/neoforged/neoforge/attachment/IAttachmentHolder	syncData	(Lnet/neoforged/neoforge/attachment/AttachmentType;)V	ladder/adapter/attachment/AttachmentSync	syncData
+X	net/neoforged/neoforge/attachment/IAttachmentHolder	syncData	(Ljava/util/function/Supplier;)V	ladder/adapter/attachment/AttachmentSync	syncData
