@@ -381,3 +381,12 @@ X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	setBlocked	(
 X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	shieldDamage	()F	ladder/rung1206/misc/MoreAdapters	shieldDamage
 X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	setShieldDamage	(F)V	ladder/rung1206/misc/MoreAdapters	setShieldDamage
 F	net/minecraft/client/resources/model/ModelBakery	MISSING_MODEL_VARIANT	Lnet/minecraft/client/resources/model/ModelResourceLocation;	ladder/rung1206/misc/MoreAdapters	missingModelVariant
+# a handler of 1.21's changeDimension(transition) on 1.20.6's changeDimension(level[, teleporter]): the transition to that level
+A	net/minecraft/world/entity/Entity	changeDimension	(Lnet/minecraft/world/level/portal/DimensionTransition;)Lnet/minecraft/world/entity/Entity;	(Lnet/minecraft/server/level/ServerLevel;)Lnet/minecraft/world/entity/Entity;	ladder/rung1206/portal/PortalAdapters.toLevel(this,0)
+A	net/minecraft/server/level/ServerPlayer	changeDimension	(Lnet/minecraft/world/level/portal/DimensionTransition;)Lnet/minecraft/world/entity/Entity;	(Lnet/minecraft/server/level/ServerLevel;Lnet/neoforged/neoforge/common/util/ITeleporter;)Lnet/minecraft/world/entity/Entity;	ladder/rung1206/portal/PortalAdapters.toLevel(this,0)
+# FML 4's registered configs helper (from FML 3's tracker)
+P	net/neoforged/fml/config/ModConfigs	ladder/rung1206/provided/ModConfigs
+X	net/minecraft/world/food/FoodProperties	usingConvertsTo	()Ljava/util/Optional;	ladder/rung1206/misc/MoreAdapters	usingConvertsTo
+X	com/mojang/blaze3d/vertex/Tesselator	clear	()V	ladder/rung1206/misc/MoreAdapters	clear
+# 1.21's base experience of an entity is 1.20.6's getExperienceReward()
+M	net/minecraft/world/entity/LivingEntity	getBaseExperienceReward	()I	getExperienceReward	()I

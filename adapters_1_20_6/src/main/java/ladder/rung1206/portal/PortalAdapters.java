@@ -83,6 +83,18 @@ public final class PortalAdapters {
         return new Transition(level, Vec3.atBottomCenterOf(level.getSharedSpawnPos()), Vec3.ZERO, 0.0F, 0.0F, true, post);
     }
 
+    /**
+     * the transition 1.20.6's changeDimension(level) stands for, as a handler of 1.21's changeDimension(transition)
+     * sees it (an A row's plan): to that level, from where the entity is (1.20.6 finds the place later, by its teleporter)
+     */
+    public static PortalInfo toLevel(Entity entity, ServerLevel level) {
+        return new Transition(level, entity.position(), entity.getDeltaMovement(), entity.getYRot(), entity.getXRot(), false, DO_NOTHING);
+    }
+
+    public static PortalInfo toLevel(net.minecraft.server.level.ServerPlayer player, ServerLevel level) {
+        return toLevel((Entity) player, level);
+    }
+
     @Nullable
     public static ServerLevel newLevel(PortalInfo info) {
         return info instanceof Transition t ? t.newLevel : null;

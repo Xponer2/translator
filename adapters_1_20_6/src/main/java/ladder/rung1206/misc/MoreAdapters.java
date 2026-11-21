@@ -140,4 +140,17 @@ public final class MoreAdapters {
     public static void setShieldDamage(net.neoforged.neoforge.event.entity.living.ShieldBlockEvent event, float damage) {
         event.setShieldTakesDamage(damage > 0.0F);
     }
+
+    /** {@code food.usingConvertsTo()}: the item left after eating, as its builder was given it */
+    public static Optional<ItemStack> usingConvertsTo(FoodProperties food) {
+        ItemLike left;
+        synchronized (CONVERTS) {
+            left = CONVERTS.get(food);
+        }
+        return Optional.ofNullable(left).map(ItemStack::new);
+    }
+
+    /** {@code tesselator.clear()}: 1.20.6's tesselator keeps one builder of its own, nothing to free */
+    public static void clear(com.mojang.blaze3d.vertex.Tesselator tesselator) {
+    }
 }

@@ -39,6 +39,11 @@ public final class ConfigAdapters {
     }
 
     /** ConfigTracker.acceptSyncedConfig(config, bytes): the server's values of a synced config */
+    /** FML 4's static {@code ConfigTracker.acceptSyncedConfig(config, bytes)} */
+    public static void acceptSyncedConfig(ModConfig config, byte[] bytes) {
+        config.acceptSyncedConfig(bytes);
+    }
+
     public static void acceptSyncedConfig(ConfigTracker tracker, ModConfig config, byte[] bytes) {
         config.acceptSyncedConfig(bytes);
     }
