@@ -21,7 +21,8 @@
     "ChunkStorageAccess",
     "JukeboxEntityMixin",
     "JukeboxBlockMixin",
-    "DamagePostMixin"
+    "DamagePostMixin",
+    "FoodBuilderMixin"
   ],
   "client": [
     "BufferBuilderMixin",

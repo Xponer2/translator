@@ -2247,10 +2247,6 @@ public class Convert {
                         // a class the adapters provide: its members are theirs
                         return new Stage0.Ref(cur.kind(), provided.get(cur.cls()), cur.name(), cur.desc());
                     }
-                    if (NEOFORGE_MOVES.containsKey(cur.cls())) {
-                        // a class renamed below (an R row): its members are the renamed class's, never carried
-                        return renamedMember(cur);
-                    }
                     Stage0.Ref renamedTypes = renamedInDescriptor(cur);
                     if (renamedTypes != null) {
                         // a member whose descriptor names a class an R row renames: the bottom's member of the renamed
@@ -2271,6 +2267,11 @@ public class Convert {
                         }
                         problem("changed below (an M row), no bridge: " + cur.key() + " -> " + moved.name() + moved.desc());
                         return null;
+                    }
+                    if (NEOFORGE_MOVES.containsKey(cur.cls())) {
+                        // a class renamed below (an R row): its members are the renamed class's, never carried (an M
+                        // row of its member, above, comes first: the same member below under another name)
+                        return renamedMember(cur);
                     }
                     if (i + 2 == versions.size() && cur.kind() == 'F' && adapterAddedFields.contains((Stage0.mapClass(from, to, cur.cls()) == null ? cur.cls()
                             : Stage0.mapClass(from, to, cur.cls())) + " " + cur.name() + " " + cur.desc())) {
@@ -2336,12 +2337,19 @@ public class Convert {
         for (String[] row : memberMoves) {
             if (row[1].equals(cur.name()) && row[2].equals(cur.desc()) && (cur.cls().equals(row[0]) || extendsClass(from, cur.cls(), row[0]))) {
                 String lowerOwner = Stage0.mapClass(from, to, cur.cls());
+                if (lowerOwner == null && NEOFORGE_MOVES.containsKey(cur.cls())) {
+                    // a class an R row renames below: the member is the renamed class's
+                    lowerOwner = NEOFORGE_MOVES.get(cur.cls());
+                }
                 String decl = lowerOwner == null ? null : to.declaring(lowerOwner, row[3], row[4], true);
                 if (decl == null) {
                     // the hook is missing on the way down but there at the bottom (NeoForge 21.0 has no writeClientSideData,
                     // 20.4 has its FriendlyByteBuf form): the bottom's
                     Stage0.Version bottom = versions.get(versions.size() - 1);
                     String bottomOwner = Stage0.mapClass(from, bottom, cur.cls());
+                    if (bottomOwner == null && NEOFORGE_MOVES.containsKey(cur.cls())) {
+                        bottomOwner = NEOFORGE_MOVES.get(cur.cls());
+                    }
                     decl = bottomOwner == null ? null : bottom.declaring(bottomOwner, row[3], row[4], true);
                 }
                 return decl == null ? null : new Stage0.Ref('M', decl, row[3], row[4]);

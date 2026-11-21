@@ -360,3 +360,24 @@ F	net/neoforged/neoforge/common/Tags$Items	TOOLS_SHEAR	Lnet/minecraft/tags/TagKe
 R	net/minecraft/world/entity/decoration/BlockAttachedEntity	net/minecraft/world/entity/decoration/HangingEntity
 # NeoForge 21's event adding blocks to block entity types (posted at the common setup)
 P	net/neoforged/neoforge/event/BlockEntityTypeAddBlocksEvent	ladder/rung1206/provided/event/BlockEntityTypeAddBlocksEvent
+# more of 1.21's small members
+X	net/minecraft/core/Registry	getAny	()Ljava/util/Optional;	ladder/rung1206/misc/MoreAdapters	getAny
+F	net/minecraft/world/level/Level$ExplosionInteraction	TRIGGER	Lnet/minecraft/world/level/Level$ExplosionInteraction;	ladder/rung1206/misc/MoreAdapters	trigger
+X	net/minecraft/world/food/FoodProperties$Builder	usingConvertsTo	(Lnet/minecraft/world/level/ItemLike;)Lnet/minecraft/world/food/FoodProperties$Builder;	ladder/rung1206/misc/MoreAdapters	usingConvertsTo
+X	net/minecraft/world/entity/LivingEntity	getWeaponItem	()Lnet/minecraft/world/item/ItemStack;	ladder/rung1206/misc/MoreAdapters	getWeaponItem
+M	net/minecraft/world/entity/Entity	isAddedToLevel	()Z	isAddedToWorld	()Z
+F	net/minecraft/core/registries/Registries	RECIPE	Lnet/minecraft/resources/ResourceKey;	ladder/rung1206/misc/MoreAdapters	recipeRegistry
+X	net/neoforged/neoforge/common/extensions/IItemStackExtension	isPrimaryItemFor	(Lnet/minecraft/core/Holder;)Z	ladder/rung1206/misc/MoreAdapters	isPrimaryItemFor
+F	net/minecraft/world/level/storage/loot/predicates/LootItemCondition	DIRECT_CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/misc/MoreAdapters	lootConditionDirectCodec
+# the generation chunk holder's members through ChunkHolder (the R row's class below)
+M	net/minecraft/server/level/ChunkHolder	getLatestStatus	()Lnet/minecraft/world/level/chunk/status/ChunkStatus;	getLastAvailableStatus	()Lnet/minecraft/world/level/chunk/status/ChunkStatus;
+M	net/minecraft/server/level/ChunkHolder	getLatestChunk	()Lnet/minecraft/world/level/chunk/ChunkAccess;	getLastAvailable	()Lnet/minecraft/world/level/chunk/ChunkAccess;
+M	net/minecraft/server/level/ChunkHolder	getPersistedStatus	()Lnet/minecraft/world/level/chunk/status/ChunkStatus;	getLastAvailableStatus	()Lnet/minecraft/world/level/chunk/status/ChunkStatus;
+# NeoForge 21's shield block event is 20.6's ShieldBlockEvent (blocked = not cancelled)
+R	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	net/neoforged/neoforge/event/entity/living/ShieldBlockEvent
+X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	getBlocked	()Z	ladder/rung1206/misc/MoreAdapters	getBlocked
+X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	getOriginalBlock	()Z	ladder/rung1206/misc/MoreAdapters	getOriginalBlock
+X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	setBlocked	(Z)V	ladder/rung1206/misc/MoreAdapters	setBlocked
+X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	shieldDamage	()F	ladder/rung1206/misc/MoreAdapters	shieldDamage
+X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	setShieldDamage	(F)V	ladder/rung1206/misc/MoreAdapters	setShieldDamage
+F	net/minecraft/client/resources/model/ModelBakery	MISSING_MODEL_VARIANT	Lnet/minecraft/client/resources/model/ModelResourceLocation;	ladder/rung1206/misc/MoreAdapters	missingModelVariant
