@@ -1,0 +1,8 @@
+{
+  "attribute.name.generic.burning_time": "Burning Time",
+  "attribute.name.generic.explosion_knockback_resistance": "Explosion Knockback Resistance",
+  "attribute.name.generic.oxygen_bonus": "Oxygen Bonus",
+  "attribute.name.generic.water_movement_efficiency": "Water Movement Efficiency",
+  "attribute.name.player.submerged_mining_speed": "Submerged Mining Speed",
+  "attribute.name.player.sweeping_damage_ratio": "Sweeping Damage Ratio"
+}

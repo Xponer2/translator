@@ -22,7 +22,10 @@
     "JukeboxEntityMixin",
     "JukeboxBlockMixin",
     "DamagePostMixin",
-    "FoodBuilderMixin"
+    "FoodBuilderMixin",
+    "LivingAttributesMixin",
+    "PlayerAttributesMixin",
+    "ExplosionAttributesMixin"
   ],
   "client": [
     "BufferBuilderMixin",
