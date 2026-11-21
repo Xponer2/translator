@@ -15,6 +15,7 @@ import net.neoforged.fml.common.Mod;
 public final class LadderAdapters {
     public LadderAdapters(net.neoforged.bus.api.IEventBus modBus) {
         ladder.adapter.event.TickBridge.register();
+        ladder.adapter.event.DamageEvents.register();
         ladder.adapter.component.ComponentRegistry.register(modBus);
         ladder.adapter.armour.ArmourAdapters.register(modBus);
         ladder.adapter.loot.SetComponentsFunction.register(modBus);

@@ -49,13 +49,17 @@ public final class RecipeInputs {
         if (container instanceof InputContainer own && wanted.isInstance(own.input)) {
             return own.input;
         }
-        if (wanted.isAssignableFrom(CraftingInput.class) && (container instanceof CraftingContainer || wanted == CraftingInput.class)) {
+        // (the input types are named by their names: a pack carries only the ones its mods use, and a class literal of
+        // another would fail to load)
+        String name = wanted.getName();
+        boolean any = wanted.isInterface() && name.endsWith(".RecipeInput");
+        if (name.endsWith(".CraftingInput") || any && container instanceof CraftingContainer) {
             return craftingInput(container);
         }
-        if (wanted == SingleRecipeInput.class || wanted.isAssignableFrom(SingleRecipeInput.class) && container.getContainerSize() == 1) {
+        if (name.endsWith(".SingleRecipeInput") || any && container.getContainerSize() == 1) {
             return new SingleRecipeInput(container.getItem(0));
         }
-        if (wanted == SmithingRecipeInput.class) {
+        if (name.endsWith(".SmithingRecipeInput")) {
             return new SmithingRecipeInput(container.getItem(0), container.getItem(1), container.getItem(2));
         }
         if (wanted.isAssignableFrom(ContainerInput.class)) {

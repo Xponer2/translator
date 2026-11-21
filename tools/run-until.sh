@@ -30,7 +30,7 @@ case "$TASK" in
         fi
         ;;
 esac
-./gradlew "$TASK" --console=plain > "$LOG" 2>&1 &
+./gradlew "$TASK" ${LADDER_GRADLE_ARGS:-} --console=plain > "$LOG" 2>&1 &
 start=$(date +%s)
 # a stalled game (no new log lines, no result: stuck in a menu, a screen nobody answers, a hang) is stopped early
 STALL="${LADDER_STALL:-90}"

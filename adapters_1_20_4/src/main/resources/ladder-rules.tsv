@@ -27,6 +27,8 @@
 # A <owner> <name> <desc> <lower desc> <plan> the same method below with other parameters: a mixin handler's arguments
 #                                             from the lower method's, per upper parameter "$k" (lower k, converted)
 #                                             or "Class.method(k,..)" (an adapter of lower parameters k..)
+# S <owner> <name> <lower desc>               a lower abstract method the upper type hasn't: a mod's concrete class
+#                                             under the owner gets an empty one (void, or returning itself)
 P	net/minecraft/world/item/Item$TooltipContext	ladder/adapter/provided/TooltipContext
 O	net/minecraft/world/level/block/state/BlockBehaviour	useItemOn	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/ItemInteractionResult;	ladder/adapter/block/BlockUseApi	ladder/adapter/block/BlockDefaults	useItemOn
 O	net/minecraft/world/level/block/state/BlockBehaviour	useWithoutItem	(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/InteractionResult;	ladder/adapter/block/BlockUseApi	ladder/adapter/block/BlockDefaults	useWithoutItem
@@ -57,6 +59,7 @@ P	net/neoforged/neoforge/event/tick/PlayerTickEvent$Post	ladder/adapter/provided
 # NeoForge 21.0 renamed tool actions to item abilities
 R	net/neoforged/neoforge/common/ItemAbility	net/neoforged/neoforge/common/ToolAction
 R	net/neoforged/neoforge/common/ItemAbilities	net/neoforged/neoforge/common/ToolActions
+X	net/neoforged/neoforge/event/level/BlockEvent$BlockToolModificationEvent	getItemAbility	()Lnet/neoforged/neoforge/common/ItemAbility;	ladder/adapter/misc/MiscAdapters	getItemAbility
 # small members of the newer versions
 X	net/minecraft/world/entity/Entity	getRandom	()Lnet/minecraft/util/RandomSource;	ladder/adapter/misc/MiscAdapters	getRandom
 X	net/minecraft/world/entity/Entity	registryAccess	()Lnet/minecraft/core/RegistryAccess;	ladder/adapter/misc/MiscAdapters	registryAccess
@@ -453,3 +456,78 @@ K	net/minecraft/world/entity/ai/goal/FollowOwnerGoal	(Lnet/minecraft/world/entit
 O	net/neoforged/neoforge/common/extensions/IItemExtension	onEntitySwing	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;)Z	ladder/adapter/item/SwingApi	ladder/adapter/item/SwingApi	swingDefault
 X	net/neoforged/neoforge/common/extensions/IItemExtension	onEntitySwing	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;)Z	ladder/adapter/item/SwingApi	itemSwing
 X	net/neoforged/neoforge/common/extensions/IItemStackExtension	onEntitySwing	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;)Z	ladder/adapter/item/SwingApi	stackSwing
+# 1.21's attribute modifier ids (a ResourceLocation; 1.20.4: a UUID and a name)
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	<init>	(Lnet/minecraft/resources/ResourceLocation;DLnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;)V	ladder/adapter/misc/AttributeIds	create
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	id	()Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/misc/AttributeIds	id
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	is	(Lnet/minecraft/resources/ResourceLocation;)Z	ladder/adapter/misc/AttributeIds	is
+X	net/minecraft/world/entity/ai/attributes/AttributeInstance	getModifier	(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;	ladder/adapter/misc/AttributeIds	getModifier
+X	net/minecraft/world/entity/ai/attributes/AttributeInstance	hasModifier	(Lnet/minecraft/resources/ResourceLocation;)Z	ladder/adapter/misc/AttributeIds	hasModifier
+X	net/minecraft/world/entity/ai/attributes/AttributeInstance	removeModifier	(Lnet/minecraft/resources/ResourceLocation;)Z	ladder/adapter/misc/AttributeIds	removeModifier
+X	net/minecraft/world/effect/MobEffect	addAttributeModifier	(Lnet/minecraft/core/Holder;Lnet/minecraft/resources/ResourceLocation;DLnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;)Lnet/minecraft/world/effect/MobEffect;	ladder/adapter/misc/AttributeIds	addAttributeModifier
+F	net/minecraft/world/item/Item	BASE_ATTACK_DAMAGE_ID	Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/misc/AttributeIds	baseAttackDamageId
+F	net/minecraft/world/item/Item	BASE_ATTACK_SPEED_ID	Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/misc/AttributeIds	baseAttackSpeedId
+X	net/minecraft/world/entity/ai/attributes/AttributeInstance	addOrReplacePermanentModifier	(Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;)V	ladder/adapter/misc/AttributeIds	addOrReplacePermanentModifier
+# 1.21's use duration with the user (1.20.4: the stack only)
+O	net/minecraft/world/item/Item	getUseDuration	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)I	ladder/adapter/item/UseDurationApi	ladder/adapter/item/UseDurationApi	getUseDuration
+X	net/minecraft/world/item/Item	getUseDuration	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)I	ladder/adapter/item/UseDurations	itemDuration
+X	net/minecraft/world/item/ItemStack	getUseDuration	(Lnet/minecraft/world/entity/LivingEntity;)I	ladder/adapter/item/UseDurations	stackDuration
+# 1.21's vertex format elements (record constants) and format builder on 1.20.4's (DefaultVertexFormat's elements, getters)
+P	com/mojang/blaze3d/vertex/VertexFormat$Builder	ladder/adapter/provided/VertexFormatBuilder
+X	com/mojang/blaze3d/vertex/VertexFormat	builder	()Lcom/mojang/blaze3d/vertex/VertexFormat$Builder;	ladder/adapter/render/VertexFormats	builder
+X	com/mojang/blaze3d/vertex/VertexFormat	getOffset	(Lcom/mojang/blaze3d/vertex/VertexFormatElement;)I	ladder/adapter/render/VertexFormats	getOffset
+F	com/mojang/blaze3d/vertex/VertexFormatElement	POSITION	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/adapter/render/VertexFormats	position
+F	com/mojang/blaze3d/vertex/VertexFormatElement	COLOR	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/adapter/render/VertexFormats	color
+F	com/mojang/blaze3d/vertex/VertexFormatElement	UV0	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/adapter/render/VertexFormats	uv0
+F	com/mojang/blaze3d/vertex/VertexFormatElement	UV1	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/adapter/render/VertexFormats	uv1
+F	com/mojang/blaze3d/vertex/VertexFormatElement	UV2	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/adapter/render/VertexFormats	uv2
+F	com/mojang/blaze3d/vertex/VertexFormatElement	NORMAL	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/adapter/render/VertexFormats	normal
+X	com/mojang/blaze3d/vertex/VertexFormatElement	usage	()Lcom/mojang/blaze3d/vertex/VertexFormatElement$Usage;	ladder/adapter/render/VertexFormats	usage
+X	com/mojang/blaze3d/vertex/VertexFormatElement	type	()Lcom/mojang/blaze3d/vertex/VertexFormatElement$Type;	ladder/adapter/render/VertexFormats	type
+X	com/mojang/blaze3d/vertex/VertexFormatElement	count	()I	ladder/adapter/render/VertexFormats	count
+X	com/mojang/blaze3d/vertex/VertexFormatElement	index	()I	ladder/adapter/render/VertexFormats	index
+X	com/mojang/blaze3d/vertex/VertexFormatElement	byteSize	()I	ladder/adapter/render/VertexFormats	byteSize
+# 1.21's Leashable: 1.20.4's mobs (Mob has its members); a mob's canBeLeashed() is the hook of canBeLeashed(player)
+P	net/minecraft/world/entity/Leashable	ladder/adapter/provided/Leashable
+D	net/minecraft/world/entity/Mob	canBeLeashed	()Z	(Lnet/minecraft/world/entity/player/Player;)Z	null
+# NeoForge 21's RegisterClientExtensionsEvent (1.20.4: each object's initializeClient)
+P	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	ladder/adapter/provided/RegisterClientExtensionsEvent
+# NeoForge 21's model locations (a record; a standalone extra model) on 1.20.4's (an extra model under its plain id)
+X	net/minecraft/client/resources/model/ModelResourceLocation	id	()Lnet/minecraft/resources/ResourceLocation;	ladder/adapter/client/ModelAdapters	id
+X	net/minecraft/client/resources/model/ModelResourceLocation	variant	()Ljava/lang/String;	ladder/adapter/client/ModelAdapters	variant
+X	net/neoforged/neoforge/client/event/ModelEvent$RegisterAdditional	register	(Lnet/minecraft/client/resources/model/ModelResourceLocation;)V	ladder/adapter/client/ModelAdapters	register
+X	net/minecraft/client/resources/model/ModelManager	getModel	(Lnet/minecraft/client/resources/model/ModelResourceLocation;)Lnet/minecraft/client/resources/model/BakedModel;	ladder/adapter/client/ModelAdapters	getModel
+# 1.21's spawn packet with the tracker (ServerEntity; 1.20.4: the entity only)
+O	net/minecraft/world/entity/Entity	getAddEntityPacket	(Lnet/minecraft/server/level/ServerEntity;)Lnet/minecraft/network/protocol/Packet;	ladder/adapter/entity/AddEntityPacketApi	ladder/adapter/entity/AddEntityPacketApi	getAddEntityPacket
+X	net/minecraft/world/entity/Entity	getAddEntityPacket	(Lnet/minecraft/server/level/ServerEntity;)Lnet/minecraft/network/protocol/Packet;	ladder/adapter/entity/AddEntityPacketApi	packet
+X	net/minecraft/network/protocol/game/ClientboundAddEntityPacket	<init>	(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/server/level/ServerEntity;)V	ladder/adapter/entity/AddEntityPacketApi	create
+X	net/minecraft/network/protocol/game/ClientboundAddEntityPacket	<init>	(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/server/level/ServerEntity;I)V	ladder/adapter/entity/AddEntityPacketApi	create
+# 1.20.5's server transfers: 1.20.4 connects afresh
+X	net/minecraft/client/gui/screens/ConnectScreen	startConnecting	(Lnet/minecraft/client/gui/screens/Screen;Lnet/minecraft/client/Minecraft;Lnet/minecraft/client/multiplayer/resolver/ServerAddress;Lnet/minecraft/client/multiplayer/ServerData;ZLnet/minecraft/client/multiplayer/TransferState;)V	ladder/adapter/client/ConnectAdapters	startConnecting
+# 1.21's Model.renderToBuffer without a colour: white (the lower takes the colour's four floats)
+D	net/minecraft/client/model/Model	renderToBuffer	(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;II)V	(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;IIFFFF)V	$0,$1,$2,$3,1.0,1.0,1.0,1.0
+# a mod's own VertexConsumer (1.21: addVertex and the setters, a vertex ended by the next): 1.20.4's abstract methods
+M	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	vertex	(DDD)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setColor	(IIII)Lcom/mojang/blaze3d/vertex/VertexConsumer;	color	(IIII)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setUv	(FF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	uv	(FF)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setUv1	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;	overlayCoords	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setUv2	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;	uv2	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setNormal	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	normal	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+S	com/mojang/blaze3d/vertex/VertexConsumer	endVertex	()V
+S	com/mojang/blaze3d/vertex/VertexConsumer	defaultColor	(IIII)V
+S	com/mojang/blaze3d/vertex/VertexConsumer	unsetDefaultColor	()V
+# small members of 1.21 and NeoForge 21 (fire, damage, sounds, creative tab entries)
+X	net/minecraft/world/entity/Entity	igniteForSeconds	(F)V	ladder/adapter/misc/MiscAdapters	igniteForSeconds
+X	net/minecraft/world/damagesource/DamageSource	isDirect	()Z	ladder/adapter/misc/MiscAdapters	isDirect
+X	net/minecraft/world/level/Level	playSound	(Lnet/minecraft/world/entity/player/Player;DDDLnet/minecraft/core/Holder;Lnet/minecraft/sounds/SoundSource;FF)V	ladder/adapter/misc/MiscAdapters	playSound
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	insertAfter	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/adapter/misc/MiscAdapters	insertAfter
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	insertBefore	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/adapter/misc/MiscAdapters	insertBefore
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	insertFirst	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/adapter/misc/MiscAdapters	insertFirst
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	remove	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/adapter/misc/MiscAdapters	remove
+# NeoForge 21's damage events, posted from 20.4's (LivingHurtEvent, LivingDamageEvent)
+P	net/neoforged/neoforge/event/entity/living/LivingIncomingDamageEvent	ladder/adapter/provided/event/LivingIncomingDamageEvent
+P	net/neoforged/neoforge/event/entity/living/LivingDamageEvent$Pre	ladder/adapter/provided/event/LivingDamagePre
+X	net/minecraft/server/level/ServerEntity	getPositionBase	()Lnet/minecraft/world/phys/Vec3;	ladder/adapter/entity/AddEntityPacketApi	getPositionBase
+X	net/minecraft/server/level/ServerEntity	getLastSentYRot	()F	ladder/adapter/entity/AddEntityPacketApi	getLastSentYRot
+X	net/minecraft/server/level/ServerEntity	getLastSentXRot	()F	ladder/adapter/entity/AddEntityPacketApi	getLastSentXRot
+X	net/minecraft/server/level/ServerEntity	getLastSentYHeadRot	()F	ladder/adapter/entity/AddEntityPacketApi	getLastSentYHeadRot
+X	net/minecraft/server/level/ServerEntity	getLastSentMovement	()Lnet/minecraft/world/phys/Vec3;	ladder/adapter/entity/AddEntityPacketApi	getLastSentMovement

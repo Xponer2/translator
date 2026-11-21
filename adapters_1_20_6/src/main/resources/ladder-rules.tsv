@@ -1,0 +1,198 @@
+# The converter's rules for the hand-written adapters of the rung 1.21 -> 1.20.6 (1.21 names; tabs).
+# P <class>                                   a class the adapters provide (in place of carrying it)
+# N <class>                                   new above although its intermediary twin exists below (another class)
+# O <owner> <name> <desc> <interface> <defaults class> <defaults method>
+#                                             an override of a newer method: the mod class gets the interface (the
+#                                             adapters' mixins call it from 1.20.4's call sites); a super call into the
+#                                             game's own class goes to the defaults method (receiver first)
+# X <owner> <name> <desc> <adapter class> <adapter method>
+#                                             a call goes to the adapter's static method (receiver first)
+# R <class> <lower class>                     a class renamed below with the same members (NeoForge has no intermediary)
+# F <owner> <name> <desc> <adapter class> <getter> [<methods>]
+#                                             a field the adapters give: its reads go to the getter (an instance
+#                                             field's getter takes the object); with methods, the value's only uses
+# K <owner> <upper desc> <lower desc> <adapter class> <lower parameters>
+#                                             a constructor that takes more below (new X(..) and super(..)): each
+#                                             lower parameter is an upper one ($0, $1..) or an adapter method's value,
+#                                             the method given all the upper arguments; ladder/bottom/<class> names
+#                                             the bottom class a top class of the same name hides
+# D <owner> <name> <upper desc> <lower desc> <lower parameters>
+#                                             a method that takes more below: each lower parameter is an upper one ($0,
+#                                             $1..) or the default written here (false, true, a number, null)
+# M <owner> <name> <desc> <lower name> <lower desc>
+#                                             the same hook (of the owner and its subclasses) under another name and
+#                                             descriptor below; the generated bridges take it from there
+# U <owner> <name> <desc>                     a hook the lower game never calls (no counterpart): a mod's override is a
+#                                             method of its own below; its calls (super ones too) take the X row
+# A <owner> <name> <desc> <lower desc> <plan> the same method below with other parameters: a mixin handler's arguments
+#                                             from the lower method's, per upper parameter "$k" (lower k, converted)
+#                                             or "Class.method(k,..)" (an adapter of lower parameters k..)
+# S <owner> <name> <lower desc>               a lower abstract method the upper type hasn't: a mod's concrete class
+#                                             under the owner gets an empty one (void, or returning itself)
+# NeoForge 21.1's supportsEnchantment (1.21 asks Enchantment.canEnchant at the anvil, enchant_randomly and /enchant)
+# 1.21's DeltaTracker (the frame's time): the client's own from 1.20.6's timer; a partial tick where 1.20.6 passes one
+P	net/minecraft/client/DeltaTracker	ladder/rung1206/provided/DeltaTracker
+P	net/minecraft/client/DeltaTracker$DefaultValue	ladder/rung1206/provided/DeltaTracker$DefaultValue
+X	net/minecraft/client/Minecraft	getTimer	()Lnet/minecraft/client/DeltaTracker;	ladder/rung1206/render/TimeAdapters	getTimer
+X	net/neoforged/neoforge/client/event/RenderLevelStageEvent	getPartialTick	()Lnet/minecraft/client/DeltaTracker;	ladder/rung1206/render/TimeAdapters	getPartialTick
+X	net/neoforged/neoforge/client/event/RenderGuiEvent	getPartialTick	()Lnet/minecraft/client/DeltaTracker;	ladder/rung1206/render/TimeAdapters	getPartialTick
+# 1.21's GUI layers take the DeltaTracker where 1.20.6's take the partial tick (the bridges make a DeltaTracker of it)
+M	net/minecraft/client/gui/LayeredDraw$Layer	render	(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V	render	(Lnet/minecraft/client/gui/GuiGraphics;F)V
+# 1.21's vertex API: buffers begun by the tesselator, built into MeshData, vertices ended by the next one
+P	com/mojang/blaze3d/vertex/MeshData	ladder/rung1206/provided/MeshData
+P	com/mojang/blaze3d/vertex/MeshData$DrawState	ladder/rung1206/provided/MeshData$DrawState
+X	com/mojang/blaze3d/vertex/Tesselator	begin	(Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)Lcom/mojang/blaze3d/vertex/BufferBuilder;	ladder/rung1206/render/VertexAdapters	begin
+X	com/mojang/blaze3d/vertex/BufferBuilder	buildOrThrow	()Lcom/mojang/blaze3d/vertex/MeshData;	ladder/rung1206/render/VertexAdapters	buildOrThrow
+X	com/mojang/blaze3d/vertex/BufferBuilder	build	()Lcom/mojang/blaze3d/vertex/MeshData;	ladder/rung1206/render/VertexAdapters	build
+X	com/mojang/blaze3d/vertex/BufferUploader	drawWithShader	(Lcom/mojang/blaze3d/vertex/MeshData;)V	ladder/rung1206/render/VertexAdapters	drawWithShader
+X	com/mojang/blaze3d/vertex/BufferUploader	draw	(Lcom/mojang/blaze3d/vertex/MeshData;)V	ladder/rung1206/render/VertexAdapters	draw
+X	com/mojang/blaze3d/vertex/VertexBuffer	upload	(Lcom/mojang/blaze3d/vertex/MeshData;)V	ladder/rung1206/render/VertexAdapters	upload
+X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
+X	com/mojang/blaze3d/vertex/BufferBuilder	addVertex	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
+X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(FFFIFFIIFFF)V	ladder/rung1206/render/VertexAdapters	addVertex
+X	com/mojang/blaze3d/vertex/BufferBuilder	addVertex	(FFFIFFIIFFF)V	ladder/rung1206/render/VertexAdapters	addVertex
+X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(Lorg/joml/Vector3f;)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
+X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(Lcom/mojang/blaze3d/vertex/PoseStack$Pose;Lorg/joml/Vector3f;)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
+X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(Lcom/mojang/blaze3d/vertex/PoseStack$Pose;FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
+X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(Lorg/joml/Matrix4f;FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
+X	com/mojang/blaze3d/vertex/VertexConsumer	setLight	(I)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setLight
+X	com/mojang/blaze3d/vertex/BufferBuilder	setLight	(I)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setLight
+X	com/mojang/blaze3d/vertex/VertexConsumer	setUv1	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setUv1
+X	com/mojang/blaze3d/vertex/BufferBuilder	setUv1	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setUv1
+X	com/mojang/blaze3d/vertex/VertexConsumer	setOverlay	(I)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setOverlay
+X	com/mojang/blaze3d/vertex/BufferBuilder	setOverlay	(I)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setOverlay
+X	com/mojang/blaze3d/vertex/VertexConsumer	setColor	(I)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setColor
+X	com/mojang/blaze3d/vertex/BufferBuilder	setColor	(I)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setColor
+X	com/mojang/blaze3d/vertex/VertexConsumer	setWhiteAlpha	(I)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setWhiteAlpha
+X	com/mojang/blaze3d/vertex/VertexConsumer	setNormal	(Lcom/mojang/blaze3d/vertex/PoseStack$Pose;FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setNormal
+# the setters gather the begun vertex's attributes (1.21 takes them in any order; 1.20.6 in its format's)
+X	com/mojang/blaze3d/vertex/VertexConsumer	setColor	(IIII)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setColor
+X	com/mojang/blaze3d/vertex/BufferBuilder	setColor	(IIII)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setColor
+X	com/mojang/blaze3d/vertex/VertexConsumer	setColor	(FFFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setColor
+X	com/mojang/blaze3d/vertex/VertexConsumer	setUv	(FF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setUv
+X	com/mojang/blaze3d/vertex/BufferBuilder	setUv	(FF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setUv
+X	com/mojang/blaze3d/vertex/VertexConsumer	setUv2	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setUv2
+X	com/mojang/blaze3d/vertex/BufferBuilder	setUv2	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setUv2
+X	com/mojang/blaze3d/vertex/VertexConsumer	setNormal	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setNormal
+X	com/mojang/blaze3d/vertex/BufferBuilder	setNormal	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	setNormal
+# recipes: getRecipeFor with the last recipe (1.20.6 gives a pair) and on an input (1.20.6: a container)
+X	net/minecraft/world/item/crafting/RecipeManager	getRecipeFor	(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/crafting/RecipeHolder;)Ljava/util/Optional;	ladder/rung1206/recipe/RecipeLookups	getRecipeFor
+X	net/minecraft/world/item/crafting/RecipeManager	getRecipeFor	(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;	ladder/rung1206/recipe/RecipeLookups	getRecipeFor
+X	net/minecraft/world/item/crafting/RecipeManager	getRecipeFor	(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;)Ljava/util/Optional;	ladder/rung1206/recipe/RecipeLookups	getRecipeFor
+# FML 4's config entry points and extension points on FML 3; NeoForge 21's config screen (20.6 has none)
+P	net/neoforged/neoforge/client/gui/IConfigScreenFactory	ladder/rung1206/provided/IConfigScreenFactory
+P	net/neoforged/neoforge/client/gui/ConfigurationScreen	ladder/rung1206/provided/ConfigurationScreen
+X	net/neoforged/fml/ModContainer	registerExtensionPoint	(Ljava/lang/Class;Lnet/neoforged/fml/IExtensionPoint;)V	ladder/rung1206/fml/FmlAdapters	registerExtensionPoint
+X	net/neoforged/fml/ModContainer	registerExtensionPoint	(Ljava/lang/Class;Ljava/util/function/Supplier;)V	ladder/rung1206/fml/FmlAdapters	registerExtensionPoint
+X	net/neoforged/fml/ModContainer	getCustomExtension	(Ljava/lang/Class;)Ljava/util/Optional;	ladder/rung1206/fml/FmlAdapters	getCustomExtension
+X	net/neoforged/fml/config/ConfigTracker	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;Lnet/neoforged/fml/ModContainer;Ljava/lang/String;)Lnet/neoforged/fml/config/ModConfig;	ladder/rung1206/fml/ConfigAdapters	registerConfig
+X	net/neoforged/fml/config/ConfigTracker	registerConfig	(Lnet/neoforged/fml/config/ModConfig$Type;Lnet/neoforged/fml/config/IConfigSpec;Lnet/neoforged/fml/ModContainer;)Lnet/neoforged/fml/config/ModConfig;	ladder/rung1206/fml/ConfigAdapters	registerConfig
+X	net/neoforged/fml/config/ConfigTracker	acceptSyncedConfig	(Lnet/neoforged/fml/config/ModConfig;[B)V	ladder/rung1206/fml/ConfigAdapters	acceptSyncedConfig
+X	net/neoforged/neoforge/common/ModConfigSpec$Builder	defineListAllowEmpty	(Ljava/lang/String;Ljava/util/function/Supplier;Ljava/util/function/Supplier;Ljava/util/function/Predicate;)Lnet/neoforged/neoforge/common/ModConfigSpec$ConfigValue;	ladder/rung1206/fml/ConfigAdapters	defineListAllowEmpty
+X	net/neoforged/neoforge/common/ModConfigSpec$Builder	defineListAllowEmpty	(Ljava/lang/String;Ljava/util/List;Ljava/util/function/Supplier;Ljava/util/function/Predicate;)Lnet/neoforged/neoforge/common/ModConfigSpec$ConfigValue;	ladder/rung1206/fml/ConfigAdapters	defineListAllowEmpty
+X	net/neoforged/neoforge/common/ModConfigSpec$Builder	defineListAllowEmpty	(Ljava/util/List;Ljava/util/function/Supplier;Ljava/util/function/Supplier;Ljava/util/function/Predicate;)Lnet/neoforged/neoforge/common/ModConfigSpec$ConfigValue;	ladder/rung1206/fml/ConfigAdapters	defineListAllowEmpty
+X	net/neoforged/neoforge/common/ModConfigSpec$Builder	defineList	(Ljava/lang/String;Ljava/util/List;Ljava/util/function/Supplier;Ljava/util/function/Predicate;)Lnet/neoforged/neoforge/common/ModConfigSpec$ConfigValue;	ladder/rung1206/fml/ConfigAdapters	defineList
+X	net/neoforged/neoforge/common/ModConfigSpec$Builder	defineList	(Ljava/lang/String;Ljava/util/function/Supplier;Ljava/util/function/Supplier;Ljava/util/function/Predicate;)Lnet/neoforged/neoforge/common/ModConfigSpec$ConfigValue;	ladder/rung1206/fml/ConfigAdapters	defineList
+# small members of 1.21
+X	net/minecraft/world/entity/Entity	getRandom	()Lnet/minecraft/util/RandomSource;	ladder/rung1206/misc/MiscAdapters	getRandom
+X	net/minecraft/world/item/DyeColor	getTextureDiffuseColor	()I	ladder/rung1206/misc/MiscAdapters	getTextureDiffuseColor
+X	net/minecraft/world/item/ItemStack	hurtAndBreak	(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Consumer;)V	ladder/rung1206/misc/MiscAdapters	hurtAndBreak
+X	net/minecraft/world/item/ItemStack	hurtAndBreak	(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;Ljava/util/function/Consumer;)V	ladder/rung1206/misc/MiscAdapters	hurtAndBreak
+X	net/minecraft/world/item/ItemStack	transmuteCopy	(Lnet/minecraft/world/level/ItemLike;)Lnet/minecraft/world/item/ItemStack;	ladder/rung1206/misc/MiscAdapters	transmuteCopy
+X	net/minecraft/client/gui/screens/ConfirmLinkScreen	confirmLinkNow	(Lnet/minecraft/client/gui/screens/Screen;Ljava/lang/String;Z)V	ladder/rung1206/misc/MiscAdapters	confirmLinkNow
+# 1.21's attribute modifier ids (a ResourceLocation; 1.20.6: a UUID and a name)
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	<init>	(Lnet/minecraft/resources/ResourceLocation;DLnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;)V	ladder/rung1206/misc/AttributeIds	create
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	id	()Lnet/minecraft/resources/ResourceLocation;	ladder/rung1206/misc/AttributeIds	id
+X	net/minecraft/world/entity/ai/attributes/AttributeModifier	is	(Lnet/minecraft/resources/ResourceLocation;)Z	ladder/rung1206/misc/AttributeIds	is
+X	net/minecraft/world/entity/ai/attributes/AttributeInstance	getModifier	(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;	ladder/rung1206/misc/AttributeIds	getModifier
+X	net/minecraft/world/entity/ai/attributes/AttributeInstance	hasModifier	(Lnet/minecraft/resources/ResourceLocation;)Z	ladder/rung1206/misc/AttributeIds	hasModifier
+X	net/minecraft/world/entity/ai/attributes/AttributeInstance	removeModifier	(Lnet/minecraft/resources/ResourceLocation;)Z	ladder/rung1206/misc/AttributeIds	removeModifier
+X	net/minecraft/world/effect/MobEffect	addAttributeModifier	(Lnet/minecraft/core/Holder;Lnet/minecraft/resources/ResourceLocation;DLnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;)Lnet/minecraft/world/effect/MobEffect;	ladder/rung1206/misc/AttributeIds	addAttributeModifier
+F	net/minecraft/world/item/Item	BASE_ATTACK_DAMAGE_ID	Lnet/minecraft/resources/ResourceLocation;	ladder/rung1206/misc/AttributeIds	baseAttackDamageId
+F	net/minecraft/world/item/Item	BASE_ATTACK_SPEED_ID	Lnet/minecraft/resources/ResourceLocation;	ladder/rung1206/misc/AttributeIds	baseAttackSpeedId
+X	net/minecraft/world/entity/ai/attributes/AttributeInstance	addOrReplacePermanentModifier	(Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;)V	ladder/rung1206/misc/AttributeIds	addOrReplacePermanentModifier
+# NeoForge 21's ItemAbility is 20.6's ToolAction (the same members)
+R	net/neoforged/neoforge/common/ItemAbility	net/neoforged/neoforge/common/ToolAction
+R	net/neoforged/neoforge/common/ItemAbilities	net/neoforged/neoforge/common/ToolActions
+X	net/neoforged/neoforge/event/level/BlockEvent$BlockToolModificationEvent	getItemAbility	()Lnet/neoforged/neoforge/common/ItemAbility;	ladder/rung1206/misc/MiscAdapters	getItemAbility
+# FollowOwnerGoal: 1.21 asks the animal whether it flies to its owner (TamableAnimal.canFlyToOwner); 1.20.6 takes it as the goal's canFly
+O	net/minecraft/world/entity/TamableAnimal	canFlyToOwner	()Z	ladder/rung1206/entity/FlyToOwnerApi	ladder/rung1206/entity/FlyToOwnerApi	canFlyToOwner
+X	net/minecraft/world/entity/TamableAnimal	canFlyToOwner	()Z	ladder/rung1206/entity/FlyToOwnerApi	answer
+K	net/minecraft/world/entity/ai/goal/FollowOwnerGoal	(Lnet/minecraft/world/entity/TamableAnimal;DFF)V	(Lnet/minecraft/world/entity/TamableAnimal;DFFZ)V	ladder/rung1206/entity/FlyToOwnerApi	$0,$1,$2,$3,followCanFly
+# tooltips, attributes and enchantments of 1.21
+X	net/minecraft/world/item/TooltipFlag	hasShiftDown	()Z	ladder/rung1206/misc/TooltipAdapters	hasShiftDown
+X	net/minecraft/world/item/TooltipFlag	hasControlDown	()Z	ladder/rung1206/misc/TooltipAdapters	hasControlDown
+X	net/minecraft/world/item/TooltipFlag	hasAltDown	()Z	ladder/rung1206/misc/TooltipAdapters	hasAltDown
+X	net/minecraft/world/item/Item$TooltipContext	level	()Lnet/minecraft/world/level/Level;	ladder/rung1206/misc/TooltipAdapters	level
+X	net/minecraft/world/entity/ai/attributes/Attribute	getStyle	(Z)Lnet/minecraft/ChatFormatting;	ladder/rung1206/misc/TooltipAdapters	getStyle
+X	net/minecraft/world/item/enchantment/Enchantment	isSupportedItem	(Lnet/minecraft/world/item/ItemStack;)Z	ladder/rung1206/misc/TooltipAdapters	isSupportedItem
+X	net/minecraft/world/item/ItemStack	forEachModifier	(Lnet/minecraft/world/entity/EquipmentSlotGroup;Ljava/util/function/BiConsumer;)V	ladder/rung1206/misc/TooltipAdapters	forEachModifier
+U	net/minecraft/world/item/Item$TooltipContext	level	()Lnet/minecraft/world/level/Level;
+# 1.21's use duration with the user (1.20.6: the stack only)
+O	net/minecraft/world/item/Item	getUseDuration	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)I	ladder/rung1206/item/UseDurationApi	ladder/rung1206/item/UseDurationApi	getUseDuration
+X	net/minecraft/world/item/Item	getUseDuration	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)I	ladder/rung1206/item/UseDurations	itemDuration
+X	net/minecraft/world/item/ItemStack	getUseDuration	(Lnet/minecraft/world/entity/LivingEntity;)I	ladder/rung1206/item/UseDurations	stackDuration
+# NeoForge 21's RegisterSpawnPlacementsEvent is 20.6's SpawnPlacementRegisterEvent (the same members)
+R	net/neoforged/neoforge/event/entity/RegisterSpawnPlacementsEvent	net/neoforged/neoforge/event/entity/SpawnPlacementRegisterEvent
+R	net/neoforged/neoforge/event/entity/RegisterSpawnPlacementsEvent$Operation	net/neoforged/neoforge/event/entity/SpawnPlacementRegisterEvent$Operation
+R	net/neoforged/neoforge/event/entity/RegisterSpawnPlacementsEvent$MergedSpawnPredicate	net/neoforged/neoforge/event/entity/SpawnPlacementRegisterEvent$MergedSpawnPredicate
+# 1.21's vertex format elements (record constants) and format builder on 1.20.6's (DefaultVertexFormat's elements, getters)
+P	com/mojang/blaze3d/vertex/VertexFormat$Builder	ladder/rung1206/provided/VertexFormatBuilder
+X	com/mojang/blaze3d/vertex/VertexFormat	builder	()Lcom/mojang/blaze3d/vertex/VertexFormat$Builder;	ladder/rung1206/render/VertexFormats	builder
+X	com/mojang/blaze3d/vertex/VertexFormat	getOffset	(Lcom/mojang/blaze3d/vertex/VertexFormatElement;)I	ladder/rung1206/render/VertexFormats	getOffset
+F	com/mojang/blaze3d/vertex/VertexFormatElement	POSITION	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	position
+F	com/mojang/blaze3d/vertex/VertexFormatElement	COLOR	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	color
+F	com/mojang/blaze3d/vertex/VertexFormatElement	UV0	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	uv0
+F	com/mojang/blaze3d/vertex/VertexFormatElement	UV1	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	uv1
+F	com/mojang/blaze3d/vertex/VertexFormatElement	UV2	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	uv2
+F	com/mojang/blaze3d/vertex/VertexFormatElement	NORMAL	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	normal
+X	com/mojang/blaze3d/vertex/VertexFormatElement	usage	()Lcom/mojang/blaze3d/vertex/VertexFormatElement$Usage;	ladder/rung1206/render/VertexFormats	usage
+X	com/mojang/blaze3d/vertex/VertexFormatElement	type	()Lcom/mojang/blaze3d/vertex/VertexFormatElement$Type;	ladder/rung1206/render/VertexFormats	type
+X	com/mojang/blaze3d/vertex/VertexFormatElement	count	()I	ladder/rung1206/render/VertexFormats	count
+X	com/mojang/blaze3d/vertex/VertexFormatElement	index	()I	ladder/rung1206/render/VertexFormats	index
+X	com/mojang/blaze3d/vertex/VertexFormatElement	byteSize	()I	ladder/rung1206/render/VertexFormats	byteSize
+# 1.21's Leashable: 1.20.6's mobs (Mob has its members); a mob's canBeLeashed() is the hook of canBeLeashed(player)
+P	net/minecraft/world/entity/Leashable	ladder/rung1206/provided/Leashable
+D	net/minecraft/world/entity/Mob	canBeLeashed	()Z	(Lnet/minecraft/world/entity/player/Player;)Z	null
+# NeoForge 21's RegisterClientExtensionsEvent (1.20.6: each object's initializeClient)
+P	net/neoforged/neoforge/client/extensions/common/RegisterClientExtensionsEvent	ladder/rung1206/provided/RegisterClientExtensionsEvent
+# NeoForge 21's model locations (a record; a standalone extra model) on 1.20.6's (an extra model under its plain id)
+X	net/minecraft/client/resources/model/ModelResourceLocation	id	()Lnet/minecraft/resources/ResourceLocation;	ladder/rung1206/client/ModelAdapters	id
+X	net/minecraft/client/resources/model/ModelResourceLocation	variant	()Ljava/lang/String;	ladder/rung1206/client/ModelAdapters	variant
+X	net/neoforged/neoforge/client/event/ModelEvent$RegisterAdditional	register	(Lnet/minecraft/client/resources/model/ModelResourceLocation;)V	ladder/rung1206/client/ModelAdapters	register
+X	net/minecraft/client/resources/model/ModelManager	getModel	(Lnet/minecraft/client/resources/model/ModelResourceLocation;)Lnet/minecraft/client/resources/model/BakedModel;	ladder/rung1206/client/ModelAdapters	getModel
+# 1.21's spawn packet with the tracker (ServerEntity; 1.20.6: the entity only)
+O	net/minecraft/world/entity/Entity	getAddEntityPacket	(Lnet/minecraft/server/level/ServerEntity;)Lnet/minecraft/network/protocol/Packet;	ladder/rung1206/entity/AddEntityPacketApi	ladder/rung1206/entity/AddEntityPacketApi	getAddEntityPacket
+X	net/minecraft/world/entity/Entity	getAddEntityPacket	(Lnet/minecraft/server/level/ServerEntity;)Lnet/minecraft/network/protocol/Packet;	ladder/rung1206/entity/AddEntityPacketApi	packet
+X	net/minecraft/network/protocol/game/ClientboundAddEntityPacket	<init>	(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/server/level/ServerEntity;)V	ladder/rung1206/entity/AddEntityPacketApi	create
+X	net/minecraft/network/protocol/game/ClientboundAddEntityPacket	<init>	(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/server/level/ServerEntity;I)V	ladder/rung1206/entity/AddEntityPacketApi	create
+# 1.21's Model.renderToBuffer without a colour: white (the lower takes the colour's four floats)
+D	net/minecraft/client/model/Model	renderToBuffer	(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;II)V	(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;IIFFFF)V	$0,$1,$2,$3,1.0,1.0,1.0,1.0
+# a mod's own VertexConsumer (1.21: addVertex and the setters, a vertex ended by the next): 1.20.6's abstract methods
+M	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	vertex	(DDD)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setColor	(IIII)Lcom/mojang/blaze3d/vertex/VertexConsumer;	color	(IIII)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setUv	(FF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	uv	(FF)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setUv1	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;	overlayCoords	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setUv2	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;	uv2	(II)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+M	com/mojang/blaze3d/vertex/VertexConsumer	setNormal	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	normal	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;
+S	com/mojang/blaze3d/vertex/VertexConsumer	endVertex	()V
+S	com/mojang/blaze3d/vertex/VertexConsumer	defaultColor	(IIII)V
+S	com/mojang/blaze3d/vertex/VertexConsumer	unsetDefaultColor	()V
+# small members of 1.21 and NeoForge 21 (fire, damage, sounds, creative tab entries)
+X	net/minecraft/world/entity/Entity	igniteForSeconds	(F)V	ladder/rung1206/misc/MiscAdapters	igniteForSeconds
+X	net/minecraft/world/damagesource/DamageSource	isDirect	()Z	ladder/rung1206/misc/MiscAdapters	isDirect
+X	net/minecraft/world/level/Level	playSound	(Lnet/minecraft/world/entity/player/Player;DDDLnet/minecraft/core/Holder;Lnet/minecraft/sounds/SoundSource;FF)V	ladder/rung1206/misc/MiscAdapters	playSound
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	insertAfter	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/rung1206/misc/MiscAdapters	insertAfter
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	insertBefore	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/rung1206/misc/MiscAdapters	insertBefore
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	insertFirst	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/rung1206/misc/MiscAdapters	insertFirst
+X	net/neoforged/neoforge/event/BuildCreativeModeTabContentsEvent	remove	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/rung1206/misc/MiscAdapters	remove
+X	net/neoforged/neoforge/client/event/RenderGuiLayerEvent	getPartialTick	()Lnet/minecraft/client/DeltaTracker;	ladder/rung1206/render/TimeAdapters	getPartialTick
+X	net/neoforged/neoforge/client/event/RenderFrameEvent	getPartialTick	()Lnet/minecraft/client/DeltaTracker;	ladder/rung1206/render/TimeAdapters	getPartialTick
+# NeoForge 21's damage events, posted from 20.6's (LivingHurtEvent, LivingDamageEvent)
+P	net/neoforged/neoforge/event/entity/living/LivingIncomingDamageEvent	ladder/rung1206/provided/event/LivingIncomingDamageEvent
+P	net/neoforged/neoforge/event/entity/living/LivingDamageEvent$Pre	ladder/rung1206/provided/event/LivingDamagePre
+X	net/minecraft/server/level/ServerEntity	getPositionBase	()Lnet/minecraft/world/phys/Vec3;	ladder/rung1206/entity/AddEntityPacketApi	getPositionBase
+X	net/minecraft/server/level/ServerEntity	getLastSentYRot	()F	ladder/rung1206/entity/AddEntityPacketApi	getLastSentYRot
+X	net/minecraft/server/level/ServerEntity	getLastSentXRot	()F	ladder/rung1206/entity/AddEntityPacketApi	getLastSentXRot
+X	net/minecraft/server/level/ServerEntity	getLastSentYHeadRot	()F	ladder/rung1206/entity/AddEntityPacketApi	getLastSentYHeadRot
+X	net/minecraft/server/level/ServerEntity	getLastSentMovement	()Lnet/minecraft/world/phys/Vec3;	ladder/rung1206/entity/AddEntityPacketApi	getLastSentMovement

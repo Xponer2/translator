@@ -22,3 +22,4 @@ tools/tool-jars.txt
 logs/
 # local Claude Code skills and settings (machine paths)
 .claude/
+tools/classpath.txt

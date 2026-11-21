@@ -46,6 +46,7 @@ public final class LadderTestC {
         Armour.register(modBus);
         Recipes.register(modBus);
         PackFinders.register(modBus);
+        SpawnProbe.register(modBus);
         if (FMLEnvironment.dist.isClient()) {
             ClientSide.init();
             GuiClient.register(modBus);
@@ -69,6 +70,7 @@ public final class LadderTestC {
         ServerPlayer player = (ServerPlayer) context.player();
         boolean main = player.server.isSameThread();
         context.reply(new Pong("reply " + ping, ping.n(), main));
+        SpawnProbe.spawnNear(player);
         context.reply(new Bag(List.of("a", "b", "c"), Set.of("only"), Map.of("x", 1, "y", 300), Optional.of(ping.uuid()), null, 77));
         ServerLevel level = player.serverLevel();
         PacketDistributor.sendToPlayer(player, new Pong("toPlayer", 1, main));

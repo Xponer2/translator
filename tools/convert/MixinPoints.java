@@ -188,6 +188,83 @@ final class MixinPoints {
         return false;
     }
 
+    /**
+     * Lambdas are numbered by the compiler: an injector into {@code lambda$<outer>$<n>} whose point is not there below is
+     * moved to the one lambda of the same outer method below that has all its points (and fits an @Inject handler).
+     * Returns whether any injector moved.
+     */
+    static boolean retargetLambdas(ClassNode mixin, List<String> targets, Function<String, ClassNode> game, java.util.Set<String> moved) {
+        boolean changed = false;
+        for (MethodNode m : mixin.methods) {
+            for (AnnotationNode inj : annotations(m)) {
+                // (only an injector that landed above and not below: an optional one that matched nothing above stays)
+                if (!INJECTORS.contains(inj.desc) || !moved.contains(key(mixin, m)) || verdict(targets, m, inj, game) == null) {
+                    continue;
+                }
+                List<String> selectors = strings(value(inj, "method"));
+                if (selectors.size() != 1 || !selectors.get(0).matches("lambda\\$[\\w$]+?\\$\\d+(\\(.*)?")) {
+                    continue;
+                }
+                String sel = selectors.get(0);
+                String outer = sel.substring(0, sel.lastIndexOf('$', sel.contains("(") ? sel.indexOf('(') : sel.length()) + 1);
+                List<AnnotationNode> ats = new ArrayList<>();
+                Object at = value(inj, "at");
+                if (at instanceof AnnotationNode a) {
+                    ats.add(a);
+                } else if (at instanceof List<?> l) {
+                    l.forEach(o -> ats.add((AnnotationNode) o));
+                }
+                String found = null;
+                int candidates = 0;
+                for (String t : targets) {
+                    ClassNode target = game.apply(t);
+                    if (target == null) {
+                        continue;
+                    }
+                    for (MethodNode lambda : target.methods) {
+                        if (!lambda.name.startsWith(outer) || !lambda.name.substring(outer.length()).matches("\\d+") || !fitsPoints(lambda, ats)) {
+                            continue;
+                        }
+                        if (inj.desc.equals("Lorg/spongepowered/asm/mixin/injection/Inject;") && !coerced(m) && !injectFits(m, lambda)) {
+                            continue;
+                        }
+                        String c = lambda.name + lambda.desc;
+                        if (!c.equals(found)) {
+                            candidates++;
+                            found = c;
+                        }
+                    }
+                }
+                if (candidates == 1 && ats.stream().anyMatch(a -> value(a, "target") != null)) {
+                    for (int i = 0; i + 1 < inj.values.size(); i += 2) {
+                        if (inj.values.get(i).equals("method")) {
+                            inj.values.set(i + 1, new ArrayList<>(List.of(found)));
+                        }
+                    }
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
+    /** whether a method has every point of the @At list that names a target (INVOKE, FIELD, NEW), at its ordinal */
+    static boolean fitsPoints(MethodNode m, List<AnnotationNode> ats) {
+        for (AnnotationNode a : ats) {
+            String kind = (String) value(a, "value");
+            String tgt = (String) value(a, "target");
+            Integer ordinal = (Integer) value(a, "ordinal");
+            if (kind == null || tgt == null || !(kind.equals("INVOKE") || kind.equals("INVOKE_ASSIGN") || kind.equals("FIELD") || kind.equals("NEW"))) {
+                continue;
+            }
+            int n = count(m, kind, tgt);
+            if (n == 0 || ordinal != null && ordinal >= 0 && n <= ordinal) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     static List<MethodNode> match(ClassNode c, String sel) {
         String s = sel;
         if (s.startsWith("L") && s.contains(";")) {

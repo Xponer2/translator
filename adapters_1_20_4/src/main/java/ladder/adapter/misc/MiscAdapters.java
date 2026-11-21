@@ -229,4 +229,75 @@ public final class MiscAdapters {
     public static boolean blockEntityValidBlockState(net.minecraft.world.level.block.entity.BlockEntity blockEntity, net.minecraft.world.level.block.state.BlockState state) {
         return blockEntity.getType().isValid(state);
     }
+
+    /** NeoForge 21's {@code BlockToolModificationEvent.getItemAbility()}: the ability, a ToolAction below */
+    public static net.neoforged.neoforge.common.ToolAction getItemAbility(net.neoforged.neoforge.event.level.BlockEvent.BlockToolModificationEvent event) {
+        return event.getToolAction();
+    }
+
+    /** 1.21's {@code Entity.igniteForSeconds(seconds)}: on fire for that long, unless it burns longer already */
+    public static void igniteForSeconds(net.minecraft.world.entity.Entity entity, float seconds) {
+        int ticks = net.minecraft.util.Mth.floor(seconds * 20.0F);
+        if (entity.getRemainingFireTicks() < ticks) {
+            entity.setRemainingFireTicks(ticks);
+        }
+    }
+
+    /** 1.21's {@code DamageSource.isDirect()}: the cause is what hit */
+    public static boolean isDirect(net.minecraft.world.damagesource.DamageSource source) {
+        return source.getEntity() == source.getDirectEntity();
+    }
+
+    /** 1.21's {@code Level.playSound(player, x, y, z, sound holder, source, volume, pitch)} */
+    public static void playSound(net.minecraft.world.level.Level level, @javax.annotation.Nullable net.minecraft.world.entity.player.Player player, double x,
+            double y, double z, net.minecraft.core.Holder<net.minecraft.sounds.SoundEvent> sound, net.minecraft.sounds.SoundSource source, float volume,
+            float pitch) {
+        level.playSound(player, x, y, z, sound.value(), source, volume, pitch);
+    }
+
+    /** NeoForge 21's {@code BuildCreativeModeTabContentsEvent.insertAfter(existing, stack, visibility)} */
+    public static void insertAfter(net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent event, net.minecraft.world.item.ItemStack existing,
+            net.minecraft.world.item.ItemStack stack, net.minecraft.world.item.CreativeModeTab.TabVisibility visibility) {
+        event.getEntries().putAfter(entry(event, existing), stack, visibility);
+    }
+
+    /** NeoForge 21's {@code insertBefore(existing, stack, visibility)} */
+    public static void insertBefore(net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent event, net.minecraft.world.item.ItemStack existing,
+            net.minecraft.world.item.ItemStack stack, net.minecraft.world.item.CreativeModeTab.TabVisibility visibility) {
+        event.getEntries().putBefore(entry(event, existing), stack, visibility);
+    }
+
+    /** NeoForge 21's {@code insertFirst(stack, visibility)} */
+    public static void insertFirst(net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent event, net.minecraft.world.item.ItemStack stack,
+            net.minecraft.world.item.CreativeModeTab.TabVisibility visibility) {
+        event.getEntries().putFirst(stack, visibility);
+    }
+
+    /** NeoForge 21's {@code remove(existing, visibility)}: the entry leaves the tabs the visibility names */
+    public static void remove(net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent event, net.minecraft.world.item.ItemStack existing,
+            net.minecraft.world.item.CreativeModeTab.TabVisibility visibility) {
+        net.minecraft.world.item.ItemStack key = entry(event, existing);
+        net.minecraft.world.item.CreativeModeTab.TabVisibility now = event.getEntries().get(key);
+        if (now == null) {
+            return;
+        }
+        net.minecraft.world.item.CreativeModeTab.TabVisibility both = net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS;
+        if (visibility == both || now == visibility) {
+            event.getEntries().remove(key);
+        } else if (now == both) {
+            // one of the two tabs only: the entry stays in the other
+            event.getEntries().put(key, visibility == net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_TAB_ONLY
+                    ? net.minecraft.world.item.CreativeModeTab.TabVisibility.SEARCH_TAB_ONLY : net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_TAB_ONLY);
+        }
+    }
+
+    /** the tab's own entry that is the stack (the same item and components), else the stack */
+    private static net.minecraft.world.item.ItemStack entry(net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent event, net.minecraft.world.item.ItemStack stack) {
+        for (var e : event.getEntries()) {
+            if (net.minecraft.world.item.ItemStack.isSameItemSameTags(e.getKey(), stack)) {
+                return e.getKey();
+            }
+        }
+        return stack;
+    }
 }

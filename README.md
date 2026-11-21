@@ -75,18 +75,27 @@ versions together on one target.
 
 | Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
 |---|---|---|---:|---:|---|
-| 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 237 | 260 | first, in work |
-| 1.21 → 1.20.6 | not yet (in the 1.20.4 set) | not yet | 2345 | 132 | next |
-| 1.20.6 → 1.20.4 | yes | yes: test mods A–E, corpus probes | 3089 | 114 | in work |
+| 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C, E and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 239 | 260 | in work |
+| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A–C, E and F on the real 1.20.6, the same results as on 1.21.1 | 1254 | 133 of 262 (rung 1's output) | in work |
+| 1.20.6 → 1.20.4 | yes | yes: test mods A–E, corpus probes | 3118 | 115 | in work |
 
 Converted to 1.21 alone (the top rung, with the converter's target set to 1.21), **260 of 300 mods convert with nothing
-left** with the rung's own adapters (242 before them); what is left there: attachment syncing, a menu's client data, a few
-mixins into 21.1-only code, the dimension transition screens.
+left** with the rung's own adapters (242 before them); what is left there: attachment syncing, a few mixins into
+21.1-only code, data generators.
 
-Besides the rungs' own problems, 1933 more come from the checks against the bottom game (mixin injection points, a
-mod's reflection, classes of other loaders) in 158 mods. 1.21 and 1.20.4 are targets with their rungs' adapters and game tests (`LADDER_TO=1.21 tools/ladder.sh convert ...`,
-then `LADDER_TARGET=1.21 tools/run-probe.sh ...` or `tools/run-net.sh` for a dedicated server and a client over a real
-connection); 1.20.6 runs as a game of its own too, and its rung's adapters come next.
+The rung 1.21 → 1.20.6 on its own takes what a 1.21 game would have: the 260 mods rung 1 converted, its adapters and its
+carried library (`LADDER_FROM=1.21 LADDER_TO=1.20.6 tools/ladder.sh convert ...`; `tools/rung-chain.sh` runs the corpus
+down both rungs). **133 of those 262 jars convert with nothing left** (84 before the rung's adapters). Its adapters
+cover 1.21's vertex API and formats, the frame's DeltaTracker and the GUI layers, recipe inputs, attribute modifier ids,
+use durations with the user, the config screen, leads, client extensions, standalone models, spawn packets, NeoForge
+21's damage events and more; most of them serve the 1.20.4 rung too. Rung 1's own adapters go down with the mods and
+run on 1.20.6 (`tools/rung-tests.sh` runs every test mod in each lower game against its native results).
+
+In the 1.20.4 set (the corpus converted all the way down), besides the rungs' own problems 1915 more come from the checks
+against the bottom game (mixin injection points and shadows, a mod's reflection, classes of other loaders) in 154 mods.
+1.21, 1.20.6 and 1.20.4 are targets with their rungs' adapters and game tests (`LADDER_TO=1.20.6 tools/ladder.sh
+convert ...`, then `LADDER_TARGET=1.20.6 tools/run-probe.sh ...` or `tools/run-net.sh` for a dedicated server and a client
+over a real connection).
 
 ## Where it is
 
@@ -161,8 +170,8 @@ Over the 300 most popular NeoForge 1.21.1 mods on Modrinth:
   dynamic mixin patches with the ladder's value conversions: **the same 12 results** natively on 1.21.1 and converted
   on 1.20.4.
 
-Over the whole corpus, 81 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
-outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 7366 (loot tables of 1.21, resource packs and recipes on 1.21's inputs took the last few hundred; the
+Over the whole corpus, 83 of 300 mods convert to 1.20.4 with nothing left (strict: overrides of changed methods, jars embedded
+outside `META-INF/jarjar` and Mojang's libraries are checked too); the problems left went from 14887 to 6893 (loot tables of 1.21, resource packs and recipes on 1.21's inputs took the last few hundred; the
 network module took the mods held back by payloads from 123 to 74; the mixin check then made 949 hidden ones visible,
 injectors that would have injected nothing on 1.20.4, and the repair fixed about 200 of them). Most mods that are
 left wait for several mechanisms at once; the ones that free the most mods next: 1.21's GUI widgets and screen layout

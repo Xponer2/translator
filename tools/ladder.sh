@@ -2,7 +2,8 @@
 # The ladder's tools on the versions of this project (top first):
 #   tools/ladder.sh stage0  <folder of 1.21.1 mod jars> [out dir]       walk every reference down the steps, report
 #   tools/ladder.sh convert <mod jar | folder> <out jar | folder> <report>  convert to the target, strict
-#   (the target: LADDER_TO=1.21 | 1.20.6 | 1.20.4, default 1.20.4; its rung's adapters are adapters_<target>)
+#   (the target: LADDER_TO=1.21 | 1.20.6 | 1.20.4, default 1.20.4; its rung's adapters are adapters_<target>;
+#    the input's version: LADDER_FROM, default 1.21.1)
 # Before: ./gradlew createMinecraftArtifacts printLoaderJars  and  python tools/fetch_mappings.py
 set -e
 cd "$(dirname "$0")/.."
@@ -25,9 +26,14 @@ echo OfflineMixinService > tools/build/META-INF/services/org.spongepowered.asm.s
 echo OfflinePropertyService > tools/build/META-INF/services/org.spongepowered.asm.service.IGlobalPropertyService
 # the target version (LADDER_TO, default 1.20.4): the versions down to it, and its rung's adapters
 TO="${LADDER_TO:-1.20.4}"
+# the input's version (LADDER_FROM, default 1.21.1): a rung's input is the rung above's output (LADDER_FROM=1.21)
+FROM="${LADDER_FROM:-1.21.1}"
 VERSIONS=()
 for pair in "1.21.1 v1_21_1" "1.21 v1_21" "1.20.6 v1_20_6" "1.20.4 v1_20_4"; do
     read -r version project <<< "$pair"
+    if [ "${#VERSIONS[@]}" -eq 0 ] && [ "$version" != "$FROM" ]; then
+        continue
+    fi
     if [ "${#VERSIONS[@]}" -gt 0 ] && [ "${DONE:-}" = 1 ]; then
         break
     fi
@@ -41,8 +47,8 @@ for pair in "1.21.1 v1_21_1" "1.21 v1_21" "1.20.6 v1_20_6" "1.20.4 v1_20_4"; do
         DONE=1
     fi
 done
-if [ "${DONE:-}" != 1 ]; then
-    echo "unknown target $TO (1.21, 1.20.6 or 1.20.4)" >&2
+if [ "${DONE:-}" != 1 ] || [ "${#VERSIONS[@]}" -lt 2 ]; then
+    echo "unknown target $TO below $FROM (1.21.1, 1.21, 1.20.6 or 1.20.4)" >&2
     exit 2
 fi
 TARGET_ADAPTERS="adapters_${TO//./_}"

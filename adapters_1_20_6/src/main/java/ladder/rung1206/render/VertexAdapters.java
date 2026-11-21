@@ -1,0 +1,470 @@
+/*
+ * Translator: mods of newer Minecraft versions on older ones, versions mixed
+ * Copyright (c) 2026 Xponer2 (https://github.com/Xponer2/translator)
+ * Licensed under the MIT License (see LICENSE).
+ */
+package ladder.rung1206.render;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
+
+import ladder.rung1206.provided.MeshData;
+import net.minecraft.util.FastColor;
+
+/**
+ * 1.21's vertex API on 1.20.6 (receiver first). 1.21 begins a buffer with {@code Tesselator.begin}, ends each vertex
+ * by the next {@code addVertex} and builds a {@code MeshData}; 1.20.6 has one builder per tesselator, needs
+ * {@code endVertex()} after each vertex and ends into a {@code RenderedBuffer}. A vertex begun here is kept and
+ * written whole later (see the vertices below; mixin.BufferBuilderMixin writes them before a buffer ends).
+ */
+public final class VertexAdapters {
+    private VertexAdapters() {
+    }
+
+    // ------------------------------------------------------------------ buffers
+
+    /** 1.21's {@code Tesselator.begin(mode, format)}: the tesselator's builder, begun */
+    public static BufferBuilder begin(Tesselator tesselator, VertexFormat.Mode mode, VertexFormat format) {
+        BufferBuilder builder = tesselator.getBuilder();
+        if (builder.building()) {
+            // 1.21 begins a new builder each time: one left building (abandoned, or failed) is dropped
+            forget(builder);
+            builder.end().release();
+        }
+        builder.begin(mode, format);
+        return builder;
+    }
+
+    /** 1.21's {@code BufferBuilder.buildOrThrow()}: an empty buffer is an error, as there */
+    public static MeshData buildOrThrow(BufferBuilder builder) {
+        MeshData mesh = build(builder);
+        if (mesh == null) {
+            throw new IllegalStateException("BufferBuilder was empty");
+        }
+        return mesh;
+    }
+
+    /** 1.21's {@code BufferBuilder.build()}: null when nothing was drawn */
+    public static MeshData build(BufferBuilder builder) {
+        BufferBuilder.RenderedBuffer buffer = builder.endOrDiscardIfEmpty();
+        return buffer == null ? null : new MeshData(buffer);
+    }
+
+    /** 1.21's {@code BufferUploader.drawWithShader(MeshData)} */
+    public static void drawWithShader(MeshData mesh) {
+        BufferUploader.drawWithShader(mesh.buffer());
+    }
+
+    /** 1.21's {@code BufferUploader.draw(MeshData)} */
+    public static void draw(MeshData mesh) {
+        BufferUploader.draw(mesh.buffer());
+    }
+
+    /** 1.21's {@code VertexBuffer.upload(MeshData)} */
+    public static void upload(VertexBuffer buffer, MeshData mesh) {
+        buffer.upload(mesh.buffer());
+    }
+
+    // ------------------------------------------------------------------ vertices
+    //
+    // 1.21 sets a vertex's attributes in any order and writes it when the next one begins (or the buffer is built);
+    // 1.20.6 takes them in its format's order and needs endVertex(). So a vertex begun here is kept (per thread: the
+    // chunk builders write on their own), its attributes gathered, and written whole (in the format's order,
+    // endVertex() after) when the next one begins on that consumer, before the game writes a whole vertex into its
+    // builder, and before a builder it goes into ends (a wrapper's builders are found under it).
+
+    /** a begun vertex's attributes, and the builders it goes into */
+    private static final class Vertex {
+        float x, y, z;
+        int r, g, b, a;
+        float u, v;
+        int u1, v1, u2, v2;
+        float nx, ny, nz;
+        boolean color, uv, uv1, uv2, normal;
+        List<BufferBuilder> builders;
+    }
+
+    /** consumer -> its begun vertex, this thread's (identity: a consumer is its own key) */
+    private static final ThreadLocal<Map<VertexConsumer, Vertex>> PENDING = ThreadLocal.withInitial(java.util.IdentityHashMap::new);
+
+    /** writes the consumer's begun vertex, if any */
+    public static void endVertex(VertexConsumer consumer) {
+        Vertex vertex = PENDING.get().remove(consumer);
+        if (vertex != null) {
+            write(consumer, vertex);
+        }
+    }
+
+    /** a builder ends: the begun vertices that go into it are written first */
+    public static void endFor(BufferBuilder builder) {
+        Map<VertexConsumer, Vertex> pending = PENDING.get();
+        if (pending.isEmpty()) {
+            return;
+        }
+        // an IdentityHashMap's entries are views of its table: the pairs are copied before any is removed
+        List<VertexConsumer> consumers = new ArrayList<>();
+        List<Vertex> vertices = new ArrayList<>();
+        for (Map.Entry<VertexConsumer, Vertex> e : pending.entrySet()) {
+            if (e.getValue().builders.isEmpty() || e.getValue().builders.contains(builder)) {
+                consumers.add(e.getKey());
+                vertices.add(e.getValue());
+            }
+        }
+        for (int i = 0; i < consumers.size(); i++) {
+            pending.remove(consumers.get(i));
+            write(consumers.get(i), vertices.get(i));
+        }
+    }
+
+    /** a builder begins a new batch: a vertex begun before it is gone */
+    public static void forget(BufferBuilder builder) {
+        PENDING.get().remove(builder);
+    }
+
+    /** consumer class -> its fields that hold the consumers it writes into (wrappers: VertexMultiConsumer, decals...) */
+    private static final Map<Class<?>, List<java.lang.reflect.Field>> DELEGATES = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** the builders a consumer writes into: itself, or those under a wrapper (none known: empty) */
+    private static List<BufferBuilder> builders(VertexConsumer consumer) {
+        List<BufferBuilder> found = new ArrayList<>();
+        collect(consumer, found, 0);
+        return found;
+    }
+
+    private static void collect(Object consumer, List<BufferBuilder> found, int depth) {
+        if (consumer instanceof BufferBuilder builder) {
+            if (!found.contains(builder)) {
+                found.add(builder);
+            }
+            return;
+        }
+        if (consumer == null || depth > 8) {
+            return;
+        }
+        for (java.lang.reflect.Field field : DELEGATES.computeIfAbsent(consumer.getClass(), VertexAdapters::delegateFields)) {
+            try {
+                Object value = field.get(consumer);
+                if (value instanceof Object[] array) {
+                    for (Object o : array) {
+                        collect(o, found, depth + 1);
+                    }
+                } else {
+                    collect(value, found, depth + 1);
+                }
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                // not readable: its builders stay unknown
+            }
+        }
+    }
+
+    private static List<java.lang.reflect.Field> delegateFields(Class<?> type) {
+        List<java.lang.reflect.Field> fields = new ArrayList<>();
+        for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+            for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+                Class<?> t = f.getType();
+                boolean holds = VertexConsumer.class.isAssignableFrom(t) || t.isArray() && VertexConsumer.class.isAssignableFrom(t.getComponentType());
+                if (holds && !java.lang.reflect.Modifier.isStatic(f.getModifiers())) {
+                    try {
+                        f.setAccessible(true);
+                        fields.add(f);
+                    } catch (RuntimeException e) {
+                        // a closed package: left out
+                    }
+                }
+            }
+        }
+        return fields;
+    }
+
+    private static void write(VertexConsumer consumer, Vertex vertex) {
+        VertexFormat format = null;
+        if (consumer instanceof PendingVertex builder) {
+            format = builder.ladder$format();
+        } else if (!vertex.builders.isEmpty()) {
+            // a wrapper passes each attribute to the builders under it: in their format's order
+            format = ((PendingVertex) vertex.builders.get(0)).ladder$format();
+        }
+        if (format != null) {
+            List<String> missing = new ArrayList<>();
+            for (VertexFormatElement element : format.getElements()) {
+                if (!has(vertex, element.getUsage(), element.getIndex())) {
+                    missing.add(element.toString());
+                }
+            }
+            if (!missing.isEmpty()) {
+                // as 1.21: a vertex without all of its format's elements is an error
+                throw new IllegalStateException("Missing elements in vertex: " + String.join(", ", missing));
+            }
+            for (VertexFormatElement element : format.getElements()) {
+                writeElement(consumer, vertex, element.getUsage(), element.getIndex());
+            }
+        } else {
+            // no builder known under it: the attributes that were set, in the game's usual order
+            writeElement(consumer, vertex, VertexFormatElement.Usage.POSITION, 0);
+            if (vertex.color) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.COLOR, 0);
+            }
+            if (vertex.uv) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 0);
+            }
+            if (vertex.uv1) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 1);
+            }
+            if (vertex.uv2) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.UV, 2);
+            }
+            if (vertex.normal) {
+                writeElement(consumer, vertex, VertexFormatElement.Usage.NORMAL, 0);
+            }
+        }
+        consumer.endVertex();
+    }
+
+    private static boolean has(Vertex vertex, VertexFormatElement.Usage usage, int index) {
+        if (usage == VertexFormatElement.Usage.COLOR) {
+            return vertex.color;
+        } else if (usage == VertexFormatElement.Usage.UV) {
+            return index == 0 ? vertex.uv : index == 1 ? vertex.uv1 : index != 2 || vertex.uv2;
+        } else if (usage == VertexFormatElement.Usage.NORMAL) {
+            return vertex.normal;
+        }
+        return true;
+    }
+
+    private static void writeElement(VertexConsumer consumer, Vertex vertex, VertexFormatElement.Usage usage, int index) {
+        if (usage == VertexFormatElement.Usage.POSITION) {
+            consumer.vertex(vertex.x, vertex.y, vertex.z);
+        } else if (usage == VertexFormatElement.Usage.COLOR) {
+            consumer.color(vertex.r, vertex.g, vertex.b, vertex.a);
+        } else if (usage == VertexFormatElement.Usage.UV && index == 0) {
+            consumer.uv(vertex.u, vertex.v);
+        } else if (usage == VertexFormatElement.Usage.UV && index == 1) {
+            consumer.overlayCoords(vertex.u1, vertex.v1);
+        } else if (usage == VertexFormatElement.Usage.UV && index == 2) {
+            consumer.uv2(vertex.u2, vertex.v2);
+        } else if (usage == VertexFormatElement.Usage.NORMAL) {
+            consumer.normal(vertex.nx, vertex.ny, vertex.nz);
+        }
+    }
+
+    /** consumer class -> whether it is a converted mod's own (it declares 1.21's addVertex(float, float, float)) */
+    private static final ClassValue<Boolean> OWN = new ClassValue<>() {
+        @Override
+        protected Boolean computeValue(Class<?> type) {
+            for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+                try {
+                    c.getDeclaredMethod("addVertex", float.class, float.class, float.class);
+                    return true;
+                } catch (NoSuchMethodException e) {
+                    // not this class
+                }
+            }
+            return false;
+        }
+    };
+
+    private static boolean ownConsumer(VertexConsumer consumer) {
+        return !(consumer instanceof BufferBuilder) && OWN.get(consumer.getClass());
+    }
+
+    /** the consumer's begun vertex; null when none (an attribute set outside 1.21's protocol goes straight through) */
+    private static Vertex begun(VertexConsumer consumer) {
+        return PENDING.get().get(consumer);
+    }
+
+    /** 1.21's {@code addVertex(x, y, z)}: writes the vertex before, begins one */
+    public static VertexConsumer addVertex(VertexConsumer consumer, float x, float y, float z) {
+        endVertex(consumer);
+        if (ownConsumer(consumer)) {
+            // a converted mod's own consumer: 1.21's calls go to it as they are made (its lower methods are its own)
+            return consumer.vertex(x, y, z);
+        }
+        Vertex vertex = new Vertex();
+        vertex.x = x;
+        vertex.y = y;
+        vertex.z = z;
+        vertex.builders = builders(consumer);
+        PENDING.get().put(consumer, vertex);
+        return consumer;
+    }
+
+    /** {@code BufferBuilder.addVertex(x, y, z)} (the builder's own declaration) */
+    public static VertexConsumer addVertex(BufferBuilder builder, float x, float y, float z) {
+        return addVertex((VertexConsumer) builder, x, y, z);
+    }
+
+    public static VertexConsumer addVertex(VertexConsumer consumer, Vector3f position) {
+        return addVertex(consumer, position.x(), position.y(), position.z());
+    }
+
+    public static VertexConsumer addVertex(VertexConsumer consumer, Matrix4f pose, float x, float y, float z) {
+        Vector3f p = pose.transformPosition(x, y, z, new Vector3f());
+        return addVertex(consumer, p.x(), p.y(), p.z());
+    }
+
+    public static VertexConsumer addVertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z) {
+        return addVertex(consumer, pose.pose(), x, y, z);
+    }
+
+    public static VertexConsumer addVertex(VertexConsumer consumer, PoseStack.Pose pose, Vector3f position) {
+        return addVertex(consumer, pose.pose(), position.x(), position.y(), position.z());
+    }
+
+    /** 1.21's whole vertex: 1.20.6's with the colour as four floats (it ends itself) */
+    public static void addVertex(VertexConsumer consumer, float x, float y, float z, int color, float u, float v, int overlay, int light,
+            float nx, float ny, float nz) {
+        endVertex(consumer);
+        consumer.vertex(x, y, z, FastColor.ARGB32.red(color) / 255.0F, FastColor.ARGB32.green(color) / 255.0F,
+                FastColor.ARGB32.blue(color) / 255.0F, FastColor.ARGB32.alpha(color) / 255.0F, u, v, overlay, light, nx, ny, nz);
+    }
+
+    public static void addVertex(BufferBuilder builder, float x, float y, float z, int color, float u, float v, int overlay, int light,
+            float nx, float ny, float nz) {
+        addVertex((VertexConsumer) builder, x, y, z, color, u, v, overlay, light, nx, ny, nz);
+    }
+
+    /** 1.21's {@code setColor(r, g, b, a)} */
+    public static VertexConsumer setColor(VertexConsumer consumer, int r, int g, int b, int a) {
+        Vertex vertex = begun(consumer);
+        if (vertex == null) {
+            return consumer.color(r, g, b, a);
+        }
+        vertex.r = r;
+        vertex.g = g;
+        vertex.b = b;
+        vertex.a = a;
+        vertex.color = true;
+        return consumer;
+    }
+
+    public static VertexConsumer setColor(BufferBuilder builder, int r, int g, int b, int a) {
+        return setColor((VertexConsumer) builder, r, g, b, a);
+    }
+
+    public static VertexConsumer setColor(VertexConsumer consumer, float r, float g, float b, float a) {
+        return setColor(consumer, (int) (r * 255.0F), (int) (g * 255.0F), (int) (b * 255.0F), (int) (a * 255.0F));
+    }
+
+    /** 1.21's {@code setColor(argb)} */
+    public static VertexConsumer setColor(VertexConsumer consumer, int argb) {
+        return setColor(consumer, FastColor.ARGB32.red(argb), FastColor.ARGB32.green(argb), FastColor.ARGB32.blue(argb), FastColor.ARGB32.alpha(argb));
+    }
+
+    public static VertexConsumer setColor(BufferBuilder builder, int argb) {
+        return setColor((VertexConsumer) builder, argb);
+    }
+
+    /** 1.21's {@code setWhiteAlpha(alpha)} */
+    public static VertexConsumer setWhiteAlpha(VertexConsumer consumer, int alpha) {
+        return setColor(consumer, 255, 255, 255, alpha);
+    }
+
+    /** 1.21's {@code setUv(u, v)} */
+    public static VertexConsumer setUv(VertexConsumer consumer, float u, float v) {
+        Vertex vertex = begun(consumer);
+        if (vertex == null) {
+            return consumer.uv(u, v);
+        }
+        vertex.u = u;
+        vertex.v = v;
+        vertex.uv = true;
+        return consumer;
+    }
+
+    public static VertexConsumer setUv(BufferBuilder builder, float u, float v) {
+        return setUv((VertexConsumer) builder, u, v);
+    }
+
+    /** 1.21's {@code setUv1(u, v)} (the overlay coordinates) */
+    public static VertexConsumer setUv1(VertexConsumer consumer, int u, int v) {
+        Vertex vertex = begun(consumer);
+        if (vertex == null) {
+            return consumer.overlayCoords(u, v);
+        }
+        vertex.u1 = u;
+        vertex.v1 = v;
+        vertex.uv1 = true;
+        return consumer;
+    }
+
+    public static VertexConsumer setUv1(BufferBuilder builder, int u, int v) {
+        return setUv1((VertexConsumer) builder, u, v);
+    }
+
+    /** 1.21's {@code setOverlay(packed)} */
+    public static VertexConsumer setOverlay(VertexConsumer consumer, int overlay) {
+        return setUv1(consumer, overlay & 0xFFFF, overlay >> 16 & 0xFFFF);
+    }
+
+    public static VertexConsumer setOverlay(BufferBuilder builder, int overlay) {
+        return setOverlay((VertexConsumer) builder, overlay);
+    }
+
+    /** 1.21's {@code setUv2(u, v)} (the light coordinates) */
+    public static VertexConsumer setUv2(VertexConsumer consumer, int u, int v) {
+        Vertex vertex = begun(consumer);
+        if (vertex == null) {
+            return consumer.uv2(u, v);
+        }
+        vertex.u2 = u;
+        vertex.v2 = v;
+        vertex.uv2 = true;
+        return consumer;
+    }
+
+    public static VertexConsumer setUv2(BufferBuilder builder, int u, int v) {
+        return setUv2((VertexConsumer) builder, u, v);
+    }
+
+    /** 1.21's {@code setLight(packed)} */
+    public static VertexConsumer setLight(VertexConsumer consumer, int light) {
+        return setUv2(consumer, light & 0xFFFF, light >> 16 & 0xFFFF);
+    }
+
+    public static VertexConsumer setLight(BufferBuilder builder, int light) {
+        return setLight((VertexConsumer) builder, light);
+    }
+
+    /** 1.21's {@code setNormal(x, y, z)} */
+    public static VertexConsumer setNormal(VertexConsumer consumer, float x, float y, float z) {
+        Vertex vertex = begun(consumer);
+        if (vertex == null) {
+            return consumer.normal(x, y, z);
+        }
+        vertex.nx = x;
+        vertex.ny = y;
+        vertex.nz = z;
+        vertex.normal = true;
+        return consumer;
+    }
+
+    public static VertexConsumer setNormal(BufferBuilder builder, float x, float y, float z) {
+        return setNormal((VertexConsumer) builder, x, y, z);
+    }
+
+    /**
+     * 1.21's {@code setNormal(pose, x, y, z)}: through the pose's normal matrix, normalized (1.21 normalizes where the
+     * pose's normals aren't trusted, after a non-uniform scale; a unit normal stays as it is)
+     */
+    public static VertexConsumer setNormal(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z) {
+        Vector3f n = pose.normal().transform(x, y, z, new Vector3f());
+        if (n.lengthSquared() > 0.0F) {
+            n.normalize();
+        }
+        return setNormal(consumer, n.x(), n.y(), n.z());
+    }
+}

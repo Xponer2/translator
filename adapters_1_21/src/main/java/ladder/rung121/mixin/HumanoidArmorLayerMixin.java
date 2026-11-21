@@ -7,11 +7,13 @@ package ladder.rung121.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import ladder.rung121.ArmorArgs;
 import ladder.rung121.client.ClientItemApi;
@@ -19,8 +21,10 @@ import ladder.rung121.client.ClientItemDefaults;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
@@ -54,16 +58,22 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
     }
 
     @Shadow
-    private void renderModel(PoseStack poseStack, MultiBufferSource buffers, int light, Model model, int color, ResourceLocation texture) {
-    }
-
-    @Shadow
     private void renderTrim(Holder<ArmorMaterial> material, PoseStack poseStack, MultiBufferSource buffers, int light, ArmorTrim trim, Model model,
             boolean inner) {
     }
 
     @Shadow
     private void renderGlint(PoseStack poseStack, MultiBufferSource buffers, int light, Model model) {
+    }
+
+    /**
+     * One layer of the piece in its tint: the model into the armour render type of the layer's texture (the layer's own
+     * private renderModel changes its colour parameters between versions; the public calls convert down the ladder)
+     */
+    @Unique
+    private static void ladder$renderLayer(PoseStack poseStack, MultiBufferSource buffers, int light, Model model, int color, ResourceLocation texture) {
+        VertexConsumer consumer = buffers.getBuffer(RenderType.armorCutoutNoCull(texture));
+        model.renderToBuffer(poseStack, consumer, light, OverlayTexture.NO_OVERLAY, color);
     }
 
     @Inject(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;FFFFFF)V",
@@ -105,7 +115,7 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
             int color = api.getArmorLayerTintColor(stack, entity, layer, index, fallback);
             if (color != 0) {
                 ResourceLocation texture = net.neoforged.neoforge.client.ClientHooks.getArmorTexture(entity, stack, layer, inner, slot);
-                this.renderModel(poseStack, buffers, light, model, color, texture);
+                ladder$renderLayer(poseStack, buffers, light, model, color, texture);
             }
         }
         ArmorTrim trim = stack.get(DataComponents.TRIM);

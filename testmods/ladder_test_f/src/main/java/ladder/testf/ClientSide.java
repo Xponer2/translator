@@ -21,17 +21,23 @@ import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.DimensionTransitionScreenManager;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterDimensionTransitionScreenEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
 /** The client half: a screen for the menu, a transition screen for the nether; the results written after a while in a world. */
 final class ClientSide {
     private static final DimensionTransitionScreenManager.ReceivingLevelScreenFactory NETHER_SCREEN = ReceivingLevelScreen::new;
+    /** client extensions registered through NeoForge 21's RegisterClientExtensionsEvent */
+    private static final IClientItemExtensions STICK_EXTENSIONS = new IClientItemExtensions() {
+    };
     private static int ticks;
     private static boolean written;
 
@@ -41,6 +47,7 @@ final class ClientSide {
     static void init(IEventBus modBus) {
         modBus.addListener(RegisterMenuScreensEvent.class, event -> event.register(LadderTestF.DATA_MENU.get(), DataScreen::new));
         modBus.addListener(RegisterDimensionTransitionScreenEvent.class, event -> event.registerIncomingEffect(Level.NETHER, NETHER_SCREEN));
+        modBus.addListener(RegisterClientExtensionsEvent.class, event -> event.registerItem(STICK_EXTENSIONS, Items.STICK));
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, event -> tick());
     }
 
@@ -53,6 +60,7 @@ final class ClientSide {
         Map<String, String> results = new TreeMap<>();
         results.put("menuClientData", LadderTestF.clientMenu);
         results.put("transitionNether", String.valueOf(DimensionTransitionScreenManager.getScreen(Level.NETHER, Level.OVERWORLD) == NETHER_SCREEN));
+        results.put("clientExtensions", String.valueOf(IClientItemExtensions.of(Items.STICK) == STICK_EXTENSIONS));
         results.put("transitionEnd", String.valueOf(DimensionTransitionScreenManager.getScreen(Level.END, Level.OVERWORLD) == NETHER_SCREEN));
         String out = System.getProperty("ladder.test.f.out");
         if (out != null) {

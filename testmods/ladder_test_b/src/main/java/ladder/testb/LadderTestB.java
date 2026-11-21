@@ -96,6 +96,18 @@ public final class LadderTestB {
             return super.onEntitySwing(stack, entity, hand);
         }
     });
+    /** 1.21's use duration with the user: longer for a zombie */
+    static final DeferredHolder<Item, Item> USE_STICK = ITEMS.register("use_stick", () -> new Item(new Item.Properties()) {
+        @Override
+        public int getUseDuration(ItemStack stack, net.minecraft.world.entity.LivingEntity entity) {
+            return entity instanceof Zombie ? 23 : 5;
+        }
+
+        @Override
+        public net.minecraft.world.item.UseAnim getUseAnimation(ItemStack stack) {
+            return net.minecraft.world.item.UseAnim.BOW;
+        }
+    });
     /** NeoForge 21.1's supportsEnchantment: a stick that takes sharpness, the rest as any item */
     static final DeferredHolder<Item, Item> SHARP_STICK = ITEMS.register("sharp_stick", () -> new Item(new Item.Properties()) {
         @Override
@@ -297,7 +309,22 @@ public final class LadderTestB {
         modBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->
                 event.put(BIG_ZOMBIE.get(), net.minecraft.world.entity.monster.Zombie.createAttributes().build()));
         NeoForge.EVENT_BUS.register(this);
+        // NeoForge 21's damage events: the incoming damage halved for a named zombie, the damage taken recorded
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) -> {
+            if ("halved".equals(event.getEntity().getName().getString())) {
+                incomingSeen = event.getAmount();
+                event.setAmount(event.getAmount() / 2);
+            }
+        });
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Pre event) -> {
+            if ("halved".equals(event.getEntity().getName().getString())) {
+                damageSeen = event.getNewDamage();
+            }
+        });
     }
+
+    static volatile float incomingSeen = -1;
+    static volatile float damageSeen = -1;
 
     static int chargeOf(net.minecraft.core.component.DataComponentHolder holder) {
         return holder.getOrDefault(CHARGE.get(), -1) + (holder.getComponents().has(CHARGE.get()) ? 100 : 0);
@@ -383,6 +410,27 @@ public final class LadderTestB {
         zombie.setItemSlot(EquipmentSlot.MAINHAND, rod.copy());
         zombie.tick();
         results.put("rodZombie", String.valueOf(zombie.getAttributeValue(Attributes.ATTACK_DAMAGE)));
+        // damage through NeoForge 21's events: 10 coming in, halved, taken
+        Zombie halved = EntityType.ZOMBIE.create(level);
+        halved.setPos(8.5, 141.0, 8.5);
+        halved.setCustomName(Component.literal("halved"));
+        float before = halved.getHealth();
+        halved.hurt(level.damageSources().generic(), 10.0F);
+        results.put("damageEvents", incomingSeen + "/" + damageSeen + "/" + (before - halved.getHealth()));
+        // the use duration the game asks with the user (startUsingItem), and the item's answer for the zombie
+        ItemStack use = new ItemStack(USE_STICK.get());
+        zombie.setItemSlot(EquipmentSlot.MAINHAND, use);
+        zombie.startUsingItem(net.minecraft.world.InteractionHand.MAIN_HAND);
+        results.put("useDuration", use.getUseDuration(zombie) + "/" + zombie.getUseItemRemainingTicks() + "/" + zombie.isUsingItem());
+        zombie.stopUsingItem();
+        // attribute modifiers named by a ResourceLocation (1.21)
+        net.minecraft.world.entity.ai.attributes.AttributeInstance speed = zombie.getAttribute(Attributes.MOVEMENT_SPEED);
+        ResourceLocation hurry = ResourceLocation.fromNamespaceAndPath("ladder_test_b", "hurry");
+        speed.addTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(hurry, 0.5,
+                net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+        net.minecraft.world.entity.ai.attributes.AttributeModifier got = speed.getModifier(hurry);
+        results.put("attributeIds", (got != null && got.id().equals(hurry)) + "/" + speed.hasModifier(hurry) + "/" + (got != null && got.is(hurry)) + "/"
+                + speed.removeModifier(hurry) + "/" + speed.hasModifier(hurry) + "/" + speed.removeModifier(hurry));
 
         blockComponents(results, level);
         try {

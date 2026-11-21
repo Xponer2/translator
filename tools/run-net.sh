@@ -15,7 +15,7 @@ if [ -n "$GUARD" ] && ! $GUARD; then
     exit 2
 fi
 LOG=$DIR/run-server-net.log
-./gradlew :$DIR:runServerNet --console=plain > "$LOG" 2>&1 &
+./gradlew :$DIR:runServerNet ${LADDER_GRADLE_ARGS:-} --console=plain > "$LOG" 2>&1 &
 start=$(date +%s)
 until grep -q -E 'Done \(' "$LOG" 2>/dev/null; do
     if grep -q -E 'BUILD FAILED|Mod Loading has failed|Crash report saved|FAILURE:' "$LOG" 2>/dev/null || [ $(( $(date +%s) - start )) -ge 300 ]; then

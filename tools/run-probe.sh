@@ -42,7 +42,7 @@ if [ "$RUN" = client ] && [ ! -f $DIR/run-client/options.txt ]; then
     mkdir -p $DIR/run-client
     printf 'onboardAccessibility:false\nsoundCategory_master:0.0\npauseOnLostFocus:false\nrenderDistance:4\nsimulationDistance:5\n' > $DIR/run-client/options.txt
 fi
-./gradlew ":$DIR:$TASK" "${EXTRA[@]}" --console=plain > "$LOG" 2>&1 &
+./gradlew ":$DIR:$TASK" "${EXTRA[@]}" ${LADDER_GRADLE_ARGS:-} --console=plain > "$LOG" 2>&1 &
 start=$(date +%s)
 # a stalled game (no new log lines, no result: stuck in a menu, a screen nobody answers, a hang) is stopped early
 STALL="${LADDER_STALL:-90}"

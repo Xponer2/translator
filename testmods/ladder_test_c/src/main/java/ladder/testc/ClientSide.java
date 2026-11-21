@@ -112,6 +112,11 @@ final class ClientSide {
             ShapeChecks.run(RESULTS);
         } else if (ticks == WRITE - 5) {
             GuiClient.record(RESULTS);
+            boolean seen = false;
+            for (net.minecraft.world.entity.Entity entity : Minecraft.getInstance().level.entitiesForRendering()) {
+                seen |= entity.getType() == SpawnProbe.TYPE.get();
+            }
+            RESULTS.put("spawnProbe", SpawnProbe.pairedWith + "/" + seen);
         } else if (ticks >= WRITE && !written && PackChecks.done()) {
             // (after the resource reload the pack check started has ended)
             written = true;

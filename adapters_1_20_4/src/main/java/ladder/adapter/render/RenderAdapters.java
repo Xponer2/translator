@@ -301,6 +301,26 @@ public final class RenderAdapters {
         }
     }
 
+    /** consumer class -> whether it is a converted mod's own (it declares 1.21's addVertex(float, float, float)) */
+    private static final ClassValue<Boolean> OWN = new ClassValue<>() {
+        @Override
+        protected Boolean computeValue(Class<?> type) {
+            for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+                try {
+                    c.getDeclaredMethod("addVertex", float.class, float.class, float.class);
+                    return true;
+                } catch (NoSuchMethodException e) {
+                    // not this class
+                }
+            }
+            return false;
+        }
+    };
+
+    private static boolean ownConsumer(VertexConsumer consumer) {
+        return !(consumer instanceof BufferBuilder) && OWN.get(consumer.getClass());
+    }
+
     /** the consumer's begun vertex; null when none (an attribute set outside 1.21's protocol goes straight through) */
     private static Vertex begun(VertexConsumer consumer) {
         return PENDING.get().get(consumer);
@@ -309,6 +329,10 @@ public final class RenderAdapters {
     /** 1.21's {@code addVertex(x, y, z)}: writes the vertex before, begins one */
     public static VertexConsumer addVertex(VertexConsumer consumer, float x, float y, float z) {
         endVertex(consumer);
+        if (ownConsumer(consumer)) {
+            // a converted mod's own consumer: 1.21's calls go to it as they are made (its lower methods are its own)
+            return consumer.vertex(x, y, z);
+        }
         Vertex vertex = new Vertex();
         vertex.x = x;
         vertex.y = y;

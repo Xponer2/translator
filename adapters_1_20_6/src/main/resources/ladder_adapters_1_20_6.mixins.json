@@ -1,0 +1,30 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "ladder.rung1206.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntityAccess",
+    "UseDurationMixin",
+    "StackUseDurationMixin",
+    "MobLeashableMixin",
+    "ServerEntityMixin",
+    "ServerEntityAccess",
+    "VecDeltaCodecAccess",
+    "UseDurationSites$Bow",
+    "UseDurationSites$Trident",
+    "UseDurationSites$Crossbow",
+    "UseDurationSites$Brush",
+    "UseDurationSites$GameMode",
+    "UseDurationSites$Witch"
+  ],
+  "client": [
+    "BufferBuilderMixin",
+    "ClientExtensionsMixin",
+    "UseDurationClientSites$HandRenderer",
+    "UseDurationClientSites$Properties"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

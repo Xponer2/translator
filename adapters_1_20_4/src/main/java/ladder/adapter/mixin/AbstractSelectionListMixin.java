@@ -20,6 +20,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderType;
 
 /**
+ * (getRight and getBottom are AbstractWidget's, not the target's own: called on the list, never shadowed.)
  * 1.20.4's list drawing with 1.20.5's hooks: where renderWidget draws the list's background (and later its shadows),
  * a converted mod list's own renderListBackground (renderListSeparators) draws instead; 1.20.4's part stays its own
  * otherwise, and is what the hooks' super calls draw.
@@ -28,12 +29,6 @@ import net.minecraft.client.renderer.RenderType;
 public abstract class AbstractSelectionListMixin implements ListRenderAccess {
     @Shadow
     private boolean renderBackground;
-
-    @Shadow
-    public abstract int getRight();
-
-    @Shadow
-    public abstract int getBottom();
 
     @Shadow
     public abstract double getScrollAmount();
@@ -65,7 +60,7 @@ public abstract class AbstractSelectionListMixin implements ListRenderAccess {
         }
         AbstractSelectionList<?> self = (AbstractSelectionList<?>) (Object) this;
         graphics.setColor(0.125F, 0.125F, 0.125F, 1.0F);
-        graphics.blit(Screen.BACKGROUND_LOCATION, self.getX(), self.getY(), (float) this.getRight(), (float) (this.getBottom() + (int) this.getScrollAmount()),
+        graphics.blit(Screen.BACKGROUND_LOCATION, self.getX(), self.getY(), (float) self.getRight(), (float) (self.getBottom() + (int) this.getScrollAmount()),
                 self.getWidth(), self.getHeight(), 32, 32);
         graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
@@ -76,7 +71,7 @@ public abstract class AbstractSelectionListMixin implements ListRenderAccess {
             return;
         }
         AbstractSelectionList<?> self = (AbstractSelectionList<?>) (Object) this;
-        graphics.fillGradient(RenderType.guiOverlay(), self.getX(), self.getY(), this.getRight(), self.getY() + 4, 0xFF000000, 0, 0);
-        graphics.fillGradient(RenderType.guiOverlay(), self.getX(), this.getBottom() - 4, this.getRight(), this.getBottom(), 0, 0xFF000000, 0);
+        graphics.fillGradient(RenderType.guiOverlay(), self.getX(), self.getY(), self.getRight(), self.getY() + 4, 0xFF000000, 0, 0);
+        graphics.fillGradient(RenderType.guiOverlay(), self.getX(), self.getBottom() - 4, self.getRight(), self.getBottom(), 0, 0xFF000000, 0);
     }
 }

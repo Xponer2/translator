@@ -25,14 +25,29 @@
     "HorseArmourMixin",
     "PackOverlaysMixin",
     "DiggerItemMixin",
-    "SwingMixin"
+    "SwingMixin",
+    "UseDurationMixin",
+    "StackUseDurationMixin",
+    "MobLeashableMixin",
+    "ServerEntityMixin",
+    "ServerEntityAccess",
+    "VecDeltaCodecAccess",
+    "UseDurationSites$Bow",
+    "UseDurationSites$Trident",
+    "UseDurationSites$Crossbow",
+    "UseDurationSites$Brush",
+    "UseDurationSites$GameMode",
+    "UseDurationSites$Witch"
   ],
   "client": [
     "AbstractSelectionListMixin",
     "BufferBuilderMixin",
     "ArmourLayerMixin",
     "HumanoidArmorLayerMixin",
-    "ShapeTargetsMixin"
+    "ShapeTargetsMixin",
+    "ClientExtensionsMixin",
+    "UseDurationClientSites$HandRenderer",
+    "UseDurationClientSites$Properties"
   ],
   "injectors": {
     "defaultRequire": 1

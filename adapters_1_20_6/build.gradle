@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// The hand-written adapters of the rung 1.21 -> 1.20.6: 1.21's newer API on 1.20.6 (NeoForge 20.6). Compiled against
+// the real 1.20.6; a conversion further down converts this jar like any 1.20.6 mod (its rung's own package,
+// ladder.rung1206, never clashes with another rung's adapters).
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base { archivesName = 'ladder-adapters-1.20.6' }
+version = '0.1.0'
+neoForge {
+    version = '20.6.144'
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+// the code carried to 1.20.6 (made by LADDER_TO=1.20.6 tools/ladder.sh convert: ladder-carried-1.20.6.jar): the recipe inputs
+def carried = rootProject.file(findProperty('ladder.carried1206') ?: 'out/converted-1.20.6/ladder-carried-1.20.6.jar')
+dependencies {
+    compileOnly files(carried)
+}

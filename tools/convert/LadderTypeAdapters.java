@@ -22,12 +22,12 @@ import org.sinytra.adapter.types.TypeAdapterProvider;
  * value's type, {@code to} the type needed.
  */
 final class LadderTypeAdapters implements TypeAdapterProvider {
-    static final String CONVERSIONS = "ladder/adapter/bridge/Conversions";
+    static final String CONVERSIONS = Convert.CONVERSIONS;
     static final String HOLDER = "net/minecraft/core/Holder", REFERENCE = "net/minecraft/core/Holder$Reference";
     static final String OPTIONAL = "java/util/Optional", CODEC = "com/mojang/serialization/Codec", MAP_CODEC = "com/mojang/serialization/MapCodec";
     static final String PROVIDER = "net/minecraft/core/HolderLookup$Provider", REGISTRY_ACCESS = "net/minecraft/core/RegistryAccess";
     static final String RESOURCE_KEY = "net/minecraft/resources/ResourceKey", RESOURCE_LOCATION = "net/minecraft/resources/ResourceLocation";
-    static final String DELTA_TRACKER = "ladder/adapter/provided/DeltaTracker";
+    static final String DELTA_TRACKER = Convert.ADAPTERS + "provided/DeltaTracker";
 
     @Override
     public TypeAdapter provide(Type from, Type to) {

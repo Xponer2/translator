@@ -42,6 +42,19 @@ public class Convert {
      * down carries that rung's own and converts the upper rung's carried jar like any mod). -Dladder.to names the target.
      */
     static final String CARRIED = carriedPrefix(System.getProperty("ladder.to", "1.20.4"));
+    /**
+     * The package of the target rung's adapters: the classes the converter's own bridges and generated code call
+     * (Conversions, RecipeInputs, Packs, ModEntries, DeltaTracker...) are the target rung's, at the same places under it.
+     */
+    static final String ADAPTERS = adaptersPrefix(System.getProperty("ladder.to", "1.20.4"));
+
+    static String adaptersPrefix(String target) {
+        return switch (target) {
+            case "1.21" -> "ladder/rung121/";
+            case "1.20.6" -> "ladder/rung1206/";
+            default -> "ladder/adapter/";
+        };
+    }
 
     static String carriedPrefix(String target) {
         return target.equals("1.20.4") ? "ladder/carried/" : "ladder/carried_" + target.replace('.', '_') + "/";
@@ -797,7 +810,8 @@ public class Convert {
         // FML 4's entry points FML 2 can't take (@Mod(dist), several @Mod classes, no @Mod class): one generated each
         Map<String, byte[]> generatedEntries = new LinkedHashMap<>();
         Set<String> stripMod = new HashSet<>();
-        if (newMetadata) {
+        if (newMetadata && !"1.21".equals(System.getProperty("ladder.to", "1.20.4"))) {
+            // (a 1.21 target is FML 4 itself: its entry points stay the mod's own)
             modEntries(new String(entries.get("META-INF/neoforge.mods.toml"), StandardCharsets.UTF_8), entries, generatedEntries, stripMod);
         }
         // the embedded jars the loader loads: the ones jarjar's metadata names (anywhere), and those in its folder
@@ -829,6 +843,7 @@ public class Convert {
                     boolean datagen = datagenOnly(node.name);
                     Set<String> before = datagen ? new HashSet<>(problems) : null;
                     Map<String, String> landsAbove = null;
+                    List<Boolean> shadowsAbove = null;
                     if (mixinTargets.containsKey(node.name)) {
                         MixinPoints.modClasses = mod::containsKey;
                         landsAbove = MixinPoints.check(node, mixinTargets.get(node.name), Convert::topClass);
@@ -841,11 +856,16 @@ public class Convert {
                     checkReflection(node);
                     subscriberBus(node);
                     List<MethodNode> lowerOverrides = overrideBridges(node);
+                    List<LambdaFix> lambdaFixes = lambdaBridges(node);
                     applyRules(node, true);
                     redirectCarried(node);
+                    if (landsAbove != null) {
+                        shadowsAbove = shadowsAbove(node, mixinTargets.get(node.name));
+                    }
                     ClassNode remapped = new ClassNode();
                     node.accept(new ClassRemapper(remapped, remapper));
                     fixInterfaceCalls(remapped);
+                    applyLambdaFixes(remapped, lambdaFixes);
                     applyHandlerFixes(node.name, remapped);
                     lowerOverrides.addAll(addAfterRemap.getOrDefault(node.name, List.of()));
                     addAfterRemap.remove(node.name);
@@ -861,6 +881,9 @@ public class Convert {
                             remapped = checked;
                             writeFlags = ClassWriter.COMPUTE_MAXS;
                         }
+                    }
+                    if (landsAbove != null) {
+                        checkShadows(remapped, shadowsAbove);
                     }
                     ClassWriter writer = new ClassWriter(writeFlags);
                     remapped.accept(writer);
@@ -1036,7 +1059,7 @@ public class Convert {
         mv.visitVarInsn(Opcodes.ALOAD, 1);
         mv.visitVarInsn(Opcodes.ALOAD, 2);
         mv.visitVarInsn(Opcodes.ALOAD, 3);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "ladder/adapter/fml/ModEntries", "construct",
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, ADAPTERS + "fml/ModEntries", "construct",
                 "(Ljava/lang/Class;Ljava/lang/String;Lnet/neoforged/bus/api/IEventBus;Lnet/neoforged/fml/ModContainer;Lnet/neoforged/api/distmarker/Dist;)V", false);
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(0, 0);
@@ -1074,6 +1097,30 @@ public class Convert {
     static final Map<String, String> provided = new HashMap<>();
     /** O rows: {owner, name, desc, interface, defaults class, defaults method} */
     static final List<String[]> overrides = new ArrayList<>();
+    /** whether the bottom game's class, its supers or interfaces have a concrete (or default) method of that name and descriptor */
+    static boolean concreteBelow(String cls, String name, String desc, Set<String> seen) {
+        ClassNode c = cls == null || !seen.add(cls) ? null : bottomClass(cls);
+        if (c == null) {
+            return false;
+        }
+        for (MethodNode m : c.methods) {
+            if (m.name.equals(name) && m.desc.equals(desc) && (m.access & Opcodes.ACC_ABSTRACT) == 0) {
+                return true;
+            }
+        }
+        if (concreteBelow(c.superName, name, desc, seen)) {
+            return true;
+        }
+        for (String i : c.interfaces) {
+            if (concreteBelow(i, name, desc, seen)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** S rows: owner, name, descriptor of a lower abstract method the upper type hasn't (a mod's class gets it empty) */
+    static final List<String[]> lowerStubs = new ArrayList<>();
     /** X: "owner.name desc" -> {adapter class, adapter method} */
     static final Map<String, String[]> redirects = new HashMap<>();
     /** K rows: "owner.<init> upperDesc" -> {lower desc, adapter class, the lower parameters (an upper one $i, or an adapter method)} */
@@ -1236,6 +1283,7 @@ public class Convert {
                     // (an optional 8th column: the lower method, "name desc", that 1.20.4 has abstract where the newer
                     // one is: a concrete mod class right under it gets an empty one, the O row's hook doing the work)
                     case "O" -> overrides.add(new String[] {c[1], c[2], c[3], c[4], c[5], c[6], c.length > 7 ? c[7] : null});
+                    case "S" -> lowerStubs.add(new String[] {c[1], c[2], c[3]});
                     case "X" -> redirects.put(c[1] + "." + c[2] + " " + c[3], new String[] {c[4], c[5]});
                     // a constructor that takes more below: each lower parameter is an upper one or an adapter's value
                     case "K" -> constructorArguments.put(c[1] + ".<init> " + c[2], new String[] {c[3], c[4], c[5]});
@@ -1315,7 +1363,7 @@ public class Convert {
             try (InputStream in = zip.getInputStream(e)) {
                 tsv = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             }
-            ZipEntry mixin = zip.getEntry("ladder/adapter/mixin/ShapeTargetsMixin.class");
+            ZipEntry mixin = zip.getEntry(ADAPTERS + "mixin/ShapeTargetsMixin.class");
             if (mixin != null) {
                 try (InputStream in = zip.getInputStream(mixin)) {
                     ClassNode node = new ClassNode();
@@ -1517,6 +1565,32 @@ public class Convert {
                         stub.maxLocals = Type.getArgumentsAndReturnSizes(lower[1]) >> 2;
                         node.methods.add(stub);
                     }
+                }
+            }
+        }
+        if (modClass && !mixinTargets.containsKey(node.name) && (node.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) == 0) {
+            // a concrete mod class under a game type whose lower version has abstract methods the upper hasn't (an S row):
+            // an empty one each (VertexConsumer's endVertex: 1.21 ends a vertex by the next)
+            List<String> platform = starts(node.name);
+            for (String[] stub : lowerStubs) {
+                boolean under = platform.stream().anyMatch(p -> subtypeOf(here, p, stub[0], new HashSet<>()));
+                boolean inherited = platform.stream().anyMatch(p -> concreteBelow(remapper.map(p), stub[1], stub[2], new HashSet<>()));
+                if (under && !inherited && node.methods.stream().noneMatch(m -> m.name.equals(stub[1]) && m.desc.equals(stub[2]))) {
+                    MethodNode empty = new MethodNode(Opcodes.ACC_PUBLIC, stub[1], stub[2], null, null);
+                    Type ret = Type.getReturnType(stub[2]);
+                    if (ret.getSort() == Type.VOID) {
+                        empty.instructions.add(new InsnNode(Opcodes.RETURN));
+                    } else if (ret.getSort() == Type.OBJECT && ret.getInternalName().equals(stub[0])) {
+                        // a builder's method: itself
+                        empty.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        empty.instructions.add(new InsnNode(Opcodes.ARETURN));
+                    } else {
+                        problem("S row " + stub[0] + "." + stub[1] + stub[2] + ": only void or self-returning methods get an empty one");
+                        continue;
+                    }
+                    empty.maxLocals = Type.getArgumentsAndReturnSizes(stub[2]) >> 2;
+                    empty.maxStack = 1;
+                    addAfterRemap.computeIfAbsent(node.name, k -> new ArrayList<>()).add(empty);
                 }
             }
         }
@@ -1804,7 +1878,13 @@ public class Convert {
                         // a class renamed below (an R row): its members are the renamed class's, never carried
                         return renamedMember(cur);
                     }
-                    Stage0.Ref moved = i + 2 == versions.size() ? movedMember(i, cur) : null;
+                    Stage0.Ref renamedTypes = renamedInDescriptor(cur);
+                    if (renamedTypes != null) {
+                        // a member whose descriptor names a class an R row renames: the bottom's member of the renamed
+                        // types (the remapper renames them in the reference)
+                        return renamedTypes;
+                    }
+                    Stage0.Ref moved = movedMember(i, cur);
                     if (moved != null) {
                         // an M row: the same hook below under another name and descriptor, bridged to it
                         String[] bridge = bridgeFor(i, cur, moved);
@@ -1881,6 +1961,23 @@ public class Convert {
             return null;
         }
         return new Stage0.Ref(cur.kind(), cls, cur.name(), cur.desc());
+    }
+
+    /**
+     * A member whose descriptor names classes R rows rename (NeoForge's ItemAbility, ToolAction below): itself, when the
+     * bottom version has it with those classes renamed; else null.
+     */
+    static Stage0.Ref renamedInDescriptor(Stage0.Ref cur) {
+        boolean method = cur.kind() == 'M';
+        if (cur.desc() == null || NEOFORGE_MOVES.isEmpty() || method != cur.desc().startsWith("(") || !method && cur.kind() != 'F') {
+            return null;
+        }
+        String desc = method ? remapper.mapMethodDesc(cur.desc()) : remapper.mapDesc(cur.desc());
+        if (desc.equals(cur.desc())) {
+            return null;
+        }
+        String owner = NEOFORGE_MOVES.getOrDefault(cur.cls(), cur.cls());
+        return versions.get(versions.size() - 1).declaring(owner, cur.name(), desc, method) == null ? null : cur;
     }
 
     /** Carried code lives in its own package: what it calls below must be public (or it fails with IllegalAccessError). */
@@ -2604,7 +2701,7 @@ public class Convert {
 
     /** walk key -> {bridge class, bridge method}: a changed member's calls go there */
     static final Map<String, String[]> callRedirect = new HashMap<>();
-    static final String CONVERSIONS = "ladder/adapter/bridge/Conversions";
+    static final String CONVERSIONS = ADAPTERS + "bridge/Conversions";
     static final String HOLDER = "net/minecraft/core/Holder";
     static final String REFERENCE = "net/minecraft/core/Holder$Reference";
 
@@ -2622,6 +2719,10 @@ public class Convert {
     static int conversion(Type upper, Type lower) {
         if (upper.equals(lower)) {
             return 0;
+        }
+        if (upper.getSort() == Type.FLOAT && lower.getSort() == Type.DOUBLE) {
+            // 1.21's float where the lower member takes a double (a vertex's position)
+            return 12;
         }
         if (upper.getSort() == Type.OBJECT && DELTA_TRACKERS.contains(upper.getInternalName()) && lower.getSort() == Type.FLOAT) {
             // 1.21's DeltaTracker where 1.20.4 passes the partial tick
@@ -2665,10 +2766,10 @@ public class Convert {
         return -1;
     }
 
-    static final String PACKS = "ladder/adapter/pack/Packs";
+    static final String PACKS = ADAPTERS + "pack/Packs";
     static final String PACK_LOCATION = "net/minecraft/server/packs/PackLocationInfo";
     static final Set<String> PACK_LOCATIONS = Set.of(PACK_LOCATION, CARRIED + PACK_LOCATION);
-    static final String RECIPE_INPUT_CONVERSIONS = "ladder/adapter/recipe/RecipeInputs";
+    static final String RECIPE_INPUT_CONVERSIONS = ADAPTERS + "recipe/RecipeInputs";
     static final String CONTAINER = "net/minecraft/world/Container";
     static final Set<String> RECIPE_CONTAINERS = Set.of(CONTAINER, "net/minecraft/world/inventory/CraftingContainer");
     /** 1.21's recipe input types, in the top's and the carried names */
@@ -2683,7 +2784,7 @@ public class Convert {
         RECIPE_INPUTS = Set.copyOf(inputs);
     }
 
-    static final Set<String> DELTA_TRACKERS = Set.of("net/minecraft/client/DeltaTracker", "ladder/adapter/provided/DeltaTracker");
+    static final Set<String> DELTA_TRACKERS = Set.of("net/minecraft/client/DeltaTracker", ADAPTERS + "provided/DeltaTracker");
     static final String RESOURCE_KEY = "net/minecraft/resources/ResourceKey";
     static final String RESOURCE_LOCATION = "net/minecraft/resources/ResourceLocation";
 
@@ -2889,6 +2990,7 @@ public class Convert {
                 code.add(new InsnNode(Opcodes.ICONST_1));
                 code.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, upper.getInternalName(), "getGameTimeDeltaPartialTick", "(Z)F", true));
             }
+            case 12 -> code.add(new InsnNode(Opcodes.F2D));
             default -> {
             }
         }
@@ -3579,6 +3681,148 @@ public class Convert {
         return made;
     }
 
+    /** A lambda of a mod method (its ordinal among the method's lambdas) whose interface method changed below. */
+    record LambdaFix(String method, int ordinal, String upperSam, Handle impl, Stage0.Ref end) {
+    }
+
+    static boolean lambdaFactory(AbstractInsnNode insn) {
+        return insn instanceof InvokeDynamicInsnNode indy && indy.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory")
+                && indy.bsmArgs.length >= 3 && indy.bsmArgs[0] instanceof Type && indy.bsmArgs[1] instanceof Handle;
+    }
+
+    /**
+     * Lambdas and method references implementing a game interface whose method changed below (an M row's hook, or its
+     * parameters' types): the game calls the lower method, so the lambda is made for it, through a static bridge of the
+     * class that converts the values up and calls the implementation (applyLambdaFixes, after the remap). When the
+     * values don't convert it is a problem: the lambda would never run.
+     */
+    static List<LambdaFix> lambdaBridges(ClassNode node) {
+        List<LambdaFix> fixes = new ArrayList<>();
+        for (MethodNode m : node.methods) {
+            int ordinal = 0;
+            for (AbstractInsnNode insn : m.instructions) {
+                if (!lambdaFactory(insn)) {
+                    continue;
+                }
+                InvokeDynamicInsnNode indy = (InvokeDynamicInsnNode) insn;
+                int here = ordinal++;
+                String face = Type.getReturnType(indy.desc).getInternalName();
+                if (!Stage0.platform(face)) {
+                    continue;
+                }
+                String sam = ((Type) indy.bsmArgs[0]).getDescriptor();
+                Stage0.Ref ref = resolve(face, indy.name, sam, true);
+                if (ref == null) {
+                    continue;
+                }
+                walk(ref);
+                String[] bridge = callRedirect.get(level + " " + ref.key());
+                Stage0.Ref end = bridge == null ? null : bridgeEnds.get(bridge[0] + "." + bridge[1]);
+                if (end == null) {
+                    continue;
+                }
+                Type[] up = Type.getArgumentTypes(remapper.mapMethodDesc(sam)), low = Type.getArgumentTypes(end.desc());
+                if (paramMap(up, low) == null || !convertible(Type.getReturnType(remapper.mapMethodDesc(sam)), Type.getReturnType(end.desc()))) {
+                    problem("a lambda of " + ref.key() + ", whose parameters changed below: no bridge for it (it would never be called)");
+                    continue;
+                }
+                fixes.add(new LambdaFix(remapper.mapMethodName(node.name, m.name, m.desc) + remapper.mapMethodDesc(m.desc), here, sam,
+                        (Handle) indy.bsmArgs[1], end));
+            }
+        }
+        return fixes;
+    }
+
+    /** The lambdas lambdaBridges found, made for the lower interface method through their bridges (in the remapped class). */
+    static void applyLambdaFixes(ClassNode node, List<LambdaFix> fixes) {
+        int n = 0;
+        boolean itf = (node.access & Opcodes.ACC_INTERFACE) != 0;
+        for (LambdaFix fix : fixes) {
+            for (MethodNode m : node.methods) {
+                if (!(m.name + m.desc).equals(fix.method())) {
+                    continue;
+                }
+                int ordinal = 0;
+                for (AbstractInsnNode insn : m.instructions) {
+                    if (!lambdaFactory(insn) || ordinal++ != fix.ordinal()) {
+                        continue;
+                    }
+                    InvokeDynamicInsnNode indy = (InvokeDynamicInsnNode) insn;
+                    MethodNode bridge = lambdaBridge("ladder$lambda$" + n++, fix, Type.getArgumentTypes(indy.desc), (Handle) indy.bsmArgs[1],
+                            (Type) indy.bsmArgs[2]);
+                    node.methods.add(bridge);
+                    Type lower = Type.getMethodType(fix.end().desc());
+                    indy.bsmArgs[0] = lower;
+                    indy.bsmArgs[1] = new Handle(Opcodes.H_INVOKESTATIC, node.name, bridge.name, bridge.desc, itf);
+                    indy.bsmArgs[2] = lower;
+                    break;
+                }
+                break;
+            }
+        }
+    }
+
+    /** A lambda's bridge: (captured values, the lower method's parameters) -> the implementation, its values converted. */
+    static MethodNode lambdaBridge(String name, LambdaFix fix, Type[] captured, Handle h, Type instantiated) {
+        // (the remapped call site's implementation: the rules may have moved it to an adapter or a bridge; its
+        // instantiated types, more specific than the erased interface method's, are what the implementation takes)
+        String upSam = remapper.mapMethodDesc(fix.upperSam());
+        Type[] erased = Type.getArgumentTypes(upSam), low = Type.getArgumentTypes(fix.end().desc());
+        Type[] up = instantiated.getArgumentTypes().length == erased.length ? instantiated.getArgumentTypes() : erased;
+        Type upRet = Type.getReturnType(upSam), lowRet = Type.getReturnType(fix.end().desc());
+        int[] map = paramMap(erased, low);
+        Type[] params = new Type[captured.length + low.length];
+        System.arraycopy(captured, 0, params, 0, captured.length);
+        System.arraycopy(low, 0, params, captured.length, low.length);
+        MethodNode g = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, name, Type.getMethodDescriptor(lowRet, params), null, null);
+        InsnList code = g.instructions;
+        String owner = h.getOwner(), implName = h.getName(), implDesc = h.getDesc();
+        if (h.getTag() == Opcodes.H_NEWINVOKESPECIAL) {
+            code.add(new TypeInsnNode(Opcodes.NEW, owner));
+            code.add(new InsnNode(Opcodes.DUP));
+        }
+        int slot = 0;
+        for (Type c : captured) {
+            code.add(new VarInsnNode(c.getOpcode(Opcodes.ILOAD), slot));
+            slot += c.getSize();
+        }
+        int[] slots = new int[low.length];
+        for (int a = 0; a < low.length; a++) {
+            slots[a] = slot;
+            slot += low[a].getSize();
+        }
+        for (int a = 0; a < up.length; a++) {
+            if (map[a] >= 0) {
+                code.add(new VarInsnNode(low[map[a]].getOpcode(Opcodes.ILOAD), slots[map[a]]));
+                convertUp(code, low[map[a]], up[a]);
+                if (up[a].getSort() == Type.OBJECT && !up[a].equals(low[map[a]]) && conversion(up[a], low[map[a]]) <= 0) {
+                    // the instantiated type, more specific than the erased one the value has
+                    code.add(new TypeInsnNode(Opcodes.CHECKCAST, up[a].getInternalName()));
+                }
+            } else if (map[a] <= -2) {
+                packColor(code, slots, -map[a] - 2);
+            } else {
+                supplyContext(code, up[a]);
+            }
+        }
+        switch (h.getTag()) {
+            case Opcodes.H_INVOKESTATIC -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, implName, implDesc, h.isInterface()));
+            case Opcodes.H_INVOKEINTERFACE -> code.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, owner, implName, implDesc, true));
+            case Opcodes.H_INVOKESPECIAL, Opcodes.H_NEWINVOKESPECIAL -> code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, owner, implName, implDesc, h.isInterface()));
+            default -> code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, owner, implName, implDesc, h.isInterface()));
+        }
+        Type implRet = h.getTag() == Opcodes.H_NEWINVOKESPECIAL ? Type.getObjectType(owner) : Type.getReturnType(implDesc);
+        if (implRet.getSort() != Type.VOID && upRet.getSort() == Type.VOID) {
+            code.add(new InsnNode(implRet.getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
+        } else {
+            convertDown(code, upRet, lowRet);
+        }
+        code.add(new InsnNode(lowRet.getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 6 + 2 * up.length;
+        return g;
+    }
+
     /** The lower method of an override bridge, in the bottom version's names; null when the values don't convert. */
     static MethodNode overrideBridge(ClassNode node, MethodNode m, Stage0.Ref end, boolean itf) {
         String ownName = remapper.mapMethodName(node.name, m.name, m.desc), ownDesc = remapper.mapMethodDesc(m.desc);
@@ -3835,6 +4079,7 @@ public class Convert {
             case 6 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "keyOfValue", "(Ljava/lang/Object;)L" + RESOURCE_KEY + ";", false));
             case 7 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "lootTableKey", "(L" + RESOURCE_LOCATION + ";)L" + RESOURCE_KEY + ";", false));
             case 9 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "deltaTracker", "(F)" + upper.getDescriptor(), false));
+            case 12 -> code.add(new InsnNode(Opcodes.D2F));
             case 11 -> {
                 code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PACKS, "location", "(Ljava/lang/String;)Ljava/lang/Object;", false));
                 code.add(new TypeInsnNode(Opcodes.CHECKCAST, CARRIED + PACK_LOCATION));
@@ -3865,6 +4110,10 @@ public class Convert {
             public String map(String internal) {
                 if (internal.startsWith(CARRIED) || !Stage0.platform(internal) || here.classes.containsKey(internal)) {
                     return internal;
+                }
+                if (provided.containsKey(internal)) {
+                    // a class the adapters provide (a P row): its name below is theirs, never carried
+                    return provided.get(internal);
                 }
                 for (int i = level - 1; i >= 0; i--) {
                     if (versions.get(i).classes.containsKey(internal)) {
@@ -4045,7 +4294,8 @@ public class Convert {
         java.util.jar.Manifest manifest = new java.util.jar.Manifest();
         manifest.getMainAttributes().put(java.util.jar.Attributes.Name.MANIFEST_VERSION, "1.0");
         manifest.getMainAttributes().putValue("FMLModType", "GAMELIBRARY");
-        manifest.getMainAttributes().putValue("Automatic-Module-Name", "ladder.carried");
+        // each rung's carried library is a module of its own (a pack holds several: rung 1's goes down with its mods)
+        manifest.getMainAttributes().putValue("Automatic-Module-Name", CARRIED.substring(0, CARRIED.length() - 1).replace('/', '.'));
         try (java.util.jar.JarOutputStream zip = new java.util.jar.JarOutputStream(Files.newOutputStream(jar), manifest)) {
             for (ClassNode node : carriedOut.values()) {
                 ClassWriter writer = new ClassWriter(0);
@@ -4140,6 +4390,92 @@ public class Convert {
     }
 
     /**
+     * A mixin's {@code @Shadow} members must be in its target classes below (declared there): Mixin refuses to apply a
+     * mixin whose shadow it can't find. Only the shadows of members the upper game has count (a mixin for another
+     * loader or version shadows names neither has). A shadow named with the prefix (shadow$ by default) is the member
+     * without it; one with aliases is left to Mixin.
+     */
+    record Shadowed(boolean method, String name, String desc, String member) {
+    }
+
+    static List<Shadowed> shadows(ClassNode mixin) {
+        List<Shadowed> out = new ArrayList<>();
+        for (MethodNode m : mixin.methods) {
+            AnnotationNode shadow = shadowOf(MixinPoints.annotations(m));
+            if (shadow != null && MixinPoints.value(shadow, "aliases") == null) {
+                Object prefix = MixinPoints.value(shadow, "prefix");
+                String p = prefix instanceof String ps ? ps : "shadow$";
+                out.add(new Shadowed(true, m.name.startsWith(p) ? m.name.substring(p.length()) : m.name, m.desc, m.name));
+            }
+        }
+        for (FieldNode f : mixin.fields) {
+            List<AnnotationNode> list = new ArrayList<>();
+            if (f.visibleAnnotations != null) {
+                list.addAll(f.visibleAnnotations);
+            }
+            if (f.invisibleAnnotations != null) {
+                list.addAll(f.invisibleAnnotations);
+            }
+            AnnotationNode shadow = shadowOf(list);
+            if (shadow != null && MixinPoints.value(shadow, "aliases") == null) {
+                out.add(new Shadowed(false, f.name, f.desc, f.name));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * For each shadow of the (unconverted) mixin, in order: whether the upper game's targets have it. The converted mixin
+     * keeps its members in the same order (no names are converted here: a walk would report the shadow's member).
+     */
+    static List<Boolean> shadowsAbove(ClassNode mixin, List<String> targets) {
+        List<Boolean> out = new ArrayList<>();
+        for (Shadowed s : shadows(mixin)) {
+            out.add(targets.stream().anyMatch(t -> hasMember(Convert::topClass, t, s.method(), s.name(), s.desc())));
+        }
+        return out;
+    }
+
+    static void checkShadows(ClassNode mixin, List<Boolean> above) {
+        List<String> targets = mixinTargetsOf(mixin);
+        List<Shadowed> shadows = shadows(mixin);
+        if (above == null || above.size() != shadows.size()) {
+            // the converted mixin's shadows aren't the unconverted one's (a row removed one): not checked here
+            return;
+        }
+        for (int i = 0; i < shadows.size(); i++) {
+            Shadowed s = shadows.get(i);
+            if (!above.get(i)) {
+                continue;
+            }
+            for (String t : targets) {
+                if (bottomClass(t) != null && !hasMember(Convert::bottomClass, t, s.method(), s.name(), s.desc())) {
+                    report("mixin shadow missing below: " + s.name() + (s.method() ? "" : " ") + s.desc() + " in " + t + " (" + mixin.name + "." + s.member() + ")");
+                }
+            }
+        }
+    }
+
+    static AnnotationNode shadowOf(List<AnnotationNode> annotations) {
+        for (AnnotationNode a : annotations) {
+            if (a.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    /** whether the class of that game declares the member itself (Mixin finds a shadow in the target class only) */
+    static boolean hasMember(java.util.function.Function<String, ClassNode> game, String cls, boolean method, String name, String desc) {
+        ClassNode c = game.apply(cls);
+        if (c == null) {
+            return false;
+        }
+        return method ? c.methods.stream().anyMatch(x -> x.name.equals(name) && x.desc.equals(desc))
+                : c.fields.stream().anyMatch(x -> x.name.equals(name) && x.desc.equals(desc));
+    }
+
+    /**
      * A mixin's injectors must land below where they land above: the converted mixin is checked against the bottom
      * game's method bodies; when a point moved, Sinytra Adapter's patches (MixinRepair) adapt the mixin and it is
      * checked again. Each injector that lands above and still not below is a problem. Returns the class to write (the
@@ -4156,6 +4492,14 @@ public class Convert {
                 moved.add(handler);
             }
         });
+        if (!moved.isEmpty() && MixinPoints.retargetLambdas(converted, mixinTargetsOf(converted), Convert::bottomClass, moved)) {
+            // an injector into a lambda numbered otherwise below: moved to that lambda, checked again
+            below.putAll(MixinPoints.check(converted, mixinTargetsOf(converted), Convert::bottomClass));
+            moved.removeIf(h -> {
+                String lower = below.containsKey(h) ? h : "ladder$wrap$" + h;
+                return below.containsKey(lower) && below.get(lower) == null;
+            });
+        }
         ClassNode result = converted;
         String repairError = null;
         if (!moved.isEmpty() && !"false".equals(System.getProperty("ladder.mixinRepair"))) {
@@ -4924,7 +5268,7 @@ public class Convert {
         String jar = System.getProperty("ladder.adapters");
         if (jar != null) {
             try (ZipFile zip = new ZipFile(jar)) {
-                ZipEntry e = zip.getEntry("ladder/adapter/component/DataComponents.class");
+                ZipEntry e = zip.getEntry(ADAPTERS + "component/DataComponents.class");
                 if (e != null) {
                     try (InputStream in = zip.getInputStream(e)) {
                         ClassNode node = new ClassNode();

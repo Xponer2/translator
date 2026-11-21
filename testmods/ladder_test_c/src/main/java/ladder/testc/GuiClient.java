@@ -25,6 +25,9 @@ import net.neoforged.neoforge.common.NeoForge;
 /** HUD layers of 1.20.5 (a layer of the mod's own above the hotbar, the game's layers' render events) and a config screen. */
 final class GuiClient {
     static final ResourceLocation PROBE = ResourceLocation.fromNamespaceAndPath(LadderTestC.MODID, "probe");
+    /** an extra (standalone) model of the mod's own, registered and looked up by NeoForge 21's model location */
+    static final net.minecraft.client.resources.model.ModelResourceLocation EXTRA = net.minecraft.client.resources.model.ModelResourceLocation
+            .standalone(ResourceLocation.fromNamespaceAndPath(LadderTestC.MODID, "extra/standalone"));
     static final Set<String> SEEN = new TreeSet<>();
     static int probeFrames;
 
@@ -37,6 +40,9 @@ final class GuiClient {
     }
 
     static void register(IEventBus modBus) {
+        modBus.addListener((net.neoforged.neoforge.client.event.ModelEvent.RegisterAdditional event) -> event.register(EXTRA));
+        modBus.addListener((net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) -> event.registerEntityRenderer(SpawnProbe.TYPE.get(),
+                net.minecraft.client.renderer.entity.NoopRenderer::new));
         modBus.addListener((RegisterGuiLayersEvent event) -> event.registerAbove(VanillaGuiLayers.HOTBAR, PROBE, (graphics, delta) -> probeFrames++));
         NeoForge.EVENT_BUS.addListener((RenderGuiLayerEvent.Pre event) -> SEEN.add(event.getName().toString()));
         ModList.get().getModContainerById(LadderTestC.MODID).ifPresent(container -> container.registerConfig(ModConfig.Type.CLIENT, SPEC));
@@ -44,6 +50,8 @@ final class GuiClient {
 
     static void record(Map<String, String> results) {
         results.put("guiProbeDrawn", String.valueOf(probeFrames > 0));
+        net.minecraft.client.resources.model.ModelManager models = Minecraft.getInstance().getModelManager();
+        results.put("standaloneModel", (models.getModel(EXTRA) != models.getMissingModel()) + "/" + EXTRA.id() + "/" + EXTRA.variant());
         for (String name : new String[] {"minecraft:hotbar", "minecraft:crosshair", "minecraft:chat", "minecraft:food_level", "minecraft:player_health",
                 "minecraft:experience_bar", LadderTestC.MODID + ":probe"}) {
             results.put("guiLayer " + name, String.valueOf(SEEN.contains(name)));

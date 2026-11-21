@@ -153,6 +153,17 @@ public final class ClientVertexTest {
                 results.put("modelPart " + Integer.toHexString(color), modelData.drawState().vertexCount() + " " + hex(modelData.vertexBuffer()).substring(0, 96));
                 modelData.close();
             }
+            // a consumer of the mod's own (1.21's methods): the game's putBulkData writes a block's quads into it
+            CountingConsumer counting = new CountingConsumer();
+            net.minecraft.world.level.block.state.BlockState stoneState = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+            net.minecraft.client.resources.model.BakedModel stone = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(stoneState);
+            for (net.minecraft.core.Direction side : net.minecraft.core.Direction.values()) {
+                for (net.minecraft.client.renderer.block.model.BakedQuad quad : stone.getQuads(stoneState, side, net.minecraft.util.RandomSource.create(0))) {
+                    counting.sprite = quad.getSprite();
+                    counting.putBulkData(new PoseStack().last(), quad, 1.0F, 0.5F, 0.25F, 1.0F, 0xF000F0, 0);
+                }
+            }
+            results.put("ownConsumer", counting.toString());
             // nothing written: build() gives null
             builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
             MeshData empty = builder.build();
