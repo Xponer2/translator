@@ -351,4 +351,31 @@ public final class MiscAdapters {
             }
         });
     }
+
+    /** 1.20.5's {@code NbtUtils.readBlockPos(tag, key)}: an int array [x, y, z] (1.20.5's) or 1.20.4's compound {X, Y, Z} */
+    public static java.util.Optional<net.minecraft.core.BlockPos> readBlockPos(net.minecraft.nbt.CompoundTag tag, String key) {
+        if (tag.contains(key, net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
+            int[] a = tag.getIntArray(key);
+            return a.length == 3 ? java.util.Optional.of(new net.minecraft.core.BlockPos(a[0], a[1], a[2])) : java.util.Optional.empty();
+        }
+        if (tag.contains(key, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            return java.util.Optional.of(net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound(key)));
+        }
+        return java.util.Optional.empty();
+    }
+
+    /** 1.20.5's {@code spawnEgg.getType(stack)}: the type of the stack's entity data, else the egg's */
+    public static net.minecraft.world.entity.EntityType<?> getType(net.minecraft.world.item.SpawnEggItem egg, ItemStack stack) {
+        return egg.getType(stack.getTag());
+    }
+
+    /** 1.20.5's {@code ARGB32.color(alpha, rgb)} */
+    public static int color(int alpha, int rgb) {
+        return alpha << 24 | rgb & 0xFFFFFF;
+    }
+
+    /** 1.20.5's {@code container.getMaxStackSize(stack)}: the container's limit and the stack's */
+    public static int getMaxStackSize(net.minecraft.world.Container container, ItemStack stack) {
+        return Math.min(container.getMaxStackSize(), stack.getMaxStackSize());
+    }
 }

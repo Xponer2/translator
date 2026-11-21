@@ -579,3 +579,18 @@ X	net/neoforged/neoforge/attachment/AttachmentType$Builder	sync	(Lnet/minecraft/
 X	net/neoforged/neoforge/attachment/AttachmentType$Builder	sync	(Ljava/util/function/BiPredicate;Lnet/minecraft/network/codec/StreamCodec;)Lnet/neoforged/neoforge/attachment/AttachmentType$Builder;	ladder/adapter/attachment/AttachmentSync	sync
 X	net/neoforged/neoforge/attachment/IAttachmentHolder	syncData	(Lnet/neoforged/neoforge/attachment/AttachmentType;)V	ladder/adapter/attachment/AttachmentSync	syncData
 X	net/neoforged/neoforge/attachment/IAttachmentHolder	syncData	(Ljava/util/function/Supplier;)V	ladder/adapter/attachment/AttachmentSync	syncData
+# 1.20.5's model view matrix stack (1.20.4's is a pose stack; ModelViewStack keeps them the same)
+X	com/mojang/blaze3d/systems/RenderSystem	getModelViewStack	()Lorg/joml/Matrix4fStack;	ladder/adapter/render/ModelViewStack	get
+# 1.20.5's particle types: made without a deserializer (the adapters' reads with the type's codecs), a stream codec of
+# their own (an O row), options without the old writer (the game's three writers use the stream codec; nothing calls writeToString)
+K	net/minecraft/core/particles/ParticleType	(Z)V	(ZLnet/minecraft/core/particles/ParticleOptions$Deserializer;)V	ladder/adapter/particle/Particles	$0,deserializer
+O	net/minecraft/core/particles/ParticleType	streamCodec	()Lnet/minecraft/network/codec/StreamCodec;	ladder/adapter/particle/ParticleStreamApi	ladder/adapter/particle/ParticleStreamApi	streamCodec
+S	net/minecraft/core/particles/ParticleOptions	writeToNetwork	(Lnet/minecraft/network/FriendlyByteBuf;)V
+# 1.20.5's colour particle options (provided)
+P	net/minecraft/core/particles/ColorParticleOption	ladder/adapter/provided/ColorParticleOption
+# small 1.20.5/1.21 members by their 1.20.4 counterparts
+A	net/minecraft/client/renderer/entity/EntityRenderer	renderNameTag	(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/network/chat/Component;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IF)V	(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/network/chat/Component;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V	$0 $1 $2 $3 $4 ladder/adapter/render/RenderArgs.partialTick()
+X	net/minecraft/nbt/NbtUtils	readBlockPos	(Lnet/minecraft/nbt/CompoundTag;Ljava/lang/String;)Ljava/util/Optional;	ladder/adapter/misc/MiscAdapters	readBlockPos
+X	net/minecraft/world/item/SpawnEggItem	getType	(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/EntityType;	ladder/adapter/misc/MiscAdapters	getType
+X	net/minecraft/util/FastColor$ARGB32	color	(II)I	ladder/adapter/misc/MiscAdapters	color
+X	net/minecraft/world/Container	getMaxStackSize	(Lnet/minecraft/world/item/ItemStack;)I	ladder/adapter/misc/MiscAdapters	getMaxStackSize

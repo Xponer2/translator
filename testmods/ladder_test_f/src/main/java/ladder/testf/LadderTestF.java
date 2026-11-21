@@ -45,6 +45,8 @@ public final class LadderTestF {
     /** the pig the server marks (its id on the server) */
     static volatile int pigId = -1;
     private static Pig pig;
+    /** a player has started tracking the pig (it got the first sync): its value changes on the next server tick */
+    private static volatile boolean pigTracked;
     static final DeferredHolder<MenuType<?>, MenuType<DataMenu>> DATA_MENU = MENUS.register("data",
             () -> IMenuTypeExtension.create((id, inventory, buffer) -> new DataMenu(id, buffer.readVarInt(), buffer.readUtf())));
 
@@ -62,12 +64,18 @@ public final class LadderTestF {
                 ticks = 0;
             }
         });
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.StartTracking.class, event -> {
+            if (pig != null && event.getTarget() == pig) {
+                pigTracked = true;
+            }
+        });
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post.class, event -> {
             if (joined != null && ticks == 0) {
                 // synced attachments: the player's own (synced on a change), a pig's set before the client sees it (the
                 // first sync), a marker's (an entity no client tracks: nothing may reach the client)
                 joined.setData(MARK, 7);
                 joined.syncData(MARK);
+                pigTracked = false;
                 pig = EntityType.PIG.create(joined.serverLevel());
                 pig.moveTo(joined.getX() + 2, joined.getY(), joined.getZ());
                 pig.setNoAi(true);
@@ -80,8 +88,9 @@ public final class LadderTestF {
                 marker.setData(MARK, 5);
                 marker.syncData(MARK);
             }
-            if (pig != null && joined == null && ++ticks == 40) {
-                // a change after the first sync
+            if (pig != null && pigTracked) {
+                // a change after the first sync (as soon as a player tracks the pig, not after a count of ticks: a
+                // lagging server would send it later than the client writes its results)
                 pig.setData(MARK, 12);
                 pig.syncData(MARK);
                 pig = null;

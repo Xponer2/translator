@@ -701,6 +701,67 @@ public final class DataComponents {
                 }
             });
 
+    /** 1.21's container_loot: a container item's BlockEntityTag.LootTable and LootTableSeed (1.20.4's, as the block entity saves them) */
+    public static final DataComponentType<ladder.carried.net.minecraft.world.item.component.SeededContainerLoot> CONTAINER_LOOT = new Game<>("container_loot",
+            ladder.carried.net.minecraft.world.item.component.SeededContainerLoot.CODEC, new DataComponentType.Vanilla<>() {
+                @Override
+                public ladder.carried.net.minecraft.world.item.component.SeededContainerLoot get(ItemStack stack) {
+                    CompoundTag block = stack.getTagElement("BlockEntityTag");
+                    ResourceLocation id = block == null || !block.contains("LootTable", 8) ? null : ResourceLocation.tryParse(block.getString("LootTable"));
+                    return id == null ? null : new ladder.carried.net.minecraft.world.item.component.SeededContainerLoot(
+                            net.minecraft.resources.ResourceKey.create(ladder.adapter.loot.ReloadableServerRegistries.LOOT_TABLE, id), block.getLong("LootTableSeed"));
+                }
+
+                @Override
+                public ladder.carried.net.minecraft.world.item.component.SeededContainerLoot prototype(ItemStack stack) {
+                    return null;
+                }
+
+                @Override
+                public void set(ItemStack stack, ladder.carried.net.minecraft.world.item.component.SeededContainerLoot value) {
+                    if (value == null) {
+                        CompoundTag block = stack.getTagElement("BlockEntityTag");
+                        if (block != null) {
+                            block.remove("LootTable");
+                            block.remove("LootTableSeed");
+                            if (block.isEmpty()) {
+                                stack.removeTagKey("BlockEntityTag");
+                            }
+                        }
+                        dropEmptyTag(stack);
+                        return;
+                    }
+                    CompoundTag block = stack.getOrCreateTagElement("BlockEntityTag");
+                    block.putString("LootTable", value.lootTable().location().toString());
+                    if (value.seed() != 0L) {
+                        block.putLong("LootTableSeed", value.seed());
+                    } else {
+                        block.remove("LootTableSeed");
+                    }
+                }
+            });
+
+    /** 1.21's fire_resistant: 1.20.4 keeps it on the item (Properties.fireResistant()) */
+    public static final DataComponentType<net.minecraft.util.Unit> FIRE_RESISTANT = new Game<>("fire_resistant", Codec.unit(net.minecraft.util.Unit.INSTANCE),
+            new DataComponentType.Vanilla<>() {
+                @Override
+                public net.minecraft.util.Unit get(ItemStack stack) {
+                    return this.prototype(stack);
+                }
+
+                @Override
+                public net.minecraft.util.Unit prototype(ItemStack stack) {
+                    return stack.getItem().isFireResistant() ? net.minecraft.util.Unit.INSTANCE : null;
+                }
+
+                @Override
+                public void set(ItemStack stack, net.minecraft.util.Unit value) {
+                    if ((value != null) != stack.getItem().isFireResistant()) {
+                        throw new IllegalStateException("1.20.4 keeps fire_resistant on the item, not on the stack: can't set it on " + stack);
+                    }
+                }
+            });
+
     /** 1.21's note_block_sound: a player head's BlockEntityTag.note_block_sound */
     public static final DataComponentType<ResourceLocation> NOTE_BLOCK_SOUND = new Game<>("note_block_sound", ResourceLocation.CODEC,
             new BlockComponents.BlockEntityKey<>("note_block_sound", stack -> stack.is(Items.PLAYER_HEAD) || stack.getItem() instanceof net.minecraft.world.item.BlockItem item
@@ -741,7 +802,7 @@ public final class DataComponents {
                 }
             });
 
-    public static final List<DataComponentType<?>> ALL = List.of(NOTE_BLOCK_SOUND, BASE_COLOR, INSTRUMENT, BUCKET_ENTITY_DATA, CHARGED_PROJECTILES, WRITABLE_BOOK_CONTENT, MAP_ID, SUSPICIOUS_STEW_EFFECTS, TRIM, PROFILE, FIREWORKS, ENCHANTMENT_GLINT_OVERRIDE, FIREWORK_EXPLOSION, BEES, CONTAINER, BLOCK_ENTITY_DATA, ENTITY_DATA, BLOCK_STATE, BUNDLE_CONTENTS, UNBREAKABLE,
+    public static final List<DataComponentType<?>> ALL = List.of(CONTAINER_LOOT, FIRE_RESISTANT, NOTE_BLOCK_SOUND, BASE_COLOR, INSTRUMENT, BUCKET_ENTITY_DATA, CHARGED_PROJECTILES, WRITABLE_BOOK_CONTENT, MAP_ID, SUSPICIOUS_STEW_EFFECTS, TRIM, PROFILE, FIREWORKS, ENCHANTMENT_GLINT_OVERRIDE, FIREWORK_EXPLOSION, BEES, CONTAINER, BLOCK_ENTITY_DATA, ENTITY_DATA, BLOCK_STATE, BUNDLE_CONTENTS, UNBREAKABLE,
             REPAIR_COST, HIDE_ADDITIONAL_TOOLTIP, RARITY, CUSTOM_DATA, CUSTOM_NAME, ITEM_NAME, DAMAGE, MAX_DAMAGE, MAX_STACK_SIZE,
             DYED_COLOR, ENCHANTMENTS, STORED_ENCHANTMENTS, POTION_CONTENTS, LORE, CUSTOM_MODEL_DATA, FOOD, ATTRIBUTE_MODIFIERS);
 

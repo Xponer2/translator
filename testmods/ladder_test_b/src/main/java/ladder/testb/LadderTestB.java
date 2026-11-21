@@ -1060,6 +1060,18 @@ public final class LadderTestB {
                 results.put("fit.error", e.toString());
             }
             try {
+                // a chest's loot table (container_loot) kept over a save; fire resistance as the items have it
+                ItemStack lootChest = new ItemStack(Items.CHEST);
+                lootChest.set(DataComponents.CONTAINER_LOOT, new net.minecraft.world.item.component.SeededContainerLoot(
+                        net.minecraft.world.level.storage.loot.BuiltInLootTables.SIMPLE_DUNGEON, 5L));
+                net.minecraft.world.item.component.SeededContainerLoot lootBack = savedBack(level, lootChest).get(DataComponents.CONTAINER_LOOT);
+                results.put("containerLoot", lootBack == null ? "none" : lootBack.lootTable().location() + "/" + lootBack.seed());
+                results.put("fireResistant", new ItemStack(Items.NETHERITE_SWORD).has(DataComponents.FIRE_RESISTANT) + "/"
+                        + new ItemStack(Items.IRON_SWORD).has(DataComponents.FIRE_RESISTANT));
+            } catch (RuntimeException | LinkageError e) {
+                results.put("containerLoot", "error " + e);
+            }
+            try {
                 moreComponents(results, level);
             } catch (RuntimeException | LinkageError e) {
                 results.put("more.error", e + (e.getCause() == null ? "" : " / " + e.getCause()));

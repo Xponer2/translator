@@ -55,6 +55,15 @@ final class ClientSide {
     private ClientSide() {
     }
 
+    /** the spark the server sent (its colour as the client's options have it) */
+    static void sparks(net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent event) {
+        event.registerSpecial(Sparks.SPARK.get(), (options, level, x, y, z, dx, dy, dz) -> {
+            RESULTS.put("spark", String.format(java.util.Locale.ROOT, "%.3f %.3f %.3f %.3f", options.getRed(), options.getGreen(), options.getBlue(),
+                    options.getAlpha()));
+            return null;
+        });
+    }
+
     static void init() {
         NeoForge.EVENT_BUS.addListener(ClientSide::tick);
         if (Boolean.getBoolean("ladder.test.c.drive")) {

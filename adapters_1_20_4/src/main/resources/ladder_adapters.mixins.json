@@ -47,7 +47,10 @@
     "BundleSlotFitMixin",
     "BundleAddFitMixin",
     "ShulkerWrapperFitMixin",
-    "CarriedBundleFitMixin"
+    "CarriedBundleFitMixin",
+    "ParticlePacketMixin",
+    "ExplosionParticleMixin",
+    "EntityParticleDataMixin"
   ],
   "client": [
     "TransitionScreenMixin",
@@ -59,7 +62,8 @@
     "ClientExtensionsMixin",
     "UseDurationClientSites$HandRenderer",
     "UseDurationClientSites$Properties",
-    "ParticleEngineMixin"
+    "ParticleEngineMixin",
+    "ModelViewApplyMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -51,9 +51,19 @@ final class ClientSide {
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, event -> tick());
     }
 
+    /** the most client ticks the results wait for the synced attachments (a lagging server sets the pig's later) */
+    private static final int WAIT_FOR_SYNC = 400;
+
     private static void tick() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || written || ++ticks < 80) {
+            return;
+        }
+        // the server changes the pig's attachment after its own 40 ticks: wait for both synced values (or the timeout)
+        net.minecraft.world.entity.Entity syncedPig = minecraft.level.getEntity(LadderTestF.pigId);
+        boolean synced = minecraft.player != null && Integer.valueOf(7).equals(minecraft.player.getData(LadderTestF.MARK))
+                && syncedPig != null && Integer.valueOf(12).equals(syncedPig.getData(LadderTestF.MARK));
+        if (!synced && ticks < WAIT_FOR_SYNC) {
             return;
         }
         written = true;

@@ -23,4 +23,9 @@ public final class RenderArgs {
     public static Matrix4f frustum(PoseStack poseStack) {
         return poseStack.last().pose();
     }
+
+    /** the frame's partial tick (1.21's render methods take it, 1.20.4's of the same name don't) */
+    public static float partialTick() {
+        return net.minecraft.client.Minecraft.getInstance().getPartialTick();
+    }
 }
