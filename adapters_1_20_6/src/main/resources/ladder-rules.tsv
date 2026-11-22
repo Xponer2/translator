@@ -211,7 +211,6 @@ X	net/minecraft/world/entity/ai/attributes/AttributeMap	removeAttributeModifiers
 X	net/minecraft/world/entity/ai/attributes/AttributeMap	addTransientAttributeModifiers	(Lcom/google/common/collect/Multimap;)V	ladder/rung1206/misc/MiscAdapters	addTransientAttributeModifiers
 X	net/minecraft/client/Options	getMenuBackgroundBlurriness	()I	ladder/rung1206/client/ClientMiscAdapters	getMenuBackgroundBlurriness
 # 1.21's enchantment effects and tags: the curses (1.20.6: enchantment classes; the tags come with the adapters' data)
-P	net/minecraft/world/item/enchantment/EnchantmentEffectComponents	ladder/rung1206/provided/EnchantmentEffectComponents
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	has	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType;)Z	ladder/rung1206/misc/EnchantmentEffects	has
 F	net/minecraft/tags/EnchantmentTags	CURSE	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/EnchantmentEffects	curse
 F	net/minecraft/tags/EnchantmentTags	TREASURE	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/EnchantmentEffects	treasure
@@ -473,3 +472,14 @@ X	net/minecraft/client/renderer/Sheets	createDecoratedPotMaterial	(Lnet/minecraf
 F	net/minecraft/client/renderer/Sheets	DECORATED_POT_BASE	Lnet/minecraft/client/resources/model/Material;	ladder/rung1206/client/ModelAdapters	decoratedPotBase
 F	net/minecraft/client/renderer/Sheets	DECORATED_POT_SIDE	Lnet/minecraft/client/resources/model/Material;	ladder/rung1206/client/ModelAdapters	decoratedPotSide
 X	net/minecraft/world/item/DyeColor	getTextureDiffuseColor	()I	ladder/rung1206/misc/SmallAdapters	textureDiffuseColor
+# 1.21's enchantment effect component types (carried; registered into their registry by the adapters)
+B	net/minecraft/world/item/enchantment/EnchantmentEffectComponents
+# 1.21's enchantment loot parameters and sets; a component map codec of other types
+F	net/minecraft/world/level/storage/loot/parameters/LootContextParams	ENCHANTMENT_LEVEL	Lnet/minecraft/world/level/storage/loot/parameters/LootContextParam;	ladder/rung1206/enchantment/EnchantLoot	enchantmentLevel
+F	net/minecraft/world/level/storage/loot/parameters/LootContextParams	ENCHANTMENT_ACTIVE	Lnet/minecraft/world/level/storage/loot/parameters/LootContextParam;	ladder/rung1206/enchantment/EnchantLoot	enchantmentActive
+F	net/minecraft/world/level/storage/loot/parameters/LootContextParamSets	ENCHANTED_DAMAGE	Lnet/minecraft/world/level/storage/loot/parameters/LootContextParamSet;	ladder/rung1206/enchantment/EnchantLoot	enchantedDamage
+F	net/minecraft/world/level/storage/loot/parameters/LootContextParamSets	ENCHANTED_ITEM	Lnet/minecraft/world/level/storage/loot/parameters/LootContextParamSet;	ladder/rung1206/enchantment/EnchantLoot	enchantedItem
+F	net/minecraft/world/level/storage/loot/parameters/LootContextParamSets	ENCHANTED_LOCATION	Lnet/minecraft/world/level/storage/loot/parameters/LootContextParamSet;	ladder/rung1206/enchantment/EnchantLoot	enchantedLocation
+F	net/minecraft/world/level/storage/loot/parameters/LootContextParamSets	ENCHANTED_ENTITY	Lnet/minecraft/world/level/storage/loot/parameters/LootContextParamSet;	ladder/rung1206/enchantment/EnchantLoot	enchantedEntity
+F	net/minecraft/world/level/storage/loot/parameters/LootContextParamSets	HIT_BLOCK	Lnet/minecraft/world/level/storage/loot/parameters/LootContextParamSet;	ladder/rung1206/enchantment/EnchantLoot	hitBlock
+X	net/minecraft/core/component/DataComponentMap	makeCodec	(Lcom/mojang/serialization/Codec;)Lcom/mojang/serialization/Codec;	ladder/rung1206/enchantment/EnchantLoot	makeCodec

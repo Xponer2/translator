@@ -30,11 +30,24 @@ public final class EnchantmentEffects {
 
     /** 1.21's {@code EnchantmentHelper.has(stack, effect)}: binding keeps armour on, vanishing drops nothing */
     public static boolean has(ItemStack stack, net.minecraft.core.component.DataComponentType<?> effect) {
-        if (effect == ladder.rung1206.provided.EnchantmentEffectComponents.PREVENT_ARMOR_CHANGE) {
-            return EnchantmentHelper.hasBindingCurse(stack);
+        // the effect types are 1.21's own (carried, in the adapters' registry): by their ids
+        net.minecraft.resources.ResourceLocation id = ladder.rung1206.enchantment.EnchantRegistries.enchantmentEffectComponentType() == null ? null
+                : ladder.rung1206.enchantment.EnchantRegistries.enchantmentEffectComponentType().getKey(effect);
+        if (id == null) {
+            return false;
         }
-        if (effect == ladder.rung1206.provided.EnchantmentEffectComponents.PREVENT_EQUIPMENT_DROP) {
-            return EnchantmentHelper.hasVanishingCurse(stack);
+        if (id.getPath().equals("prevent_armor_change") && EnchantmentHelper.hasBindingCurse(stack)) {
+            return true;
+        }
+        if (id.getPath().equals("prevent_equipment_drop") && EnchantmentHelper.hasVanishingCurse(stack)) {
+            return true;
+        }
+        // a mod's data enchantment with that effect
+        for (var entry : stack.getEnchantments().entrySet()) {
+            com.google.gson.JsonObject effects = ladder.rung1206.enchantment.DataEnchantments.EFFECTS.get(entry.getKey().value());
+            if (effects != null && (effects.has(id.toString()) || id.getNamespace().equals("minecraft") && effects.has(id.getPath()))) {
+                return true;
+            }
         }
         return false;
     }

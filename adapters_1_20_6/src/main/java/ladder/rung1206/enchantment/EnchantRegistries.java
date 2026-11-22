@@ -49,7 +49,8 @@ public final class EnchantRegistries {
             ENCHANTMENT_ENTITY_EFFECT_TYPE_KEY, "net.minecraft.world.item.enchantment.effects.EnchantmentEntityEffect",
             ENCHANTMENT_LOCATION_BASED_EFFECT_TYPE_KEY, "net.minecraft.world.item.enchantment.effects.EnchantmentLocationBasedEffect",
             ENCHANTMENT_VALUE_EFFECT_TYPE_KEY, "net.minecraft.world.item.enchantment.effects.EnchantmentValueEffect",
-            ENCHANTMENT_PROVIDER_TYPE_KEY, "net.minecraft.world.item.enchantment.providers.EnchantmentProviderTypes");
+            ENCHANTMENT_PROVIDER_TYPE_KEY, "net.minecraft.world.item.enchantment.providers.EnchantmentProviderTypes",
+            ENCHANTMENT_EFFECT_COMPONENT_TYPE_KEY, "net.minecraft.world.item.enchantment.EnchantmentEffectComponents");
 
     private static void bootstrap(net.neoforged.neoforge.registries.RegisterEvent event) {
         String upper = BOOTSTRAPS.get(event.getRegistryKey());
