@@ -1060,6 +1060,16 @@ public final class LadderTestB {
                 results.put("fit.error", e.toString());
             }
             try {
+                // an enchantment of the mod's data (1.21: a data registry; below: made from the file)
+                Holder<Enchantment> keen = level.registryAccess().registryOrThrow(Registries.ENCHANTMENT)
+                        .getHolderOrThrow(net.minecraft.resources.ResourceKey.create(Registries.ENCHANTMENT,
+                                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_b", "keen")));
+                results.put("dataEnchant", keen.value().getMaxLevel() + "/" + keen.value().canEnchant(new ItemStack(Items.IRON_SWORD)) + "/"
+                        + keen.value().canEnchant(new ItemStack(Items.STICK)) + "/" + Enchantment.areCompatible(keen, sharpness));
+            } catch (RuntimeException | LinkageError e) {
+                results.put("dataEnchant", "error " + e);
+            }
+            try {
                 // the entity tick events around a tick (the second Pre cancelled: no tick, no Post)
                 net.minecraft.world.entity.decoration.ArmorStand stand = new net.minecraft.world.entity.decoration.ArmorStand(level, 0.5, 70, 0.5);
                 int[] seen = new int[2];

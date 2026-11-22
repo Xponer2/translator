@@ -605,3 +605,5 @@ X	net/minecraft/world/entity/player/Player	entityInteractionRange	()D	ladder/ada
 P	net/neoforged/neoforge/event/tick/EntityTickEvent	ladder/adapter/provided/event/EntityTickEvent
 P	net/neoforged/neoforge/event/tick/EntityTickEvent$Pre	ladder/adapter/provided/event/EntityTickEvent$Pre
 P	net/neoforged/neoforge/event/tick/EntityTickEvent$Post	ladder/adapter/provided/event/EntityTickEvent$Post
+# the mods' enchantments as data (registered from their jars by the adapters: DataEnchantments)
+G	enchantment

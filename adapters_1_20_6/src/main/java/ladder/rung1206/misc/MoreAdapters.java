@@ -113,11 +113,6 @@ public final class MoreAdapters {
         return LootItemConditions.DIRECT_CODEC;
     }
 
-    /** {@code ModelBakery.MISSING_MODEL_VARIANT}: 20.6's missing model location */
-    public static net.minecraft.client.resources.model.ModelResourceLocation missingModelVariant() {
-        return net.minecraft.client.resources.model.ModelBakery.MISSING_MODEL_LOCATION;
-    }
-
     // NeoForge 21's LivingShieldBlockEvent is 20.6's ShieldBlockEvent (an R row): blocked = not cancelled
 
     public static boolean getBlocked(net.neoforged.neoforge.event.entity.living.ShieldBlockEvent event) {

@@ -18,6 +18,7 @@ public final class LadderAdapters {
         ladder.adapter.event.DamageEvents.register();
         ladder.adapter.component.ComponentRegistry.register(modBus);
         ladder.adapter.armour.ArmourAdapters.register(modBus);
+        ladder.adapter.enchantment.DataEnchantments.register(modBus);
         ladder.adapter.loot.SetComponentsFunction.register(modBus);
         ladder.adapter.component.ItemAttributes.register();
         ladder.adapter.network.PayloadBridge.register(modBus);

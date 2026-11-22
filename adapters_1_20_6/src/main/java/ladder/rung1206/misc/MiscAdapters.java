@@ -67,17 +67,6 @@ public final class MiscAdapters {
         return stack.transmuteCopy(item, stack.getCount());
     }
 
-    /** 1.21's {@code ConfirmLinkScreen.confirmLinkNow(screen, url, trusted)}: 1.20.6's own takes every link as trusted */
-    public static void confirmLinkNow(net.minecraft.client.gui.screens.Screen screen, String url, boolean trusted) {
-        net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-        minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmLinkScreen(open -> {
-            if (open) {
-                net.minecraft.Util.getPlatform().openUri(url);
-            }
-            minecraft.setScreen(screen);
-        }, url, trusted));
-    }
-
     /** NeoForge 21's {@code BlockToolModificationEvent.getItemAbility()}: the ability, a ToolAction below */
     public static net.neoforged.neoforge.common.ToolAction getItemAbility(net.neoforged.neoforge.event.level.BlockEvent.BlockToolModificationEvent event) {
         return event.getToolAction();
@@ -195,10 +184,5 @@ public final class MiscAdapters {
                 instance.addTransientModifier(modifier);
             }
         });
-    }
-
-    /** 1.21's {@code Options.getMenuBackgroundBlurriness()}: 0-10 (1.20.6 keeps 0-1) */
-    public static int getMenuBackgroundBlurriness(net.minecraft.client.Options options) {
-        return (int) Math.round(options.getMenuBackgroundBlurriness() * 10.0);
     }
 }

@@ -104,7 +104,7 @@ X	net/minecraft/world/item/DyeColor	getTextureDiffuseColor	()I	ladder/rung1206/m
 X	net/minecraft/world/item/ItemStack	hurtAndBreak	(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Consumer;)V	ladder/rung1206/misc/MiscAdapters	hurtAndBreak
 X	net/minecraft/world/item/ItemStack	hurtAndBreak	(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;Ljava/util/function/Consumer;)V	ladder/rung1206/misc/MiscAdapters	hurtAndBreak
 X	net/minecraft/world/item/ItemStack	transmuteCopy	(Lnet/minecraft/world/level/ItemLike;)Lnet/minecraft/world/item/ItemStack;	ladder/rung1206/misc/MiscAdapters	transmuteCopy
-X	net/minecraft/client/gui/screens/ConfirmLinkScreen	confirmLinkNow	(Lnet/minecraft/client/gui/screens/Screen;Ljava/lang/String;Z)V	ladder/rung1206/misc/MiscAdapters	confirmLinkNow
+X	net/minecraft/client/gui/screens/ConfirmLinkScreen	confirmLinkNow	(Lnet/minecraft/client/gui/screens/Screen;Ljava/lang/String;Z)V	ladder/rung1206/client/ClientMiscAdapters	confirmLinkNow
 # 1.21's attribute modifier ids (a ResourceLocation; 1.20.6: a UUID and a name)
 X	net/minecraft/world/entity/ai/attributes/AttributeModifier	<init>	(Lnet/minecraft/resources/ResourceLocation;DLnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;)V	ladder/rung1206/misc/AttributeIds	create
 X	net/minecraft/world/entity/ai/attributes/AttributeModifier	id	()Lnet/minecraft/resources/ResourceLocation;	ladder/rung1206/misc/AttributeIds	id
@@ -209,7 +209,7 @@ X	net/minecraft/world/level/border/WorldBorder	clampToBounds	(Lnet/minecraft/cor
 X	net/neoforged/neoforge/common/ModConfigSpec$Builder	gameRestart	()Lnet/neoforged/neoforge/common/ModConfigSpec$Builder;	ladder/rung1206/misc/MiscAdapters	gameRestart
 X	net/minecraft/world/entity/ai/attributes/AttributeMap	removeAttributeModifiers	(Lcom/google/common/collect/Multimap;)V	ladder/rung1206/misc/MiscAdapters	removeAttributeModifiers
 X	net/minecraft/world/entity/ai/attributes/AttributeMap	addTransientAttributeModifiers	(Lcom/google/common/collect/Multimap;)V	ladder/rung1206/misc/MiscAdapters	addTransientAttributeModifiers
-X	net/minecraft/client/Options	getMenuBackgroundBlurriness	()I	ladder/rung1206/misc/MiscAdapters	getMenuBackgroundBlurriness
+X	net/minecraft/client/Options	getMenuBackgroundBlurriness	()I	ladder/rung1206/client/ClientMiscAdapters	getMenuBackgroundBlurriness
 # 1.21's enchantment effects and tags: the curses (1.20.6: enchantment classes; the tags come with the adapters' data)
 P	net/minecraft/world/item/enchantment/EnchantmentEffectComponents	ladder/rung1206/provided/EnchantmentEffectComponents
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	has	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType;)Z	ladder/rung1206/misc/EnchantmentEffects	has
@@ -380,7 +380,7 @@ X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	getOriginalB
 X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	setBlocked	(Z)V	ladder/rung1206/misc/MoreAdapters	setBlocked
 X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	shieldDamage	()F	ladder/rung1206/misc/MoreAdapters	shieldDamage
 X	net/neoforged/neoforge/event/entity/living/LivingShieldBlockEvent	setShieldDamage	(F)V	ladder/rung1206/misc/MoreAdapters	setShieldDamage
-F	net/minecraft/client/resources/model/ModelBakery	MISSING_MODEL_VARIANT	Lnet/minecraft/client/resources/model/ModelResourceLocation;	ladder/rung1206/misc/MoreAdapters	missingModelVariant
+F	net/minecraft/client/resources/model/ModelBakery	MISSING_MODEL_VARIANT	Lnet/minecraft/client/resources/model/ModelResourceLocation;	ladder/rung1206/client/ClientMiscAdapters	missingModelVariant
 # a handler of 1.21's changeDimension(transition) on 1.20.6's changeDimension(level[, teleporter]): the transition to that level
 A	net/minecraft/world/entity/Entity	changeDimension	(Lnet/minecraft/world/level/portal/DimensionTransition;)Lnet/minecraft/world/entity/Entity;	(Lnet/minecraft/server/level/ServerLevel;)Lnet/minecraft/world/entity/Entity;	ladder/rung1206/portal/PortalAdapters.toLevel(this,0)
 A	net/minecraft/server/level/ServerPlayer	changeDimension	(Lnet/minecraft/world/level/portal/DimensionTransition;)Lnet/minecraft/world/entity/Entity;	(Lnet/minecraft/server/level/ServerLevel;Lnet/neoforged/neoforge/common/util/ITeleporter;)Lnet/minecraft/world/entity/Entity;	ladder/rung1206/portal/PortalAdapters.toLevel(this,0)
@@ -437,3 +437,5 @@ F	net/minecraft/world/entity/ai/attributes/Attribute	CODEC	Lcom/mojang/serializa
 F	net/minecraft/world/level/gameevent/GameEvent	CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/misc/MoreAdapters	gameEventCodec
 X	net/minecraft/world/entity/Entity	getKnownMovement	()Lnet/minecraft/world/phys/Vec3;	ladder/rung1206/misc/MoreAdapters	getKnownMovement
 F	net/minecraft/world/level/Level$ExplosionInteraction	CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/misc/MoreAdapters	explosionInteractionCodec
+# the mods' enchantments as data (registered from their jars by the adapters: DataEnchantments)
+G	enchantment
