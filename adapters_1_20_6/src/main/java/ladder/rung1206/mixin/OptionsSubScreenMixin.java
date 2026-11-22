@@ -60,6 +60,10 @@ abstract class OptionsSubScreenMixin extends Screen {
     /** whether a class below this one declares 1.21's addOptions() or addContents() */
     private static boolean ladder$upper(Class<?> type) {
         for (Class<?> c = type; c != null && c != OptionsSubScreen.class; c = c.getSuperclass()) {
+            if (c.getName().startsWith("net.minecraft.")) {
+                // the game's own screens (their addOptions is the adapters', OptionsScreenSites): built as 1.20.6 does
+                continue;
+            }
             for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
                 if ((m.getName().equals("addOptions") || m.getName().equals("addContents")) && m.getParameterCount() == 0) {
                     return true;

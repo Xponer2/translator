@@ -26,7 +26,8 @@
     "PlayerAttributesMixin",
     "ExplosionAttributesMixin",
     "HangingBoxMixin",
-    "DayTimeMixin"
+    "DayTimeMixin",
+    "SmithingInputMixin"
   ],
   "client": [
     "BufferBuilderMixin",
@@ -38,7 +39,10 @@
     "JukeboxMusicMixin",
     "SingleQuadParticleMixin",
     "OptionsSubScreenMixin",
-    "ModelBakeryMixin"
+    "ModelBakeryMixin",
+    "OptionsScreenSites$Video",
+    "OptionsScreenSites$Sound",
+    "OptionsScreenSites$Controls"
   ],
   "injectors": {
     "defaultRequire": 1

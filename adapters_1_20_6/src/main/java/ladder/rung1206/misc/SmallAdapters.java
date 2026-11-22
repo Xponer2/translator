@@ -199,4 +199,35 @@ public final class SmallAdapters {
         float[] c = dye.getTextureDiffuseColors();
         return 0xFF000000 | Math.round(c[0] * 255.0F) << 16 | Math.round(c[1] * 255.0F) << 8 | Math.round(c[2] * 255.0F);
     }
+
+    /** 1.21's {@code settings.setLiquidSettings(liquids)}: 1.20.6 keeps liquids (waterlogs) or not */
+    public static net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings setLiquidSettings(
+            net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings settings,
+            ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings liquids) {
+        return settings.setKeepLiquids(liquids != ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings.IGNORE_WATERLOGGING);
+    }
+
+    /** 1.21's {@code JigsawStructure.DEFAULT_LIQUID_SETTINGS} */
+    public static ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings defaultLiquidSettings() {
+        return liquidSettings();
+    }
+
+    /** 1.21's {@code JigsawStructure.DEFAULT_DIMENSION_PADDING} (none) */
+    public static ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.pools.DimensionPadding defaultDimensionPadding() {
+        return ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.pools.DimensionPadding.ZERO;
+    }
+
+    /** a colour int (ARGB) as 1.20.6's red, green, blue floats, and back (a value bridge's conversion) */
+    public static float[] rgb(int argb) {
+        return new float[] {(argb >> 16 & 0xFF) / 255.0F, (argb >> 8 & 0xFF) / 255.0F, (argb & 0xFF) / 255.0F};
+    }
+
+    public static int argb(float[] rgb) {
+        return rgb == null ? -1 : 0xFF000000 | Math.round(rgb[0] * 255.0F) << 16 | Math.round(rgb[1] * 255.0F) << 8 | Math.round(rgb[2] * 255.0F);
+    }
+
+    /** a beam section's colour floats of 1.21's ARGB (a K row's: new BeaconBeamSection(color)) */
+    public static float[] beamRgb(int argb) {
+        return rgb(argb);
+    }
 }

@@ -935,6 +935,9 @@ public class Convert {
                         shadowsByArgumentPlans(node, mixinTargets.get(node.name));
                         landsAbove = MixinPoints.check(node, mixinTargets.get(node.name), Convert::topClass);
                         remapMixinSelectors(node, remapper);
+                        if (!"0.8.7".equals(MIXIN_VERSIONS.getOrDefault(bottom, "0.8.7"))) {
+                            interfaceSuperCalls(node, entries);
+                        }
                     }
                     if (stripMod.contains(node.name) && node.visibleAnnotations != null) {
                         node.visibleAnnotations.removeIf(a -> a.desc.equals(MOD_ANNOTATION));
@@ -1053,7 +1056,7 @@ public class Convert {
 
     static final String MOD_ANNOTATION = "Lnet/neoforged/fml/common/Mod;";
     /** the Mixin each version's loader has (its sponge-mixin) */
-    static final Map<String, String> MIXIN_VERSIONS = Map.of("1.20.4", "0.8.5", "1.20.6", "0.8.5", "1.21", "0.8.7", "1.21.1", "0.8.7");
+    static final Map<String, String> MIXIN_VERSIONS = Map.of("1.20.4", "0.8.5", "1.20.6", "0.8.5", "1.21", "0.8.6", "1.21.1", "0.8.7");
 
     /**
      * FML 4 constructs each {@code @Mod} class of a mod whose {@code dist} holds the running side, and loads a javafml
@@ -1310,6 +1313,17 @@ public class Convert {
         String owner = call.substring(0, call.lastIndexOf('.')), name = call.substring(call.lastIndexOf('.') + 1);
         checkAdapter(owner, name, desc.toString(), "D default " + value);
         code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, name, desc.toString(), false));
+    }
+
+    /** the zero of a type on the stack (0, 0L, 0.0, null) */
+    static void pushZero(InsnList code, Type type) {
+        switch (type.getSort()) {
+            case Type.LONG -> code.add(new InsnNode(Opcodes.LCONST_0));
+            case Type.FLOAT -> code.add(new InsnNode(Opcodes.FCONST_0));
+            case Type.DOUBLE -> code.add(new InsnNode(Opcodes.DCONST_0));
+            case Type.OBJECT, Type.ARRAY -> code.add(new InsnNode(Opcodes.ACONST_NULL));
+            default -> code.add(new InsnNode(Opcodes.ICONST_0));
+        }
     }
 
     static void pushDefault(InsnList code, String value, Type type) {
@@ -1616,7 +1630,9 @@ public class Convert {
 
     /** whether an adapters' mixin adds this method to the class (the game below hasn't it otherwise) */
     static boolean adapterAddsMethod(String cls, String name, String desc) {
-        return adapterAdded.getOrDefault(cls, List.of()).stream().anyMatch(m -> m.name.equals(name) && m.desc.equals(desc));
+        // (the adapters name a carried class by its carried name; the reference by the upper game's)
+        return adapterAdded.getOrDefault(cls, List.of()).stream().anyMatch(m -> m.name.equals(name)
+                && (m.desc.equals(desc) || m.desc.replace("L" + CARRIED, "L").equals(desc)));
     }
 
     /** the adapters' classes (a provided class is a mixin target below: checked on its own code) */
@@ -2259,7 +2275,10 @@ public class Convert {
             switch (s.outcome()) {
                 case SAME, RENAMED -> cur = s.to();
                 case CHANGED -> {
-                    String[] bridge = cur.name().equals("<init>") ? constructorBridge(i, cur) : bridgeFor(i, cur, s.to());
+                    // (an M row names the lower hook itself: it wins over the one found by the name, 1.21's
+                    // getRecipeFor(type, input, level, last) whose game call sites below are getRecipeFor(type, container, level))
+                    Stage0.Ref named = cur.name().equals("<init>") ? null : movedMember(i, cur);
+                    String[] bridge = cur.name().equals("<init>") ? constructorBridge(i, cur) : bridgeFor(i, cur, named != null ? named : s.to());
                     if (bridge != null) {
                         // the call moves to a generated bridge that converts the values (Holder<X> <-> X) and calls below
                         callRedirect.put(key, bridge);
@@ -3191,6 +3210,10 @@ public class Convert {
             // 1.21's DeltaTracker where 1.20.4 passes the partial tick
             return 9;
         }
+        if (upper.getSort() == Type.INT && lower.getDescriptor().equals("[F") && ADAPTERS.equals("ladder/rung1206/")) {
+            // 1.21's ARGB colour int where 1.20.6 gives red, green, blue floats (DyeColor, a beacon beam's section)
+            return 17;
+        }
         if (upper.getSort() != Type.OBJECT || lower.getSort() != Type.OBJECT) {
             return -1;
         }
@@ -3476,6 +3499,7 @@ public class Convert {
         switch (conversion(upper, lower)) {
             case 14 -> throw new IllegalStateException("no " + lower + " result of a void method");
             case 16 -> code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ADAPTERS + "provided/MeshData", "buffer", "()L" + RENDERED_BUFFER + ";", false));
+            case 17 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ADAPTERS + "misc/SmallAdapters", "rgb", "(I)[F", false));
             case 1, 2 -> {
                 code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "unwrap", "(L" + HOLDER + ";)Ljava/lang/Object;", false));
                 code.add(new TypeInsnNode(Opcodes.CHECKCAST, lower.getInternalName()));
@@ -3552,7 +3576,9 @@ public class Convert {
             // a subclass's calls go through a private helper of its own (protectedCall)
             Type[] ua = Type.getArgumentTypes(upper.desc()), la = Type.getArgumentTypes(lower.desc());
             boolean defaultedProtected = defaultedLower(upper.cls() + "." + upper.name() + " " + upper.desc(), lower.desc()) != null;
-            if (!defaultedProtected && paramMap(ua, la) == null || !convertible(Type.getReturnType(upper.desc()), Type.getReturnType(lower.desc()))) {
+            // (a D row's method whose lower one returns nothing: its callers get zero, ServerPlaceRecipe.moveItemToGrid)
+            boolean noResult = defaultedProtected && Type.getReturnType(lower.desc()).getSort() == Type.VOID;
+            if (!defaultedProtected && paramMap(ua, la) == null || !noResult && !convertible(Type.getReturnType(upper.desc()), Type.getReturnType(lower.desc()))) {
                 return null;
             }
             String[] bridge = {PROTECTED + lower.cls(), upper.name() + "$" + Integer.toHexString(upper.desc().hashCode())};
@@ -3910,6 +3936,125 @@ public class Convert {
      * DFU 6's a class): the calls and method handles take the bottom version's kind, or the JVM refuses them
      * (IncompatibleClassChangeError).
      */
+    /**
+     * A mixin's {@code Interface.super.m()} call (invokespecial of an interface's default method). Mixin below 0.8.7 binds
+     * every invokespecial of a mixin whose target inherits from a mixed class to the target's superclass: the call becomes
+     * an interface method reference of a class, which fails verification ("indirect superinterface"). The default
+     * method's body is copied into the mixin as a private method, and the call goes there.
+     */
+    static void interfaceSuperCalls(ClassNode node, Map<String, byte[]> entries) {
+        if ((node.access & Opcodes.ACC_INTERFACE) != 0 || node.interfaces == null || node.interfaces.isEmpty()) {
+            return;
+        }
+        Map<String, MethodNode> copies = new LinkedHashMap<>();
+        String simple = node.name.substring(node.name.lastIndexOf('/') + 1).replace('$', '_');
+        for (MethodNode m : node.methods) {
+            for (AbstractInsnNode insn : m.instructions) {
+                if (!(insn instanceof MethodInsnNode call) || call.getOpcode() != Opcodes.INVOKESPECIAL || !call.itf
+                        || call.owner.equals(node.name)) {
+                    continue;
+                }
+                String key = call.owner + "." + call.name + call.desc;
+                MethodNode copy = copies.get(key);
+                if (copy == null && !copies.containsKey(key)) {
+                    copy = defaultBodyCopy(call.owner, call.name, call.desc, entries, "ladder$super$" + simple + "$" + call.name, new HashSet<>());
+                    copies.put(key, copy);
+                    if (copy == null && superclassDeclares(mixinTargets.getOrDefault(node.name, List.of()), call.name, call.desc, entries)) {
+                        problem("mixin " + node.name + " calls " + key + " as an interface super method, which Mixin below 0.8.7"
+                                + " binds to the target's superclass (the default body can not be copied)");
+                    }
+                }
+                if (copy != null) {
+                    call.owner = node.name;
+                    call.name = copy.name;
+                    call.itf = false;
+                }
+            }
+        }
+        for (MethodNode copy : copies.values()) {
+            if (copy != null && node.methods.stream().noneMatch(x -> x.name.equals(copy.name) && x.desc.equals(copy.desc))) {
+                node.methods.add(copy);
+            }
+        }
+    }
+
+    /** whether a superclass of one of the targets declares the method (Mixin below 0.8.7 then binds a super call there) */
+    static boolean superclassDeclares(List<String> targets, String name, String desc, Map<String, byte[]> entries) {
+        for (String target : targets) {
+            ClassNode c = classBelow(target, entries);
+            Set<String> seen = new HashSet<>();
+            while (c != null && c.superName != null && seen.add(c.superName)) {
+                c = classBelow(c.superName, entries);
+                if (c != null && c.methods.stream().anyMatch(m -> m.name.equals(name) && m.desc.equals(desc) && (m.access & Opcodes.ACC_STATIC) == 0)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** a class as the bottom game or the mod has it */
+    static ClassNode classBelow(String name, Map<String, byte[]> entries) {
+        byte[] data = entries.get(name + ".class");
+        if (data != null) {
+            ClassNode c = new ClassNode();
+            new ClassReader(data).accept(c, ClassReader.SKIP_CODE);
+            return c;
+        }
+        return bottomClass(name);
+    }
+
+    /** a copy of interface {@code owner}'s default method (or a superinterface's), if its body uses nothing private of the interface */
+    static MethodNode defaultBodyCopy(String owner, String name, String desc, Map<String, byte[]> entries, String newName, Set<String> seen) {
+        byte[] data = entries.get(owner + ".class");
+        if (data == null || !seen.add(owner)) {
+            return null;
+        }
+        ClassNode itf = new ClassNode();
+        new ClassReader(data).accept(itf, 0);
+        MethodNode found = itf.methods.stream().filter(x -> x.name.equals(name) && x.desc.equals(desc)).findFirst().orElse(null);
+        if (found == null) {
+            for (String sup : itf.interfaces) {
+                MethodNode c = defaultBodyCopy(sup, name, desc, entries, newName, seen);
+                if (c != null) {
+                    return c;
+                }
+            }
+            return null;
+        }
+        if ((found.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_STATIC)) != 0 || found.instructions.size() == 0) {
+            return null;
+        }
+        Set<String> privates = new HashSet<>();
+        for (MethodNode x : itf.methods) {
+            if ((x.access & Opcodes.ACC_PRIVATE) != 0) {
+                privates.add(x.name + x.desc);
+            }
+        }
+        for (AbstractInsnNode insn : found.instructions) {
+            if (insn instanceof MethodInsnNode c && c.owner.equals(owner) && privates.contains(c.name + c.desc)) {
+                return null;
+            }
+            if (insn instanceof InvokeDynamicInsnNode indy) {
+                for (Object a : indy.bsmArgs) {
+                    if (a instanceof Handle h && h.getOwner().equals(owner) && privates.contains(h.getName() + h.getDesc())) {
+                        return null;
+                    }
+                }
+            }
+        }
+        MethodNode copy = new MethodNode(Opcodes.ACC_PRIVATE, newName, desc, found.signature,
+                found.exceptions == null ? null : found.exceptions.toArray(new String[0]));
+        found.accept(copy);
+        copy.access = Opcodes.ACC_PRIVATE;
+        copy.name = newName;
+        copy.visibleAnnotations = null;
+        copy.invisibleAnnotations = null;
+        copy.visibleParameterAnnotations = null;
+        copy.invisibleParameterAnnotations = null;
+        return copy;
+    }
+
     static void fixInterfaceCalls(ClassNode node) {
         Stage0.Version bottom = versions.get(versions.size() - 1);
         for (MethodNode m : node.methods) {
@@ -4000,7 +4145,7 @@ public class Convert {
                 }
             }
         }
-        if (map == null && row == null || !convertible(upRet, lowRet)) {
+        if (map == null && row == null || !convertible(upRet, lowRet) && !(row != null && lowRet.getSort() == Type.VOID)) {
             return null;
         }
         String name = "ladder$call$" + call.name + "$" + Integer.toHexString(topDesc.hashCode());
@@ -4053,7 +4198,11 @@ public class Convert {
         }
         code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : Opcodes.INVOKEVIRTUAL, isStatic ? end.cls() : remapper.map(call.owner),
                 end.name(), end.desc(), false));
-        convertUp(code, lowRet, upRet);
+        if (lowRet.getSort() == Type.VOID && upRet.getSort() != Type.VOID) {
+            pushZero(code, upRet);
+        } else {
+            convertUp(code, lowRet, upRet);
+        }
         code.add(new InsnNode(upRet.getOpcode(Opcodes.IRETURN)));
         g.maxLocals = slot;
         g.maxStack = slot + 6;
@@ -4089,7 +4238,7 @@ public class Convert {
             }
         }
         int[] from = map == null ? defaultedLower(defaultsKey, end.desc()) : null;
-        if (map == null && from == null || !convertible(upRet, lowRet)) {
+        if (map == null && from == null || !convertible(upRet, lowRet) && !(from != null && lowRet.getSort() == Type.VOID)) {
             return null;
         }
         String name = "ladder$super$" + call.name + "$" + Integer.toHexString((call.owner + call.desc).hashCode());
@@ -4133,7 +4282,11 @@ public class Convert {
             slot += up[a].getSize();
         }
         code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, remapper.map(call.owner), end.name(), end.desc(), false));
-        convertUp(code, lowRet, upRet);
+        if (lowRet.getSort() == Type.VOID && upRet.getSort() != Type.VOID) {
+            pushZero(code, upRet);
+        } else {
+            convertUp(code, lowRet, upRet);
+        }
         code.add(new InsnNode(upRet.getOpcode(Opcodes.IRETURN)));
         g.maxLocals = slot;
         g.maxStack = slot + 6;
@@ -4411,7 +4564,9 @@ public class Convert {
             plan = null;
         }
         boolean zeroResult = upRet.getSort() == Type.VOID && NUMBERS.indexOf(lowRet.getDescriptor()) >= 0 && lowRet.getDescriptor().length() == 1;
-        if (map == null && plan == null || !overriddenReturn(upRet, lowRet) && !zeroResult) {
+        // (a result the lower hook hasn't: dropped; 1.21's moveItemToGrid gives the count left, 1.20.6's nothing)
+        boolean dropResult = lowRet.getSort() == Type.VOID && upRet.getSort() != Type.VOID;
+        if (map == null && plan == null || !overriddenReturn(upRet, lowRet) && !zeroResult && !dropResult) {
             return null;
         }
         int access = Opcodes.ACC_PUBLIC;
@@ -4445,7 +4600,9 @@ public class Convert {
             }
         }
         code.add(new MethodInsnNode(itf ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL, remapper.map(node.name), ownName, ownDesc, itf));
-        if (zeroResult) {
+        if (dropResult) {
+            code.add(new InsnNode(upRet.getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
+        } else if (zeroResult) {
             // the upper method gives nothing the lower one returns a number of (1.21's IConfigSpec.correct, 1.20.6's
             // count of corrections): none
             switch (lowRet.getSort()) {
@@ -4663,6 +4820,7 @@ public class Convert {
         switch (conversion(upper, lower)) {
             case 14 -> code.add(new InsnNode(lower.getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
             case 15 -> code.add(new TypeInsnNode(Opcodes.CHECKCAST, upper.getInternalName()));
+            case 17 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ADAPTERS + "misc/SmallAdapters", "argb", "([F)I", false));
             case 16 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "meshData",
                     "(L" + RENDERED_BUFFER + ";)L" + ADAPTERS + "provided/MeshData;", false));
             case 1 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "holder", "(Ljava/lang/Object;)L" + HOLDER + ";", false));
@@ -5950,7 +6108,7 @@ public class Convert {
     /** whether a value converts both ways between an upper and a lower type (a handler's argument up, its result down) */
     static boolean twoWay(Type upper, Type lower) {
         int c = conversion(upper, lower);
-        return c == 0 || c == 1 || c == 2 || c == 6 || c == 8 || c == 9 || c == 12 || c == 15 || c == 16;
+        return c == 0 || c == 1 || c == 2 || c == 6 || c == 8 || c == 9 || c == 12 || c == 15 || c == 16 || c == 17;
     }
 
     /** whether the lower member is static (a call's receiver isn't among a call injector's values then) */
