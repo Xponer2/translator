@@ -301,4 +301,59 @@ public final class SmallAdapters {
     public static java.io.File file(java.nio.file.Path path) {
         return path == null ? null : path.toFile();
     }
+
+    private static final net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> AIR = net.minecraft.tags.BlockTags.create(
+            new net.minecraft.resources.ResourceLocation("minecraft", "air"));
+
+    /** 1.21's {@code BlockTags.AIR} (the adapters' data gives 1.20.6 the tag: air, void air, cave air) */
+    public static net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> airTag() {
+        return AIR;
+    }
+
+    /** 1.21's {@code attribute.setSentiment(sentiment)}: the colour of its tooltip's bonus (1.20.6 colours them itself) */
+    public static net.minecraft.world.entity.ai.attributes.Attribute setSentiment(net.minecraft.world.entity.ai.attributes.Attribute attribute,
+            ladder.carried_1_20_6.net.minecraft.world.entity.ai.attributes.Attribute$Sentiment sentiment) {
+        return attribute;
+    }
+
+    /** 1.21's {@code MultiLineLabel.create(font, width, lines...)}: the lines, each split to the width */
+    public static net.minecraft.client.gui.components.MultiLineLabel multiLineLabel(net.minecraft.client.gui.Font font, int width,
+            net.minecraft.network.chat.Component... lines) {
+        return net.minecraft.client.gui.components.MultiLineLabel.create(font, net.minecraft.network.chat.CommonComponents.joinLines(lines), width);
+    }
+
+    /** 1.21's {@code MultiLineLabel.create(font, width, maxRows, lines...)} */
+    public static net.minecraft.client.gui.components.MultiLineLabel multiLineLabel(net.minecraft.client.gui.Font font, int width, int maxRows,
+            net.minecraft.network.chat.Component... lines) {
+        return net.minecraft.client.gui.components.MultiLineLabel.create(font, net.minecraft.network.chat.CommonComponents.joinLines(lines), width,
+                maxRows);
+    }
+
+    // 1.21's small fireball made with its movement as a vector (1.20.6: its three parts); the K rows' values
+    public static double movementX(net.minecraft.world.level.Level level, double x, double y, double z, net.minecraft.world.phys.Vec3 movement) {
+        return movement.x;
+    }
+
+    public static double movementY(net.minecraft.world.level.Level level, double x, double y, double z, net.minecraft.world.phys.Vec3 movement) {
+        return movement.y;
+    }
+
+    public static double movementZ(net.minecraft.world.level.Level level, double x, double y, double z, net.minecraft.world.phys.Vec3 movement) {
+        return movement.z;
+    }
+
+    public static double movementX(net.minecraft.world.level.Level level, net.minecraft.world.entity.LivingEntity owner,
+            net.minecraft.world.phys.Vec3 movement) {
+        return movement.x;
+    }
+
+    public static double movementY(net.minecraft.world.level.Level level, net.minecraft.world.entity.LivingEntity owner,
+            net.minecraft.world.phys.Vec3 movement) {
+        return movement.y;
+    }
+
+    public static double movementZ(net.minecraft.world.level.Level level, net.minecraft.world.entity.LivingEntity owner,
+            net.minecraft.world.phys.Vec3 movement) {
+        return movement.z;
+    }
 }
