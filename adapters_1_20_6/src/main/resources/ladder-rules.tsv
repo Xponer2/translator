@@ -34,6 +34,9 @@
 #                                             the registry they add (its files stay as they are)
 # S <owner> <name> <lower desc>               a lower abstract method the upper type hasn't: a mod's concrete class
 #                                             under the owner gets an empty one (void, or returning itself)
+# T <owner> <method> <upper target> <lower target>
+#                                             a mixin's injection point in that method of the game: 1.20.6's code
+#                                             makes the lower call there for the same value (the handler fits both)
 # NeoForge 21.1's supportsEnchantment (1.21 asks Enchantment.canEnchant at the anvil, enchant_randomly and /enchant)
 # 1.21's DeltaTracker (the frame's time): the client's own from 1.20.6's timer; a partial tick where 1.20.6 passes one
 P	net/minecraft/client/DeltaTracker	ladder/rung1206/provided/DeltaTracker
@@ -692,3 +695,8 @@ X	net/minecraft/world/level/storage/loot/predicates/LootItemRandomChanceWithEnch
 X	net/minecraft/world/food/FoodData	eat	(Lnet/minecraft/world/food/FoodProperties;)V	ladder/rung1206/misc/SmallAdapters	eat
 X	net/minecraft/world/food/FoodProperties	<init>	(IFZFLjava/util/Optional;Ljava/util/List;)V	ladder/rung1206/misc/SmallAdapters	foodProperties
 M	net/neoforged/neoforge/common/extensions/IItemExtension	isPrimaryItemFor	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Holder;)Z	canApplyAtEnchantingTable	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/enchantment/Enchantment;)Z
+# 1.21's looting level in its loot functions (getEnchantmentLevel of looting); 20.6's from the loot context (a mod's mixin point)
+T	net/minecraft/world/level/storage/loot/functions/EnchantedCountIncreaseFunction	run	Lnet/minecraft/world/item/enchantment/EnchantmentHelper;getEnchantmentLevel(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/LivingEntity;)I	Lnet/minecraft/world/level/storage/loot/LootContext;getLootingModifier()I
+T	net/minecraft/world/level/storage/loot/predicates/LootItemRandomChanceWithEnchantedBonusCondition	test	Lnet/minecraft/world/item/enchantment/EnchantmentHelper;getEnchantmentLevel(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/LivingEntity;)I	Lnet/minecraft/world/level/storage/loot/LootContext;getLootingModifier()I
+# 1.21's supported item check of an enchantment (a mod's mixin): 1.20.6's canEnchant (calls take the X row)
+M	net/minecraft/world/item/enchantment/Enchantment	isSupportedItem	(Lnet/minecraft/world/item/ItemStack;)Z	canEnchant	(Lnet/minecraft/world/item/ItemStack;)Z

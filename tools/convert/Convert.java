@@ -1642,6 +1642,9 @@ public class Convert {
                     case "A" -> argumentPlans.add(new String[] {c[1], c[2], c[3], c[4], c[5]});
                     // a data folder the adapters give a place below (a data pack registry they add: jukebox_song)
                     case "G" -> adapterDataFolders.add(c[1]);
+                    // a mixin's injection point in one method of the game, where 1.20.6's code makes another call for the
+                    // same value (1.21's looting level, getEnchantmentLevel(looting, entity); 20.6's LootContext's own)
+                    case "T" -> pointRetargets.put(c[1] + "." + c[2] + " " + c[3], c[4]);
                     // a class carried down whose registering (its bootstrap into a registry) the adapters run
                     case "B" -> bootstrapped.add(c[1]);
                     default -> throw new IOException("unknown rule " + line);
@@ -1727,6 +1730,11 @@ public class Convert {
 
     /** the fields the adapters' mixins add to the game's classes: "class name desc" */
     static final Set<String> adapterAddedFields = new HashSet<>();
+    /** T rows: "upper owner.method upper target" -> the lower target (an injection point in that method) */
+    static final Map<String, String> pointRetargets = new HashMap<>();
+    /** the upper methods (names) the injector being remapped names, for the T rows */
+    static List<String> injectorMethods = List.of();
+    static final Set<String> addedFieldClasses = new HashSet<>();
 
     /** the methods the adapters' mixins add to the game's classes (not their handlers, shadows or own helpers) */
     static final Map<String, List<MethodNode>> adapterAdded = new HashMap<>();
@@ -5354,6 +5362,15 @@ public class Convert {
                 }
             }
         }
+        if (node != null && addedFieldClasses.add(name)) {
+            // (the fields the adapters' mixins add: a mod's mixin may shadow them, 1.21's loot functions' enchantment)
+            for (String added : adapterAddedFields) {
+                String[] parts = added.split(" ");
+                if (parts.length == 3 && parts[0].equals(name) && node.fields.stream().noneMatch(f -> f.name.equals(parts[1]) && f.desc.equals(parts[2]))) {
+                    node.fields.add(new FieldNode(Opcodes.ACC_PRIVATE, parts[1], parts[2], null, null));
+                }
+            }
+        }
         List<MethodNode> overwrites = adapterOverwrites.get(name);
         if (node != null && overwrites != null && overwrittenClasses.add(name)) {
             for (MethodNode o : overwrites) {
@@ -5846,6 +5863,18 @@ public class Convert {
         if (a.values == null || !(a.desc.startsWith("Lorg/spongepowered/asm/mixin/") || a.desc.startsWith("Lcom/llamalad7/mixinextras/"))) {
             return;
         }
+        int methods = a.values.indexOf("method");
+        if (methods >= 0 && methods % 2 == 0 && a.values.get(methods + 1) instanceof List<?> selectors) {
+            // (the injector's methods, as the mod names them: a T row's point is in one of them)
+            List<String> names = new ArrayList<>();
+            for (Object sel : selectors) {
+                if (sel instanceof String name) {
+                    String n = name.contains(";") && name.startsWith("L") ? name.substring(name.indexOf(';') + 1) : name;
+                    names.add(n.contains("(") ? n.substring(0, n.indexOf('(')) : n);
+                }
+            }
+            injectorMethods = names;
+        }
         boolean at = a.desc.equals("Lorg/spongepowered/asm/mixin/injection/At;");
         // a MixinExtras expression's definition names the calls and fields it means as an @At target does (an
         // inherited member through the class the code calls it on), not methods of the mixin's targets
@@ -5866,6 +5895,17 @@ public class Convert {
                 }
                 a.values.set(i + 1, mapped);
             } else if (at && key.equals("target") && value instanceof String target) {
+                String retarget = null;
+                for (String t : targets) {
+                    for (String method : injectorMethods) {
+                        retarget = retarget != null ? retarget : pointRetargets.get(t + "." + method + " " + target);
+                    }
+                }
+                if (retarget != null) {
+                    // a T row: the call 1.20.6's code makes there for the same value
+                    a.values.set(i + 1, retarget);
+                    continue;
+                }
                 String made = FACTORY_NEW.get(target);
                 int kind = a.values.indexOf("value");
                 if (made != null && kind >= 0 && kind % 2 == 0 && ("INVOKE".equals(a.values.get(kind + 1)) || "INVOKE_ASSIGN".equals(a.values.get(kind + 1)))
