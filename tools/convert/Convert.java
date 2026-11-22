@@ -234,7 +234,9 @@ public class Convert {
                 }
                 if (problems.isEmpty()) {
                     clean++;
-                } else {
+                }
+                if (!problems.isEmpty() || Boolean.getBoolean("ladder.discard")) {
+                    // (-Dladder.discard: an offline check keeps the report only, the disk fills fast)
                     Files.deleteIfExists(converted);
                 }
                 long classes = 0;
@@ -2292,6 +2294,11 @@ public class Convert {
                         // the data generators' API runs in runData only, never in the game
                         unverified.add("data generation API " + cur.key() + ", changed (" + from.id + " -> " + to.id + ")");
                         return null;
+                    }
+                    if (privateShadowable(from, cur, s.to())) {
+                        // a private method only a mixin reaches (its @Shadow): the shadow becomes the lower one and its
+                        // calls go to a converting helper once the mixin is remapped (shadowHelpers)
+                        return s.to();
                     }
                     problem("changed descriptor, no bridge yet: " + cur.key() + " -> " + s.to().name() + s.to().desc() + " (" + from.id + " -> " + to.id + ")");
                     cur = s.to();
@@ -5353,6 +5360,24 @@ public class Convert {
         mixin.methods.addAll(helpers);
     }
 
+    /**
+     * Whether a changed method is private above and below and its values convert both ways: only a mixin's @Shadow can
+     * reach it, and shadowHelpers bridges that one.
+     */
+    static boolean privateShadowable(Stage0.Version from, Stage0.Ref upper, Stage0.Ref lower) {
+        if (upper.kind() != 'M' || lower == null) {
+            return false;
+        }
+        Stage0.Cls above = from.classes.get(upper.cls()), below = versions.get(versions.size() - 1).classes.get(lower.cls());
+        Integer a = above == null ? null : above.access.get("M " + upper.name() + " " + upper.desc());
+        Integer b = below == null ? null : below.access.get("M " + lower.name() + " " + lower.desc());
+        if (a == null || b == null || (a & Opcodes.ACC_PRIVATE) == 0 || (b & Opcodes.ACC_PRIVATE) == 0) {
+            return false;
+        }
+        Type[] up = Type.getArgumentTypes(remapper.mapMethodDesc(upper.desc())), low = Type.getArgumentTypes(lower.desc());
+        return paramMap(up, low) != null && twoWayResult(Type.getReturnType(remapper.mapMethodDesc(upper.desc())), Type.getReturnType(lower.desc()));
+    }
+
     /** whether a method's result converts both ways between an upper and a lower type (or both are void) */
     static boolean twoWayResult(Type upper, Type lower) {
         return upper.getSort() == Type.VOID ? lower.getSort() == Type.VOID : lower.getSort() != Type.VOID && twoWay(upper, lower);
@@ -5921,6 +5946,13 @@ public class Convert {
             if (list.isEmpty()) {
                 continue;
             }
+            // (a call injector into a method whose own types changed too: the call's fix, and the method's for the target's
+            // arguments the handler captures after the call's)
+            HandlerFix methodFix = null;
+            if (list.size() == 2 && list.get(0).call() != list.get(1).call()) {
+                methodFix = list.get(0).call() ? list.get(1) : list.get(0);
+                list = new ArrayList<>(List.of(list.get(0).call() ? list.get(0) : list.get(1)));
+            }
             HandlerFix f = list.get(0);
             String where = original + "." + f.method();
             String hDesc = remapper.mapMethodDesc(f.desc());
@@ -5980,7 +6012,16 @@ public class Convert {
                             || f.annotation().equals("Lorg/spongepowered/asm/mixin/injection/Redirect;"))
                     && Arrays.equals(Arrays.copyOfRange(hp, 1, 1 + up.length), up);
             if (callShape) {
-                callBridge(out, h, hp, up, low, callPlan, planOwner);
+                Type[] tailUp = methodFix == null ? null : Type.getArgumentTypes(methodFix.upperDesc());
+                Type[] tailLow = methodFix == null ? null : Type.getArgumentTypes(methodFix.end().desc());
+                String[] tailPlan = methodFix == null ? null : argumentPlan(methodFix.upperDesc(), methodFix.end());
+                int[] tailMap = methodFix == null || tailPlan != null ? null : paramMap(tailUp, tailLow);
+                if (methodFix != null && (tailPlan == null && tailMap == null
+                        || !Arrays.equals(Arrays.copyOfRange(hp, 1 + up.length, hp.length), tailUp))) {
+                    problem("mixin handler " + where + " captures the arguments of " + methodFix.end().name() + ", whose types changed below too: no bridge for both");
+                    continue;
+                }
+                callBridge(out, h, hp, up, low, callPlan, planOwner, tailUp, tailLow, tailPlan, tailMap);
                 continue;
             }
             // an @Inject whose method's result changed between numbers (1.21's Camera.getMaxZoom(F)F, 1.20.6's (D)D): its
@@ -6274,17 +6315,27 @@ public class Convert {
      * The injector's annotation moves to the wrapper; the handler keeps its name and descriptor.
      */
     static void callBridge(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan, String planOwner) {
-        Type[] wrapped = new Type[1 + low.length + hp.length - 1 - up.length];
+        callBridge(out, h, hp, up, low, plan, planOwner, null, null, null, null);
+    }
+
+    /**
+     * (tailUp, tailLow: the target method's own parameters the handler captures after the call's, when they changed below
+     * too: made of the lower ones by the method's plan, or its map)
+     */
+    static void callBridge(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan, String planOwner,
+            Type[] tailUp, Type[] tailLow, String[] tailPlan, int[] tailMap) {
+        Type[] tail = tailUp == null ? Arrays.copyOfRange(hp, 1 + up.length, hp.length) : tailLow;
+        Type[] wrapped = new Type[1 + low.length + tail.length];
         wrapped[0] = hp[0];
         System.arraycopy(low, 0, wrapped, 1, low.length);
-        System.arraycopy(hp, 1 + up.length, wrapped, 1 + low.length, hp.length - 1 - up.length);
+        System.arraycopy(tail, 0, wrapped, 1 + low.length, tail.length);
         MethodNode g = new MethodNode(h.access, "ladder$wrap$" + h.name, Type.getMethodDescriptor(Type.getReturnType(h.desc), wrapped), null,
                 h.exceptions.toArray(new String[0]));
         g.visibleAnnotations = h.visibleAnnotations;
         g.invisibleAnnotations = h.invisibleAnnotations;
         int[] placeOf = new int[hp.length];
         for (int i = 0; i < hp.length; i++) {
-            placeOf[i] = i == 0 ? 0 : i > up.length ? 1 + low.length + i - 1 - up.length : -1;
+            placeOf[i] = i == 0 ? 0 : i > up.length && tailUp == null ? 1 + low.length + i - 1 - up.length : -1;
         }
         g.visibleParameterAnnotations = moveParameterAnnotations(h.visibleParameterAnnotations, placeOf, wrapped.length);
         g.invisibleParameterAnnotations = moveParameterAnnotations(h.invisibleParameterAnnotations, placeOf, wrapped.length);
@@ -6310,15 +6361,31 @@ public class Convert {
             // (the member's object: the call's receiver)
             planArgument(code, plan[i], low, lowSlots, up[i], slots[0], planOwner);
         }
-        for (int i = 1 + low.length; i < wrapped.length; i++) {
-            code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slots[i]));
+        if (tailUp == null) {
+            for (int i = 1 + low.length; i < wrapped.length; i++) {
+                code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slots[i]));
+            }
+        } else {
+            int[] tailSlots = Arrays.copyOfRange(slots, 1 + low.length, wrapped.length);
+            for (int i = 0; i < tailUp.length; i++) {
+                if (tailPlan != null) {
+                    planArgument(code, tailPlan[i], tailLow, tailSlots, tailUp[i], isStatic ? -1 : 0, null);
+                } else if (tailMap[i] >= 0) {
+                    code.add(new VarInsnNode(tailLow[tailMap[i]].getOpcode(Opcodes.ILOAD), tailSlots[tailMap[i]]));
+                    convertUp(code, tailLow[tailMap[i]], tailUp[i]);
+                } else if (tailMap[i] <= -2) {
+                    packColor(code, tailSlots, -tailMap[i] - 2, colorChannels(tailUp, i, tailLow, -tailMap[i] - 2));
+                } else {
+                    supplyContext(code, tailUp[i]);
+                }
+            }
         }
         boolean privateHandler = (h.access & Opcodes.ACC_PRIVATE) != 0;
         code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : privateHandler ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, out.name,
                 h.name, h.desc, false));
         code.add(new InsnNode(Type.getReturnType(h.desc).getOpcode(Opcodes.IRETURN)));
         g.maxLocals = slot;
-        g.maxStack = slot + 2 + 2 * up.length;
+        g.maxStack = slot + 4 + 2 * up.length + (tailUp == null ? 0 : 2 * tailUp.length);
         out.methods.add(g);
     }
 

@@ -88,4 +88,9 @@ public final class TooltipAdapters {
         ItemAttributeModifiers modifiers = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
         return modifiers.modifiers().isEmpty() ? stack.getItem().getDefaultAttributeModifiers() : modifiers;
     }
+
+    /** (a call through the interface itself: a stack's) */
+    public static ItemAttributeModifiers getAttributeModifiers(net.neoforged.neoforge.common.extensions.IItemStackExtension stack) {
+        return getAttributeModifiers((ItemStack) stack);
+    }
 }
