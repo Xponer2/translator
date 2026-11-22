@@ -153,4 +153,27 @@ public final class MoreAdapters {
     /** {@code tesselator.clear()}: 1.20.6's tesselator keeps one builder of its own, nothing to free */
     public static void clear(com.mojang.blaze3d.vertex.Tesselator tesselator) {
     }
+
+    /**
+     * 1.21's {@code behavior.consumeWithRemainder(source, stack, remainder)}: one of the stack used, the remainder back
+     * into the dispenser (or out of it, when it is full)
+     */
+    public static ItemStack consumeWithRemainder(net.minecraft.core.dispenser.DefaultDispenseItemBehavior behavior, net.minecraft.core.dispenser.BlockSource source,
+            ItemStack stack, ItemStack remainder) {
+        stack.shrink(1);
+        if (stack.isEmpty()) {
+            return remainder;
+        }
+        if (source.blockEntity().addItem(remainder.copy()) < 0) {
+            net.minecraft.core.Direction facing = source.state().getValue(net.minecraft.world.level.block.DispenserBlock.FACING);
+            net.minecraft.core.dispenser.DefaultDispenseItemBehavior.spawnItem(source.level(), remainder, 6, facing,
+                    net.minecraft.world.level.block.DispenserBlock.getDispensePosition(source));
+        }
+        return stack;
+    }
+
+    /** 1.21's {@code arrow.getWeaponItem()}: 1.20.6's arrows don't keep the weapon that shot them */
+    public static ItemStack getWeaponItem(net.minecraft.world.entity.projectile.AbstractArrow arrow) {
+        return ItemStack.EMPTY;
+    }
 }

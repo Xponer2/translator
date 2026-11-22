@@ -155,7 +155,7 @@ public class Convert {
                     continue;
                 }
                 for (String h : n.hard) {
-                    if (!resolvable(rung, h)) {
+                    if (!resolvable(rung, h) && !bootstrapNeed(k, h)) {
                         roots.putIfAbsent(h, k);
                     }
                 }
@@ -1503,6 +1503,8 @@ public class Convert {
                     case "A" -> argumentPlans.add(new String[] {c[1], c[2], c[3], c[4], c[5]});
                     // a data folder the adapters give a place below (a data pack registry they add: jukebox_song)
                     case "G" -> adapterDataFolders.add(c[1]);
+                    // a class carried down whose registering (its bootstrap into a registry) the adapters run
+                    case "B" -> bootstrapped.add(c[1]);
                     default -> throw new IOException("unknown rule " + line);
                 }
             }
@@ -2420,6 +2422,14 @@ public class Convert {
         return key.charAt(0) == 'M' || key.charAt(0) == 'F' && fieldRedirects.containsKey(rest);
     }
 
+    /** the B rows: carried classes whose registrations (a bootstrap into a registry) the adapters make when they should */
+    static final Set<String> bootstrapped = new HashSet<>();
+
+    /** a hard need a B row's class may have: its own registering */
+    static boolean bootstrapNeed(String thing, String hard) {
+        return hard.startsWith("registers: ") && thing.startsWith("C ") && bootstrapped.contains(thing.substring(2));
+    }
+
     static Set<String> carriable(int i) {
         Set<String> got = carriable.get(i);
         if (got != null) {
@@ -2431,7 +2441,7 @@ public class Convert {
         // adapters' rules cover others: what is left hard decides
         Set<String> base = new HashSet<>();
         plan.needs.forEach((k, n) -> {
-            if (n.hard.stream().allMatch(h -> resolvable(i, h))) {
+            if (n.hard.stream().allMatch(h -> resolvable(i, h) || bootstrapNeed(k, h))) {
                 base.add(k);
             }
         });

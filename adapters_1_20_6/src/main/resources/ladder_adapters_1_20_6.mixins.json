@@ -18,14 +18,15 @@
     "UseDurationSites$GameMode",
     "UseDurationSites$Witch",
     "PostHurtMixin",
-    "ChunkStorageAccess",
     "JukeboxEntityMixin",
     "JukeboxBlockMixin",
     "DamagePostMixin",
     "FoodBuilderMixin",
     "LivingAttributesMixin",
     "PlayerAttributesMixin",
-    "ExplosionAttributesMixin"
+    "ExplosionAttributesMixin",
+    "HangingBoxMixin",
+    "DayTimeMixin"
   ],
   "client": [
     "BufferBuilderMixin",

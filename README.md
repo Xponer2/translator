@@ -76,7 +76,7 @@ versions together on one target.
 | Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
 |---|---|---|---:|---:|---|
 | 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C, E and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 0 | 300 | done (offline; game-tested by the test mods) |
-| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A–C, E and F on the real 1.20.6, the same results as on 1.21.1 | 1310 | 181 of 302 (rung 1's output) | in work |
+| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A–C, E and F on the real 1.20.6, the same results as on 1.21.1 | 1255 | 181 of 302 (rung 1's output) | in work |
 | 1.20.6 → 1.20.4 | yes (`adapters_1_20_4`) | yes: test mods A–C, E and F on the real 1.20.4, the same results as on 1.21.1 | – | – | in work (counted on the whole path below) |
 
 A mod goes down every rung between its version and the target, so a path is the rungs on it. What a 1.21.1 mod gets on

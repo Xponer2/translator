@@ -5,19 +5,19 @@
  */
 package ladder.rung1206.misc;
 
-import ladder.rung1206.mixin.ChunkStorageAccess;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
 
 /**
  * The values 1.21 passes to chunk loading that 1.20.6 doesn't (the A row of ChunkSerializer.read): the region info of
- * the level's chunk storage, which 1.21's chunk map passes and 1.20.6's keeps.
+ * the level's chunk storage, which 1.21's chunk map passes.
  */
 public final class ChunkArgs {
     private ChunkArgs() {
     }
 
+    /** 1.20.6's chunk storage doesn't keep it to hand: the same info made again (the level, its dimension, "chunk") */
     public static RegionStorageInfo storageInfo(ServerLevel level) {
-        return ((ChunkStorageAccess) level.getChunkSource().chunkMap).ladder$storageInfo();
+        return new RegionStorageInfo(level.getServer().getWorldData().getLevelName(), level.dimension(), "chunk");
     }
 }

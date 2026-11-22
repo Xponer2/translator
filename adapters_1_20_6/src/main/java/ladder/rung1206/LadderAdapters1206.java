@@ -16,6 +16,7 @@ public final class LadderAdapters1206 {
         ladder.rung1206.event.DamageEvents.register();
         ladder.rung1206.misc.MoreAdapters.register();
         ladder.rung1206.jukebox.Jukebox.register(modBus);
+        ladder.rung1206.enchantment.EnchantRegistries.register(modBus);
         ladder.rung1206.attribute.NewAttributes.register(modBus);
         ladder.rung1206.painting.Paintings.register(modBus);
         modBus.addListener(ladder.rung1206.provided.event.BlockEntityTypeAddBlocksEvent::onCommonSetup);

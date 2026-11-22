@@ -29,6 +29,17 @@ public abstract class EntityTickEvent extends Event {
         public Pre(Entity entity) {
             super(entity);
         }
+
+        // declared here (the interface's defaults), so a converted mod's calls find them on the class
+        @Override
+        public void setCanceled(boolean canceled) {
+            ICancellableEvent.super.setCanceled(canceled);
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return ICancellableEvent.super.isCanceled();
+        }
     }
 
     public static class Post extends EntityTickEvent {
