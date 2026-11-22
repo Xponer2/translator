@@ -614,3 +614,28 @@ M	net/neoforged/neoforge/client/model/geometry/UnbakedGeometryHelper	bakeElement
 # 1.21's chunk step: its status and write radius, a world generation region's (1.20.6's region keeps them itself)
 P	net/minecraft/world/level/chunk/status/ChunkStep	ladder/rung1206/provided/ChunkStep
 F	net/minecraft/server/level/WorldGenRegion	generatingStep	Lnet/minecraft/world/level/chunk/status/ChunkStep;	ladder/rung1206/provided/ChunkStep	generatingStep
+# NeoForge 21's food tags of one kind (20.6: the plural ones)
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_FRUIT	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsFruit
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_VEGETABLE	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsVegetable
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_BERRY	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsBerry
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_BREAD	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsBread
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_COOKIE	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsCookie
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_RAW_MEAT	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsRawMeat
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_COOKED_MEAT	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsCookedMeat
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_RAW_FISH	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsRawFish
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_COOKED_FISH	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsCookedFish
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_SOUP	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsSoup
+F	net/neoforged/neoforge/common/Tags$Items	FOODS_CANDY	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	foodsCandy
+# DFU 8's hasResultOrPartial, 1.21's stream codecs of damage types and effects, a damage tag, a list's scroll clamp, weapons
+X	com/mojang/serialization/DataResult	hasResultOrPartial	()Z	ladder/rung1206/misc/SmallAdapters	hasResultOrPartial
+F	net/minecraft/world/damagesource/DamageType	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/rung1206/misc/SmallAdapters	damageTypeStreamCodec
+F	net/minecraft/world/effect/MobEffect	STREAM_CODEC	Lnet/minecraft/network/codec/StreamCodec;	ladder/rung1206/misc/SmallAdapters	mobEffectStreamCodec
+F	net/minecraft/tags/DamageTypeTags	BURN_FROM_STEPPING	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	burnFromStepping
+X	net/minecraft/client/gui/components/AbstractSelectionList	clampScrollAmount	()V	ladder/rung1206/misc/SmallAdapters	clampScrollAmount
+X	net/minecraft/world/damagesource/DamageSource	getWeaponItem	()Lnet/minecraft/world/item/ItemStack;	ladder/rung1206/misc/SmallAdapters	getWeaponItem
+X	net/minecraft/world/entity/Entity	getWeaponItem	()Lnet/minecraft/world/item/ItemStack;	ladder/rung1206/misc/SmallAdapters	getWeaponItem
+# NeoForge 21's entity level hooks (20.6: the world ones), 1.21's experience drop with the attacker (1.20.6: none)
+M	net/minecraft/world/entity/Entity	onAddedToLevel	()V	onAddedToWorld	()V
+M	net/minecraft/world/entity/Entity	onRemovedFromLevel	()V	onRemovedFromWorld	()V
+D	net/minecraft/world/entity/LivingEntity	dropExperience	(Lnet/minecraft/world/entity/Entity;)V	()V	-
+A	net/minecraft/world/entity/LivingEntity	dropExperience	(Lnet/minecraft/world/entity/Entity;)V	()V	null

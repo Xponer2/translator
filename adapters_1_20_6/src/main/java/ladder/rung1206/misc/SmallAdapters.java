@@ -418,4 +418,91 @@ public final class SmallAdapters {
             org.apache.commons.lang3.mutable.MutableObject<?> parent) {
         return new net.minecraft.client.renderer.block.model.BlockElementFace(cull, tint, texture, uv, faceData);
     }
+
+    // NeoForge 21's food tags of one kind (20.6 names them in the plural: c:foods/berries)
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsFruit() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_FRUITS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsVegetable() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_VEGETABLES;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsBerry() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_BERRIES;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsBread() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_BREADS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsCookie() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_COOKIES;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsRawMeat() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_RAW_MEATS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsCookedMeat() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_COOKED_MEATS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsRawFish() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_RAW_FISHES;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsCookedFish() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_COOKED_FISHES;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsSoup() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_SOUPS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> foodsCandy() {
+        return net.neoforged.neoforge.common.Tags.Items.FOODS_CANDIES;
+    }
+
+    /** DataFixerUpper 8's {@code result.hasResultOrPartial()} */
+    public static boolean hasResultOrPartial(com.mojang.serialization.DataResult<?> result) {
+        return result.resultOrPartial().isPresent();
+    }
+
+    /** 1.21's {@code DamageType.STREAM_CODEC} (a holder of the damage type registry) */
+    public static net.minecraft.network.codec.StreamCodec<net.minecraft.network.RegistryFriendlyByteBuf,
+            net.minecraft.core.Holder<net.minecraft.world.damagesource.DamageType>> damageTypeStreamCodec() {
+        return net.minecraft.network.codec.ByteBufCodecs.holderRegistry(net.minecraft.core.registries.Registries.DAMAGE_TYPE);
+    }
+
+    /** 1.21's {@code MobEffect.STREAM_CODEC} */
+    public static net.minecraft.network.codec.StreamCodec<net.minecraft.network.RegistryFriendlyByteBuf,
+            net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> mobEffectStreamCodec() {
+        return net.minecraft.network.codec.ByteBufCodecs.holderRegistry(net.minecraft.core.registries.Registries.MOB_EFFECT);
+    }
+
+    /** 1.21's {@code DamageTypeTags.BURN_FROM_STEPPING} (the adapters' data gives 1.20.6 the tag) */
+    public static net.minecraft.tags.TagKey<net.minecraft.world.damagesource.DamageType> burnFromStepping() {
+        return net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.DAMAGE_TYPE,
+                new net.minecraft.resources.ResourceLocation("minecraft", "burn_from_stepping"));
+    }
+
+    /** 1.21's {@code list.clampScrollAmount()}: 1.20.6 clamps the amount it is set to */
+    public static void clampScrollAmount(net.minecraft.client.gui.components.AbstractSelectionList<?> list) {
+        list.setScrollAmount(list.getScrollAmount());
+    }
+
+    /** 1.21's {@code source.getWeaponItem()}: the attacker's main hand (1.20.6's sources keep no weapon) */
+    public static net.minecraft.world.item.ItemStack getWeaponItem(net.minecraft.world.damagesource.DamageSource source) {
+        return source.getEntity() instanceof net.minecraft.world.entity.LivingEntity living ? living.getMainHandItem()
+                : net.minecraft.world.item.ItemStack.EMPTY;
+    }
+
+    /** 1.21's {@code entity.getWeaponItem()} of any entity: a living one's main hand, an arrow's none kept, else null (1.21's) */
+    public static net.minecraft.world.item.ItemStack getWeaponItem(net.minecraft.world.entity.Entity entity) {
+        if (entity instanceof net.minecraft.world.entity.projectile.AbstractArrow) {
+            return net.minecraft.world.item.ItemStack.EMPTY;
+        }
+        return entity instanceof net.minecraft.world.entity.LivingEntity living ? living.getMainHandItem() : null;
+    }
 }
