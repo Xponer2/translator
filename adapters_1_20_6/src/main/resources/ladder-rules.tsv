@@ -578,3 +578,9 @@ A	net/minecraft/world/entity/LivingEntity	canUsePortal	(Z)Z	()Z	false
 M	net/minecraft/world/entity/projectile/ThrowableProjectile	canUsePortal	(Z)Z	canChangeDimensions	()Z
 D	net/minecraft/world/entity/projectile/ThrowableProjectile	canUsePortal	(Z)Z	()Z	-
 A	net/minecraft/world/entity/projectile/ThrowableProjectile	canUsePortal	(Z)Z	()Z	false
+# a subclass of 1.21's buffer source (its super call): 1.20.6's of the byte buffers' builders
+K	net/minecraft/client/renderer/MultiBufferSource$BufferSource	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Ljava/util/SequencedMap;)V	(Lcom/mojang/blaze3d/vertex/BufferBuilder;Ljava/util/Map;)V	ladder/rung1206/render/ByteBuffers	sharedBuilder,fixedBuilders
+# 1.21's outline generator record (1.20.6's keeps the colour by channel; made public by the access transformer)
+X	net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator	<init>	(Lcom/mojang/blaze3d/vertex/VertexConsumer;I)V	ladder/rung1206/render/OutlineGenerators	create
+X	net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator	color	()I	ladder/rung1206/render/OutlineGenerators	color
+X	net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator	delegate	()Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/OutlineGenerators	delegate

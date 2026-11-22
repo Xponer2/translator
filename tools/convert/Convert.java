@@ -1925,12 +1925,16 @@ public class Convert {
                     // new X(args) of a constructor an adapter's factory gives (an X row on <init>)
                     Stage0.Ref ref = resolve(call.owner, call.name, call.desc, true);
                     String[] x = ref == null ? null : redirects.get(ref.cls() + "." + ref.name() + " " + ref.desc());
+                    // new X(args) or super(args) of a constructor that takes more below (a K row)
+                    String[] k = ref == null ? null : constructorArguments.get(ref.cls() + "." + ref.name() + " " + ref.desc());
+                    if (x != null && k != null && newOf(call) == null) {
+                        // a super(...) call no factory can make: the K row's lower arguments (a mod's own BufferSource)
+                        x = null;
+                    }
                     if (x != null) {
                         checkAdapter(x[0], x[1], call.desc.substring(0, call.desc.indexOf(')') + 1) + "L" + call.owner + ";", "X " + ref.key());
                         newToFactory(m, call, x, ref);
                     }
-                    // new X(args) or super(args) of a constructor that takes more below (a K row)
-                    String[] k = ref == null ? null : constructorArguments.get(ref.cls() + "." + ref.name() + " " + ref.desc());
                     if (x == null && k != null) {
                         spreadArguments(m, call, k, ref);
                     }
@@ -3890,6 +3894,24 @@ public class Convert {
      * object (a constructor bridge, or an adapter's factory of an X rule). False, with a problem, for a super(...)
      * call or a NEW whose object isn't DUPed.
      */
+    /** the NEW a constructor call initializes (DUPed), or null: a super(...) or this(...) call, or an unusual new */
+    static AbstractInsnNode newOf(MethodInsnNode call) {
+        int depth = 0;
+        for (AbstractInsnNode back = call.getPrevious(); back != null; back = back.getPrevious()) {
+            if (back instanceof MethodInsnNode other && other.getOpcode() == Opcodes.INVOKESPECIAL && other.name.equals("<init>")
+                    && other.owner.equals(call.owner)) {
+                depth++;
+            } else if (back instanceof TypeInsnNode type && type.getOpcode() == Opcodes.NEW && type.desc.equals(call.owner)) {
+                if (depth == 0) {
+                    AbstractInsnNode dup = back.getNext();
+                    return dup != null && dup.getOpcode() == Opcodes.DUP ? back : null;
+                }
+                depth--;
+            }
+        }
+        return null;
+    }
+
     static boolean newToFactory(MethodNode m, MethodInsnNode call, String[] factory, Stage0.Ref ref) {
         {
             int depth = 0;

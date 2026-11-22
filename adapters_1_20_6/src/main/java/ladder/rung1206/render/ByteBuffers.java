@@ -69,4 +69,16 @@ public final class ByteBuffers {
     public static MultiBufferSource.BufferSource bufferSource(ByteBufferBuilder shared, java.util.SequencedMap<RenderType, ByteBufferBuilder> fixed) {
         return immediateWithBuffers(fixed, shared);
     }
+
+    // a subclass's super(shared, fixed) of 1.21's BufferSource (a K row): 1.20.6's takes the byte buffers' builders
+
+    public static BufferBuilder sharedBuilder(ByteBufferBuilder shared, java.util.SequencedMap<RenderType, ByteBufferBuilder> fixed) {
+        return builder(shared);
+    }
+
+    public static Map<RenderType, BufferBuilder> fixedBuilders(ByteBufferBuilder shared, java.util.SequencedMap<RenderType, ByteBufferBuilder> fixed) {
+        Map<RenderType, BufferBuilder> builders = new LinkedHashMap<>();
+        fixed.forEach((type, bytes) -> builders.put(type, builder(bytes)));
+        return builders;
+    }
 }
