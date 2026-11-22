@@ -1096,6 +1096,14 @@ public final class LadderTestB {
                 results.put("entityTick", "error " + e);
             }
             try {
+                // the game's versions as the mod asks them (a mod checks its own data against them)
+                results.put("gameVersions", net.neoforged.fml.ModList.get().getModContainerById("minecraft").orElseThrow().getModInfo().getVersion()
+                        + "/" + net.minecraft.SharedConstants.getCurrentVersion().getName() + "/" + net.neoforged.fml.loading.FMLLoader.versionInfo().mcVersion()
+                        + "/" + net.neoforged.fml.ModList.get().getModContainerById("neoforge").orElseThrow().getModInfo().getVersion().getMajorVersion());
+            } catch (RuntimeException | LinkageError e) {
+                results.put("gameVersions", "error " + e);
+            }
+            try {
                 // a trade by villager type whose table lacks types (a mod's villager types): no error, no offer for those
                 net.minecraft.world.entity.npc.VillagerTrades.ItemListing byType = new net.minecraft.world.entity.npc.VillagerTrades.EmeraldsForVillagerTypeItem(
                         1, 12, 30, java.util.Map.of(net.minecraft.world.entity.npc.VillagerType.PLAINS, Items.STICK));

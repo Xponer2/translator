@@ -169,3 +169,8 @@ P	net/neoforged/neoforge/client/event/RegisterMaterialAtlasesEvent	ladder/rung12
 P	net/neoforged/neoforge/common/world/poi/ExtendPoiTypesEvent	ladder/rung121/provided/ExtendPoiTypesEvent
 # NeoForge 21.1's neoforge:overlays pack section
 F	net/minecraft/server/packs/OverlayMetadataSection	NEOFORGE_TYPE	Lnet/minecraft/server/packs/metadata/MetadataSectionType;	ladder/rung121/Overlays	neoforgeType
+# the game's versions as a converted mod asks them: the versions it was made for (GameVersions)
+X	net/neoforged/neoforgespi/language/IModInfo	getVersion	()Lorg/apache/maven/artifact/versioning/ArtifactVersion;	ladder/rung121/GameVersions	modVersion
+X	net/minecraft/WorldVersion	getName	()Ljava/lang/String;	ladder/rung121/GameVersions	versionName
+X	net/neoforged/fml/loading/VersionInfo	mcVersion	()Ljava/lang/String;	ladder/rung121/GameVersions	mcVersion
+X	net/neoforged/fml/loading/VersionInfo	neoForgeVersion	()Ljava/lang/String;	ladder/rung121/GameVersions	neoForgeVersion

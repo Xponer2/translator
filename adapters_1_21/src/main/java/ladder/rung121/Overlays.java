@@ -10,10 +10,13 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.server.packs.OverlayMetadataSection;
 import net.minecraft.server.packs.metadata.MetadataSectionType;
 
-/** NeoForge 21.1's {@code OverlayMetadataSection.NEOFORGE_TYPE} (an F row): the {@code neoforge:overlays} pack section. */
+/**
+ * NeoForge 21.1's {@code OverlayMetadataSection.NEOFORGE_TYPE} (an F row): the {@code neoforge:overlays} pack section, whose
+ * entries may have conditions (an entry whose conditions fail is left out, as 21.1 reads them).
+ */
 public final class Overlays {
     public static final MetadataSectionType<OverlayMetadataSection> NEOFORGE_TYPE = MetadataSectionType.fromCodec("neoforge:overlays",
-            RecordCodecBuilder.create(i -> i.group(OverlayMetadataSection.OverlayEntry.CODEC.listOf().fieldOf("entries").forGetter(OverlayMetadataSection::overlays))
+            RecordCodecBuilder.create(i -> i.group(net.neoforged.neoforge.common.conditions.ConditionalOps.decodeListWithElementConditions(OverlayMetadataSection.OverlayEntry.CODEC).fieldOf("entries").forGetter(OverlayMetadataSection::overlays))
                     .apply(i, OverlayMetadataSection::new)));
 
     private Overlays() {

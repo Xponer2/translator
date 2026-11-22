@@ -1,0 +1,30 @@
+{
+  "pack": {
+    "description": "Ladder Test G",
+    "pack_format": 48
+  },
+  "neoforge:overlays": {
+    "entries": [
+      {
+        "directory": "overlay_on",
+        "formats": [
+          1,
+          999
+        ]
+      },
+      {
+        "directory": "overlay_off",
+        "formats": [
+          1,
+          999
+        ],
+        "neoforge:conditions": [
+          {
+            "type": "neoforge:mod_loaded",
+            "modid": "ladder_no_such_mod"
+          }
+        ]
+      }
+    ]
+  }
+}

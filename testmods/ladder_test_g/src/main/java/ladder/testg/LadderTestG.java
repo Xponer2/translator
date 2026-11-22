@@ -53,6 +53,12 @@ public final class LadderTestG {
         } catch (RuntimeException | LinkageError e) {
             results.put("error", e.toString());
         }
+        // the mod's NeoForge overlays: one always applied, one whose condition (a mod not loaded) leaves it out
+        net.minecraft.world.item.ItemStack stick = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STICK);
+        results.put("overlays", stick.is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM,
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_g", "on"))) + "/"
+                + stick.is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM,
+                        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("ladder_test_g", "off"))));
         try {
             Files.writeString(Path.of(b).resolveSibling("test-g.json"), new GsonBuilder().setPrettyPrinting().create().toJson(results),
                     StandardCharsets.UTF_8);
