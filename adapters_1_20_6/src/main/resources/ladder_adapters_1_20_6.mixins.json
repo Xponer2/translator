@@ -42,7 +42,8 @@
     "ModelBakeryMixin",
     "OptionsScreenSites$Video",
     "OptionsScreenSites$Sound",
-    "OptionsScreenSites$Controls"
+    "OptionsScreenSites$Controls",
+    "GuiGraphicsTooltipMixin"
   ],
   "injectors": {
     "defaultRequire": 1

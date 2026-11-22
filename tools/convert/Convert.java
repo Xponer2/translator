@@ -1631,9 +1631,21 @@ public class Convert {
 
     /** whether an adapters' mixin adds this method to the class (the game below hasn't it otherwise) */
     static boolean adapterAddsMethod(String cls, String name, String desc) {
-        // (the adapters name a carried class by its carried name; the reference by the upper game's)
-        return adapterAdded.getOrDefault(cls, List.of()).stream().anyMatch(m -> m.name.equals(name)
-                && (m.desc.equals(desc) || m.desc.replace("L" + CARRIED, "L").equals(desc)));
+        // (or an inherited one to a superclass below: 1.21's KeyBindsScreen.addContents is OptionsSubScreen's there)
+        Stage0.Version bottom = versions.get(versions.size() - 1);
+        boolean own = true;
+        for (String c = cls; c != null; own = false) {
+            boolean inherited = !own;
+            // (the adapters name a carried class by its carried name; the reference by the upper game's)
+            if (adapterAdded.getOrDefault(c, List.of()).stream().anyMatch(m -> m.name.equals(name)
+                    && (!inherited || (m.access & (Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC)) == 0)
+                    && (m.desc.equals(desc) || m.desc.replace("L" + CARRIED, "L").equals(desc)))) {
+                return true;
+            }
+            Stage0.Cls info = bottom.classes.get(c);
+            c = info == null ? null : info.superName;
+        }
+        return false;
     }
 
     /** the adapters' classes (a provided class is a mixin target below: checked on its own code) */
@@ -3220,6 +3232,10 @@ public class Convert {
             // NeoForge 21's TriState where 20.6 answers yes or no (canSustainPlant: DEFAULT, the game decides, is no)
             return 18;
         }
+        if (upper.getDescriptor().equals("Ljava/lang/Integer;") && lower.getDescriptor().equals("[F") && ADAPTERS.equals("ladder/rung1206/")) {
+            // NeoForge 21's colour Integer (null: none) where 20.6 gives red, green, blue floats (a beacon's colour multiplier)
+            return 19;
+        }
         if (upper.getSort() == Type.INT && lower.getDescriptor().equals("[F") && ADAPTERS.equals("ladder/rung1206/")) {
             // 1.21's ARGB colour int where 1.20.6 gives red, green, blue floats (DyeColor, a beacon beam's section)
             return 17;
@@ -3540,6 +3556,10 @@ public class Convert {
                 code.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, upper.getInternalName(), "getGameTimeDeltaPartialTick", "(Z)F", true));
             }
             case 12 -> code.add(new InsnNode(Opcodes.F2D));
+            case 19 -> {
+                checkAdapter(ADAPTERS + "misc/SmallAdapters", "rgbOrNull", "(Ljava/lang/Integer;)[F", "floats of an Integer colour");
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ADAPTERS + "misc/SmallAdapters", "rgbOrNull", "(Ljava/lang/Integer;)[F", false));
+            }
             case 18 -> {
                 // (an adapter's: 20.4's TriState has no isTrue)
                 checkAdapter(CONVERSIONS, "isTrue", "(L" + TRI_STATE + ";)Z", "a boolean of a TriState");
@@ -4551,7 +4571,9 @@ public class Convert {
      */
     static boolean bridgeableMixin(ClassNode node, Stage0.Ref end, boolean itf) {
         if (itf) {
-            return false;
+            // an interface mixin into a mod's own interfaces (Zeta's block extensions): its bridge is a default there
+            List<String> targets = mixinTargets.getOrDefault(node.name, List.of());
+            return !targets.isEmpty() && targets.stream().allMatch(mod::containsKey);
         }
         Stage0.Version bottom = versions.get(versions.size() - 1);
         for (String t : mixinTargets.getOrDefault(node.name, List.of())) {
@@ -4860,6 +4882,10 @@ public class Convert {
             case 14 -> code.add(new InsnNode(lower.getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
             case 15 -> code.add(new TypeInsnNode(Opcodes.CHECKCAST, upper.getInternalName()));
             case 17 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ADAPTERS + "misc/SmallAdapters", "argb", "([F)I", false));
+            case 19 -> {
+                checkAdapter(ADAPTERS + "misc/SmallAdapters", "argbOrNull", "([F)Ljava/lang/Integer;", "an Integer colour of floats");
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ADAPTERS + "misc/SmallAdapters", "argbOrNull", "([F)Ljava/lang/Integer;", false));
+            }
             case 18 -> {
                 checkAdapter(CONVERSIONS, "triState", "(Z)L" + TRI_STATE + ";", "a TriState of a boolean");
                 code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "triState", "(Z)L" + TRI_STATE + ";", false));
@@ -4978,6 +5004,9 @@ public class Convert {
                 if (thing.kind() == 'C') {
                     applyRules(source, false);
                     redirectCarried(source);
+                    // a carried class is unsealed: its permitted ones may stay behind (FML 4's ILoadedConfig, whose
+                    // LoadedConfig is the loader's own), and the adapters may have to give its values
+                    source.permittedSubclasses = null;
                     ClassNode converted = new ClassNode();
                     source.accept(new ClassRemapper(converted, remapper));
                     fixInterfaceCalls(converted);
@@ -5653,6 +5682,8 @@ public class Convert {
 
     static final List<HandlerFix> handlerFixes = new ArrayList<>();
     /** injectors whose handler takes and returns a value of the method itself (a local, an argument, its return) */
+    static final String MODIFY_VARIABLE = "Lorg/spongepowered/asm/mixin/injection/ModifyVariable;";
+
     static final Set<String> VALUE_INJECTORS = Set.of("Lorg/spongepowered/asm/mixin/injection/ModifyVariable;",
             "Lcom/llamalad7/mixinextras/injector/ModifyReturnValue;");
 
@@ -6042,22 +6073,24 @@ public class Convert {
             boolean prefix = hp.length >= up.length && Arrays.equals(Arrays.copyOf(hp, up.length), up);
             boolean distinct = list.stream().allMatch(x -> x.upperDesc().equals(f.upperDesc()) && x.end().equals(f.end()) && x.call() == f.call());
             String[] callPlan = f.call() ? argumentPlan(f.upperDesc(), f.end()) : null;
-            boolean callShape = callPlan != null && callPlan.length == up.length && !returnChanged && distinct && hp.length > up.length
+            // (a static call's handler takes no receiver)
+            int callBase = f.call() && staticBelow(f.end()) ? 0 : 1;
+            boolean callShape = callPlan != null && callPlan.length == up.length && !returnChanged && distinct && hp.length >= callBase + up.length
                     && (f.annotation().equals("Lcom/llamalad7/mixinextras/injector/v2/WrapWithCondition;")
                             || f.annotation().equals("Lcom/llamalad7/mixinextras/injector/WrapWithCondition;")
                             || f.annotation().equals("Lorg/spongepowered/asm/mixin/injection/Redirect;"))
-                    && Arrays.equals(Arrays.copyOfRange(hp, 1, 1 + up.length), up);
+                    && Arrays.equals(Arrays.copyOfRange(hp, callBase, callBase + up.length), up);
             if (callShape) {
                 Type[] tailUp = methodFix == null ? null : Type.getArgumentTypes(methodFix.upperDesc());
                 Type[] tailLow = methodFix == null ? null : Type.getArgumentTypes(methodFix.end().desc());
                 String[] tailPlan = methodFix == null ? null : argumentPlan(methodFix.upperDesc(), methodFix.end());
                 int[] tailMap = methodFix == null || tailPlan != null ? null : paramMap(tailUp, tailLow);
                 if (methodFix != null && (tailPlan == null && tailMap == null
-                        || !Arrays.equals(Arrays.copyOfRange(hp, 1 + up.length, hp.length), tailUp))) {
+                        || !Arrays.equals(Arrays.copyOfRange(hp, callBase + up.length, hp.length), tailUp))) {
                     problem("mixin handler " + where + " captures the arguments of " + methodFix.end().name() + ", whose types changed below too: no bridge for both");
                     continue;
                 }
-                callBridge(out, h, hp, up, low, callPlan, planOwner, tailUp, tailLow, tailPlan, tailMap);
+                callBridge(out, h, hp, up, low, callPlan, planOwner, tailUp, tailLow, tailPlan, tailMap, callBase);
                 continue;
             }
             // an @Inject whose method's result changed between numbers (1.21's Camera.getMaxZoom(F)F, 1.20.6's (D)D): its
@@ -6072,8 +6105,9 @@ public class Convert {
             }
             boolean numberResult = returnChanged && inject && !f.call() && callback >= 0 && (NUMBERS.indexOf(upRet.getDescriptor()) >= 0
                     && NUMBERS.indexOf(lowRet.getDescriptor()) >= 0 && upRet.getDescriptor().length() == 1 && lowRet.getDescriptor().length() == 1
-                    // (or NeoForge 21's TriState of 20.6's boolean: the callback's value converts the same way)
-                    || conversion(upRet, lowRet) == 18);
+                    // (or NeoForge 21's TriState of 20.6's boolean, its colour Integer of 20.6's floats: the callback's value
+                    // converts the same way)
+                    || conversion(upRet, lowRet) == 18 || conversion(upRet, lowRet) == 19);
             if (!inject && distinct && valueBridge(out, h, hp, f, up, low, upRet, lowRet)) {
                 // an injector of another kind whose values convert both ways (a float of 1.21 a double of 1.20.6)
                 continue;
@@ -6187,7 +6221,7 @@ public class Convert {
     /** whether a value converts both ways between an upper and a lower type (a handler's argument up, its result down) */
     static boolean twoWay(Type upper, Type lower) {
         int c = conversion(upper, lower);
-        return c == 0 || c == 1 || c == 2 || c == 6 || c == 8 || c == 9 || c == 12 || c == 15 || c == 16 || c == 17 || c == 18;
+        return c == 0 || c == 1 || c == 2 || c == 6 || c == 8 || c == 9 || c == 12 || c == 15 || c == 16 || c == 17 || c == 18 || c == 19;
     }
 
     /** whether the lower member is static (a call's receiver isn't among a call injector's values then) */
@@ -6205,9 +6239,9 @@ public class Convert {
      * annotation moves to the wrapper; the handler keeps its name and descriptor. False when the shape isn't one of these.
      */
     /**
-     * A @ModifyReturnValue of a changed method that captures the method's arguments after the result (the first of them,
-     * as many as it takes): the wrapper takes the lower method's result and all its arguments, and makes the upper ones
-     * the handler takes by the method's A row plan, or its map.
+     * A @ModifyReturnValue (a @ModifyVariable) of a changed method that captures the method's arguments after the result
+     * (the local; the first of them, as many as it takes): the wrapper takes the lower method's result (the local) and
+     * all its arguments, and makes the upper ones the handler takes by the method's A row plan, or its map.
      */
     static boolean resultCaptureBridge(ClassNode out, MethodNode h, Type[] hp, HandlerFix f, Type[] up, Type[] low, Type upRet, Type lowRet) {
         int c = hp.length - 1;
@@ -6286,6 +6320,12 @@ public class Convert {
             return false;
         }
         String ann = f.annotation();
+        if (!f.call() && ann.equals(MODIFY_VARIABLE) && hp.length > 1 && !Arrays.equals(up, low) && hp[0].equals(Type.getReturnType(h.desc))
+                && !Arrays.asList(up).contains(hp[0])) {
+            // a local of the method (its type the same below), then the method's arguments it captures (LeavesBeGone's
+            // chunk read: 1.21's RegionStorageInfo)
+            return resultCaptureBridge(out, h, hp, f, up, low, hp[0], hp[0]);
+        }
         // (a value injector of a result sees only the result: the arguments may change as they like; the others see them)
         boolean resultOnly = f.call() && ann.equals(MODIFY_EXPRESSION) || !f.call() && ann.equals(MODIFY_RETURN);
         boolean argumentsConvert = up.length == low.length;
@@ -6443,18 +6483,26 @@ public class Convert {
      */
     static void callBridge(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan, String planOwner,
             Type[] tailUp, Type[] tailLow, String[] tailPlan, int[] tailMap) {
-        Type[] tail = tailUp == null ? Arrays.copyOfRange(hp, 1 + up.length, hp.length) : tailLow;
-        Type[] wrapped = new Type[1 + low.length + tail.length];
-        wrapped[0] = hp[0];
-        System.arraycopy(low, 0, wrapped, 1, low.length);
-        System.arraycopy(tail, 0, wrapped, 1 + low.length, tail.length);
+        callBridge(out, h, hp, up, low, plan, planOwner, tailUp, tailLow, tailPlan, tailMap, 1);
+    }
+
+    /** (base: 1 when the handler takes the call's receiver first, 0 for a static call's) */
+    static void callBridge(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan, String planOwner,
+            Type[] tailUp, Type[] tailLow, String[] tailPlan, int[] tailMap, int base) {
+        Type[] tail = tailUp == null ? Arrays.copyOfRange(hp, base + up.length, hp.length) : tailLow;
+        Type[] wrapped = new Type[base + low.length + tail.length];
+        if (base == 1) {
+            wrapped[0] = hp[0];
+        }
+        System.arraycopy(low, 0, wrapped, base, low.length);
+        System.arraycopy(tail, 0, wrapped, base + low.length, tail.length);
         MethodNode g = new MethodNode(h.access, "ladder$wrap$" + h.name, Type.getMethodDescriptor(Type.getReturnType(h.desc), wrapped), null,
                 h.exceptions.toArray(new String[0]));
         g.visibleAnnotations = h.visibleAnnotations;
         g.invisibleAnnotations = h.invisibleAnnotations;
         int[] placeOf = new int[hp.length];
         for (int i = 0; i < hp.length; i++) {
-            placeOf[i] = i == 0 ? 0 : i > up.length && tailUp == null ? 1 + low.length + i - 1 - up.length : -1;
+            placeOf[i] = i < base ? i : i >= base + up.length && tailUp == null ? base + low.length + i - base - up.length : -1;
         }
         g.visibleParameterAnnotations = moveParameterAnnotations(h.visibleParameterAnnotations, placeOf, wrapped.length);
         g.invisibleParameterAnnotations = moveParameterAnnotations(h.invisibleParameterAnnotations, placeOf, wrapped.length);
@@ -6474,18 +6522,20 @@ public class Convert {
             slots[i] = slot;
             slot += wrapped[i].getSize();
         }
-        code.add(new VarInsnNode(wrapped[0].getOpcode(Opcodes.ILOAD), slots[0]));
-        int[] lowSlots = Arrays.copyOfRange(slots, 1, 1 + low.length);
+        if (base == 1) {
+            code.add(new VarInsnNode(wrapped[0].getOpcode(Opcodes.ILOAD), slots[0]));
+        }
+        int[] lowSlots = Arrays.copyOfRange(slots, base, base + low.length);
         for (int i = 0; i < up.length; i++) {
             // (the member's object: the call's receiver)
-            planArgument(code, plan[i], low, lowSlots, up[i], slots[0], planOwner);
+            planArgument(code, plan[i], low, lowSlots, up[i], base == 1 ? slots[0] : -1, planOwner);
         }
         if (tailUp == null) {
-            for (int i = 1 + low.length; i < wrapped.length; i++) {
+            for (int i = base + low.length; i < wrapped.length; i++) {
                 code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slots[i]));
             }
         } else {
-            int[] tailSlots = Arrays.copyOfRange(slots, 1 + low.length, wrapped.length);
+            int[] tailSlots = Arrays.copyOfRange(slots, base + low.length, wrapped.length);
             for (int i = 0; i < tailUp.length; i++) {
                 if (tailPlan != null) {
                     planArgument(code, tailPlan[i], tailLow, tailSlots, tailUp[i], isStatic ? -1 : 0, null);

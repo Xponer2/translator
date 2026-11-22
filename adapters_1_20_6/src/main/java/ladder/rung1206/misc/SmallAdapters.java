@@ -247,4 +247,27 @@ public final class SmallAdapters {
             net.minecraft.world.level.BlockGetter level, net.minecraft.core.BlockPos soil, net.minecraft.core.Direction facing) {
         return plantable.getPlant(level, soil.relative(facing));
     }
+
+    private static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item> MUSIC_DISCS = net.minecraft.tags.ItemTags.create(
+            new net.minecraft.resources.ResourceLocation("c", "music_discs"));
+
+    /** NeoForge 21's {@code Tags.Items.MUSIC_DISCS}: c:music_discs (the adapters' data puts the game's discs in it) */
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> musicDiscs() {
+        return MUSIC_DISCS;
+    }
+
+    /** 1.21's {@code Checkbox.Builder.maxWidth(width)}: 1.20.6's checkbox label isn't wrapped, its width is the text's */
+    public static net.minecraft.client.gui.components.Checkbox.Builder maxWidth(net.minecraft.client.gui.components.Checkbox.Builder builder,
+            int width) {
+        return builder;
+    }
+
+    /** NeoForge 21's colour Integer of 20.6's red, green, blue floats, and back (null: no colour, both ways) */
+    public static Integer argbOrNull(float[] rgb) {
+        return rgb == null ? null : argb(rgb);
+    }
+
+    public static float[] rgbOrNull(Integer argb) {
+        return argb == null ? null : rgb(argb);
+    }
 }

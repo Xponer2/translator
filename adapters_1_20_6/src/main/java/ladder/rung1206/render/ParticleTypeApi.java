@@ -22,4 +22,17 @@ public interface ParticleTypeApi {
     static BufferBuilder begin(net.minecraft.client.particle.ParticleRenderType self, Tesselator tesselator, TextureManager textures) {
         throw new UnsupportedOperationException("ParticleRenderType.begin has no game implementation");
     }
+
+    /**
+     * a call of 1.21's begin on any render type (an X row): a converted mod's begins as 1.21 does; the game's own begins
+     * its batch in the tesselator's builder (1.20.6's way), the builder given back
+     */
+    static BufferBuilder call(net.minecraft.client.particle.ParticleRenderType type, Tesselator tesselator, TextureManager textures) {
+        if (type instanceof ParticleTypeApi own) {
+            return own.begin(tesselator, textures);
+        }
+        BufferBuilder builder = tesselator.getBuilder();
+        type.begin(builder, textures);
+        return builder;
+    }
 }

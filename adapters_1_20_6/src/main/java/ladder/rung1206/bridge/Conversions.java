@@ -185,7 +185,8 @@ public final class Conversions {
             org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> lower, String upper) {
         Object value = lower.getReturnValue();
         return new org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<>(lower.getId(), lower.isCancellable(),
-                value instanceof Number n ? number(n, upper) : value instanceof Boolean b && upper.equals(TRI_STATE) ? triState(b) : value);
+                value instanceof Number n ? number(n, upper) : value instanceof Boolean b && upper.equals(TRI_STATE) ? triState(b)
+                        : value instanceof float[] rgb && upper.equals("Ljava/lang/Integer;") ? colour(rgb) : value);
     }
 
     /** what the handler set on the upper callback (a cancel with a value), on the lower one as the lower number */
@@ -201,9 +202,23 @@ public final class Conversions {
                 }
                 return;
             }
+            if (type.equals("[F")) {
+                // a colour Integer as red, green, blue floats (null: none)
+                ((org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable) lower).setReturnValue(
+                        value instanceof Integer argb ? colour(argb) : null);
+                return;
+            }
             ((org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable) lower).setReturnValue(
                     value instanceof Number n ? number(n, type) : value);
         }
+    }
+
+    private static Integer colour(float[] rgb) {
+        return 0xFF000000 | Math.round(rgb[0] * 255.0F) << 16 | Math.round(rgb[1] * 255.0F) << 8 | Math.round(rgb[2] * 255.0F);
+    }
+
+    private static float[] colour(int argb) {
+        return new float[] {(argb >> 16 & 0xFF) / 255.0F, (argb >> 8 & 0xFF) / 255.0F, (argb & 0xFF) / 255.0F};
     }
 
     private static final String TRI_STATE = "Lnet/neoforged/neoforge/common/util/TriState;";
