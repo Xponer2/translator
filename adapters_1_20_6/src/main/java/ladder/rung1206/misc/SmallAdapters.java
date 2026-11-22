@@ -356,4 +356,9 @@ public final class SmallAdapters {
             net.minecraft.world.phys.Vec3 movement) {
         return movement.z;
     }
+
+    /** the client's tesselator (1.21 passes it where 1.20.6 passes its builder: the cloud mesh) */
+    public static com.mojang.blaze3d.vertex.Tesselator tesselator() {
+        return com.mojang.blaze3d.vertex.Tesselator.getInstance();
+    }
 }

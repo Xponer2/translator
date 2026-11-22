@@ -1639,7 +1639,9 @@ public class Convert {
             // (the adapters name a carried class by its carried name; the reference by the upper game's)
             if (adapterAdded.getOrDefault(c, List.of()).stream().anyMatch(m -> m.name.equals(name)
                     && (!inherited || (m.access & (Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC)) == 0)
-                    && (m.desc.equals(desc) || m.desc.replace("L" + CARRIED, "L").equals(desc)))) {
+                    && (m.desc.equals(desc) || m.desc.replace("L" + CARRIED, "L").equals(desc)
+                            // (or a provided class: 1.21's DeltaTracker of Minecraft.getTimer() is the adapters' own)
+                            || m.desc.equals(remapper.mapMethodDesc(desc))))) {
                 return true;
             }
             Stage0.Cls info = bottom.classes.get(c);
@@ -6149,7 +6151,9 @@ public class Convert {
                     && NUMBERS.indexOf(lowRet.getDescriptor()) >= 0 && upRet.getDescriptor().length() == 1 && lowRet.getDescriptor().length() == 1
                     // (or NeoForge 21's TriState of 20.6's boolean, its colour Integer of 20.6's floats: the callback's value
                     // converts the same way)
-                    || conversion(upRet, lowRet) == 18 || conversion(upRet, lowRet) == 19);
+                    || conversion(upRet, lowRet) == 18 || conversion(upRet, lowRet) == 19
+                    // (1.21's MeshData of 1.20.6's rendered buffer: the adapters' Conversions.convert)
+                    || conversion(upRet, lowRet) == 16);
             if (!inject && distinct && valueBridge(out, h, hp, f, up, low, upRet, lowRet)) {
                 // an injector of another kind whose values convert both ways (a float of 1.21 a double of 1.20.6)
                 continue;

@@ -186,7 +186,7 @@ public final class Conversions {
         Object value = lower.getReturnValue();
         return new org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<>(lower.getId(), lower.isCancellable(),
                 value instanceof Number n ? number(n, upper) : value instanceof Boolean b && upper.equals(TRI_STATE) ? triState(b)
-                        : value instanceof float[] rgb && upper.equals("Ljava/lang/Integer;") ? colour(rgb) : value);
+                        : value instanceof float[] rgb && upper.equals("Ljava/lang/Integer;") ? colour(rgb) : convert(value, "", upper));
     }
 
     /** what the handler set on the upper callback (a cancel with a value), on the lower one as the lower number */
@@ -209,7 +209,7 @@ public final class Conversions {
                 return;
             }
             ((org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable) lower).setReturnValue(
-                    value instanceof Number n ? number(n, type) : value);
+                    value instanceof Number n ? number(n, type) : convert(value, "", type));
         }
     }
 

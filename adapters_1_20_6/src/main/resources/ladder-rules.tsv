@@ -584,3 +584,5 @@ K	net/minecraft/client/renderer/MultiBufferSource$BufferSource	(Lcom/mojang/blaz
 X	net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator	<init>	(Lcom/mojang/blaze3d/vertex/VertexConsumer;I)V	ladder/rung1206/render/OutlineGenerators	create
 X	net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator	color	()I	ladder/rung1206/render/OutlineGenerators	color
 X	net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator	delegate	()Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/OutlineGenerators	delegate
+# a handler of 1.21's cloud mesh building (the tesselator; 1.20.6: the tesselator's builder, a rendered buffer back)
+A	net/minecraft/client/renderer/LevelRenderer	buildClouds	(Lcom/mojang/blaze3d/vertex/Tesselator;DDDLnet/minecraft/world/phys/Vec3;)Lcom/mojang/blaze3d/vertex/MeshData;	(Lcom/mojang/blaze3d/vertex/BufferBuilder;DDDLnet/minecraft/world/phys/Vec3;)Lcom/mojang/blaze3d/vertex/BufferBuilder$RenderedBuffer;	ladder/rung1206/misc/SmallAdapters.tesselator() $1 $2 $3 $4

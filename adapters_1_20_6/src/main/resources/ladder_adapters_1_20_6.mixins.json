@@ -43,7 +43,8 @@
     "OptionsScreenSites$Video",
     "OptionsScreenSites$Sound",
     "OptionsScreenSites$Controls",
-    "GuiGraphicsTooltipMixin"
+    "GuiGraphicsTooltipMixin",
+    "MinecraftTimerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
