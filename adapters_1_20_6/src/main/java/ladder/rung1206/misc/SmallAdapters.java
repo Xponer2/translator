@@ -411,4 +411,11 @@ public final class SmallAdapters {
     public static org.joml.Vector3f cameraLeft() {
         return new org.joml.Vector3f(-1.0F, 0.0F, 0.0F);
     }
+
+    /** NeoForge 21's block element face with its parent holder (1.20.6's element sets itself as its faces' parent) */
+    public static net.minecraft.client.renderer.block.model.BlockElementFace blockElementFace(net.minecraft.core.Direction cull, int tint, String texture,
+            net.minecraft.client.renderer.block.model.BlockFaceUV uv, net.neoforged.neoforge.client.model.ExtraFaceData faceData,
+            org.apache.commons.lang3.mutable.MutableObject<?> parent) {
+        return new net.minecraft.client.renderer.block.model.BlockElementFace(cull, tint, texture, uv, faceData);
+    }
 }

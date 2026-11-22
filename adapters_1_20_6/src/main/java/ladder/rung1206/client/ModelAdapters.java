@@ -97,4 +97,33 @@ public final class ModelAdapters {
     public static Material decoratedPotSide() {
         return createDecoratedPotMaterial(new ResourceLocation("minecraft", "decorated_pot_side"));
     }
+
+    // 1.21's model bakery baker (public in NeoForge 21; 1.20.6's made public by the adapters' access transformer)
+
+    /** 1.21's {@code bakery.new ModelBakerImpl(sprites, location)}: 1.20.6's takes the sprites by model id */
+    public static net.minecraft.client.resources.model.ModelBakery.ModelBakerImpl modelBaker(net.minecraft.client.resources.model.ModelBakery bakery,
+            ladder.carried_1_20_6.net.minecraft.client.resources.model.ModelBakery$TextureGetter sprites, ModelResourceLocation location) {
+        return bakery.new ModelBakerImpl((id, material) -> sprites.get(new ModelResourceLocation(id, location.getVariant()), material), location);
+    }
+
+    public static BakedModel bakeUncached(net.minecraft.client.resources.model.ModelBakery.ModelBakerImpl baker,
+            net.minecraft.client.resources.model.UnbakedModel model, net.minecraft.client.resources.model.ModelState state) {
+        return bakeUncached((net.neoforged.neoforge.client.extensions.IModelBakerExtension) baker, model, state);
+    }
+
+    public static BakedModel bakeUncached(net.minecraft.client.resources.model.ModelBakery.ModelBakerImpl baker,
+            net.minecraft.client.resources.model.UnbakedModel model, net.minecraft.client.resources.model.ModelState state,
+            java.util.function.Function<Material, TextureAtlasSprite> sprites) {
+        return bakeUncached((net.neoforged.neoforge.client.extensions.IModelBakerExtension) baker, model, state, sprites);
+    }
+
+    public static net.minecraft.client.resources.model.UnbakedModel getTopLevelModel(net.minecraft.client.resources.model.ModelBakery.ModelBakerImpl baker,
+            ModelResourceLocation location) {
+        return getTopLevelModel((net.neoforged.neoforge.client.extensions.IModelBakerExtension) baker, location);
+    }
+
+    /** 1.21's {@code format.contains(element)} */
+    public static boolean contains(com.mojang.blaze3d.vertex.VertexFormat format, com.mojang.blaze3d.vertex.VertexFormatElement element) {
+        return format.getElements().contains(element);
+    }
 }
