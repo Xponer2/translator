@@ -235,8 +235,9 @@ public class Convert {
                 if (problems.isEmpty()) {
                     clean++;
                 }
-                if (!problems.isEmpty() || Boolean.getBoolean("ladder.discard")) {
-                    // (-Dladder.discard: an offline check keeps the report only, the disk fills fast)
+                if (!problems.isEmpty() && !Boolean.getBoolean("ladder.keep") || Boolean.getBoolean("ladder.discard")) {
+                    // (-Dladder.discard: an offline check keeps the report only, the disk fills fast; -Dladder.keep: a
+                    // jar with problems stays, to look at)
                     Files.deleteIfExists(converted);
                 }
                 long classes = 0;
@@ -6166,6 +6167,83 @@ public class Convert {
      * Operation the handler calls takes the upper values and converts them down (Conversions.operation). The injector's
      * annotation moves to the wrapper; the handler keeps its name and descriptor. False when the shape isn't one of these.
      */
+    /**
+     * A @ModifyReturnValue of a changed method that captures the method's arguments after the result (the first of them,
+     * as many as it takes): the wrapper takes the lower method's result and all its arguments, and makes the upper ones
+     * the handler takes by the method's A row plan, or its map.
+     */
+    static boolean resultCaptureBridge(ClassNode out, MethodNode h, Type[] hp, HandlerFix f, Type[] up, Type[] low, Type upRet, Type lowRet) {
+        int c = hp.length - 1;
+        if (c > up.length || !Arrays.equals(Arrays.copyOfRange(hp, 1, hp.length), Arrays.copyOf(up, c))) {
+            return false;
+        }
+        String[] plan = argumentPlan(f.upperDesc(), f.end());
+        int[] map = plan != null ? null : paramMap(up, low);
+        if (plan == null && map == null) {
+            return false;
+        }
+        if (plan != null && plan.length != up.length) {
+            return false;
+        }
+        Type hRet = Type.getReturnType(h.desc);
+        Type[] wrapped = new Type[1 + low.length];
+        wrapped[0] = lowRet;
+        System.arraycopy(low, 0, wrapped, 1, low.length);
+        MethodNode g = new MethodNode(h.access, "ladder$wrap$" + h.name, Type.getMethodDescriptor(lowRet, wrapped), null,
+                h.exceptions.toArray(new String[0]));
+        g.visibleAnnotations = h.visibleAnnotations;
+        g.invisibleAnnotations = h.invisibleAnnotations;
+        h.visibleAnnotations = null;
+        h.invisibleAnnotations = null;
+        // (the captured parameters' annotations stay on the handler: the wrapper's are the lower method's own)
+        if (h.visibleParameterAnnotations != null || h.invisibleParameterAnnotations != null) {
+            int[] placeOf = new int[hp.length];
+            Arrays.fill(placeOf, -1);
+            placeOf[0] = 0;
+            g.visibleParameterAnnotations = moveParameterAnnotations(h.visibleParameterAnnotations, placeOf, wrapped.length);
+            g.invisibleParameterAnnotations = moveParameterAnnotations(h.invisibleParameterAnnotations, placeOf, wrapped.length);
+        }
+        boolean isStatic = (h.access & Opcodes.ACC_STATIC) != 0;
+        InsnList code = g.instructions;
+        int slot = isStatic ? 0 : 1;
+        int[] slots = new int[wrapped.length];
+        for (int i = 0; i < wrapped.length; i++) {
+            slots[i] = slot;
+            slot += wrapped[i].getSize();
+        }
+        int[] lowSlots = Arrays.copyOfRange(slots, 1, slots.length);
+        if (!isStatic) {
+            code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        }
+        code.add(new VarInsnNode(lowRet.getOpcode(Opcodes.ILOAD), slots[0]));
+        if (!lowRet.equals(upRet)) {
+            convertUp(code, lowRet, upRet);
+        }
+        for (int i = 0; i < c; i++) {
+            if (plan != null) {
+                planArgument(code, plan[i], low, lowSlots, up[i], isStatic ? -1 : 0, null);
+            } else if (map[i] >= 0) {
+                code.add(new VarInsnNode(low[map[i]].getOpcode(Opcodes.ILOAD), lowSlots[map[i]]));
+                convertUp(code, low[map[i]], up[i]);
+            } else if (map[i] <= -2) {
+                packColor(code, lowSlots, -map[i] - 2, colorChannels(up, i, low, -map[i] - 2));
+            } else {
+                supplyContext(code, up[i]);
+            }
+        }
+        boolean privateHandler = (h.access & Opcodes.ACC_PRIVATE) != 0;
+        code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : privateHandler ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, out.name,
+                h.name, h.desc, false));
+        if (!lowRet.equals(hRet)) {
+            convertDown(code, hRet, lowRet);
+        }
+        code.add(new InsnNode(lowRet.getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 4 + 2 * c;
+        out.methods.add(g);
+        return true;
+    }
+
     static boolean valueBridge(ClassNode out, MethodNode h, Type[] hp, HandlerFix f, Type[] up, Type[] low, Type upRet, Type lowRet) {
         if (!twoWay(upRet, lowRet) && !(upRet.getSort() == Type.VOID && lowRet.getSort() == Type.VOID)) {
             return false;
@@ -6205,8 +6283,12 @@ public class Convert {
                 wrappedRet = lowRet;
             }
         } else if (resultOnly) {
-            // the call's (the method's) result, then captured values (a method's own arguments when they changed: none)
-            if (hp.length < 1 || !hp[0].equals(upRet) || !hRet.equals(upRet) || !f.call() && !Arrays.equals(up, low) && hp.length > 1) {
+            // the call's (the method's) result, then captured values (a method's own arguments when they changed: made
+            // of the lower method's)
+            if (!f.call() && !Arrays.equals(up, low) && hp.length > 1) {
+                return hp[0].equals(upRet) && hRet.equals(upRet) && resultCaptureBridge(out, h, hp, f, up, low, upRet, lowRet);
+            }
+            if (hp.length < 1 || !hp[0].equals(upRet) || !hRet.equals(upRet)) {
                 return false;
             }
             wrapped[0] = lowRet;
