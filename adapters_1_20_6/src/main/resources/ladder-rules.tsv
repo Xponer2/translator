@@ -429,3 +429,11 @@ B	net/minecraft/world/item/enchantment/effects/EnchantmentEntityEffect
 B	net/minecraft/world/item/enchantment/effects/EnchantmentLocationBasedEffect
 B	net/minecraft/world/item/enchantment/effects/EnchantmentValueEffect
 B	net/minecraft/world/item/enchantment/providers/EnchantmentProviderTypes
+# 1.21's ValidationContext without a resolver
+K	net/minecraft/world/level/storage/loot/ValidationContext	(Lnet/minecraft/util/ProblemReporter;Lnet/minecraft/world/level/storage/loot/parameters/LootContextParamSet;)V	(Lnet/minecraft/util/ProblemReporter;Lnet/minecraft/world/level/storage/loot/parameters/LootContextParamSet;Lnet/minecraft/core/HolderGetter$Provider;)V	ladder/rung1206/misc/MoreAdapters	$0,$1,noResolver
+# codecs 1.21's enchantment effects use
+F	net/minecraft/world/damagesource/DamageType	CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/misc/MoreAdapters	damageTypeCodec
+F	net/minecraft/world/entity/ai/attributes/Attribute	CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/misc/MoreAdapters	attributeCodec
+F	net/minecraft/world/level/gameevent/GameEvent	CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/misc/MoreAdapters	gameEventCodec
+X	net/minecraft/world/entity/Entity	getKnownMovement	()Lnet/minecraft/world/phys/Vec3;	ladder/rung1206/misc/MoreAdapters	getKnownMovement
+F	net/minecraft/world/level/Level$ExplosionInteraction	CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/misc/MoreAdapters	explosionInteractionCodec

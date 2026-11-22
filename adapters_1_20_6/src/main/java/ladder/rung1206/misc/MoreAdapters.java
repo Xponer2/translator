@@ -176,4 +176,47 @@ public final class MoreAdapters {
     public static ItemStack getWeaponItem(net.minecraft.world.entity.projectile.AbstractArrow arrow) {
         return ItemStack.EMPTY;
     }
+
+    /** the K row's resolver of 1.21's {@code new ValidationContext(reporter, params)}: none (1.21's is empty too) */
+    public static net.minecraft.core.HolderGetter.Provider noResolver(net.minecraft.util.ProblemReporter reporter,
+            net.minecraft.world.level.storage.loot.parameters.LootContextParamSet params) {
+        return new net.minecraft.core.HolderGetter.Provider() {
+            @Override
+            public <T> Optional<net.minecraft.core.HolderGetter<T>> lookup(ResourceKey<? extends Registry<? extends T>> key) {
+                return Optional.empty();
+            }
+        };
+    }
+
+    /** {@code entity.onEquippedItemBroken(item, slot)}: 1.20.6's break event of the slot */
+    public static void onEquippedItemBroken(LivingEntity entity, net.minecraft.world.item.Item item, net.minecraft.world.entity.EquipmentSlot slot) {
+        entity.broadcastBreakEvent(slot);
+    }
+
+    /** {@code DamageType.CODEC}: a damage type of the data registry, by id */
+    public static Codec<Holder<net.minecraft.world.damagesource.DamageType>> damageTypeCodec() {
+        return net.minecraft.resources.RegistryFileCodec.create(net.minecraft.core.registries.Registries.DAMAGE_TYPE,
+                net.minecraft.world.damagesource.DamageType.DIRECT_CODEC);
+    }
+
+    /** {@code Attribute.CODEC}: an attribute by id */
+    public static Codec<Holder<net.minecraft.world.entity.ai.attributes.Attribute>> attributeCodec() {
+        return net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.holderByNameCodec();
+    }
+
+    /** {@code GameEvent.CODEC}: a game event by id */
+    public static Codec<Holder<net.minecraft.world.level.gameevent.GameEvent>> gameEventCodec() {
+        return net.minecraft.core.registries.BuiltInRegistries.GAME_EVENT.holderByNameCodec();
+    }
+
+    /** {@code entity.getKnownMovement()}: its movement (1.21 keeps a player's last one sent by the client) */
+    public static net.minecraft.world.phys.Vec3 getKnownMovement(net.minecraft.world.entity.Entity entity) {
+        return entity.getDeltaMovement();
+    }
+
+    /** {@code Level.ExplosionInteraction.CODEC}: by 1.21's lower-case names (trigger: 1.20.6's none) */
+    public static Codec<Level.ExplosionInteraction> explosionInteractionCodec() {
+        return Codec.STRING.xmap(name -> name.equals("trigger") ? Level.ExplosionInteraction.NONE
+                : Level.ExplosionInteraction.valueOf(name.toUpperCase(java.util.Locale.ROOT)), mode -> mode.name().toLowerCase(java.util.Locale.ROOT));
+    }
 }

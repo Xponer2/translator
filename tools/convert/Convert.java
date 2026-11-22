@@ -2711,6 +2711,10 @@ public class Convert {
         if (kind == 'M' && redirects.containsKey(ref.cls() + "." + ref.name() + " " + ref.desc())) {
             return true;
         }
+        if (kind == 'M' && defaultsRow(ref.cls() + "." + ref.name() + " " + ref.desc()) != null) {
+            // a D row: the calls go to the lower method with its defaults
+            return true;
+        }
         if (kind == 'F' && fieldRedirects.containsKey(ref.cls() + "." + ref.name() + " " + ref.desc())) {
             return true;
         }
