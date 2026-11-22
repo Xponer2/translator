@@ -517,4 +517,55 @@ public final class SmallAdapters {
             java.util.Optional<?> usingConvertsTo, java.util.List<net.minecraft.world.food.FoodProperties.PossibleEffect> effects) {
         return new net.minecraft.world.food.FoodProperties(nutrition, saturation, canAlwaysEat, eatSeconds, effects);
     }
+
+    // NeoForge 21's tool tags (20.6 names some in the plural; the new ones come with the adapters' data)
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagToolsBow() {
+        return net.neoforged.neoforge.common.Tags.Items.TOOLS_BOWS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagToolsBrush() {
+        return net.neoforged.neoforge.common.Tags.Items.TOOLS_BRUSHES;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagToolsCrossbow() {
+        return net.neoforged.neoforge.common.Tags.Items.TOOLS_CROSSBOWS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagToolsFishingRod() {
+        return net.neoforged.neoforge.common.Tags.Items.TOOLS_FISHING_RODS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagToolsShield() {
+        return net.neoforged.neoforge.common.Tags.Items.TOOLS_SHIELDS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagToolsSpear() {
+        return net.neoforged.neoforge.common.Tags.Items.TOOLS_SPEARS;
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagToolsMace() {
+        return net.minecraft.tags.ItemTags.create(new net.minecraft.resources.ResourceLocation("c", "tools/mace"));
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagMeleeWeaponTools() {
+        return net.minecraft.tags.ItemTags.create(new net.minecraft.resources.ResourceLocation("c", "tools/melee_weapon"));
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagMiningToolTools() {
+        return net.minecraft.tags.ItemTags.create(new net.minecraft.resources.ResourceLocation("c", "tools/mining_tool"));
+    }
+
+    public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagRangedWeaponTools() {
+        return net.minecraft.tags.ItemTags.create(new net.minecraft.resources.ResourceLocation("c", "tools/ranged_weapon"));
+    }
+
+    /** NeoForge 21's {@code player.isFakePlayer()} (20.6: a FakePlayer's class) */
+    public static boolean isFakePlayer(net.neoforged.neoforge.common.extensions.IPlayerExtension player) {
+        return player instanceof net.neoforged.neoforge.common.util.FakePlayer;
+    }
+
+    /** 1.21's {@code VertexFormatElement.UV} (the first texture coordinates) */
+    public static com.mojang.blaze3d.vertex.VertexFormatElement vertexUv() {
+        return com.mojang.blaze3d.vertex.DefaultVertexFormat.ELEMENT_UV;
+    }
 }

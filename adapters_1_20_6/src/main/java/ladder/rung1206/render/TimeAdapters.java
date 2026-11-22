@@ -66,4 +66,14 @@ public final class TimeAdapters {
     public static long nanos() {
         return net.minecraft.Util.getNanos();
     }
+
+    /** NeoForge 21's {@code event.getPartialTick()} of a GUI overlay's customizing: the frame's time */
+    public static DeltaTracker getPartialTick(net.neoforged.neoforge.client.event.CustomizeGuiOverlayEvent event) {
+        return ladder.rung1206.bridge.Conversions.deltaTracker(event.getPartialTick());
+    }
+
+    /** NeoForge 21's {@code event.getDeltaTracker()} of a block highlight */
+    public static DeltaTracker getDeltaTracker(net.neoforged.neoforge.client.event.RenderHighlightEvent event) {
+        return ladder.rung1206.bridge.Conversions.deltaTracker(event.getPartialTick());
+    }
 }

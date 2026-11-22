@@ -700,3 +700,21 @@ T	net/minecraft/world/level/storage/loot/functions/EnchantedCountIncreaseFunctio
 T	net/minecraft/world/level/storage/loot/predicates/LootItemRandomChanceWithEnchantedBonusCondition	test	Lnet/minecraft/world/item/enchantment/EnchantmentHelper;getEnchantmentLevel(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/LivingEntity;)I	Lnet/minecraft/world/level/storage/loot/LootContext;getLootingModifier()I
 # 1.21's supported item check of an enchantment (a mod's mixin): 1.20.6's canEnchant (calls take the X row)
 M	net/minecraft/world/item/enchantment/Enchantment	isSupportedItem	(Lnet/minecraft/world/item/ItemStack;)Z	canEnchant	(Lnet/minecraft/world/item/ItemStack;)Z
+# NeoForge 21's tool tags, fake player check, the vertex texture element, the frame time of overlay and highlight events
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_BOW	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagToolsBow
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_BRUSH	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagToolsBrush
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_CROSSBOW	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagToolsCrossbow
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_FISHING_ROD	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagToolsFishingRod
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_SHIELD	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagToolsShield
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_SPEAR	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagToolsSpear
+F	net/neoforged/neoforge/common/Tags$Items	TOOLS_MACE	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagToolsMace
+F	net/neoforged/neoforge/common/Tags$Items	MELEE_WEAPON_TOOLS	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagMeleeWeaponTools
+F	net/neoforged/neoforge/common/Tags$Items	MINING_TOOL_TOOLS	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagMiningToolTools
+F	net/neoforged/neoforge/common/Tags$Items	RANGED_WEAPON_TOOLS	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/SmallAdapters	tagRangedWeaponTools
+X	net/neoforged/neoforge/common/extensions/IPlayerExtension	isFakePlayer	()Z	ladder/rung1206/misc/SmallAdapters	isFakePlayer
+F	com/mojang/blaze3d/vertex/VertexFormatElement	UV	Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/misc/SmallAdapters	vertexUv
+X	net/neoforged/neoforge/client/event/CustomizeGuiOverlayEvent	getPartialTick	()Lnet/minecraft/client/DeltaTracker;	ladder/rung1206/render/TimeAdapters	getPartialTick
+X	net/neoforged/neoforge/client/event/RenderHighlightEvent	getDeltaTracker	()Lnet/minecraft/client/DeltaTracker;	ladder/rung1206/render/TimeAdapters	getDeltaTracker
+# NeoForge 21's invulnerability check and effect tooltip events (posted by the adapters' mixins on 20.6)
+P	net/neoforged/neoforge/event/entity/EntityInvulnerabilityCheckEvent	ladder/rung1206/provided/event/EntityInvulnerabilityCheckEvent
+P	net/neoforged/neoforge/client/event/GatherEffectScreenTooltipsEvent	ladder/rung1206/provided/event/GatherEffectScreenTooltipsEvent
