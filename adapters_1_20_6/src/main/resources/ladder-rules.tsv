@@ -588,3 +588,15 @@ X	net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator	deleg
 A	net/minecraft/client/renderer/LevelRenderer	buildClouds	(Lcom/mojang/blaze3d/vertex/Tesselator;DDDLnet/minecraft/world/phys/Vec3;)Lcom/mojang/blaze3d/vertex/MeshData;	(Lcom/mojang/blaze3d/vertex/BufferBuilder;DDDLnet/minecraft/world/phys/Vec3;)Lcom/mojang/blaze3d/vertex/BufferBuilder$RenderedBuffer;	ladder/rung1206/misc/SmallAdapters.tesselator() $1 $2 $3 $4
 # 1.21's check of a link from outside (chat, a book)
 X	net/minecraft/Util	parseAndValidateUntrustedUri	(Ljava/lang/String;)Ljava/net/URI;	ladder/rung1206/misc/SmallAdapters	parseAndValidateUntrustedUri
+# 1.21's sound of a location (1.20.6: its text), the use-item packet's rotation (1.20.6: none)
+K	net/minecraft/client/resources/sounds/Sound	(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/util/valueproviders/SampledFloat;Lnet/minecraft/util/valueproviders/SampledFloat;ILnet/minecraft/client/resources/sounds/Sound$Type;ZZI)V	(Ljava/lang/String;Lnet/minecraft/util/valueproviders/SampledFloat;Lnet/minecraft/util/valueproviders/SampledFloat;ILnet/minecraft/client/resources/sounds/Sound$Type;ZZI)V	ladder/rung1206/misc/SmallAdapters	soundLocation,$1,$2,$3,$4,$5,$6,$7
+X	net/minecraft/network/protocol/game/ServerboundUseItemPacket	<init>	(Lnet/minecraft/world/InteractionHand;IFF)V	ladder/rung1206/misc/SmallAdapters	useItemPacket
+# 1.21's disconnection of a client with its details (1.20.6: the reason)
+M	net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	onDisconnect	(Lnet/minecraft/network/chat/Component;)V
+A	net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	(Lnet/minecraft/network/chat/Component;)V	ladder/rung1206/misc/SmallAdapters.disconnection(0)
+M	net/minecraft/client/multiplayer/ClientHandshakePacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	onDisconnect	(Lnet/minecraft/network/chat/Component;)V
+A	net/minecraft/client/multiplayer/ClientHandshakePacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	(Lnet/minecraft/network/chat/Component;)V	ladder/rung1206/misc/SmallAdapters.disconnection(0)
+# 1.21's camera directions (fresh vectors: a reader may change its copy)
+F	net/minecraft/client/Camera	FORWARDS	Lorg/joml/Vector3f;	ladder/rung1206/misc/SmallAdapters	cameraForwards
+F	net/minecraft/client/Camera	UP	Lorg/joml/Vector3f;	ladder/rung1206/misc/SmallAdapters	cameraUp
+F	net/minecraft/client/Camera	LEFT	Lorg/joml/Vector3f;	ladder/rung1206/misc/SmallAdapters	cameraLeft

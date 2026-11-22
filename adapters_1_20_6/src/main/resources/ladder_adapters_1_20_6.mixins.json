@@ -45,7 +45,8 @@
     "OptionsScreenSites$Controls",
     "GuiGraphicsTooltipMixin",
     "MinecraftTimerMixin",
-    "ScreenNarratorMixin"
+    "ScreenNarratorMixin",
+    "CameraConstantsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

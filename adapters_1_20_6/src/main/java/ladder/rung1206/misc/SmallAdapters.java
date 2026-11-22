@@ -375,4 +375,40 @@ public final class SmallAdapters {
         }
         return uri;
     }
+
+    /** 1.21's sound of a location (1.20.6 keeps its location's text; the K row's value) */
+    public static String soundLocation(net.minecraft.resources.ResourceLocation location, net.minecraft.util.valueproviders.SampledFloat volume,
+            net.minecraft.util.valueproviders.SampledFloat pitch, int weight, net.minecraft.client.resources.sounds.Sound.Type type, boolean stream,
+            boolean preload, int attenuation) {
+        return location.toString();
+    }
+
+    /** 1.21's use-item packet with the player's rotation (1.20.6's server takes the player's own) */
+    public static net.minecraft.network.protocol.game.ServerboundUseItemPacket useItemPacket(net.minecraft.world.InteractionHand hand, int sequence,
+            float yRot, float xRot) {
+        return new net.minecraft.network.protocol.game.ServerboundUseItemPacket(hand, sequence);
+    }
+
+    /** 1.21's disconnection details of 1.20.6's reason (a handler's argument) */
+    public static ladder.carried_1_20_6.net.minecraft.network.DisconnectionDetails disconnection(net.minecraft.network.chat.Component reason) {
+        return new ladder.carried_1_20_6.net.minecraft.network.DisconnectionDetails(reason);
+    }
+
+    /** 1.21's reason of disconnection details (a call where 1.20.6 takes the reason) */
+    public static net.minecraft.network.chat.Component reason(ladder.carried_1_20_6.net.minecraft.network.DisconnectionDetails details) {
+        return details.reason();
+    }
+
+    // 1.21's camera directions (its constants; a mod's read of one)
+    public static org.joml.Vector3f cameraForwards() {
+        return new org.joml.Vector3f(0.0F, 0.0F, -1.0F);
+    }
+
+    public static org.joml.Vector3f cameraUp() {
+        return new org.joml.Vector3f(0.0F, 1.0F, 0.0F);
+    }
+
+    public static org.joml.Vector3f cameraLeft() {
+        return new org.joml.Vector3f(-1.0F, 0.0F, 0.0F);
+    }
 }
