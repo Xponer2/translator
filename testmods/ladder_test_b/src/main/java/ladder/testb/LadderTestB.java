@@ -1090,6 +1090,8 @@ public final class LadderTestB {
                 NeoForge.EVENT_BUS.unregister(pre);
                 NeoForge.EVENT_BUS.unregister(post);
                 results.put("entityTick", seen[0] + "/" + seen[1] + "/" + stand.tickCount);
+                // the annotated subscribers (found by FML's scan of @EventBusSubscriber): one on the game bus, one on the mod bus
+                results.put("busSubscriber", Subscribers.GAME.get() + "/" + Subscribers.MOD.get());
             } catch (RuntimeException | LinkageError e) {
                 results.put("entityTick", "error " + e);
             }
@@ -1137,6 +1139,29 @@ public final class LadderTestB {
             Files.writeString(Path.of(out), json, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /** subscribers FML finds by the annotation (a converted mod's must keep the annotation the lower FML scans for) */
+    @net.neoforged.fml.common.EventBusSubscriber(modid = "ladder_test_b")
+    public static final class Subscribers {
+        static final java.util.concurrent.atomic.AtomicInteger GAME = new java.util.concurrent.atomic.AtomicInteger();
+
+        @SubscribeEvent
+        public static void serverStarting(net.neoforged.neoforge.event.server.ServerStartingEvent event) {
+            GAME.incrementAndGet();
+        }
+
+        static final java.util.concurrent.atomic.AtomicInteger MOD = ModSubscribers.MOD;
+    }
+
+    @net.neoforged.fml.common.EventBusSubscriber(modid = "ladder_test_b", bus = net.neoforged.fml.common.EventBusSubscriber.Bus.MOD)
+    public static final class ModSubscribers {
+        static final java.util.concurrent.atomic.AtomicInteger MOD = new java.util.concurrent.atomic.AtomicInteger();
+
+        @SubscribeEvent
+        public static void commonSetup(net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent event) {
+            MOD.incrementAndGet();
         }
     }
 }

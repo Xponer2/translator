@@ -89,10 +89,8 @@ public class Convert {
     /** In a rule's lower descriptor: the bottom version's class of that name, not the top's (see the remapper) */
     static final String BOTTOM = "ladder/bottom/";
 
-    /** NeoForge classes that moved between 21.x and 20.4 (no intermediary for NeoForge): their own rows. */
-    static final Map<String, String> NEOFORGE_MOVES = new HashMap<>(Map.of(
-            "net/neoforged/fml/common/EventBusSubscriber", "net/neoforged/fml/common/Mod$EventBusSubscriber",
-            "net/neoforged/fml/common/EventBusSubscriber$Bus", "net/neoforged/fml/common/Mod$EventBusSubscriber$Bus"));
+    /** NeoForge classes renamed below (no intermediary for NeoForge): the rungs' R rows. */
+    static final Map<String, String> NEOFORGE_MOVES = new HashMap<>();
 
     /** The problems a cached class or member walk found: added again for every mod that meets it. */
     static final Map<String, List<String>> cachedProblems = new HashMap<>();

@@ -57,6 +57,9 @@ P	net/neoforged/neoforge/event/tick/PlayerTickEvent	ladder/adapter/provided/even
 P	net/neoforged/neoforge/event/tick/PlayerTickEvent$Pre	ladder/adapter/provided/event/PlayerTickEvent$Pre
 P	net/neoforged/neoforge/event/tick/PlayerTickEvent$Post	ladder/adapter/provided/event/PlayerTickEvent$Post
 # NeoForge 21.0 renamed tool actions to item abilities
+# FML 2 (20.4) has the event bus subscriber annotation inside Mod (FML 3 and 4 have it on its own)
+R	net/neoforged/fml/common/EventBusSubscriber	net/neoforged/fml/common/Mod$EventBusSubscriber
+R	net/neoforged/fml/common/EventBusSubscriber$Bus	net/neoforged/fml/common/Mod$EventBusSubscriber$Bus
 R	net/neoforged/neoforge/common/ItemAbility	net/neoforged/neoforge/common/ToolAction
 R	net/neoforged/neoforge/common/ItemAbilities	net/neoforged/neoforge/common/ToolActions
 X	net/neoforged/neoforge/event/level/BlockEvent$BlockToolModificationEvent	getItemAbility	()Lnet/neoforged/neoforge/common/ItemAbility;	ladder/adapter/misc/MiscAdapters	getItemAbility
