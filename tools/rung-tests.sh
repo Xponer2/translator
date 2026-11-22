@@ -31,7 +31,7 @@ server_run() { # <target> <dir> <mods...>
     mkdir -p "$dir/run-server/mods"
     cp "$@" "$dir/run-server/mods/"
     LADDER_TARGET="$target" bash tools/run-until.sh ":$dir:runServer" "$dir/run-server/test-b.json" 400 > /dev/null 2>&1
-    for t in a b e; do compare "$NATIVE/run1/test-$t.json" "$dir/run-server/test-$t.json"; done
+    for t in a b e g; do compare "$NATIVE/run1/test-$t.json" "$dir/run-server/test-$t.json"; done
 }
 client_a() { # <target> <dir> <mods...>
     local target="$1" dir="$2"
@@ -61,7 +61,7 @@ client_cf() { # <target> <dir> <mods...>
 R1="$WORK/r1"
 rm -rf "${R1:?}"
 mkdir -p "$R1"
-for t in a b c e f; do
+for t in a b c e f g; do
     LADDER_TO=1.21 bash tools/ladder.sh convert "$(jar ladder_test_$t)" "$R1/ladder-test-$t.jar" "$R1/test-$t.md" > /dev/null 2>&1
     head -3 "$R1/test-$t.md" | tail -1
 done
@@ -70,7 +70,7 @@ for target in "${TARGETS[@]}"; do
     case "$target" in
         1.21)
             echo "== 1.21"
-            server_run 1.21 v1_21 "$R1"/ladder-test-{a,b,e}.jar "$A121"
+            server_run 1.21 v1_21 "$R1"/ladder-test-{a,b,e,g}.jar "$A121"
             client_a 1.21 v1_21 "$R1"/ladder-test-a.jar "$A121"
             client_cf 1.21 v1_21 "$R1"/ladder-test-{c,f}.jar "$A121" ;;
         1.20.6)
@@ -84,7 +84,7 @@ for target in "${TARGETS[@]}"; do
             tail -1 "$OUT2.log"
             A1206="$(ls adapters_1_20_6/build/libs/ladder-adapters-1.20.6-*.jar | head -1)"
             CARRIED=("$OUT2"/ladder-carried-*.jar)
-            server_run 1.20.6 v1_20_6 "$OUT2"/ladder-test-{a,b,e}.jar "$OUT2/$(basename "$A121")" "${CARRIED[@]}" "$A1206"
+            server_run 1.20.6 v1_20_6 "$OUT2"/ladder-test-{a,b,e,g}.jar "$OUT2/$(basename "$A121")" "${CARRIED[@]}" "$A1206"
             client_a 1.20.6 v1_20_6 "$OUT2"/ladder-test-a.jar "$OUT2/$(basename "$A121")" "${CARRIED[@]}" "$A1206"
             client_cf 1.20.6 v1_20_6 "$OUT2"/ladder-test-{c,f}.jar "$OUT2/$(basename "$A121")" "${CARRIED[@]}" "$A1206" ;;
         1.20.4)
@@ -92,12 +92,12 @@ for target in "${TARGETS[@]}"; do
             IN="$WORK/r4in" OUT4="$WORK/r4"
             rm -rf "${IN:?}" "${OUT4:?}"
             mkdir -p "$IN" "$OUT4"
-            for t in a b c e f; do cp "$(jar ladder_test_$t)" "$IN/"; done
+            for t in a b c e f g; do cp "$(jar ladder_test_$t)" "$IN/"; done
             [ -n "${LADDER_CARRIED_1204:-}" ] && cp "$LADDER_CARRIED_1204" "$OUT4/"
             bash tools/ladder.sh convert "$IN" "$OUT4" "$OUT4.tsv" > "$OUT4.log" 2>&1
             tail -1 "$OUT4.log"
             A1204="$(ls adapters_1_20_4/build/libs/ladder-adapters-1.20.4-*.jar | head -1)"
-            server_run 1.20.4 v1_20_4 "$OUT4"/ladder-test-{a,b,e}-*.jar "$OUT4/ladder-carried-1.20.4.jar" "$A1204"
+            server_run 1.20.4 v1_20_4 "$OUT4"/ladder-test-{a,b,e,g}-*.jar "$OUT4/ladder-carried-1.20.4.jar" "$A1204"
             client_a 1.20.4 v1_20_4 "$OUT4"/ladder-test-a-*.jar "$OUT4/ladder-carried-1.20.4.jar" "$A1204"
             client_cf 1.20.4 v1_20_4 "$OUT4"/ladder-test-{c,f}-*.jar "$OUT4/ladder-carried-1.20.4.jar" "$A1204" ;;
     esac

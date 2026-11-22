@@ -20,6 +20,8 @@ public final class LadderAdapters121 {
         modBus.addListener(ladder.rung121.attachment.AttachmentPayloads::register);
         modBus.addListener(ladder.rung121.VillagerTypes::register);
         modBus.addListener(ladder.rung121.PoiExtensions::onCommonSetup);
+        // NeoForge 21.1's fluid ingredient types (21.0 has them but never registers them)
+        FluidIngredientTypes.register(modBus);
         NeoForge.EVENT_BUS.addListener(ChunkWatchEvent.Sent.class, AttachmentSync::onChunkSent);
         NeoForge.EVENT_BUS.addListener(PlayerEvent.StartTracking.class, AttachmentSync::onStartTracking);
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent.class, AttachmentSync::onSelf);

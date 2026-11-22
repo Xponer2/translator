@@ -1,0 +1,15 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+// Test mod G, made for NeoForge 1.21.1: NeoForge's fluid ingredients (run with test mod B; results beside B's).
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base { archivesName = 'ladder-test-g-1.21.1' }
+version = '1.0.0'
+neoForge {
+    version = '21.1.247'
+}
+configurations.configureEach {
+    exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }

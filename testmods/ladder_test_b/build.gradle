@@ -10,6 +10,7 @@ base { archivesName = 'ladder-test-b-1.21.1' }
 version = '1.0.0'
 // test mod E (the 1.21.1 twin of the mixed-version test) runs with B: its source set must exist first
 evaluationDependsOn(':testmods:ladder_test_e')
+evaluationDependsOn(':testmods:ladder_test_g')
 neoForge {
     version = '21.1.247'
     runs {
@@ -31,6 +32,9 @@ neoForge {
         }
         ladder_test_e {
             sourceSet project(':testmods:ladder_test_e').sourceSets.main
+        }
+        ladder_test_g {
+            sourceSet project(':testmods:ladder_test_g').sourceSets.main
         }
     }
 }

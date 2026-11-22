@@ -1096,6 +1096,20 @@ public final class LadderTestB {
                 results.put("entityTick", "error " + e);
             }
             try {
+                // a trade by villager type whose table lacks types (a mod's villager types): no error, no offer for those
+                net.minecraft.world.entity.npc.VillagerTrades.ItemListing byType = new net.minecraft.world.entity.npc.VillagerTrades.EmeraldsForVillagerTypeItem(
+                        1, 12, 30, java.util.Map.of(net.minecraft.world.entity.npc.VillagerType.PLAINS, Items.STICK));
+                net.minecraft.world.entity.npc.Villager desert = new net.minecraft.world.entity.npc.Villager(EntityType.VILLAGER, level,
+                        net.minecraft.world.entity.npc.VillagerType.DESERT);
+                net.minecraft.world.entity.npc.Villager plains = new net.minecraft.world.entity.npc.Villager(EntityType.VILLAGER, level,
+                        net.minecraft.world.entity.npc.VillagerType.PLAINS);
+                net.minecraft.world.item.trading.MerchantOffer none = byType.getOffer(desert, level.random);
+                net.minecraft.world.item.trading.MerchantOffer stick = byType.getOffer(plains, level.random);
+                results.put("villagerTypeTrade", (none == null) + "/" + (stick == null ? "null" : stick.getResult().getItem() + "x" + stick.getResult().getCount()));
+            } catch (RuntimeException | LinkageError e) {
+                results.put("villagerTypeTrade", "error " + e);
+            }
+            try {
                 // a chest's loot table (container_loot) kept over a save; fire resistance as the items have it
                 ItemStack lootChest = new ItemStack(Items.CHEST);
                 lootChest.set(DataComponents.CONTAINER_LOOT, new net.minecraft.world.item.component.SeededContainerLoot(

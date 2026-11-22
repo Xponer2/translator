@@ -16,6 +16,7 @@
     "TrackedEntityAccess",
     "RegistryBuilderMixin",
     "VillagerTypeMixin",
+    "VillagerTypeTradeMixin",
     "PoiTypeMixin",
     "ResourcePackLoaderMixin",
     "ShulkerSlotFitMixin",

@@ -17,3 +17,6 @@ side="BOTH"
 
 [[mixins]]
 config="ladder_adapters_1_20_6.mixins.json"
+
+[[accessTransformers]]
+file="META-INF/accesstransformer.cfg"

@@ -5,6 +5,7 @@
   "plugin": "ladder.adapter.shape.ShapePlugin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "VillagerTypeTradeMixin",
     "AttachmentBuilderMixin",
     "AttachmentChunkMapAccess",
     "AttachmentTrackedEntityAccess",

@@ -15,7 +15,12 @@ def main():
     failed = False
     for native, converted in zip(args[0::2], args[1::2]):
         a = json.load(open(native, encoding='utf-8'))
-        b = json.load(open(converted, encoding='utf-8'))
+        try:
+            b = json.load(open(converted, encoding='utf-8'))
+        except (OSError, ValueError) as e:
+            print('%s: not written (%s)' % (converted, e.__class__.__name__))
+            failed = True
+            continue
         diff = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
         print('%s: %d of %d results the same' % (converted, len(a) - len([k for k in diff if k in a]), len(a)))
         for k in diff:
