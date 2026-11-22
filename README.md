@@ -76,7 +76,7 @@ versions together on one target.
 | Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
 |---|---|---|---:|---:|---|
 | 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C, E and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 0 | 300 | done (offline; game-tested by the test mods) |
-| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A–C, E and F on the real 1.20.6, the same results as on 1.21.1 | 1012 | 199 of 302 (rung 1's output) | in work |
+| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A, B, E and G on the real 1.20.6 server, the same results as on 1.21.1 (the client tests C and F are being rerun) | 557 | 243 of 302 (rung 1's output) | in work |
 | 1.20.6 → 1.20.4 | yes (`adapters_1_20_4`) | yes: test mods A–C, E and F on the real 1.20.4, the same results as on 1.21.1 | – | – | in work (counted on the whole path below) |
 
 A mod goes down every rung between its version and the target, so a path is the rungs on it. What a 1.21.1 mod gets on
@@ -85,7 +85,7 @@ each target (the corpus of 300 mods):
 | Path | Rungs it passes | Mods with nothing left (of 300) | Tested in that game |
 |---|---|---:|---|
 | 1.21.1 → 1.21 | 1.21.1 → 1.21 | 300 | test mods A–C, E, F: the same results as on 1.21.1 |
-| 1.21.1 → 1.20.6 | 1.21.1 → 1.21 → 1.20.6 | 199 of 302 jars (the 300 mods and rung 1's own jars) | test mods A–C, E, F: the same |
+| 1.21.1 → 1.20.6 | 1.21.1 → 1.21 → 1.20.6 | 243 of 302 jars (the 300 mods and rung 1's own jars) | test mods A, B, E, G: the same (client C, F: rerun) |
 | 1.21.1 → 1.20.4 | all three | 93 | test mods A–C, E, F: the same |
 
 A mod "with nothing left" converts with no known problem on every rung of its path; the others still have places that
@@ -102,7 +102,7 @@ carried library (`LADDER_FROM=1.21 LADDER_TO=1.20.6 tools/ladder.sh convert ...`
 down both rungs). **139 of those 262 jars convert with nothing left** (counted on rung 1's earlier output of 260 mods) (84 before the rung's adapters). Its adapters
 cover 1.21's vertex API and formats, the frame's DeltaTracker and the GUI layers, recipe inputs, attribute modifier ids,
 use durations with the user, the config screen, leads, client extensions, standalone models, spawn packets, NeoForge
-21's damage events and more; most of them serve the 1.20.4 rung too. Rung 1's own adapters go down with the mods and
+21's damage events, 1.21's enchantment helper on 1.20.6's enchantments and the mods' data enchantments, NeoForge 21's configuration screen (carried down) and more; most of them serve the 1.20.4 rung too. Rung 1's own adapters go down with the mods and
 run on 1.20.6 (`tools/rung-tests.sh` runs every test mod in each lower game against its native results).
 
 In the 1.20.4 set (the corpus converted all the way down), besides the rungs' own problems 1914 more come from the checks
