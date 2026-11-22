@@ -185,7 +185,7 @@ public final class Conversions {
             org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> lower, String upper) {
         Object value = lower.getReturnValue();
         return new org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<>(lower.getId(), lower.isCancellable(),
-                value instanceof Number n ? number(n, upper) : value);
+                value instanceof Number n ? number(n, upper) : value instanceof Boolean b && upper.equals(TRI_STATE) ? triState(b) : value);
     }
 
     /** what the handler set on the upper callback (a cancel with a value), on the lower one as the lower number */
@@ -194,9 +194,33 @@ public final class Conversions {
             org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> lower, String type) {
         if (upper.isCancelled()) {
             Object value = upper.getReturnValue();
+            if (value instanceof net.neoforged.neoforge.common.util.TriState t) {
+                // a TriState answer of a boolean: DEFAULT leaves the decision to the method itself
+                if (t != net.neoforged.neoforge.common.util.TriState.DEFAULT) {
+                    ((org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable) lower).setReturnValue(t == net.neoforged.neoforge.common.util.TriState.TRUE);
+                }
+                return;
+            }
             ((org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable) lower).setReturnValue(
                     value instanceof Number n ? number(n, type) : value);
         }
+    }
+
+    private static final String TRI_STATE = "Lnet/neoforged/neoforge/common/util/TriState;";
+
+    /** NeoForge 21's TriState of 20.6's (20.4's) yes or no (canSustainPlant) */
+    public static net.neoforged.neoforge.common.util.TriState triState(boolean value) {
+        return value ? net.neoforged.neoforge.common.util.TriState.TRUE : net.neoforged.neoforge.common.util.TriState.FALSE;
+    }
+
+    /** a TriState as a yes or no (DEFAULT: no) */
+    public static boolean isTrue(net.neoforged.neoforge.common.util.TriState answer) {
+        return answer == net.neoforged.neoforge.common.util.TriState.TRUE;
+    }
+
+    /** an override's TriState answer as the lower boolean: DEFAULT is the superclass's own answer (the game's decision) */
+    public static boolean decide(net.neoforged.neoforge.common.util.TriState answer, boolean game) {
+        return answer == null || answer == net.neoforged.neoforge.common.util.TriState.DEFAULT ? game : answer == net.neoforged.neoforge.common.util.TriState.TRUE;
     }
 
     private static Object number(Number n, String type) {

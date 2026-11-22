@@ -3216,6 +3216,10 @@ public class Convert {
             // 1.21's DeltaTracker where 1.20.4 passes the partial tick
             return 9;
         }
+        if (upper.getSort() == Type.OBJECT && upper.getInternalName().equals(TRI_STATE) && lower.getSort() == Type.BOOLEAN) {
+            // NeoForge 21's TriState where 20.6 answers yes or no (canSustainPlant: DEFAULT, the game decides, is no)
+            return 18;
+        }
         if (upper.getSort() == Type.INT && lower.getDescriptor().equals("[F") && ADAPTERS.equals("ladder/rung1206/")) {
             // 1.21's ARGB colour int where 1.20.6 gives red, green, blue floats (DyeColor, a beacon beam's section)
             return 17;
@@ -3331,6 +3335,8 @@ public class Convert {
     static final String CALLBACK_RETURNABLE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
     /** the primitive number descriptors a callback's value converts between */
     static final String NUMBERS = "BSIJFD";
+
+    static final String TRI_STATE = "net/neoforged/neoforge/common/util/TriState";
 
     static boolean convertible(Type upper, Type lower) {
         return conversion(upper, lower) >= 0;
@@ -3534,6 +3540,11 @@ public class Convert {
                 code.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, upper.getInternalName(), "getGameTimeDeltaPartialTick", "(Z)F", true));
             }
             case 12 -> code.add(new InsnNode(Opcodes.F2D));
+            case 18 -> {
+                // (an adapter's: 20.4's TriState has no isTrue)
+                checkAdapter(CONVERSIONS, "isTrue", "(L" + TRI_STATE + ";)Z", "a boolean of a TriState");
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "isTrue", "(L" + TRI_STATE + ";)Z", false));
+            }
             default -> {
             }
         }
@@ -4544,6 +4555,11 @@ public class Convert {
         }
         Stage0.Version bottom = versions.get(versions.size() - 1);
         for (String t : mixinTargets.getOrDefault(node.name, List.of())) {
+            if (mod.containsKey(t)) {
+                // a mod's class (supplementaries' mixin into its own planter): converted with the same bridges, the
+                // mixin's bridge replaces the class's own when it has one
+                continue;
+            }
             Stage0.Cls info = bottom.classes.get(remapper.map(t));
             if (!Stage0.platform(t) || info == null || info.methods.contains(end.name() + " " + end.desc())) {
                 return false;
@@ -4573,6 +4589,13 @@ public class Convert {
         // (a result the lower hook hasn't: dropped; 1.21's moveItemToGrid gives the count left, 1.20.6's nothing)
         boolean dropResult = lowRet.getSort() == Type.VOID && upRet.getSort() != Type.VOID;
         if (map == null && plan == null || !overriddenReturn(upRet, lowRet) && !zeroResult && !dropResult) {
+            return null;
+        }
+        // (a TriState answer, 1.21's canSustainPlant: DEFAULT is the game's own decision, the superclass's lower method;
+        // a class whose superclass the bridge can't call so has none. A class mixin's super call is bound to its
+        // target's superclass by Mixin; an interface's default would lose to Block's own method below anyway)
+        boolean decide = conversion(upRet, lowRet) == 18;
+        if (decide && (itf || node.superName == null || node.superName.equals("java/lang/Object"))) {
             return null;
         }
         int access = Opcodes.ACC_PUBLIC;
@@ -4606,7 +4629,17 @@ public class Convert {
             }
         }
         code.add(new MethodInsnNode(itf ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL, remapper.map(node.name), ownName, ownDesc, itf));
-        if (dropResult) {
+        if (decide) {
+            // the superclass's answer too (no branch: the classes are written without computed frames), then the
+            // mod's unless DEFAULT
+            code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            for (int a = 0; a < low.length; a++) {
+                code.add(new VarInsnNode(low[a].getOpcode(Opcodes.ILOAD), slots[a]));
+            }
+            code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, remapper.map(node.superName), end.name(), end.desc(), false));
+            checkAdapter(CONVERSIONS, "decide", "(L" + TRI_STATE + ";Z)Z", "an override bridge of " + end.key());
+            code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "decide", "(L" + TRI_STATE + ";Z)Z", false));
+        } else if (dropResult) {
             code.add(new InsnNode(upRet.getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
         } else if (zeroResult) {
             // the upper method gives nothing the lower one returns a number of (1.21's IConfigSpec.correct, 1.20.6's
@@ -4630,7 +4663,7 @@ public class Convert {
         }
         code.add(new InsnNode(lowRet.getOpcode(Opcodes.IRETURN)));
         g.maxLocals = slot;
-        g.maxStack = slot + 4 + 2 * up.length;
+        g.maxStack = slot + 4 + 2 * up.length + (decide ? slot + 1 : 0);
         return g;
     }
 
@@ -4827,6 +4860,10 @@ public class Convert {
             case 14 -> code.add(new InsnNode(lower.getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
             case 15 -> code.add(new TypeInsnNode(Opcodes.CHECKCAST, upper.getInternalName()));
             case 17 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ADAPTERS + "misc/SmallAdapters", "argb", "([F)I", false));
+            case 18 -> {
+                checkAdapter(CONVERSIONS, "triState", "(Z)L" + TRI_STATE + ";", "a TriState of a boolean");
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "triState", "(Z)L" + TRI_STATE + ";", false));
+            }
             case 16 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "meshData",
                     "(L" + RENDERED_BUFFER + ";)L" + ADAPTERS + "provided/MeshData;", false));
             case 1 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "holder", "(Ljava/lang/Object;)L" + HOLDER + ";", false));
@@ -6033,8 +6070,10 @@ public class Convert {
                     break;
                 }
             }
-            boolean numberResult = returnChanged && inject && !f.call() && callback >= 0 && NUMBERS.indexOf(upRet.getDescriptor()) >= 0
-                    && NUMBERS.indexOf(lowRet.getDescriptor()) >= 0 && upRet.getDescriptor().length() == 1 && lowRet.getDescriptor().length() == 1;
+            boolean numberResult = returnChanged && inject && !f.call() && callback >= 0 && (NUMBERS.indexOf(upRet.getDescriptor()) >= 0
+                    && NUMBERS.indexOf(lowRet.getDescriptor()) >= 0 && upRet.getDescriptor().length() == 1 && lowRet.getDescriptor().length() == 1
+                    // (or NeoForge 21's TriState of 20.6's boolean: the callback's value converts the same way)
+                    || conversion(upRet, lowRet) == 18);
             if (!inject && distinct && valueBridge(out, h, hp, f, up, low, upRet, lowRet)) {
                 // an injector of another kind whose values convert both ways (a float of 1.21 a double of 1.20.6)
                 continue;
@@ -6148,7 +6187,7 @@ public class Convert {
     /** whether a value converts both ways between an upper and a lower type (a handler's argument up, its result down) */
     static boolean twoWay(Type upper, Type lower) {
         int c = conversion(upper, lower);
-        return c == 0 || c == 1 || c == 2 || c == 6 || c == 8 || c == 9 || c == 12 || c == 15 || c == 16 || c == 17;
+        return c == 0 || c == 1 || c == 2 || c == 6 || c == 8 || c == 9 || c == 12 || c == 15 || c == 16 || c == 17 || c == 18;
     }
 
     /** whether the lower member is static (a call's receiver isn't among a call injector's values then) */

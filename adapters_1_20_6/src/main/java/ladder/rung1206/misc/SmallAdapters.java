@@ -230,4 +230,21 @@ public final class SmallAdapters {
     public static float[] beamRgb(int argb) {
         return rgb(argb);
     }
+
+    /**
+     * 1.21's plant state as 20.6's IPlantable (canSustainPlant): the plant's block when it is one (a bush, a crop), else
+     * the state itself, of the plain type
+     */
+    public static net.neoforged.neoforge.common.IPlantable plantable(net.minecraft.world.level.block.state.BlockState plant) {
+        if (plant.getBlock() instanceof net.neoforged.neoforge.common.IPlantable plantable) {
+            return plantable;
+        }
+        return (level, pos) -> plant;
+    }
+
+    /** 20.6's IPlantable as 1.21's plant state: the plant on the soil's side */
+    public static net.minecraft.world.level.block.state.BlockState plant(net.neoforged.neoforge.common.IPlantable plantable,
+            net.minecraft.world.level.BlockGetter level, net.minecraft.core.BlockPos soil, net.minecraft.core.Direction facing) {
+        return plantable.getPlant(level, soil.relative(facing));
+    }
 }
