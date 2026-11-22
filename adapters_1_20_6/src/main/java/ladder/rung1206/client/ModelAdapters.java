@@ -58,4 +58,43 @@ public final class ModelAdapters {
     }
 
     private static final ResourceLocation UNKNOWN = new ResourceLocation("ladder", "unknown_model");
+
+    /** NeoForge 21's {@code baker.bakeUncached(model, state, sprites)}: the model baked as it is (1.20.6 takes a location) */
+    public static BakedModel bakeUncached(net.neoforged.neoforge.client.extensions.IModelBakerExtension baker,
+            net.minecraft.client.resources.model.UnbakedModel model, net.minecraft.client.resources.model.ModelState state,
+            java.util.function.Function<Material, TextureAtlasSprite> sprites) {
+        return model.bake((net.minecraft.client.resources.model.ModelBaker) baker, sprites, state, UNKNOWN);
+    }
+
+    /** 1.21's package-private {@code bakeUncached(model, state)}: with the baker's own sprites */
+    public static BakedModel bakeUncached(net.neoforged.neoforge.client.extensions.IModelBakerExtension baker,
+            net.minecraft.client.resources.model.UnbakedModel model, net.minecraft.client.resources.model.ModelState state) {
+        return bakeUncached(baker, model, state, baker.getModelTextureGetter());
+    }
+
+    /** NeoForge 21's {@code baker.getTopLevelModel(location)}: 1.20.6's baker finds it by its location */
+    public static net.minecraft.client.resources.model.UnbakedModel getTopLevelModel(net.neoforged.neoforge.client.extensions.IModelBakerExtension baker,
+            ModelResourceLocation location) {
+        return ((net.minecraft.client.resources.model.ModelBaker) baker).getModel(location);
+    }
+
+    /** 1.21's {@code ModelBakery.MISSING_MODEL_VARIANT} */
+    public static ModelResourceLocation missingModelVariant() {
+        return net.minecraft.client.resources.model.ModelBakery.MISSING_MODEL_LOCATION;
+    }
+
+    /** 1.21's {@code Sheets.createDecoratedPotMaterial(id)}: a pot texture of the decorated pot sheet */
+    public static Material createDecoratedPotMaterial(ResourceLocation id) {
+        return new Material(net.minecraft.client.renderer.Sheets.DECORATED_POT_SHEET, id.withPrefix("entity/decorated_pot/"));
+    }
+
+    /** 1.21's {@code Sheets.DECORATED_POT_BASE} */
+    public static Material decoratedPotBase() {
+        return createDecoratedPotMaterial(new ResourceLocation("minecraft", "decorated_pot_base"));
+    }
+
+    /** 1.21's {@code Sheets.DECORATED_POT_SIDE} */
+    public static Material decoratedPotSide() {
+        return createDecoratedPotMaterial(new ResourceLocation("minecraft", "decorated_pot_side"));
+    }
 }

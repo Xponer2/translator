@@ -59,10 +59,12 @@ final class ClientSide {
         if (minecraft.level == null || written || ++ticks < 80) {
             return;
         }
-        // the server changes the pig's attachment after its own 40 ticks: wait for both synced values (or the timeout)
+        // the server changes the pig's attachment after its own 40 ticks: wait for both synced values and the opened menu (or the timeout)
         net.minecraft.world.entity.Entity syncedPig = minecraft.level.getEntity(LadderTestF.pigId);
         boolean synced = minecraft.player != null && Integer.valueOf(7).equals(minecraft.player.getData(LadderTestF.MARK))
-                && syncedPig != null && Integer.valueOf(12).equals(syncedPig.getData(LadderTestF.MARK));
+                && syncedPig != null && Integer.valueOf(12).equals(syncedPig.getData(LadderTestF.MARK))
+                // and the menu the server opened with its client data
+                && !"-".equals(LadderTestF.clientMenu);
         if (!synced && ticks < WAIT_FOR_SYNC) {
             return;
         }

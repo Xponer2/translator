@@ -114,7 +114,13 @@ public class Convert {
     static final Map<String, Map<String, List<String>>> deferredMixin = new HashMap<>();
 
     /** A problem into the report, or into the handler's deferred list while its selectors are remapped. */
+    /** -Dladder.trace=<text>: where a problem containing the text comes from (a stack trace on stderr) */
+    static final String TRACE = System.getProperty("ladder.trace");
+
     static void report(String text) {
+        if (TRACE != null && text.contains(TRACE)) {
+            new Throwable("ladder.trace: " + text + (deferring != null ? " (deferred)" : "")).printStackTrace();
+        }
         if (deferring != null) {
             deferring.add(text);
         } else {
@@ -5584,6 +5590,14 @@ public class Convert {
 
     /** An @At target: "Lowner;name(desc)ret" (a call), "Lowner;name:desc" (a field), "Lowner;<init>(desc)V". */
     static String targetSelector(String target, Remapper remapper, String where) {
+        if (!target.startsWith("L") && !target.startsWith("(")) {
+            // Mixin's other form, "owner.name(desc)" (the owner with slashes or dots): as "Lowner;name(desc)"
+            int end = target.indexOf('(') >= 0 ? target.indexOf('(') : target.indexOf(':') >= 0 ? target.indexOf(':') : target.length();
+            int dot = target.lastIndexOf('.', end);
+            if (dot > 0 && end < target.length()) {
+                target = "L" + target.substring(0, dot).replace('.', '/') + ";" + target.substring(dot + 1);
+            }
+        }
         if (!target.startsWith("L") || !target.contains(";")) {
             return target;
         }

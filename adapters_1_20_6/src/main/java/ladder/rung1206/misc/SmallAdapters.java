@@ -193,4 +193,10 @@ public final class SmallAdapters {
     public static net.minecraft.world.entity.EquipmentSlotGroup slotGroup(net.minecraft.world.entity.EquipmentSlot slot) {
         return net.minecraft.world.entity.EquipmentSlotGroup.bySlot(slot);
     }
+
+    /** 1.21's {@code dye.getTextureDiffuseColor()}: the ARGB of 1.20.6's float colour */
+    public static int textureDiffuseColor(DyeColor dye) {
+        float[] c = dye.getTextureDiffuseColors();
+        return 0xFF000000 | Math.round(c[0] * 255.0F) << 16 | Math.round(c[1] * 255.0F) << 8 | Math.round(c[2] * 255.0F);
+    }
 }

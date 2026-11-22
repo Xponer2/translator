@@ -37,7 +37,8 @@
     "RenderTypeAccess",
     "JukeboxMusicMixin",
     "SingleQuadParticleMixin",
-    "OptionsSubScreenMixin"
+    "OptionsSubScreenMixin",
+    "ModelBakeryMixin"
   ],
   "injectors": {
     "defaultRequire": 1

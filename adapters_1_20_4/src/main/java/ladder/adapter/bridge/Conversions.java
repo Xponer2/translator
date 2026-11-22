@@ -176,4 +176,112 @@ public final class Conversions {
     private static int channel(float value) {
         return net.minecraft.util.Mth.floor(value * 255.0F) & 255;
     }
+
+    /**
+     * The callback a mixin handler of the upper method gets when the method's result changed between numbers (1.21's
+     * float, 1.20.6's double): the lower callback's value as the upper number ("F", "D", "I"...).
+     */
+    public static org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> callback(
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> lower, String upper) {
+        Object value = lower.getReturnValue();
+        return new org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<>(lower.getId(), lower.isCancellable(),
+                value instanceof Number n ? number(n, upper) : value);
+    }
+
+    /** what the handler set on the upper callback (a cancel with a value), on the lower one as the lower number */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static void result(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> upper,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> lower, String type) {
+        if (upper.isCancelled()) {
+            Object value = upper.getReturnValue();
+            ((org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable) lower).setReturnValue(
+                    value instanceof Number n ? number(n, type) : value);
+        }
+    }
+
+    private static Object number(Number n, String type) {
+        return switch (type) {
+            case "B" -> n.byteValue();
+            case "S" -> n.shortValue();
+            case "I" -> n.intValue();
+            case "J" -> n.longValue();
+            case "F" -> n.floatValue();
+            default -> n.doubleValue();
+        };
+    }
+
+    /** 1.21's MeshData of 1.20.6's rendered buffer (a mixin handler's value, converted up) */
+    public static ladder.adapter.provided.MeshData meshData(com.mojang.blaze3d.vertex.BufferBuilder.RenderedBuffer buffer) {
+        return buffer == null ? null : new ladder.adapter.provided.MeshData(buffer);
+    }
+
+    /**
+     * The Operation a @WrapOperation or @WrapMethod handler of the upper types calls: it takes the upper values and calls
+     * the lower Operation with them converted down, its result converted up. The spec (the converter's): per value
+     * "upperDesc>lowerDesc" or "" when the same, comma-terminated, then "|" and the result's.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static com.llamalad7.mixinextras.injector.wrapoperation.Operation<?> operation(
+            com.llamalad7.mixinextras.injector.wrapoperation.Operation<?> lower, String spec) {
+        int bar = spec.lastIndexOf('|');
+        String[] values = spec.substring(0, bar).split(",", -1);
+        String result = spec.substring(bar + 1);
+        return (com.llamalad7.mixinextras.injector.wrapoperation.Operation) args -> {
+            Object[] down = args.clone();
+            for (int i = 0; i < down.length && i < values.length; i++) {
+                if (!values[i].isEmpty()) {
+                    String[] t = values[i].split(">");
+                    down[i] = convert(down[i], t[0], t[1]);
+                }
+            }
+            Object value = lower.call(down);
+            if (result.isEmpty()) {
+                return value;
+            }
+            String[] t = result.split(">");
+            return convert(value, t[1], t[0]);
+        };
+    }
+
+    /** a value of one type as another (the pairs a mixin handler's values convert between) */
+    public static Object convert(Object value, String from, String to) {
+        if (value == null || from.equals(to)) {
+            return value;
+        }
+        if (value instanceof Number n && to.length() == 1) {
+            return switch (to) {
+                case "B" -> n.byteValue();
+                case "S" -> n.shortValue();
+                case "I" -> n.intValue();
+                case "J" -> n.longValue();
+                case "F" -> n.floatValue();
+                default -> n.doubleValue();
+            };
+        }
+        if (value instanceof ladder.adapter.provided.DeltaTracker tracker && to.equals("F")) {
+            return tracker.getGameTimeDeltaPartialTick(true);
+        }
+        if (value instanceof Float partial && to.equals("Lladder/adapter/provided/DeltaTracker;")) {
+            return deltaTracker(partial);
+        }
+        if (value instanceof ladder.adapter.provided.MeshData mesh && to.equals("Lcom/mojang/blaze3d/vertex/BufferBuilder$RenderedBuffer;")) {
+            return mesh.buffer();
+        }
+        if (value instanceof com.mojang.blaze3d.vertex.BufferBuilder.RenderedBuffer buffer && to.equals("Lladder/adapter/provided/MeshData;")) {
+            return meshData(buffer);
+        }
+        if (value instanceof Holder<?> holder && !to.equals("Lnet/minecraft/core/Holder;") && !to.equals("Lnet/minecraft/core/Holder$Reference;")) {
+            return holder.value();
+        }
+        if (!(value instanceof Holder<?>) && (to.equals("Lnet/minecraft/core/Holder;") || to.equals("Lnet/minecraft/core/Holder$Reference;"))) {
+            return to.endsWith("Reference;") ? reference(value) : holder(value);
+        }
+        if (value instanceof net.minecraft.resources.ResourceKey<?> key && !to.equals("Lnet/minecraft/resources/ResourceKey;")) {
+            return valueOfKey(key);
+        }
+        if (to.equals("Lnet/minecraft/resources/ResourceKey;")) {
+            return keyOfValue(value);
+        }
+        return value;
+    }
 }

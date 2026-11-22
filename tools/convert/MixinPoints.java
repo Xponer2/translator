@@ -284,6 +284,15 @@ final class MixinPoints {
     static int count(MethodNode m, String kind, String target) {
         String owner = target.startsWith("L") && target.contains(";") ? target.substring(1, target.indexOf(';')) : null;
         String rest = owner == null ? target : target.substring(target.indexOf(';') + 1);
+        if (owner == null && !target.startsWith("(")) {
+            // Mixin's other form: "owner.name(desc)" (the owner with slashes or dots), "owner.name:desc" for a field
+            int end = target.indexOf('(') >= 0 ? target.indexOf('(') : target.indexOf(':') >= 0 ? target.indexOf(':') : target.length();
+            int dot = target.lastIndexOf('.', end);
+            if (dot > 0) {
+                owner = target.substring(0, dot).replace('.', '/');
+                rest = target.substring(dot + 1);
+            }
+        }
         int n = 0;
         for (AbstractInsnNode insn : m.instructions) {
             switch (kind) {
