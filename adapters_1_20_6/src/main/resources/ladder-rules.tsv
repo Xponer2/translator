@@ -611,3 +611,6 @@ X	net/minecraft/client/resources/model/ModelBakery$ModelBakerImpl	getTopLevelMod
 D	net/neoforged/neoforge/client/model/geometry/UnbakedGeometryHelper	bakeElements	(Ljava/util/List;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;)Ljava/util/List;	(Ljava/util/List;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;Lnet/minecraft/resources/ResourceLocation;)Ljava/util/List;	$0,$1,$2,ladder/rung1206/client/ModelAdapters.unknownModel()
 X	com/mojang/blaze3d/vertex/VertexFormat	contains	(Lcom/mojang/blaze3d/vertex/VertexFormatElement;)Z	ladder/rung1206/client/ModelAdapters	contains
 M	net/neoforged/neoforge/client/model/geometry/UnbakedGeometryHelper	bakeElements	(Ljava/util/List;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;)Ljava/util/List;	bakeElements	(Ljava/util/List;Ljava/util/function/Function;Lnet/minecraft/client/resources/model/ModelState;Lnet/minecraft/resources/ResourceLocation;)Ljava/util/List;
+# 1.21's chunk step: its status and write radius, a world generation region's (1.20.6's region keeps them itself)
+P	net/minecraft/world/level/chunk/status/ChunkStep	ladder/rung1206/provided/ChunkStep
+F	net/minecraft/server/level/WorldGenRegion	generatingStep	Lnet/minecraft/world/level/chunk/status/ChunkStep;	ladder/rung1206/provided/ChunkStep	generatingStep
