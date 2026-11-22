@@ -89,7 +89,6 @@ X	net/minecraft/world/item/crafting/RecipeManager	getRecipeFor	(Lnet/minecraft/w
 X	net/minecraft/world/item/crafting/RecipeManager	getRecipeFor	(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;)Ljava/util/Optional;	ladder/rung1206/recipe/RecipeLookups	getRecipeFor
 # FML 4's config entry points and extension points on FML 3; NeoForge 21's config screen (20.6 has none)
 P	net/neoforged/neoforge/client/gui/IConfigScreenFactory	ladder/rung1206/provided/IConfigScreenFactory
-P	net/neoforged/neoforge/client/gui/ConfigurationScreen	ladder/rung1206/provided/ConfigurationScreen
 X	net/neoforged/fml/ModContainer	registerExtensionPoint	(Ljava/lang/Class;Lnet/neoforged/fml/IExtensionPoint;)V	ladder/rung1206/fml/FmlAdapters	registerExtensionPoint
 X	net/neoforged/fml/ModContainer	registerExtensionPoint	(Ljava/lang/Class;Ljava/util/function/Supplier;)V	ladder/rung1206/fml/FmlAdapters	registerExtensionPoint
 X	net/neoforged/fml/ModContainer	getCustomExtension	(Ljava/lang/Class;)Ljava/util/Optional;	ladder/rung1206/fml/FmlAdapters	getCustomExtension
@@ -718,3 +717,9 @@ X	net/neoforged/neoforge/client/event/RenderHighlightEvent	getDeltaTracker	()Lne
 # NeoForge 21's invulnerability check and effect tooltip events (posted by the adapters' mixins on 20.6)
 P	net/neoforged/neoforge/event/entity/EntityInvulnerabilityCheckEvent	ladder/rung1206/provided/event/EntityInvulnerabilityCheckEvent
 P	net/neoforged/neoforge/client/event/GatherEffectScreenTooltipsEvent	ladder/rung1206/provided/event/GatherEffectScreenTooltipsEvent
+# NeoForge 21's configuration screen comes down as carried code (the adapters give what it reads): a config value's raw
+# value and spec, a spec's emptiness, 21's client option of untranslated config warnings
+X	net/neoforged/neoforge/common/ModConfigSpec$ConfigValue	getRaw	()Ljava/lang/Object;	ladder/rung1206/misc/ConfigValues	getRaw
+X	net/neoforged/neoforge/common/ModConfigSpec$ConfigValue	getSpec	()Lnet/neoforged/neoforge/common/ModConfigSpec$ValueSpec;	ladder/rung1206/misc/ConfigValues	getSpec
+X	net/neoforged/neoforge/common/ModConfigSpec	isEmpty	()Z	ladder/rung1206/misc/ConfigValues	isEmpty
+F	net/neoforged/neoforge/common/NeoForgeConfig$Client	logUntranslatedConfigurationWarnings	Lnet/neoforged/neoforge/common/ModConfigSpec$BooleanValue;	ladder/rung1206/misc/ConfigValues	logUntranslatedConfigurationWarnings

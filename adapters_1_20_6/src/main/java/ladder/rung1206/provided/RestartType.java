@@ -15,4 +15,9 @@ public enum RestartType {
     public static RestartType restartType(net.neoforged.neoforge.common.ModConfigSpec.ValueSpec spec) {
         return spec.needsWorldRestart() ? WORLD : NONE;
     }
+
+    /** 21's {@code with(other)}: the more of the two (a game restart over a world one) */
+    public RestartType with(RestartType other) {
+        return other == null || other.ordinal() <= this.ordinal() ? this : other;
+    }
 }

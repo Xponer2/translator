@@ -1654,6 +1654,12 @@ public class Convert {
         String jar = System.getProperty("ladder.adapters");
         if (jar != null) {
             try (ZipFile zip = new ZipFile(jar)) {
+                ZipEntry at = zip.getEntry("META-INF/accesstransformer.cfg");
+                if (at != null) {
+                    try (InputStream s = zip.getInputStream(at)) {
+                        readAccessTransformer(new String(s.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                }
                 for (ZipEntry e : Collections.list(zip.entries())) {
                     if (!e.getName().endsWith(".class")) {
                         continue;
@@ -2602,7 +2608,7 @@ public class Convert {
             return;
         }
         Integer access = info.access.get(end.kind() + " " + end.name() + " " + end.desc());
-        if (access != null && (access & Opcodes.ACC_PUBLIC) == 0 && (access & Opcodes.ACC_PROTECTED) == 0) {
+        if (access != null && (access & Opcodes.ACC_PUBLIC) == 0 && (access & Opcodes.ACC_PROTECTED) == 0 && !madePublic(end)) {
             problem("carried code needs a non-public " + end.key() + " in " + bottom.id);
         }
     }
@@ -2655,7 +2661,7 @@ public class Convert {
             shrunk = false;
             for (var it = base.iterator(); it.hasNext();) {
                 for (String d : plan.needs.get(it.next()).deps) {
-                    if (plan.needs.containsKey(d) && !base.contains(d) && !provided.containsKey(d.substring(2)) && !ruled(d)) {
+                    if (plan.needs.containsKey(d) && !base.contains(d) && !provided.containsKey(d.substring(2)) && !ruled(d) && !addedBelow(i, d)) {
                         it.remove();
                         shrunk = true;
                         break;
@@ -2707,7 +2713,7 @@ public class Convert {
                 }
                 Stage0.Needs n = plan.needs.get(key);
                 for (String d : n.deps) {
-                    if (plan.needs.containsKey(d) && !ok.contains(d) && !ruled(d)) {
+                    if (plan.needs.containsKey(d) && !ok.contains(d) && !ruled(d) && !addedBelow(i, d)) {
                         it.remove();
                         changed = true;
                         break;
@@ -2891,6 +2897,22 @@ public class Convert {
      * Whether one of Stage0's hard needs is something the converter resolves itself: a member whose types changed that
      * a generated bridge (public below) or an adapter rule covers, a missing member an adapter rule covers.
      */
+    /** a member ("F owner.name desc", "M ...") the adapters' mixins add to its class below: there for carried code */
+    static boolean addedBelow(int i, String key) {
+        if (!(key.startsWith("F ") || key.startsWith("M ")) || key.indexOf(' ', 2) < 0) {
+            return false;
+        }
+        String member = key.substring(2, key.indexOf(' ', 2)), mdesc = key.substring(key.indexOf(' ', 2) + 1);
+        int mdot = member.lastIndexOf('.');
+        if (mdot < 0) {
+            return false;
+        }
+        String owner = member.substring(0, mdot), mname = member.substring(mdot + 1);
+        String below = i + 1 < versions.size() ? Stage0.mapClass(versions.get(i), versions.get(i + 1), owner) : null;
+        below = below == null ? owner : below;
+        return key.startsWith("F ") ? adapterAddedFields.contains(below + " " + mname + " " + mdesc) : adapterAddsMethod(below, mname, mdesc);
+    }
+
     static boolean resolvable(int i, String hard) {
         int colon = hard.indexOf(": ");
         if (colon < 0) {
@@ -2899,6 +2921,10 @@ public class Convert {
         String what = hard.substring(0, colon), key = hard.substring(colon + 2);
         if (ruled(key)) {
             // an adapter rule covers it, whatever kind of root it is (a library member with no code below, say)
+            return true;
+        }
+        if (addedBelow(i, key)) {
+            // a member the adapters' mixins add to the class below (1.21's OptionsSubScreen.list)
             return true;
         }
         if (!what.equals("changed below") && !what.equals("missing below")) {
@@ -2972,7 +2998,8 @@ public class Convert {
             }
             Stage0.Cls info = bottom.classes.get(end.cls());
             Integer access = info == null ? null : info.access.get(end.kind() + " " + end.name() + " " + end.desc());
-            if (access == null || (access & Opcodes.ACC_PUBLIC) != 0) {
+            if (access == null || (access & Opcodes.ACC_PUBLIC) != 0 || madePublic(end)) {
+                // (public below, or made public by the adapters' access transformer)
                 continue;
             }
             if ((access & Opcodes.ACC_PROTECTED) != 0 && thing.kind() == 'C' && extendsClass(versions.get(rung), thing.cls(), ref.cls())) {
@@ -2984,6 +3011,36 @@ public class Convert {
             return ref;
         }
         return null;
+    }
+
+    /**
+     * The members the adapters' access transformer makes public below ("C owner", "F owner name", "M owner name desc";
+     * the bottom game's names): carried code may reach them.
+     */
+    static final Set<String> madePublic = new HashSet<>();
+
+    static void readAccessTransformer(String text) {
+        for (String line : text.split("\\R")) {
+            String l = line.contains("#") ? line.substring(0, line.indexOf('#')).trim() : line.trim();
+            String[] parts = l.split("\\s+");
+            if (parts.length < 2 || !parts[0].startsWith("public")) {
+                continue;
+            }
+            String owner = parts[1].replace('.', '/');
+            if (parts.length == 2) {
+                madePublic.add("C " + owner);
+            } else if (parts[2].contains("(")) {
+                int open = parts[2].indexOf('(');
+                madePublic.add("M " + owner + " " + parts[2].substring(0, open) + " " + parts[2].substring(open));
+            } else {
+                madePublic.add("F " + owner + " " + parts[2]);
+            }
+        }
+    }
+
+    static boolean madePublic(Stage0.Ref end) {
+        return end.kind() == 'F' ? madePublic.contains("F " + end.cls() + " " + end.name())
+                : madePublic.contains("M " + end.cls() + " " + end.name() + " " + end.desc());
     }
 
     /** rung + carried static method -> the private static helpers of its class copied along with it ("name desc") */
@@ -3192,6 +3249,28 @@ public class Convert {
         for (String c = cls; c != null && from.classes.containsKey(c); c = from.classes.get(c).superName) {
             from.classes.get(c).methods.forEach(m -> mine.add(m.substring(0, m.indexOf(' ')) + "/" + Type.getArgumentTypes(m.substring(m.indexOf(' ') + 1)).length));
         }
+        // (what the lower supertypes implement themselves, defaults of their interfaces too: 20.6's ContainerEventHandler
+        // gives isFocused)
+        Set<String> theirs = new HashSet<>();
+        Deque<String> walk = new ArrayDeque<>(List.of(end == null ? supertype : end.cls()));
+        Set<String> walked = new HashSet<>();
+        while (!walk.isEmpty()) {
+            String t = walk.poll();
+            Stage0.Cls info = bottom.classes.get(t);
+            if (info == null || !walked.add(t)) {
+                continue;
+            }
+            for (var e : info.access.entrySet()) {
+                String[] k = e.getKey().split(" ");
+                if (k[0].equals("M") && (e.getValue() & Opcodes.ACC_ABSTRACT) == 0) {
+                    theirs.add(k[1] + "/" + Type.getArgumentTypes(k[2]).length);
+                }
+            }
+            walk.addAll(Arrays.asList(info.interfaces));
+            if (info.superName != null) {
+                walk.add(info.superName);
+            }
+        }
         Deque<String> todo = new ArrayDeque<>(List.of(end == null ? supertype : end.cls()));
         Set<String> seen = new HashSet<>();
         while (!todo.isEmpty()) {
@@ -3202,8 +3281,11 @@ public class Convert {
             }
             for (var e : info.access.entrySet()) {
                 String[] k = e.getKey().split(" ");
-                if (k[0].equals("M") && (e.getValue() & Opcodes.ACC_ABSTRACT) != 0
+                if (k[0].equals("M") && (e.getValue() & Opcodes.ACC_ABSTRACT) != 0 && !theirs.contains(k[1] + "/" + Type.getArgumentTypes(k[2]).length)
                         && !mine.contains(quietName(rung, t, k[1]) + "/" + Type.getArgumentTypes(k[2]).length)) {
+                    if (Boolean.getBoolean("ladder.contracts")) {
+                        System.err.println("contract: " + cls + " lacks " + t + "." + k[1] + k[2]);
+                    }
                     return false;
                 }
             }
