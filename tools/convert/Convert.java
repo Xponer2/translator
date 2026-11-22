@@ -697,6 +697,31 @@ public class Convert {
             }
             unverified.add("registry bootstrap " + node.name + "." + m.name + " (data generation only)");
         }
+        // (the game's nested classes only the stubbed code used stay out of the class's inner class list too)
+        StringBuilder used = new StringBuilder();
+        for (FieldNode f : node.fields) {
+            used.append(f.desc).append(f.signature);
+        }
+        for (MethodNode m : node.methods) {
+            used.append(m.desc).append(m.signature);
+            for (AbstractInsnNode insn : m.instructions) {
+                if (insn instanceof MethodInsnNode call) {
+                    used.append(call.owner).append(' ').append(call.desc);
+                } else if (insn instanceof FieldInsnNode field) {
+                    used.append(field.owner).append(' ').append(field.desc);
+                } else if (insn instanceof TypeInsnNode type) {
+                    used.append(type.desc).append(' ');
+                } else if (insn instanceof LdcInsnNode ldc && ldc.cst instanceof Type t) {
+                    used.append(t.getDescriptor());
+                } else if (insn instanceof InvokeDynamicInsnNode indy) {
+                    used.append(indy.desc).append(java.util.Arrays.toString(indy.bsmArgs));
+                } else if (insn instanceof MultiANewArrayInsnNode multi) {
+                    used.append(multi.desc);
+                }
+            }
+        }
+        String all = used.toString();
+        node.innerClasses.removeIf(inner -> Stage0.platform(inner.name) && !all.contains(inner.name));
     }
 
     /** A supertype outside the pack that no mod class can be: the JDK, the game, and the libraries the game ships. */

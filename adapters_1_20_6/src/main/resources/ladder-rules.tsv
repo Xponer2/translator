@@ -688,3 +688,7 @@ X	net/minecraft/world/level/storage/loot/functions/EnchantedCountIncreaseFunctio
 X	net/minecraft/world/level/storage/loot/predicates/LootItemRandomChanceCondition	randomChance	(Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;)Lnet/minecraft/world/level/storage/loot/predicates/LootItemCondition$Builder;	ladder/rung1206/enchantment/EnchantLoot	randomChance
 X	net/minecraft/world/level/storage/loot/functions/EnchantRandomlyFunction$Builder	withOneOf	(Lnet/minecraft/core/HolderSet;)Lnet/minecraft/world/level/storage/loot/functions/EnchantRandomlyFunction$Builder;	ladder/rung1206/enchantment/EnchantLoot	withOneOf
 X	net/minecraft/world/level/storage/loot/predicates/LootItemRandomChanceWithEnchantedBonusCondition	<init>	(FLnet/minecraft/world/item/enchantment/LevelBasedValue;Lnet/minecraft/core/Holder;)V	ladder/rung1206/enchantment/EnchantLoot	chanceWithBonus
+# 1.21's eating of food properties, food with a remainder, NeoForge 21's primary item of an enchantment (20.6: at the enchanting table)
+X	net/minecraft/world/food/FoodData	eat	(Lnet/minecraft/world/food/FoodProperties;)V	ladder/rung1206/misc/SmallAdapters	eat
+X	net/minecraft/world/food/FoodProperties	<init>	(IFZFLjava/util/Optional;Ljava/util/List;)V	ladder/rung1206/misc/SmallAdapters	foodProperties
+M	net/neoforged/neoforge/common/extensions/IItemExtension	isPrimaryItemFor	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Holder;)Z	canApplyAtEnchantingTable	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/enchantment/Enchantment;)Z

@@ -505,4 +505,16 @@ public final class SmallAdapters {
         }
         return entity instanceof net.minecraft.world.entity.LivingEntity living ? living.getMainHandItem() : null;
     }
+
+    /** 1.21's {@code foodData.eat(food)}: its nutrition and saturation (1.20.6 takes the saturation as a modifier) */
+    public static void eat(net.minecraft.world.food.FoodData data, net.minecraft.world.food.FoodProperties food) {
+        int nutrition = food.nutrition();
+        data.eat(nutrition, nutrition == 0 ? 0.0F : food.saturation() / (2.0F * nutrition));
+    }
+
+    /** 1.21's {@code new FoodProperties(..., usingConvertsTo, effects)}: 1.20.6's has no remainder (the item's own code gives it) */
+    public static net.minecraft.world.food.FoodProperties foodProperties(int nutrition, float saturation, boolean canAlwaysEat, float eatSeconds,
+            java.util.Optional<?> usingConvertsTo, java.util.List<net.minecraft.world.food.FoodProperties.PossibleEffect> effects) {
+        return new net.minecraft.world.food.FoodProperties(nutrition, saturation, canAlwaysEat, eatSeconds, effects);
+    }
 }
