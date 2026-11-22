@@ -3397,7 +3397,14 @@ public class Convert {
                     changed = true;
                 }
                 default -> {
-                    return null;
+                    // (an M row: the same hook below under another descriptor, NeoForge 21's Gui.renderHotbar of the
+                    // DeltaTracker where 20.6's private one takes the partial tick)
+                    Stage0.Ref moved = movedMember(i, cur);
+                    if (moved == null) {
+                        return null;
+                    }
+                    cur = moved;
+                    changed = true;
                 }
             }
         }

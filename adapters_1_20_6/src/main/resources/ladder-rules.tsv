@@ -539,3 +539,22 @@ X	net/minecraft/client/particle/ParticleRenderType	begin	(Lcom/mojang/blaze3d/ve
 X	net/minecraft/client/gui/components/Checkbox$Builder	maxWidth	(I)Lnet/minecraft/client/gui/components/Checkbox$Builder;	ladder/rung1206/misc/SmallAdapters	maxWidth
 # NeoForge 21's network codec of a custom holder set type (20.6 syncs holder sets by their codec only)
 U	net/neoforged/neoforge/registries/holdersets/HolderSetType	makeStreamCodec	(Lnet/minecraft/resources/ResourceKey;)Lnet/minecraft/network/codec/StreamCodec;
+# a mod level's own day time speed (NeoForge 21's abstract Level methods: 20.6 never calls them; the calls take the X rows)
+U	net/minecraft/world/level/Level	getDayTimePerTick	()F
+U	net/minecraft/world/level/Level	setDayTimePerTick	(F)V
+U	net/minecraft/world/level/Level	getDayTimeFraction	()F
+U	net/minecraft/world/level/Level	setDayTimeFraction	(F)V
+# 1.21's single pool elements' optional liquid settings (1.20.6's have none): the constructors drop it, the codec field reads it
+K	net/minecraft/world/level/levelgen/structure/pools/SinglePoolElement	(Lcom/mojang/datafixers/util/Either;Lnet/minecraft/core/Holder;Lnet/minecraft/world/level/levelgen/structure/pools/StructureTemplatePool$Projection;Ljava/util/Optional;)V	(Lcom/mojang/datafixers/util/Either;Lnet/minecraft/core/Holder;Lnet/minecraft/world/level/levelgen/structure/pools/StructureTemplatePool$Projection;)V	ladder/rung1206/misc/SmallAdapters	$0,$1,$2
+K	net/minecraft/world/level/levelgen/structure/pools/LegacySinglePoolElement	(Lcom/mojang/datafixers/util/Either;Lnet/minecraft/core/Holder;Lnet/minecraft/world/level/levelgen/structure/pools/StructureTemplatePool$Projection;Ljava/util/Optional;)V	(Lcom/mojang/datafixers/util/Either;Lnet/minecraft/core/Holder;Lnet/minecraft/world/level/levelgen/structure/pools/StructureTemplatePool$Projection;)V	ladder/rung1206/misc/SmallAdapters	$0,$1,$2
+X	net/minecraft/world/level/levelgen/structure/pools/SinglePoolElement	overrideLiquidSettingsCodec	()Lcom/mojang/serialization/codecs/RecordCodecBuilder;	ladder/rung1206/misc/SmallAdapters	overrideLiquidSettingsCodec
+# 1.21's session search trees (1.20.6: the client's own search registry)
+P	net/minecraft/client/multiplayer/SessionSearchTrees	ladder/rung1206/provided/SessionSearchTrees
+X	net/minecraft/client/multiplayer/ClientPacketListener	searchTrees	()Lnet/minecraft/client/multiplayer/SessionSearchTrees;	ladder/rung1206/provided/SessionSearchTrees	of
+# NeoForge 21's hotbar rendering with the DeltaTracker (20.6: the partial tick)
+M	net/minecraft/client/gui/Gui	renderHotbar	(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V	renderHotbar	(Lnet/minecraft/client/gui/GuiGraphics;F)V
+# 1.21's crash report file as a path, and its saving where 1.20.6's game code saves to a file (a mixin's point there)
+X	net/minecraft/CrashReport	getSaveFile	()Ljava/nio/file/Path;	ladder/rung1206/misc/SmallAdapters	getSaveFile
+M	net/minecraft/CrashReport	saveToFile	(Ljava/nio/file/Path;Lnet/minecraft/ReportType;)Z	saveToFile	(Ljava/io/File;)Z
+A	net/minecraft/CrashReport	saveToFile	(Ljava/nio/file/Path;Lnet/minecraft/ReportType;)Z	(Ljava/io/File;)Z	ladder/rung1206/misc/SmallAdapters.path(0) ladder/rung1206/misc/SmallAdapters.crashReport()
+D	net/minecraft/CrashReport	saveToFile	(Ljava/nio/file/Path;Lnet/minecraft/ReportType;)Z	(Ljava/io/File;)Z	ladder/rung1206/misc/SmallAdapters.file($0)

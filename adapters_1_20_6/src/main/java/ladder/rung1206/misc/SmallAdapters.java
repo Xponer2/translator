@@ -270,4 +270,35 @@ public final class SmallAdapters {
     public static float[] rgbOrNull(Integer argb) {
         return argb == null ? null : rgb(argb);
     }
+
+    /**
+     * 1.21's {@code SinglePoolElement.overrideLiquidSettingsCodec()}: the element's optional liquid settings field (1.20.6's
+     * elements have none: read and dropped, written as absent)
+     */
+    public static <E> com.mojang.serialization.codecs.RecordCodecBuilder<E, java.util.Optional<
+            ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings>> overrideLiquidSettingsCodec() {
+        return ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings.CODEC
+                .optionalFieldOf("override_liquid_settings").forGetter(element -> java.util.Optional.empty());
+    }
+
+    /** 1.21's {@code report.getSaveFile()} as a path (1.20.6 keeps a file; null while unsaved) */
+    public static java.nio.file.Path getSaveFile(net.minecraft.CrashReport report) {
+        java.io.File file = report.getSaveFile();
+        return file == null ? null : file.toPath();
+    }
+
+    /** the path of a file (a mixin handler's argument where 1.21 passes a path) */
+    public static java.nio.file.Path path(java.io.File file) {
+        return file == null ? null : file.toPath();
+    }
+
+    /** the kind of report 1.20.6 saves: a crash */
+    public static ladder.carried_1_20_6.net.minecraft.ReportType crashReport() {
+        return ladder.carried_1_20_6.net.minecraft.ReportType.CRASH;
+    }
+
+    /** the file of a path (a call's argument where 1.20.6 takes a file) */
+    public static java.io.File file(java.nio.file.Path path) {
+        return path == null ? null : path.toFile();
+    }
 }
