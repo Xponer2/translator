@@ -571,3 +571,10 @@ U	net/neoforged/neoforge/client/extensions/IModelBakerExtension	getTopLevelModel
 # 1.21's small fireball of a movement vector (1.20.6: its parts)
 K	net/minecraft/world/entity/projectile/SmallFireball	(Lnet/minecraft/world/level/Level;DDDLnet/minecraft/world/phys/Vec3;)V	(Lnet/minecraft/world/level/Level;DDDDDD)V	ladder/rung1206/misc/SmallAdapters	$0,$1,$2,$3,movementX,movementY,movementZ
 K	net/minecraft/world/entity/projectile/SmallFireball	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/phys/Vec3;)V	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;DDD)V	ladder/rung1206/misc/SmallAdapters	$0,$1,movementX,movementY,movementZ
+# the subclasses' own canUsePortal (1.21: LivingEntity's, a throwable's): 1.20.6's canChangeDimensions
+M	net/minecraft/world/entity/LivingEntity	canUsePortal	(Z)Z	canChangeDimensions	()Z
+D	net/minecraft/world/entity/LivingEntity	canUsePortal	(Z)Z	()Z	-
+A	net/minecraft/world/entity/LivingEntity	canUsePortal	(Z)Z	()Z	false
+M	net/minecraft/world/entity/projectile/ThrowableProjectile	canUsePortal	(Z)Z	canChangeDimensions	()Z
+D	net/minecraft/world/entity/projectile/ThrowableProjectile	canUsePortal	(Z)Z	()Z	-
+A	net/minecraft/world/entity/projectile/ThrowableProjectile	canUsePortal	(Z)Z	()Z	false

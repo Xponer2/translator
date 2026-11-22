@@ -2306,6 +2306,16 @@ public class Convert {
                         unverified.add("data generation API " + cur.key() + ", changed (" + from.id + " -> " + to.id + ")");
                         return null;
                     }
+                    if (cur.kind() == 'M' && i + 2 == versions.size() && redirects.containsKey(cur.cls() + "." + cur.name() + " " + cur.desc())
+                            && argumentPlanRow(remapper.mapMethodDesc(cur.desc()), s.to(), cur.name()) != null) {
+                        // calls take the X row's adapter; a mod's override is called from the lower method by the A row's
+                        // plan (an entity's own changeDimension(transition) from 1.20.6's changeDimension(level)): its
+                        // bridge has no call side
+                        String[] only = {OVERRIDE_ONLY + cur.cls(), cur.name() + "$" + Integer.toHexString(cur.desc().hashCode())};
+                        callRedirect.put(key, only);
+                        bridgeEnds.put(only[0] + "." + only[1], s.to());
+                        return new Stage0.Ref(cur.kind(), only[0], only[1], cur.desc());
+                    }
                     if (privateShadowable(from, cur, s.to())) {
                         // a private method only a mixin reaches (its @Shadow): the shadow becomes the lower one and its
                         // calls go to a converting helper once the mixin is remapped (shadowHelpers)
@@ -3650,6 +3660,9 @@ public class Convert {
         bridgeEnds.put(owner + "." + bridge[1], end);
         return bridge;
     }
+
+    /** the owner of an override-only bridge record (no class: the calls take an X row) */
+    static final String OVERRIDE_ONLY = "ladder/override/";
 
     /** the owner of a protected member's bridge record (no class: its calls go through helpers in the calling class) */
     static final String PROTECTED = "ladder/protected/";
