@@ -24,7 +24,7 @@ import net.neoforged.neoforge.common.NeoForge;
 abstract class EffectTooltipMixin {
     @ModifyArg(method = "renderEffects", index = 1, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/GuiGraphics;renderTooltip(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;II)V"))
-    private List<Component> ladder$gather(List<Component> tooltip, @Local MobEffectInstance effect) {
+    private List<Component> ladder$gather(List<Component> tooltip, @Local(ordinal = 0) MobEffectInstance effect) {
         GatherEffectScreenTooltipsEvent event = new GatherEffectScreenTooltipsEvent((EffectRenderingInventoryScreen<?>) (Object) this, effect, tooltip);
         NeoForge.EVENT_BUS.post(event);
         return event.getTooltip();
