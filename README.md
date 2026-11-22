@@ -76,7 +76,7 @@ versions together on one target.
 | Rung | Own adapters | Tested in the lower game | Problems left on this rung | Mods with none from it (of 300) | State |
 |---|---|---|---:|---:|---|
 | 1.21.1 → 1.21 | yes (`adapters_1_21`) | yes: test mods A–C, E and F on the real 1.21 (server, client over a real connection), the same results as on 1.21.1 | 0 | 300 | done (offline; game-tested by the test mods) |
-| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A, B, E and G on the real 1.20.6 server, the same results as on 1.21.1 (the client tests C and F are being rerun) | 510 | 246 of 302 (rung 1's output) | in work |
+| 1.21 → 1.20.6 | yes (`adapters_1_20_6`) | yes: test mods A–C and E–G on the real 1.20.6 (server and client), the same results as on 1.21.1 | 510 | 246 of 302 (rung 1's output) | in work |
 | 1.20.6 → 1.20.4 | yes (`adapters_1_20_4`) | yes: test mods A–C, E and F on the real 1.20.4, the same results as on 1.21.1 | – | – | in work (counted on the whole path below) |
 
 A mod goes down every rung between its version and the target, so a path is the rungs on it. What a 1.21.1 mod gets on
@@ -85,7 +85,7 @@ each target (the corpus of 300 mods):
 | Path | Rungs it passes | Mods with nothing left (of 300) | Tested in that game |
 |---|---|---:|---|
 | 1.21.1 → 1.21 | 1.21.1 → 1.21 | 300 | test mods A–C, E, F: the same results as on 1.21.1 |
-| 1.21.1 → 1.20.6 | 1.21.1 → 1.21 → 1.20.6 | 246 of 302 jars (the 300 mods and rung 1's own jars) | test mods A, B, E, G: the same (client C, F: rerun) |
+| 1.21.1 → 1.20.6 | 1.21.1 → 1.21 → 1.20.6 | 246 of 302 jars (the 300 mods and rung 1's own jars) | test mods A–C, E–G: the same |
 | 1.21.1 → 1.20.4 | all three | 93 | test mods A–C, E, F: the same |
 
 A mod "with nothing left" converts with no known problem on every rung of its path; the others still have places that
