@@ -302,7 +302,9 @@ final class MixinPoints {
                     }
                 }
                 case "NEW" -> {
-                    String type = target.startsWith("L") && target.endsWith(";") ? target.substring(1, target.length() - 1)
+                    // (a class name, "Lclass;", or a constructor descriptor "(args)Lclass;": the made class)
+                    String type = target.startsWith("(") ? target.substring(target.indexOf(')') + 2, target.length() - 1)
+                            : target.startsWith("L") && target.endsWith(";") ? target.substring(1, target.length() - 1)
                             : owner != null ? owner : target;
                     if (insn instanceof TypeInsnNode t && t.getOpcode() == Opcodes.NEW && t.desc.equals(type)) {
                         n++;

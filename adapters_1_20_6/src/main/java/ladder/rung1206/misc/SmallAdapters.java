@@ -173,4 +173,24 @@ public final class SmallAdapters {
     public static net.minecraft.tags.TagKey<net.minecraft.world.item.Item> toolsShear() {
         return net.neoforged.neoforge.common.Tags.Items.TOOLS_SHEARS;
     }
+
+    /** the liquid settings 1.21 passes to jigsaw placement (1.20.6 always applies waterlogging) */
+    public static ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings liquidSettings() {
+        return ladder.carried_1_20_6.net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings.APPLY_WATERLOGGING;
+    }
+
+    /** a beam's ARGB colour (1.21) as 1.20.6's red, green, blue floats */
+    public static float[] colorArray(int argb) {
+        return new float[] {(argb >> 16 & 0xFF) / 255.0F, (argb >> 8 & 0xFF) / 255.0F, (argb & 0xFF) / 255.0F};
+    }
+
+    /** 1.20.6's beam colour floats as 1.21's ARGB int (opaque) */
+    public static int colorInt(float[] rgb) {
+        return 0xFF000000 | Mth.floor(rgb[0] * 255.0F) << 16 | Mth.floor(rgb[1] * 255.0F) << 8 | Mth.floor(rgb[2] * 255.0F);
+    }
+
+    /** the slot group of a slot (1.21's forEachModifier of a group where 1.20.6's tooltips ask it per slot) */
+    public static net.minecraft.world.entity.EquipmentSlotGroup slotGroup(net.minecraft.world.entity.EquipmentSlot slot) {
+        return net.minecraft.world.entity.EquipmentSlotGroup.bySlot(slot);
+    }
 }

@@ -80,4 +80,10 @@ public final class EntityArgs {
     public static ItemStack skeletonWeapon(AbstractSkeleton skeleton) {
         return weapon(skeleton);
     }
+
+    /** 1.21's {@code entity.getKnockback(target, source)}: the attack knockback attribute and the knockback enchantment */
+    public static float getKnockback(LivingEntity entity, Entity target, DamageSource source) {
+        return (float) entity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_KNOCKBACK)
+                + net.minecraft.world.item.enchantment.EnchantmentHelper.getKnockbackBonus(entity);
+    }
 }

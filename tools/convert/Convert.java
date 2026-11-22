@@ -964,6 +964,7 @@ public class Convert {
                         }
                     }
                     if (landsAbove != null) {
+                        bridgedShadows(remapped);
                         checkShadows(remapped, shadowsAbove);
                     }
                     ClassWriter writer = new ClassWriter(writeFlags);
@@ -1412,7 +1413,13 @@ public class Convert {
     static String[] argumentPlanRow(String upperDesc, Stage0.Ref end, String upperName) {
         String[] inherited = null;
         for (String[] a : argumentPlans) {
-            if ((a[1].equals(end.name()) || a[1].equals(upperName)) && a[3].equals(end.desc()) && remapper.mapMethodDesc(a[2]).equals(upperDesc)) {
+            boolean named = a[1].equals(end.name()) || a[1].equals(upperName);
+            if (!named && a[3].equals(end.desc()) && remapper.mapMethodDesc(a[2]).equals(upperDesc)) {
+                // (a method renamed below: the row's upper method is the hook below of that name)
+                Stage0.Ref below = hookBelow(a[0], a[1], a[2]);
+                named = below != null && below.name().equals(end.name());
+            }
+            if (named && a[3].equals(end.desc()) && remapper.mapMethodDesc(a[2]).equals(upperDesc)) {
                 String owner = remapper.map(a[0]);
                 if (owner.equals(end.cls())) {
                     return a;
@@ -2178,6 +2185,26 @@ public class Convert {
         }
         String mapped = finalName(owner, name, desc, method);
         return mapped == null ? name : mapped;
+    }
+
+    /**
+     * The lower descriptor of a constructor that takes other values below, by a K row (its lower descriptor) or an A row
+     * (the mixin handler's plan); null when it is the same below or no row covers it.
+     */
+    static String lowerConstructor(String owner, String desc) {
+        if (versions.get(versions.size() - 1).declaring(remapper.map(owner), "<init>", remapper.mapMethodDesc(desc), true) != null) {
+            return null;
+        }
+        String[] k = constructorArguments.get(owner + ".<init> " + desc);
+        if (k != null) {
+            return k[0];
+        }
+        for (String[] a : argumentPlans) {
+            if (a[0].equals(owner) && a[1].equals("<init>") && a[2].equals(desc)) {
+                return a[3];
+            }
+        }
+        return null;
     }
 
     static void validateConstructor(String owner, String desc) {
@@ -3197,6 +3224,10 @@ public class Convert {
             // the lower type is the upper one's subtype (a DefaultedRegistry for a Registry): read as it is, passed cast
             return 8;
         }
+        if (u.equals(ADAPTERS + "provided/MeshData") && l.equals(RENDERED_BUFFER)) {
+            // 1.21's finished vertices, where the lower game passes its rendered buffer (the provided MeshData wraps it)
+            return 16;
+        }
         if (isSubtype(u, l)) {
             // the upper type is the lower one's subtype (1.21's MultiLineLabel.create of a Component, 1.20.6's of a
             // FormattedText): passed as it is, read cast
@@ -3261,6 +3292,7 @@ public class Convert {
         return false;
     }
 
+    static final String RENDERED_BUFFER = "com/mojang/blaze3d/vertex/BufferBuilder$RenderedBuffer";
     static final String CALLBACK_RETURNABLE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
     /** the primitive number descriptors a callback's value converts between */
     static final String NUMBERS = "BSIJFD";
@@ -3437,6 +3469,7 @@ public class Convert {
     static void convertDown(InsnList code, Type upper, Type lower) {
         switch (conversion(upper, lower)) {
             case 14 -> throw new IllegalStateException("no " + lower + " result of a void method");
+            case 16 -> code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ADAPTERS + "provided/MeshData", "buffer", "()L" + RENDERED_BUFFER + ";", false));
             case 1, 2 -> {
                 code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "unwrap", "(L" + HOLDER + ";)Ljava/lang/Object;", false));
                 code.add(new TypeInsnNode(Opcodes.CHECKCAST, lower.getInternalName()));
@@ -4183,7 +4216,8 @@ public class Convert {
                 continue;
             }
             Stage0.Ref end = bridgeEnds.get(bridge[0] + "." + bridge[1]);
-            MethodNode g = end == null || mixinTargets.containsKey(node.name) ? null : overrideBridge(node, m, end, itf);
+            // (a mixin's method: its bridge is added to the targets with it, when none of them declares the lower method)
+            MethodNode g = end == null || mixinTargets.containsKey(node.name) && !bridgeableMixin(node, end, itf) ? null : overrideBridge(node, m, end, itf);
             if (g == null) {
                 problem("an override of " + ref.key() + ", whose parameters changed below: no override bridge for it (it would never be called)");
                 continue;
@@ -4335,6 +4369,24 @@ public class Convert {
         return g;
     }
 
+    /**
+     * Whether a mixin class's override may get its override bridge: a class mixin whose targets are game classes that
+     * don't declare the lower method themselves (the bridge is then a method the mixin adds, never one it replaces).
+     */
+    static boolean bridgeableMixin(ClassNode node, Stage0.Ref end, boolean itf) {
+        if (itf) {
+            return false;
+        }
+        Stage0.Version bottom = versions.get(versions.size() - 1);
+        for (String t : mixinTargets.getOrDefault(node.name, List.of())) {
+            Stage0.Cls info = bottom.classes.get(remapper.map(t));
+            if (!Stage0.platform(t) || info == null || info.methods.contains(end.name() + " " + end.desc())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** The lower method of an override bridge, in the bottom version's names; null when the values don't convert. */
     static MethodNode overrideBridge(ClassNode node, MethodNode m, Stage0.Ref end, boolean itf) {
         String ownName = remapper.mapMethodName(node.name, m.name, m.desc), ownDesc = remapper.mapMethodDesc(m.desc);
@@ -4352,7 +4404,8 @@ public class Convert {
             problem("an A row's plan for " + end.key() + " has " + plan.length + " arguments, not " + up.length);
             plan = null;
         }
-        if (map == null && plan == null || !overriddenReturn(upRet, lowRet)) {
+        boolean zeroResult = upRet.getSort() == Type.VOID && NUMBERS.indexOf(lowRet.getDescriptor()) >= 0 && lowRet.getDescriptor().length() == 1;
+        if (map == null && plan == null || !overriddenReturn(upRet, lowRet) && !zeroResult) {
             return null;
         }
         int access = Opcodes.ACC_PUBLIC;
@@ -4386,7 +4439,18 @@ public class Convert {
             }
         }
         code.add(new MethodInsnNode(itf ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL, remapper.map(node.name), ownName, ownDesc, itf));
-        convertDown(code, upRet, lowRet);
+        if (zeroResult) {
+            // the upper method gives nothing the lower one returns a number of (1.21's IConfigSpec.correct, 1.20.6's
+            // count of corrections): none
+            switch (lowRet.getSort()) {
+                case Type.LONG -> code.add(new InsnNode(Opcodes.LCONST_0));
+                case Type.FLOAT -> code.add(new InsnNode(Opcodes.FCONST_0));
+                case Type.DOUBLE -> code.add(new InsnNode(Opcodes.DCONST_0));
+                default -> code.add(new InsnNode(Opcodes.ICONST_0));
+            }
+        } else {
+            convertDown(code, upRet, lowRet);
+        }
         if (end.name().equals("getRemainingItems") && low.length == 1 && low[0].getInternalName().equals(CONTAINER)
                 && lowRet.getInternalName().equals("net/minecraft/core/NonNullList")) {
             // the mod's remainders are of its trimmed input: 1.20.4 takes them slot by slot of the whole grid
@@ -4593,6 +4657,8 @@ public class Convert {
         switch (conversion(upper, lower)) {
             case 14 -> code.add(new InsnNode(lower.getSize() == 2 ? Opcodes.POP2 : Opcodes.POP));
             case 15 -> code.add(new TypeInsnNode(Opcodes.CHECKCAST, upper.getInternalName()));
+            case 16 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "meshData",
+                    "(L" + RENDERED_BUFFER + ";)L" + ADAPTERS + "provided/MeshData;", false));
             case 1 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "holder", "(Ljava/lang/Object;)L" + HOLDER + ";", false));
             case 2 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "reference", "(Ljava/lang/Object;)L" + REFERENCE + ";", false));
             case 3 -> code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "mapCodec", "(L" + CODEC + ";)L" + MAP_CODEC + ";", false));
@@ -5002,6 +5068,132 @@ public class Convert {
         return out;
     }
 
+    /**
+     * A @Shadow of a method whose types changed below: the remapper gave it its bridge's name (the mixin's calls of it go
+     * to the bridge, which calls the lower method). Nothing calls the shadow any more: it becomes the lower method's own
+     * shadow (Camera.move(FFF) as 1.20.6's move(DDD)), so Mixin finds it.
+     */
+    static void bridgedShadows(ClassNode mixin) {
+        for (MethodNode m : mixin.methods) {
+            AnnotationNode shadow = shadowOf(MixinPoints.annotations(m));
+            if (shadow == null || MixinPoints.value(shadow, "aliases") != null || m.name.indexOf('$') < 0) {
+                continue;
+            }
+            Stage0.Ref end = null;
+            for (var e : bridgeEnds.entrySet()) {
+                if (e.getKey().endsWith("." + m.name)) {
+                    end = e.getValue();
+                    break;
+                }
+            }
+            if (end == null || !end.name().equals(m.name.substring(0, m.name.indexOf('$')))) {
+                continue;
+            }
+            boolean called = false;
+            for (MethodNode other : mixin.methods) {
+                for (AbstractInsnNode insn : other.instructions) {
+                    called |= insn instanceof MethodInsnNode call && call.name.equals(m.name) && call.desc.equals(m.desc);
+                }
+            }
+            if (!called) {
+                m.name = end.name();
+                m.desc = end.desc();
+            }
+        }
+        shadowHelpers(mixin);
+    }
+
+    /**
+     * A @Shadow of a method the targets have below under the same name with other values (a private one no bridge
+     * reaches: 1.21's Camera.getMaxZoom(F)F, 1.20.6's (D)D): the shadow becomes the lower method; a private helper of the
+     * upper descriptor converts the values and calls it, and the mixin's calls of the shadow go to the helper.
+     */
+    static void shadowHelpers(ClassNode mixin) {
+        List<String> targets = mixinTargetsOf(mixin);
+        List<MethodNode> helpers = new ArrayList<>();
+        for (MethodNode m : mixin.methods) {
+            AnnotationNode shadow = shadowOf(MixinPoints.annotations(m));
+            if (shadow == null || MixinPoints.value(shadow, "aliases") != null || m.name.startsWith("<") || targets.isEmpty()) {
+                continue;
+            }
+            boolean everywhere = true;
+            String lowerDesc = null;
+            for (String t : targets) {
+                ClassNode c = bottomClass(t);
+                if (c == null || hasMember(Convert::bottomClass, t, true, m.name, m.desc)) {
+                    everywhere = false;
+                    break;
+                }
+                String found = null;
+                int count = 0;
+                for (MethodNode x : c.methods) {
+                    if (x.name.equals(m.name) && (x.access & Opcodes.ACC_STATIC) == (m.access & Opcodes.ACC_STATIC)
+                            && paramMap(Type.getArgumentTypes(m.desc), Type.getArgumentTypes(x.desc)) != null
+                            && twoWayResult(Type.getReturnType(m.desc), Type.getReturnType(x.desc))) {
+                        found = x.desc;
+                        count++;
+                    }
+                }
+                if (count != 1 || lowerDesc != null && !lowerDesc.equals(found)) {
+                    everywhere = false;
+                    break;
+                }
+                lowerDesc = found;
+            }
+            if (!everywhere || lowerDesc == null) {
+                continue;
+            }
+            String upper = m.desc;
+            Type[] up = Type.getArgumentTypes(upper), low = Type.getArgumentTypes(lowerDesc);
+            int[] map = paramMap(up, low);
+            boolean isStatic = (m.access & Opcodes.ACC_STATIC) != 0;
+            String helperName = "ladder$shadow$" + m.name + "$" + Integer.toHexString(upper.hashCode());
+            MethodNode g = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_SYNTHETIC | (isStatic ? Opcodes.ACC_STATIC : 0), helperName, upper, null, null);
+            InsnList code = g.instructions;
+            int slot = 0;
+            if (!isStatic) {
+                code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                slot = 1;
+            }
+            for (int a = 0; a < up.length; a++) {
+                if (map[a] >= 0) {
+                    code.add(new VarInsnNode(up[a].getOpcode(Opcodes.ILOAD), slot));
+                    convertDown(code, up[a], low[map[a]]);
+                } else if (map[a] <= -2) {
+                    unpackColor(code, slot, colorChannels(up, a, low, -map[a] - 2));
+                }
+                slot += up[a].getSize();
+            }
+            boolean privateShadow = (m.access & Opcodes.ACC_PRIVATE) != 0;
+            code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : privateShadow ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, mixin.name,
+                    m.name, lowerDesc, false));
+            Type upRet = Type.getReturnType(upper), lowRet = Type.getReturnType(lowerDesc);
+            if (!upRet.equals(lowRet)) {
+                convertUp(code, lowRet, upRet);
+            }
+            code.add(new InsnNode(upRet.getOpcode(Opcodes.IRETURN)));
+            g.maxLocals = slot;
+            g.maxStack = slot + 6;
+            for (MethodNode other : mixin.methods) {
+                for (AbstractInsnNode insn : other.instructions) {
+                    if (insn instanceof MethodInsnNode call && call.owner.equals(mixin.name) && call.name.equals(m.name) && call.desc.equals(upper)) {
+                        call.name = helperName;
+                        call.setOpcode(isStatic ? Opcodes.INVOKESTATIC : Opcodes.INVOKESPECIAL);
+                        call.itf = false;
+                    }
+                }
+            }
+            m.desc = lowerDesc;
+            helpers.add(g);
+        }
+        mixin.methods.addAll(helpers);
+    }
+
+    /** whether a method's result converts both ways between an upper and a lower type (or both are void) */
+    static boolean twoWayResult(Type upper, Type lower) {
+        return upper.getSort() == Type.VOID ? lower.getSort() == Type.VOID : lower.getSort() != Type.VOID && twoWay(upper, lower);
+    }
+
     static void checkShadows(ClassNode mixin, List<Boolean> above) {
         List<String> targets = mixinTargetsOf(mixin);
         List<Shadowed> shadows = shadows(mixin);
@@ -5167,6 +5359,32 @@ public class Convert {
         }
     }
 
+    /**
+     * The lower name of a lambda a mixin selector names, when the bottom class hasn't it under that name and descriptor
+     * but has one lambda of the same method with that descriptor (javac numbers lambdas in the class's order); else null.
+     */
+    static String lambdaBelow(String owner, String name, String desc) {
+        ClassNode c = bottomClass(remapper.map(owner));
+        int last = name.lastIndexOf('$');
+        if (c == null || last <= "lambda$".length()) {
+            return null;
+        }
+        String lowerDesc = remapper.mapMethodDesc(desc), prefix = name.substring(0, last + 1);
+        String found = null;
+        for (MethodNode m : c.methods) {
+            if (m.name.equals(name) && m.desc.equals(lowerDesc)) {
+                return null;
+            }
+            if (m.name.startsWith(prefix) && m.desc.equals(lowerDesc)) {
+                if (found != null) {
+                    return null;
+                }
+                found = m.name;
+            }
+        }
+        return found;
+    }
+
     /** The string selectors of a mixin's injectors (method = ..., @At(target = ...)) in the bottom version's names. */
     static void remapMixinSelectors(ClassNode node, Remapper remapper) {
         List<String> targets = mixinTargets.get(node.name);
@@ -5237,6 +5455,16 @@ public class Convert {
                 }
                 a.values.set(i + 1, mapped);
             } else if (at && key.equals("target") && value instanceof String target) {
+                String made = FACTORY_NEW.get(target);
+                int kind = a.values.indexOf("value");
+                if (made != null && kind >= 0 && kind % 2 == 0 && ("INVOKE".equals(a.values.get(kind + 1)) || "INVOKE_ASSIGN".equals(a.values.get(kind + 1)))
+                        && crosses("1.21", "1.20.6")) {
+                    // 1.21's factory where 1.20.6's code makes the object itself (ResourceLocation.parse: new
+                    // ResourceLocation(String)): the point is that NEW, its handler the same shape
+                    a.values.set(i + 1, made);
+                    a.values.set(kind + 1, "NEW");
+                    continue;
+                }
                 a.values.set(i + 1, targetSelector(target, remapper, where));
             } else if (value instanceof AnnotationNode inner) {
                 remapAnnotation(inner, targets, remapper, where);
@@ -5283,8 +5511,25 @@ public class Convert {
                     continue;
                 }
                 if (name.equals("<init>")) {
+                    String lowerInit = currentHandler == null ? null : lowerConstructor(o, mDesc);
+                    if (lowerInit != null) {
+                        // a constructor that takes other values below (a K or an A row): the injector goes to that one,
+                        // its handler's values by the A row's plan
+                        handlerFixes.add(new HandlerFix(currentHandler[0], currentHandler[1], currentHandler[2], currentHandler[3],
+                                remapper.mapMethodDesc(mDesc), new Stage0.Ref('M', remapper.map(o), "<init>", lowerInit), false));
+                        results.add("<init>" + lowerInit);
+                        continue;
+                    }
                     validateConstructor(o, mDesc);
                     results.add("<init>" + remapper.mapMethodDesc(mDesc));
+                    continue;
+                }
+                String lambda = mName.startsWith("lambda$") ? lambdaBelow(o, mName, mDesc) : null;
+                if (lambda != null) {
+                    // a lambda numbered otherwise below (1.21's lambda$startSleepInBed$13 is 1.20.6's $12): the one of the
+                    // same method and descriptor
+                    results.add(lambda + (desc != null ? remapper.mapMethodDesc(mDesc) : ""));
+                    qualified.add(lambda + remapper.mapMethodDesc(mDesc));
                     continue;
                 }
                 String[] bridged = bridgeOf(o, mName, mDesc, true);
@@ -5578,6 +5823,10 @@ public class Convert {
             }
             boolean numberResult = returnChanged && inject && !f.call() && callback >= 0 && NUMBERS.indexOf(upRet.getDescriptor()) >= 0
                     && NUMBERS.indexOf(lowRet.getDescriptor()) >= 0 && upRet.getDescriptor().length() == 1 && lowRet.getDescriptor().length() == 1;
+            if (!inject && distinct && valueBridge(out, h, hp, f, up, low, upRet, lowRet)) {
+                // an injector of another kind whose values convert both ways (a float of 1.21 a double of 1.20.6)
+                continue;
+            }
             if (f.call() || !inject || !prefix || returnChanged && !numberResult || !distinct) {
                 problem("mixin handler " + where + " takes types that changed below (" + f.upperDesc() + " -> " + f.end().desc()
                         + "): no handler bridge for it");
@@ -5664,6 +5913,187 @@ public class Convert {
             g.maxStack = slot + 2 + 2 * up.length;
             out.methods.add(g);
         }
+    }
+
+    /** 1.21's factories whose call 1.20.6's code makes as a NEW of the class: @At target -> the NEW target */
+    static final Map<String, String> FACTORY_NEW = Map.of(
+            "Lnet/minecraft/resources/ResourceLocation;parse(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;",
+            "(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;",
+            "Lnet/minecraft/resources/ResourceLocation;withDefaultNamespace(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;",
+            "(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;",
+            "Lnet/minecraft/resources/ResourceLocation;fromNamespaceAndPath(Ljava/lang/String;Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;",
+            "(Ljava/lang/String;Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;");
+
+    static final String OPERATION = "com/llamalad7/mixinextras/injector/wrapoperation/Operation";
+    static final Set<String> REDIRECTS = Set.of("Lorg/spongepowered/asm/mixin/injection/Redirect;",
+            "Lcom/llamalad7/mixinextras/injector/v2/WrapWithCondition;", "Lcom/llamalad7/mixinextras/injector/WrapWithCondition;");
+    static final String WRAP_OPERATION = "Lcom/llamalad7/mixinextras/injector/wrapoperation/WrapOperation;";
+    static final String WRAP_METHOD = "Lcom/llamalad7/mixinextras/injector/wrapmethod/WrapMethod;";
+    static final String MODIFY_EXPRESSION = "Lcom/llamalad7/mixinextras/injector/ModifyExpressionValue;";
+    static final String MODIFY_RETURN = "Lcom/llamalad7/mixinextras/injector/ModifyReturnValue;";
+    static final String MODIFY_ARG = "Lorg/spongepowered/asm/mixin/injection/ModifyArg;";
+
+    /** whether a value converts both ways between an upper and a lower type (a handler's argument up, its result down) */
+    static boolean twoWay(Type upper, Type lower) {
+        int c = conversion(upper, lower);
+        return c == 0 || c == 1 || c == 2 || c == 6 || c == 8 || c == 9 || c == 12 || c == 15 || c == 16;
+    }
+
+    /** whether the lower member is static (a call's receiver isn't among a call injector's values then) */
+    static boolean staticBelow(Stage0.Ref end) {
+        Stage0.Cls info = versions.get(versions.size() - 1).classes.get(end.cls());
+        return info != null && info.staticMethods.contains(end.name() + " " + end.desc());
+    }
+
+    /**
+     * The wrapper of a handler of another injector than @Inject (@Redirect, @WrapWithCondition, @WrapOperation,
+     * @ModifyArg, @ModifyExpressionValue, @ModifyReturnValue, @WrapMethod) whose call or method has other types below,
+     * each converting both ways (1.21's floats 1.20.6's doubles, a holder its value, the DeltaTracker the partial tick):
+     * the wrapper takes the lower values, gives the handler the upper ones, gives back its result as the lower one. An
+     * Operation the handler calls takes the upper values and converts them down (Conversions.operation). The injector's
+     * annotation moves to the wrapper; the handler keeps its name and descriptor. False when the shape isn't one of these.
+     */
+    static boolean valueBridge(ClassNode out, MethodNode h, Type[] hp, HandlerFix f, Type[] up, Type[] low, Type upRet, Type lowRet) {
+        if (!twoWay(upRet, lowRet) && !(upRet.getSort() == Type.VOID && lowRet.getSort() == Type.VOID)) {
+            return false;
+        }
+        String ann = f.annotation();
+        // (a value injector of a result sees only the result: the arguments may change as they like; the others see them)
+        boolean resultOnly = f.call() && ann.equals(MODIFY_EXPRESSION) || !f.call() && ann.equals(MODIFY_RETURN);
+        boolean argumentsConvert = up.length == low.length;
+        for (int i = 0; i < up.length && argumentsConvert; i++) {
+            argumentsConvert = twoWay(up[i], low[i]);
+        }
+        if (!resultOnly && !argumentsConvert) {
+            return false;
+        }
+        Type hRet = Type.getReturnType(h.desc);
+        Type[] wrapped = hp.clone();
+        Type wrappedRet = hRet;
+        int operation = -1;
+        boolean recv = f.call() && !staticBelow(f.end());
+        int base = recv ? 1 : 0;
+        if (f.call() && (REDIRECTS.contains(ann) || ann.equals(WRAP_OPERATION))) {
+            // [the receiver,] the call's arguments, [the Operation,] then the target method's captured ones
+            if (hp.length < base + up.length || !Arrays.equals(Arrays.copyOfRange(hp, base, base + up.length), up)) {
+                return false;
+            }
+            System.arraycopy(low, 0, wrapped, base, low.length);
+            if (ann.equals(WRAP_OPERATION)) {
+                if (hp.length <= base + up.length || !hp[base + up.length].getInternalName().equals(OPERATION)) {
+                    return false;
+                }
+                operation = base + up.length;
+            }
+            if (!ann.contains("WrapWithCondition")) {
+                if (!hRet.equals(upRet)) {
+                    return false;
+                }
+                wrappedRet = lowRet;
+            }
+        } else if (resultOnly) {
+            // the call's (the method's) result, then captured values (a method's own arguments when they changed: none)
+            if (hp.length < 1 || !hp[0].equals(upRet) || !hRet.equals(upRet) || !f.call() && !Arrays.equals(up, low) && hp.length > 1) {
+                return false;
+            }
+            wrapped[0] = lowRet;
+            wrappedRet = lowRet;
+        } else if (f.call() && ann.equals(MODIFY_ARG)) {
+            // one argument of the call (or all of them, the modified one's type the result)
+            if (hp.length == 1 && hp[0].equals(hRet)) {
+                int index = -1;
+                for (int i = 0; i < up.length; i++) {
+                    if (up[i].equals(hRet) && !up[i].equals(low[i])) {
+                        if (index >= 0) {
+                            return false;
+                        }
+                        index = i;
+                    }
+                }
+                if (index < 0) {
+                    return false;
+                }
+                wrapped[0] = low[index];
+                wrappedRet = low[index];
+            } else if (hp.length == up.length && Arrays.equals(hp, up)) {
+                int index = -1;
+                for (int i = 0; i < up.length; i++) {
+                    if (up[i].equals(hRet) && !up[i].equals(low[i])) {
+                        index = index < 0 ? i : -2;
+                    }
+                }
+                if (index < 0) {
+                    return false;
+                }
+                System.arraycopy(low, 0, wrapped, 0, low.length);
+                wrappedRet = low[index];
+            } else {
+                return false;
+            }
+        } else if (!f.call() && ann.equals(WRAP_METHOD)) {
+            // the method's arguments, then the Operation
+            if (hp.length != up.length + 1 || !Arrays.equals(Arrays.copyOf(hp, up.length), up) || !hp[up.length].getInternalName().equals(OPERATION)
+                    || !hRet.equals(upRet)) {
+                return false;
+            }
+            System.arraycopy(low, 0, wrapped, 0, low.length);
+            operation = up.length;
+            wrappedRet = lowRet;
+        } else {
+            return false;
+        }
+        String spec = null;
+        if (operation >= 0) {
+            // the Operation's values: [the receiver,] the arguments, and its result, each "upper>lower" or "" when the same
+            StringBuilder b = new StringBuilder();
+            if (recv) {
+                b.append(',');
+            }
+            for (int i = 0; i < up.length; i++) {
+                b.append(up[i].equals(low[i]) ? "" : up[i].getDescriptor() + ">" + low[i].getDescriptor()).append(',');
+            }
+            b.append('|').append(upRet.equals(lowRet) ? "" : upRet.getDescriptor() + ">" + lowRet.getDescriptor());
+            spec = b.toString();
+            checkAdapter(CONVERSIONS, "operation", "(L" + OPERATION + ";Ljava/lang/String;)L" + OPERATION + ";", "a value bridge of " + h.name);
+        }
+        MethodNode g = new MethodNode(h.access, "ladder$wrap$" + h.name, Type.getMethodDescriptor(wrappedRet, wrapped), null,
+                h.exceptions.toArray(new String[0]));
+        g.visibleAnnotations = h.visibleAnnotations;
+        g.invisibleAnnotations = h.invisibleAnnotations;
+        g.visibleParameterAnnotations = h.visibleParameterAnnotations;
+        g.invisibleParameterAnnotations = h.invisibleParameterAnnotations;
+        h.visibleAnnotations = null;
+        h.invisibleAnnotations = null;
+        h.visibleParameterAnnotations = null;
+        h.invisibleParameterAnnotations = null;
+        boolean isStatic = (h.access & Opcodes.ACC_STATIC) != 0;
+        InsnList code = g.instructions;
+        int slot = 0;
+        if (!isStatic) {
+            code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            slot = 1;
+        }
+        for (int i = 0; i < wrapped.length; i++) {
+            code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slot));
+            if (i == operation) {
+                code.add(new LdcInsnNode(spec));
+                code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, CONVERSIONS, "operation", "(L" + OPERATION + ";Ljava/lang/String;)L" + OPERATION + ";", false));
+            } else if (!wrapped[i].equals(hp[i])) {
+                convertUp(code, wrapped[i], hp[i]);
+            }
+            slot += wrapped[i].getSize();
+        }
+        boolean privateHandler = (h.access & Opcodes.ACC_PRIVATE) != 0;
+        code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : privateHandler ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, out.name,
+                h.name, h.desc, false));
+        if (!wrappedRet.equals(hRet)) {
+            convertDown(code, hRet, wrappedRet);
+        }
+        code.add(new InsnNode(wrappedRet.getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 8;
+        out.methods.add(g);
+        return true;
     }
 
     /**

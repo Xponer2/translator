@@ -45,4 +45,9 @@ public final class UseDurations {
     public static int withCurrentUser(Item item, ItemStack stack) {
         return item instanceof UseDurationApi ? itemDuration(item, stack, USER.get()) : item.getUseDuration(stack);
     }
+
+    /** the entity whose item use asks the duration now (an A row's value for a mixin handler of 1.21's getUseDuration); null outside one */
+    public static LivingEntity currentUser() {
+        return USER.get();
+    }
 }
