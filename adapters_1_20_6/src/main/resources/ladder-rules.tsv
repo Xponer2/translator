@@ -723,3 +723,18 @@ X	net/neoforged/neoforge/common/ModConfigSpec$ConfigValue	getRaw	()Ljava/lang/Ob
 X	net/neoforged/neoforge/common/ModConfigSpec$ConfigValue	getSpec	()Lnet/neoforged/neoforge/common/ModConfigSpec$ValueSpec;	ladder/rung1206/misc/ConfigValues	getSpec
 X	net/neoforged/neoforge/common/ModConfigSpec	isEmpty	()Z	ladder/rung1206/misc/ConfigValues	isEmpty
 F	net/neoforged/neoforge/common/NeoForgeConfig$Client	logUntranslatedConfigurationWarnings	Lnet/neoforged/neoforge/common/ModConfigSpec$BooleanValue;	ladder/rung1206/misc/ConfigValues	logUntranslatedConfigurationWarnings
+# NeoForge 21's day time of a mod's own level data (20.6 never asks it), the firestarter ability, render buffers of byte buffers,
+# 1.21's enchanted books of a creative tab, NeoForge 21's experience drop of a block broken with a tool
+U	net/minecraft/world/level/storage/ServerLevelData	getDayTimePerTick	()F
+U	net/minecraft/world/level/storage/ServerLevelData	setDayTimePerTick	(F)V
+U	net/minecraft/world/level/storage/ServerLevelData	getDayTimeFraction	()F
+U	net/minecraft/world/level/storage/ServerLevelData	setDayTimeFraction	(F)V
+F	net/neoforged/neoforge/common/ItemAbilities	FIRESTARTER_LIGHT	Lnet/neoforged/neoforge/common/ItemAbility;	ladder/rung1206/misc/SmallAdapters	firestarterLight
+X	net/neoforged/neoforge/client/event/RegisterRenderBuffersEvent	registerRenderBuffer	(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;)V	ladder/rung1206/misc/SmallAdapters	registerRenderBuffer
+X	net/minecraft/world/item/CreativeModeTabs	generateEnchantmentBookTypesOnlyMaxLevel	(Lnet/minecraft/world/item/CreativeModeTab$Output;Lnet/minecraft/core/HolderLookup;Lnet/minecraft/world/item/CreativeModeTab$TabVisibility;)V	ladder/rung1206/misc/SmallAdapters	generateEnchantmentBookTypesOnlyMaxLevel
+X	net/neoforged/neoforge/common/extensions/IBlockStateExtension	getExpDrop	(Lnet/minecraft/world/level/LevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemStack;)I	ladder/rung1206/misc/SmallAdapters	getExpDrop
+# NeoForge 21's item damage with a break callback of the item (20.6: a Runnable)
+D	net/neoforged/neoforge/common/extensions/IItemExtension	damageItem	(Lnet/minecraft/world/item/ItemStack;ILnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Consumer;)I	(Lnet/minecraft/world/item/ItemStack;ILnet/minecraft/world/entity/LivingEntity;Ljava/lang/Runnable;)I	$0,$1,$2,ladder/rung1206/misc/SmallAdapters.runnableOf($3,$0)
+A	net/neoforged/neoforge/common/extensions/IItemExtension	damageItem	(Lnet/minecraft/world/item/ItemStack;ILnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Consumer;)I	(Lnet/minecraft/world/item/ItemStack;ILnet/minecraft/world/entity/LivingEntity;Ljava/lang/Runnable;)I	$0 $1 $2 ladder/rung1206/misc/SmallAdapters.consumerOf(3)
+# 1.21's waterlogging check of structure placement (20.6: keeping liquids, the same flag)
+M	net/minecraft/world/level/levelgen/structure/templatesystem/StructurePlaceSettings	shouldApplyWaterlogging	()Z	shouldKeepLiquids	()Z

@@ -79,6 +79,8 @@ public class Convert {
     static final Map<String, Map<String, List<String>>> declarers = new HashMap<>();
     /** The carried classes of the target, shared by every mod: relocated name -> class. */
     static final Map<String, ClassNode> carriedOut = new TreeMap<>();
+    /** a carried class as a mixin into it sees it (bottomClass) */
+    static final Map<String, Optional<ClassNode>> carriedViews = new HashMap<>();
     static final Deque<Object[]> carryQueue = new ArrayDeque<>();
     static final Set<String> carryScheduled = new HashSet<>();
     /** walk key -> the companion class a carried static member moved to (its call sites move there too) */
@@ -1985,6 +1987,13 @@ public class Convert {
                         String desc = h.getTag() == Opcodes.H_INVOKESTATIC ? h.getDesc() : "(L" + ref.cls() + ";" + h.getDesc().substring(1);
                         checkAdapter(x[0], x[1], desc, "X " + ref.key() + " (method reference)");
                         indy.bsmArgs[a] = new Handle(Opcodes.H_INVOKESTATIC, x[0], x[1], desc, false);
+                        Type[] captured = Type.getArgumentTypes(indy.desc);
+                        if (h.getTag() != Opcodes.H_INVOKESTATIC && captured.length > 0 && !captured[0].getDescriptor().equals("L" + ref.cls() + ";")) {
+                            // a bound receiver (value::getRaw on a BooleanValue): the factory's captured types must be the
+                            // adapter's own, exactly (the receiver is one of them, a subtype passed as its supertype)
+                            captured[0] = Type.getObjectType(ref.cls());
+                            indy.desc = Type.getMethodDescriptor(Type.getReturnType(indy.desc), captured);
+                        }
                     }
                 }
             }
@@ -2246,6 +2255,15 @@ public class Convert {
         Stage0.Version here = versions.get(level);
         for (String start : starts(owner)) {
             String decl = here.declaring(start, name, desc, method);
+            if (decl != null && method && !Stage0.platform(owner) && modChainDeclares(owner, name + " " + desc)) {
+                // a mod class's own method of the name of a private one up in the game (a mixin's lambda/usr/bin/bash beside
+                // 1.21's OptionsSubScreen lambda): private members aren't inherited, so it is the mod's own
+                Stage0.Cls info = here.classes.get(decl);
+                Integer access = info == null ? null : info.access.get("M " + name + " " + desc);
+                if (access != null && (access & Opcodes.ACC_PRIVATE) != 0) {
+                    return null;
+                }
+            }
             if (decl != null) {
                 if (method && !decl.equals(start) && declaredLowerBelow(start, decl, name, desc)) {
                     // missing below in its declaring class but declared below in a class between it and the reference's
@@ -5428,6 +5446,28 @@ public class Convert {
     @SuppressWarnings("unchecked")
     static ClassNode bottomClass(String name) {
         ClassNode node = parsed(bottomClasses, versions.get(versions.size() - 1), name);
+        if (node == null && name.startsWith(CARRIED)) {
+            // a class carried down (1.21's enchantment effects, NeoForge 21's configuration screen): a mixin into it lands on
+            // the carried copy, whose code is the upper one's in the converted class names
+            return carriedViews.computeIfAbsent(name, n -> {
+                ClassNode done = carriedOut.get(n);
+                if (done != null) {
+                    return Optional.of(done);
+                }
+                ClassNode top = topClass(n.substring(CARRIED.length()));
+                if (top == null) {
+                    return Optional.empty();
+                }
+                ClassNode view = new ClassNode();
+                top.accept(new ClassRemapper(view, new org.objectweb.asm.commons.Remapper() {
+                    @Override
+                    public String map(String internalName) {
+                        return remapper.map(internalName);
+                    }
+                }));
+                return Optional.of(view);
+            }).orElse(null);
+        }
         if (node == null && adapterBytes.containsKey(name)) {
             // a class the adapters provide (a P row's): a mixin into the upper game's class lands on it below
             return adapterClasses.computeIfAbsent(name, n -> {

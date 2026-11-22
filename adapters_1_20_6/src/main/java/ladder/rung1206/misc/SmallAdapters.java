@@ -568,4 +568,43 @@ public final class SmallAdapters {
     public static com.mojang.blaze3d.vertex.VertexFormatElement vertexUv() {
         return com.mojang.blaze3d.vertex.DefaultVertexFormat.ELEMENT_UV;
     }
+
+    /** NeoForge 21's {@code ItemAbilities.FIRESTARTER_LIGHT} (20.6: the tool action of that name) */
+    public static net.neoforged.neoforge.common.ToolAction firestarterLight() {
+        return net.neoforged.neoforge.common.ToolAction.get("firestarter_light");
+    }
+
+    /** NeoForge 21's {@code event.registerRenderBuffer(type, bytes)}: 20.6 takes the byte buffer's builder */
+    public static void registerRenderBuffer(net.neoforged.neoforge.client.event.RegisterRenderBuffersEvent event,
+            net.minecraft.client.renderer.RenderType type, ladder.carried_1_20_6.com.mojang.blaze3d.vertex.ByteBufferBuilder bytes) {
+        event.registerRenderBuffer(type, ladder.rung1206.render.ByteBuffers.builder(bytes));
+    }
+
+    /** 1.21's {@code CreativeModeTabs.generateEnchantmentBookTypesOnlyMaxLevel(output, enchantments, visibility)}: each one's book */
+    public static void generateEnchantmentBookTypesOnlyMaxLevel(net.minecraft.world.item.CreativeModeTab.Output output,
+            net.minecraft.core.HolderLookup<net.minecraft.world.item.enchantment.Enchantment> enchantments,
+            net.minecraft.world.item.CreativeModeTab.TabVisibility visibility) {
+        enchantments.listElements().forEach(holder -> output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
+                new net.minecraft.world.item.enchantment.EnchantmentInstance(holder.value(), holder.value().getMaxLevel())), visibility));
+    }
+
+    /** NeoForge 21's {@code state.getExpDrop(level, pos, blockEntity, breaker, tool)}: 20.6's of the tool's fortune and silk touch */
+    public static int getExpDrop(net.neoforged.neoforge.common.extensions.IBlockStateExtension state, net.minecraft.world.level.LevelAccessor level,
+            net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.entity.BlockEntity blockEntity, net.minecraft.world.entity.Entity breaker,
+            net.minecraft.world.item.ItemStack tool) {
+        int fortune = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(net.minecraft.world.item.enchantment.Enchantments.FORTUNE, tool);
+        int silk = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH, tool);
+        return state.getExpDrop(level, level.getRandom(), pos, fortune, silk);
+    }
+
+    /** NeoForge 21's item break callback of a stack (a call where 20.6 takes a Runnable): the stack's item */
+    public static Runnable runnableOf(java.util.function.Consumer<net.minecraft.world.item.Item> onBroken, net.minecraft.world.item.ItemStack stack) {
+        net.minecraft.world.item.Item item = stack.getItem();
+        return () -> onBroken.accept(item);
+    }
+
+    /** 20.6's break callback as NeoForge 21's (an override's argument): the item is the stack's, the callback runs */
+    public static java.util.function.Consumer<net.minecraft.world.item.Item> consumerOf(Runnable onBroken) {
+        return item -> onBroken.run();
+    }
 }

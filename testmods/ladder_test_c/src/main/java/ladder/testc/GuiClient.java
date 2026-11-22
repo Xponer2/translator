@@ -63,6 +63,8 @@ final class GuiClient {
             screen.init(minecraft, 400, 300);
             results.put("configScreen", "ok " + FANCY.get() + "/" + RADIUS.get());
         } catch (RuntimeException | LinkageError e) {
+            // (its cause in the log: a converted run's failure is found from there)
+            e.printStackTrace();
             results.put("configScreen", e.toString());
         }
     }
