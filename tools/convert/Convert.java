@@ -614,6 +614,63 @@ public class Convert {
         return false;
     }
 
+    static final String BOOTSTRAP_CONTEXT = "Lnet/minecraft/data/worldgen/BootstrapContext;";
+
+    /**
+     * A registry's bootstrap (a method of the game's BootstrapContext: 1.21's enchantments, worldgen and damage types built
+     * in code for a data pack) runs only in data generation, never when the game plays: its body, and those of the lambdas
+     * it makes, become a throw (noted as unverified), so what it names needn't come down.
+     */
+    static void stubBootstraps(ClassNode node) {
+        Set<String> stub = new LinkedHashSet<>();
+        for (MethodNode m : node.methods) {
+            if (m.desc.contains(BOOTSTRAP_CONTEXT) && m.instructions.size() > 0) {
+                stub.add(m.name + m.desc);
+            }
+        }
+        if (stub.isEmpty()) {
+            return;
+        }
+        // the lambdas a bootstrap makes (their bodies run only from it)
+        for (boolean grew = true; grew;) {
+            grew = false;
+            for (MethodNode m : node.methods) {
+                if (!stub.contains(m.name + m.desc)) {
+                    continue;
+                }
+                for (AbstractInsnNode insn : m.instructions) {
+                    if (insn instanceof InvokeDynamicInsnNode indy) {
+                        for (Object arg : indy.bsmArgs) {
+                            if (arg instanceof Handle h && h.getOwner().equals(node.name) && h.getName().startsWith("lambda$")
+                                    && stub.add(h.getName() + h.getDesc())) {
+                                grew = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (MethodNode m : node.methods) {
+            if (!stub.contains(m.name + m.desc) || m.instructions.size() == 0) {
+                continue;
+            }
+            InsnList code = new InsnList();
+            code.add(new TypeInsnNode(Opcodes.NEW, "java/lang/UnsupportedOperationException"));
+            code.add(new InsnNode(Opcodes.DUP));
+            code.add(new LdcInsnNode("a registry bootstrap of data generation (the ladder's converted mod runs without it)"));
+            code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/UnsupportedOperationException", "<init>", "(Ljava/lang/String;)V", false));
+            code.add(new InsnNode(Opcodes.ATHROW));
+            m.instructions = code;
+            m.tryCatchBlocks = new ArrayList<>();
+            m.localVariables = null;
+            m.visibleLocalVariableAnnotations = null;
+            m.invisibleLocalVariableAnnotations = null;
+            m.maxStack = 3;
+            m.maxLocals = Type.getArgumentsAndReturnSizes(m.desc) >> 2;
+            unverified.add("registry bootstrap " + node.name + "." + m.name + " (data generation only)");
+        }
+    }
+
     /** A supertype outside the pack that no mod class can be: the JDK, the game, and the libraries the game ships. */
     static boolean outsideKnown(String cls) {
         return Stage0.platform(cls) || cls.startsWith("java/") || cls.startsWith("javax/") || cls.startsWith("jdk/") || cls.startsWith("sun/")
@@ -925,6 +982,7 @@ public class Convert {
                 if (name.endsWith(".class") && !name.startsWith("META-INF/")) {
                     ClassNode node = new ClassNode();
                     new ClassReader(data).accept(node, 0);
+                    stubBootstraps(node);
                     // a data generator's class runs only in runData, never in the game: what it can't bring down doesn't
                     // keep the mod from running (its problems are listed apart, as unverified)
                     boolean datagen = datagenOnly(node.name);

@@ -27,7 +27,9 @@
     "ExplosionAttributesMixin",
     "HangingBoxMixin",
     "DayTimeMixin",
-    "SmithingInputMixin"
+    "SmithingInputMixin",
+    "LootEnchantmentFields$CountIncrease",
+    "LootEnchantmentFields$RandomChance"
   ],
   "client": [
     "BufferBuilderMixin",
