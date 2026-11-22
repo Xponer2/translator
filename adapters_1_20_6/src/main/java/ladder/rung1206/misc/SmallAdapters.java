@@ -361,4 +361,18 @@ public final class SmallAdapters {
     public static com.mojang.blaze3d.vertex.Tesselator tesselator() {
         return com.mojang.blaze3d.vertex.Tesselator.getInstance();
     }
+
+    /** 1.21's {@code Util.parseAndValidateUntrustedUri(text)}: a link a player may open, of the web's protocols only */
+    public static java.net.URI parseAndValidateUntrustedUri(String text) throws java.net.URISyntaxException {
+        java.net.URI uri = new java.net.URI(text);
+        String scheme = uri.getScheme();
+        if (scheme == null) {
+            throw new java.net.URISyntaxException(text, "Missing protocol in URI: " + text);
+        }
+        String protocol = scheme.toLowerCase(java.util.Locale.ROOT);
+        if (!protocol.equals("http") && !protocol.equals("https")) {
+            throw new java.net.URISyntaxException(text, "Unsupported protocol in URI: " + text);
+        }
+        return uri;
+    }
 }

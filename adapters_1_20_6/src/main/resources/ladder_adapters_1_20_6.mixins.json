@@ -44,7 +44,8 @@
     "OptionsScreenSites$Sound",
     "OptionsScreenSites$Controls",
     "GuiGraphicsTooltipMixin",
-    "MinecraftTimerMixin"
+    "MinecraftTimerMixin",
+    "ScreenNarratorMixin"
   ],
   "injectors": {
     "defaultRequire": 1
