@@ -74,4 +74,50 @@ public final class EnchantMembers {
         return net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ENCHANTMENT,
                 new net.minecraft.resources.ResourceLocation("minecraft", "on_mob_spawn_equipment"));
     }
+
+    /** 1.21's {@code Enchantment.STREAM_CODEC}: a holder of the enchantment registry */
+    public static net.minecraft.network.codec.StreamCodec<net.minecraft.network.RegistryFriendlyByteBuf, Holder<Enchantment>> streamCodec() {
+        return net.minecraft.network.codec.ByteBufCodecs.holderRegistry(net.minecraft.core.registries.Registries.ENCHANTMENT);
+    }
+
+    /** 1.21's {@code menu.getEnchantmentList(registries, stack, slot, cost)}: 1.20.6's of the enabled features (opened by the AT) */
+    public static java.util.List<net.minecraft.world.item.enchantment.EnchantmentInstance> getEnchantmentList(net.minecraft.world.inventory.EnchantmentMenu menu,
+            net.minecraft.core.RegistryAccess registries, net.minecraft.world.item.ItemStack stack, int slot, int cost) {
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        return menu.getEnchantmentList(server == null ? net.minecraft.world.flag.FeatureFlags.VANILLA_SET : server.getWorldData().enabledFeatures(), stack, slot, cost);
+    }
+
+    // 1.21's vanilla enchantment providers (a data registry there; their keys, 1.20.6 enchants its mobs in code)
+    private static net.minecraft.resources.ResourceKey<Object> provider(String path) {
+        return net.minecraft.resources.ResourceKey.create(EnchantRegistries.ENCHANTMENT_PROVIDER_KEY, new net.minecraft.resources.ResourceLocation(path));
+    }
+
+    public static net.minecraft.resources.ResourceKey<Object> mobSpawnEquipment() {
+        return provider("mob_spawn_equipment");
+    }
+
+    public static net.minecraft.resources.ResourceKey<Object> pillagerSpawnCrossbow() {
+        return provider("pillager_spawn_crossbow");
+    }
+
+    public static net.minecraft.resources.ResourceKey<Object> raidPillagerPostWave3() {
+        return provider("raid/pillager_post_wave_3");
+    }
+
+    public static net.minecraft.resources.ResourceKey<Object> raidPillagerPostWave5() {
+        return provider("raid/pillager_post_wave_5");
+    }
+
+    public static net.minecraft.resources.ResourceKey<Object> raidVindicatorPostWave5() {
+        return provider("raid/vindicator_post_wave_5");
+    }
+
+    public static net.minecraft.resources.ResourceKey<Object> endermanLootDrop() {
+        return provider("enderman_loot_drop");
+    }
+
+    /** 1.21's arrow hit block effects: 1.20.6's enchantments act on a hit block in their own code */
+    public static void hitBlockEnchantmentEffects(net.minecraft.world.entity.projectile.AbstractArrow arrow, net.minecraft.server.level.ServerLevel level,
+            net.minecraft.world.phys.BlockHitResult hit, net.minecraft.world.item.ItemStack weapon) {
+    }
 }

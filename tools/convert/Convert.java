@@ -667,6 +667,34 @@ public class Convert {
             m.invisibleLocalVariableAnnotations = null;
             m.maxStack = 3;
             m.maxLocals = Type.getArgumentsAndReturnSizes(m.desc) >> 2;
+            m.signature = null;
+            if ((m.access & Opcodes.ACC_STATIC) != 0 && ((m.access & Opcodes.ACC_PRIVATE) != 0 || m.name.startsWith("lambda$"))) {
+                // (a private helper of a bootstrap, its lambdas: called only from stubbed code, so the types it names that
+                // only data generation has, 1.21's Enchantment.Builder, needn't come down)
+                Type[] args = Type.getArgumentTypes(m.desc);
+                for (int a = 0; a < args.length; a++) {
+                    if (args[a].getSort() == Type.OBJECT && !args[a].getDescriptor().equals(BOOTSTRAP_CONTEXT) && Stage0.platform(args[a].getInternalName())) {
+                        args[a] = Type.getObjectType("java/lang/Object");
+                    }
+                }
+                Type ret = Type.getReturnType(m.desc);
+                if (ret.getSort() == Type.OBJECT && Stage0.platform(ret.getInternalName())) {
+                    ret = Type.getObjectType("java/lang/Object");
+                }
+                String erased = Type.getMethodDescriptor(ret, args);
+                if (!erased.equals(m.desc) && node.methods.stream().noneMatch(x -> x.name.equals(m.name) && x.desc.equals(erased))) {
+                    String before = m.desc;
+                    m.desc = erased;
+                    // (its calls, all in stubbed code now gone, and its lambda handles keep naming the old descriptor)
+                    for (MethodNode other : node.methods) {
+                        for (AbstractInsnNode insn : other.instructions) {
+                            if (insn instanceof MethodInsnNode call && call.owner.equals(node.name) && call.name.equals(m.name) && call.desc.equals(before)) {
+                                call.desc = erased;
+                            }
+                        }
+                    }
+                }
+            }
             unverified.add("registry bootstrap " + node.name + "." + m.name + " (data generation only)");
         }
     }

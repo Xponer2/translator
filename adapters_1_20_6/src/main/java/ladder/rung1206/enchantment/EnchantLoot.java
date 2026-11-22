@@ -82,4 +82,43 @@ public final class EnchantLoot {
             return out;
         });
     }
+
+    // 1.21's loot builders of an enchantment (1.20.6's count looting only, and take plain numbers)
+
+    /** {@code EnchantedCountIncreaseFunction.lootingMultiplier(registries, count)} */
+    public static net.minecraft.world.level.storage.loot.functions.LootingEnchantFunction.Builder lootingMultiplier(
+            net.minecraft.core.HolderLookup.Provider registries, net.minecraft.world.level.storage.loot.providers.number.NumberProvider count) {
+        return net.minecraft.world.level.storage.loot.functions.LootingEnchantFunction.lootingMultiplier(count);
+    }
+
+    /** {@code new EnchantedCountIncreaseFunction.Builder(enchantment, count)} */
+    public static net.minecraft.world.level.storage.loot.functions.LootingEnchantFunction.Builder countIncrease(
+            net.minecraft.core.Holder<?> enchantment, net.minecraft.world.level.storage.loot.providers.number.NumberProvider count) {
+        return new net.minecraft.world.level.storage.loot.functions.LootingEnchantFunction.Builder(count);
+    }
+
+    /** {@code LootItemRandomChanceCondition.randomChance(chance)}: a constant one's value (another: its average, a half) */
+    public static net.minecraft.world.level.storage.loot.predicates.LootItemCondition.Builder randomChance(
+            net.minecraft.world.level.storage.loot.providers.number.NumberProvider chance) {
+        float value = chance instanceof net.minecraft.world.level.storage.loot.providers.number.ConstantValue constant ? constant.value() : 0.5F;
+        return net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition.randomChance(value);
+    }
+
+    /** {@code EnchantRandomlyFunction.Builder.withOneOf(set)}: each enchantment of the set */
+    public static net.minecraft.world.level.storage.loot.functions.EnchantRandomlyFunction.Builder withOneOf(
+            net.minecraft.world.level.storage.loot.functions.EnchantRandomlyFunction.Builder builder,
+            net.minecraft.core.HolderSet<net.minecraft.world.item.enchantment.Enchantment> set) {
+        for (var holder : set) {
+            builder.withEnchantment(holder.value());
+        }
+        return builder;
+    }
+
+    /** {@code new LootItemRandomChanceWithEnchantedBonusCondition(chance, bonus, enchantment)}: 1.20.6's looting one */
+    public static net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceWithLootingCondition chanceWithBonus(float unenchanted,
+            ladder.carried_1_20_6.net.minecraft.world.item.enchantment.LevelBasedValue bonus, net.minecraft.core.Holder<?> enchantment) {
+        float one = bonus.calculate(1);
+        float two = bonus.calculate(2);
+        return new net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceWithLootingCondition(one, two - one);
+    }
 }
