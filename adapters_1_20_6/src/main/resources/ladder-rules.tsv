@@ -293,6 +293,8 @@ F	net/minecraft/world/level/portal/DimensionTransition	DO_NOTHING	Lnet/minecraft
 F	net/minecraft/world/level/portal/DimensionTransition	PLAY_PORTAL_SOUND	Lnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;	ladder/rung1206/portal/PortalAdapters	playPortalSound
 F	net/minecraft/world/level/portal/DimensionTransition	PLACE_PORTAL_TICKET	Lnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;	ladder/rung1206/portal/PortalAdapters	placePortalTicket
 X	net/minecraft/world/entity/Entity	changeDimension	(Lnet/minecraft/world/level/portal/DimensionTransition;)Lnet/minecraft/world/entity/Entity;	ladder/rung1206/portal/PortalAdapters	changeDimension
+# 1.21's portal tick (its portalProcess and setAsInsidePortal are added to Entity: EntityPortalMixin, PortalSupport)
+M	net/minecraft/world/entity/Entity	handlePortal	()V	handleNetherPortal	()V
 # 1.21's saddle stack, portal use with passengers, an arrow's weapon (1.20.6: none of them)
 D	net/minecraft/world/entity/Saddleable	equipSaddle	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/sounds/SoundSource;)V	(Lnet/minecraft/sounds/SoundSource;)V	$1
 A	net/minecraft/world/entity/Saddleable	equipSaddle	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/sounds/SoundSource;)V	(Lnet/minecraft/sounds/SoundSource;)V	ladder/rung1206/entity/EntityArgs.saddle() $0

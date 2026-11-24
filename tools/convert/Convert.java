@@ -1749,6 +1749,12 @@ public class Convert {
 
     /** the fields the adapters' mixins add to the game's classes: "class name desc" */
     static final Set<String> adapterAddedFields = new HashSet<>();
+
+    /** whether an adapters' mixin adds this field to the class (of a carried type: the field has the carried name, 1.21's Entity.portalProcess) */
+    static boolean adapterAddsField(String cls, String name, String desc) {
+        return adapterAddedFields.contains(cls + " " + name + " " + desc)
+                || desc.startsWith("L") && adapterAddedFields.contains(cls + " " + name + " L" + CARRIED + desc.substring(1));
+    }
     /** T rows: "upper owner.method upper target" -> the lower target (an injection point in that method) */
     static final Map<String, String> pointRetargets = new HashMap<>();
     /** the upper methods (names) the injector being remapped names, for the T rows */
@@ -2515,8 +2521,8 @@ public class Convert {
                         // row of its member, above, comes first: the same member below under another name)
                         return renamedMember(cur);
                     }
-                    if (i + 2 == versions.size() && cur.kind() == 'F' && adapterAddedFields.contains((Stage0.mapClass(from, to, cur.cls()) == null ? cur.cls()
-                            : Stage0.mapClass(from, to, cur.cls())) + " " + cur.name() + " " + cur.desc())) {
+                    if (i + 2 == versions.size() && cur.kind() == 'F' && adapterAddsField(Stage0.mapClass(from, to, cur.cls()) == null ? cur.cls()
+                            : Stage0.mapClass(from, to, cur.cls()), cur.name(), cur.desc())) {
                         // the adapters' mixin gives the bottom class this field
                         return cur;
                     }
@@ -2939,7 +2945,7 @@ public class Convert {
         String owner = member.substring(0, mdot), mname = member.substring(mdot + 1);
         String below = i + 1 < versions.size() ? Stage0.mapClass(versions.get(i), versions.get(i + 1), owner) : null;
         below = below == null ? owner : below;
-        return key.startsWith("F ") ? adapterAddedFields.contains(below + " " + mname + " " + mdesc) : adapterAddsMethod(below, mname, mdesc);
+        return key.startsWith("F ") ? adapterAddsField(below, mname, mdesc) : adapterAddsMethod(below, mname, mdesc);
     }
 
     static boolean resolvable(int i, String hard) {
@@ -6277,6 +6283,87 @@ public class Convert {
     }
 
     /**
+     * A @ModifyArg of a call whose parameters changed below (1.21's CombatRules.getDamageAfterAbsorb took the entity
+     * first, 1.20.6's doesn't): the argument it modifies is there below too, of the same type, at another place (the
+     * parameters mapped in order, the lower-only and upper-only ones skipped); its index (given, or the only argument of
+     * its type above) becomes the lower place. False when that place isn't certain.
+     */
+    static boolean modifyArgIndex(MethodNode h, HandlerFix f, Type[] up, Type[] low) {
+        if (!f.annotation().equals(MODIFY_ARG) || !Type.getReturnType(f.upperDesc()).equals(Type.getReturnType(f.end().desc()))) {
+            return false;
+        }
+        AnnotationNode a = null;
+        for (List<AnnotationNode> list : Arrays.asList(h.visibleAnnotations, h.invisibleAnnotations)) {
+            if (list != null) {
+                for (AnnotationNode x : list) {
+                    if (x.desc.equals(MODIFY_ARG)) {
+                        a = x;
+                    }
+                }
+            }
+        }
+        Type value = Type.getReturnType(h.desc);
+        if (a == null) {
+            return false;
+        }
+        int index = -1, at = -1;
+        if (a.values != null) {
+            for (int i = 0; i + 1 < a.values.size(); i += 2) {
+                if ("index".equals(a.values.get(i)) && a.values.get(i + 1) instanceof Integer n) {
+                    index = n;
+                    at = i + 1;
+                }
+            }
+        }
+        if (index < 0) {
+            // no index: the only argument of the handler's type above
+            for (int i = 0; i < up.length; i++) {
+                if (up[i].equals(value)) {
+                    if (index >= 0) {
+                        return false;
+                    }
+                    index = i;
+                }
+            }
+        }
+        if (index < 0 || index >= up.length || !up[index].equals(value)) {
+            return false;
+        }
+        // the same argument below: the n-th of its type above is the n-th of its type below, when both have as many
+        int nth = 0, countUp = 0, countLow = 0;
+        for (int i = 0; i < up.length; i++) {
+            if (up[i].equals(value)) {
+                countUp++;
+                if (i < index) {
+                    nth++;
+                }
+            }
+        }
+        int lower = -1;
+        for (int i = 0; i < low.length; i++) {
+            if (low[i].equals(value)) {
+                if (countLow == nth) {
+                    lower = i;
+                }
+                countLow++;
+            }
+        }
+        if (lower < 0 || countLow != countUp) {
+            return false;
+        }
+        if (at >= 0) {
+            a.values.set(at, lower);
+        } else if (countLow > 1) {
+            if (a.values == null) {
+                a.values = new ArrayList<>();
+            }
+            a.values.add("index");
+            a.values.add(lower);
+        }
+        return true;
+    }
+
+    /**
      * The handlers of a remapped mixin class whose targets' types changed below. A handler that doesn't hold the
      * changed types needs nothing more (its selector was moved). An @Inject into a changed method whose parameters
      * begin with the target's: a wrapper of the lower types takes the annotations, converts the values up and calls the
@@ -6440,6 +6527,10 @@ public class Convert {
                     || conversion(upRet, lowRet) == 16);
             if (!inject && distinct && valueBridge(out, h, hp, f, up, low, upRet, lowRet)) {
                 // an injector of another kind whose values convert both ways (a float of 1.21 a double of 1.20.6)
+                continue;
+            }
+            if (f.call() && distinct && modifyArgIndex(h, f, up, low)) {
+                // a @ModifyArg of one argument that is there below too, at another place: its index moved with it
                 continue;
             }
             if (f.call() || !inject || !prefix || returnChanged && !numberResult || !distinct) {

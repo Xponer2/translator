@@ -30,7 +30,8 @@
     "SmithingInputMixin",
     "LootEnchantmentFields$CountIncrease",
     "LootEnchantmentFields$RandomChance",
-    "InvulnerabilityMixin"
+    "InvulnerabilityMixin",
+    "EntityPortalMixin"
   ],
   "client": [
     "BufferBuilderMixin",
@@ -51,6 +52,7 @@
     "ScreenNarratorMixin",
     "CameraConstantsMixin",
     "EffectTooltipMixin",
+    "LocalPlayerPortalMixin",
     "EntityRendererLeashMixin",
     "EntityRendererLightAccess",
     "MobRendererLeashMixin"
