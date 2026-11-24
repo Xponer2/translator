@@ -158,8 +158,10 @@ X	com/mojang/blaze3d/vertex/VertexFormatElement	type	()Lcom/mojang/blaze3d/verte
 X	com/mojang/blaze3d/vertex/VertexFormatElement	count	()I	ladder/rung1206/render/VertexFormats	count
 X	com/mojang/blaze3d/vertex/VertexFormatElement	index	()I	ladder/rung1206/render/VertexFormats	index
 X	com/mojang/blaze3d/vertex/VertexFormatElement	byteSize	()I	ladder/rung1206/render/VertexFormats	byteSize
-# 1.21's Leashable: 1.20.6's mobs (Mob has its members); a mob's canBeLeashed() is the hook of canBeLeashed(player)
+# 1.21's Leashable and leash data: 1.20.6's mobs (Mob has its members, its leash data its fields); a mod's own leashable
+# entity gets 1.21's leash code; a mob's canBeLeashed() is the hook of canBeLeashed(player)
 P	net/minecraft/world/entity/Leashable	ladder/rung1206/provided/Leashable
+P	net/minecraft/world/entity/Leashable$LeashData	ladder/rung1206/provided/Leashable$LeashData
 D	net/minecraft/world/entity/Mob	canBeLeashed	()Z	(Lnet/minecraft/world/entity/player/Player;)Z	null
 # 1.21 draws a leash in EntityRenderer (render, renderLeash, addVertexPair: the adapters' mixin), turned by the body's yaw of the frame
 X	net/minecraft/world/entity/Entity	getPreciseBodyRotation	(F)F	ladder/rung1206/render/LeashAdapters	getPreciseBodyRotation
