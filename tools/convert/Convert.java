@@ -6266,6 +6266,87 @@ public class Convert {
     }
 
     /**
+     * A @ModifyArg of a call whose parameters changed below (1.21's CombatRules.getDamageAfterAbsorb took the entity
+     * first, 1.20.6's doesn't): the argument it modifies is there below too, of the same type, at another place (the
+     * parameters mapped in order, the lower-only and upper-only ones skipped); its index (given, or the only argument of
+     * its type above) becomes the lower place. False when that place isn't certain.
+     */
+    static boolean modifyArgIndex(MethodNode h, HandlerFix f, Type[] up, Type[] low) {
+        if (!f.annotation().equals(MODIFY_ARG) || !Type.getReturnType(f.upperDesc()).equals(Type.getReturnType(f.end().desc()))) {
+            return false;
+        }
+        AnnotationNode a = null;
+        for (List<AnnotationNode> list : Arrays.asList(h.visibleAnnotations, h.invisibleAnnotations)) {
+            if (list != null) {
+                for (AnnotationNode x : list) {
+                    if (x.desc.equals(MODIFY_ARG)) {
+                        a = x;
+                    }
+                }
+            }
+        }
+        Type value = Type.getReturnType(h.desc);
+        if (a == null) {
+            return false;
+        }
+        int index = -1, at = -1;
+        if (a.values != null) {
+            for (int i = 0; i + 1 < a.values.size(); i += 2) {
+                if ("index".equals(a.values.get(i)) && a.values.get(i + 1) instanceof Integer n) {
+                    index = n;
+                    at = i + 1;
+                }
+            }
+        }
+        if (index < 0) {
+            // no index: the only argument of the handler's type above
+            for (int i = 0; i < up.length; i++) {
+                if (up[i].equals(value)) {
+                    if (index >= 0) {
+                        return false;
+                    }
+                    index = i;
+                }
+            }
+        }
+        if (index < 0 || index >= up.length || !up[index].equals(value)) {
+            return false;
+        }
+        // the same argument below: the n-th of its type above is the n-th of its type below, when both have as many
+        int nth = 0, countUp = 0, countLow = 0;
+        for (int i = 0; i < up.length; i++) {
+            if (up[i].equals(value)) {
+                countUp++;
+                if (i < index) {
+                    nth++;
+                }
+            }
+        }
+        int lower = -1;
+        for (int i = 0; i < low.length; i++) {
+            if (low[i].equals(value)) {
+                if (countLow == nth) {
+                    lower = i;
+                }
+                countLow++;
+            }
+        }
+        if (lower < 0 || countLow != countUp) {
+            return false;
+        }
+        if (at >= 0) {
+            a.values.set(at, lower);
+        } else if (countLow > 1) {
+            if (a.values == null) {
+                a.values = new ArrayList<>();
+            }
+            a.values.add("index");
+            a.values.add(lower);
+        }
+        return true;
+    }
+
+    /**
      * The handlers of a remapped mixin class whose targets' types changed below. A handler that doesn't hold the
      * changed types needs nothing more (its selector was moved). An @Inject into a changed method whose parameters
      * begin with the target's: a wrapper of the lower types takes the annotations, converts the values up and calls the
@@ -6429,6 +6510,10 @@ public class Convert {
                     || conversion(upRet, lowRet) == 16);
             if (!inject && distinct && valueBridge(out, h, hp, f, up, low, upRet, lowRet)) {
                 // an injector of another kind whose values convert both ways (a float of 1.21 a double of 1.20.6)
+                continue;
+            }
+            if (f.call() && distinct && modifyArgIndex(h, f, up, low)) {
+                // a @ModifyArg of one argument that is there below too, at another place: its index moved with it
                 continue;
             }
             if (f.call() || !inject || !prefix || returnChanged && !numberResult || !distinct) {
