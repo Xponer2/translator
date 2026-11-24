@@ -2255,9 +2255,9 @@ public class Convert {
         Stage0.Version here = versions.get(level);
         for (String start : starts(owner)) {
             String decl = here.declaring(start, name, desc, method);
-            if (decl != null && method && !Stage0.platform(owner) && modChainDeclares(owner, name + " " + desc)) {
-                // a mod class's own method of the name of a private one up in the game (a mixin's lambda/usr/bin/bash beside
-                // 1.21's OptionsSubScreen lambda): private members aren't inherited, so it is the mod's own
+            if (decl != null && method && !Stage0.platform(owner) && !decl.equals(owner)) {
+                // a reference through a mod class never links to a private method up in the game (a mixin's own
+                // lambda$init$0 beside 1.21's OptionsSubScreen one): private members aren't inherited, so it is the mod's
                 Stage0.Cls info = here.classes.get(decl);
                 Integer access = info == null ? null : info.access.get("M " + name + " " + desc);
                 if (access != null && (access & Opcodes.ACC_PRIVATE) != 0) {
