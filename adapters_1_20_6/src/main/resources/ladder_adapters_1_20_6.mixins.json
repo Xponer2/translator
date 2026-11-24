@@ -50,7 +50,10 @@
     "MinecraftTimerMixin",
     "ScreenNarratorMixin",
     "CameraConstantsMixin",
-    "EffectTooltipMixin"
+    "EffectTooltipMixin",
+    "EntityRendererLeashMixin",
+    "EntityRendererLightAccess",
+    "MobRendererLeashMixin"
   ],
   "injectors": {
     "defaultRequire": 1
