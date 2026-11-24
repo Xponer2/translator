@@ -707,6 +707,9 @@ M	net/neoforged/neoforge/common/extensions/IItemExtension	isPrimaryItemFor	(Lnet
 # 1.21's looting level in its loot functions (getEnchantmentLevel of looting); 20.6's from the loot context (a mod's mixin point)
 T	net/minecraft/world/level/storage/loot/functions/EnchantedCountIncreaseFunction	run	Lnet/minecraft/world/item/enchantment/EnchantmentHelper;getEnchantmentLevel(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/LivingEntity;)I	Lnet/minecraft/world/level/storage/loot/LootContext;getLootingModifier()I
 T	net/minecraft/world/level/storage/loot/predicates/LootItemRandomChanceWithEnchantedBonusCondition	test	Lnet/minecraft/world/item/enchantment/EnchantmentHelper;getEnchantmentLevel(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/LivingEntity;)I	Lnet/minecraft/world/level/storage/loot/LootContext;getLootingModifier()I
+# a falling block's tick: 1.21 handles portals right after the move, 1.20.6 has no portal call there (a mixin at
+# 1.21's portal call goes in just before the move: the tick's same place, one call earlier)
+T	net/minecraft/world/entity/item/FallingBlockEntity	tick	Lnet/minecraft/world/entity/item/FallingBlockEntity;handlePortal()V	Lnet/minecraft/world/entity/item/FallingBlockEntity;move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V
 # 1.21's supported item check of an enchantment (a mod's mixin): 1.20.6's canEnchant (calls take the X row)
 M	net/minecraft/world/item/enchantment/Enchantment	isSupportedItem	(Lnet/minecraft/world/item/ItemStack;)Z	canEnchant	(Lnet/minecraft/world/item/ItemStack;)Z
 # NeoForge 21's tool tags, fake player check, the vertex texture element, the frame time of overlay and highlight events
@@ -748,3 +751,7 @@ D	net/neoforged/neoforge/common/extensions/IItemExtension	damageItem	(Lnet/minec
 A	net/neoforged/neoforge/common/extensions/IItemExtension	damageItem	(Lnet/minecraft/world/item/ItemStack;ILnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Consumer;)I	(Lnet/minecraft/world/item/ItemStack;ILnet/minecraft/world/entity/LivingEntity;Ljava/lang/Runnable;)I	$0 $1 $2 ladder/rung1206/misc/SmallAdapters.consumerOf(3)
 # 1.21's waterlogging check of structure placement (20.6: keeping liquids, the same flag)
 M	net/minecraft/world/level/levelgen/structure/templatesystem/StructurePlaceSettings	shouldApplyWaterlogging	()Z	shouldKeepLiquids	()Z
+# small 1.21 members: a tame animal's teleport to its owner, an explosion's block triggering, NeoForge 21's holder key (TailAdapters)
+X	net/minecraft/world/entity/TamableAnimal	tryToTeleportToOwner	()V	ladder/rung1206/misc/TailAdapters	tryToTeleportToOwner
+X	net/minecraft/world/level/Explosion	canTriggerBlocks	()Z	ladder/rung1206/misc/TailAdapters	canTriggerBlocks
+X	net/minecraft/core/Holder$Reference	getKey	()Lnet/minecraft/resources/ResourceKey;	ladder/rung1206/misc/TailAdapters	getKey
