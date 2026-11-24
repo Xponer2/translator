@@ -46,6 +46,8 @@ abstract class EntityRendererLeashMixin<T extends Entity> {
     @Shadow
     protected abstract int getBlockLightLevel(T entity, BlockPos pos);
 
+    // an overwrite, not a HEAD inject: mods' injectors aim at the renderLeash call inside 1.21's render (VanillaBackport's
+    // WrapOperation); applied first (priority 500), it keeps 20.6's name tag code for the other mods' injection points
     /**
      * @author ladder
      * @reason 1.21's render: the entity's leash first, then 20.6's name tag event (1.20.6 leaves the leash to MobRenderer)
