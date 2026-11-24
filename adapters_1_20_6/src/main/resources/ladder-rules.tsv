@@ -281,6 +281,11 @@ X	net/minecraft/world/item/enchantment/EnchantmentHelper	doPostAttackEffects	(Ln
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	doPostAttackEffectsWithItemSource	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/item/ItemStack;)V	ladder/rung1206/misc/EnchantmentEffects	doPostAttackEffectsWithItemSource
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	modifyDamage	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;F)F	ladder/rung1206/misc/EnchantmentEffects	modifyDamage
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	hasTag	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/tags/TagKey;)Z	ladder/rung1206/misc/EnchantmentEffects	hasTag
+# 1.21's portals: the adapters' own (their Entity mixin and portal code use them, a carried copy may be missing from a pack)
+P	net/minecraft/world/level/block/Portal	ladder/rung1206/provided/Portal
+P	net/minecraft/world/level/block/Portal$Transition	ladder/rung1206/provided/Portal$Transition
+P	net/minecraft/world/entity/PortalProcessor	ladder/rung1206/provided/PortalProcessor
+P	net/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition	ladder/rung1206/provided/DimensionTransition$PostDimensionTransition
 # 1.21's dimension transitions (1.20.6: its intermediary twin PortalInfo, a level and a teleporter) and changeDimension
 X	net/minecraft/world/level/portal/DimensionTransition	<init>	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;FFLnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;)V	ladder/rung1206/portal/PortalAdapters	transition
 X	net/minecraft/world/level/portal/DimensionTransition	<init>	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;FFZLnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;)V	ladder/rung1206/portal/PortalAdapters	transition

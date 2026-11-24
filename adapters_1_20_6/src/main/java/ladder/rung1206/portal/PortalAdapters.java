@@ -32,54 +32,54 @@ public final class PortalAdapters {
     }
 
     /** 1.21's {@code DimensionTransition.DO_NOTHING} */
-    public static final ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition DO_NOTHING = entity -> {
+    public static final ladder.rung1206.provided.DimensionTransition$PostDimensionTransition DO_NOTHING = entity -> {
     };
     /** 1.21's {@code PLAY_PORTAL_SOUND}: a player hears the portal's travel sound */
-    public static final ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition PLAY_PORTAL_SOUND = entity -> {
+    public static final ladder.rung1206.provided.DimensionTransition$PostDimensionTransition PLAY_PORTAL_SOUND = entity -> {
         if (entity instanceof ServerPlayer player) {
             player.connection.send(new ClientboundLevelEventPacket(1032, BlockPos.ZERO, 0, false));
         }
     };
     /** 1.21's {@code PLACE_PORTAL_TICKET}: the chunks around the arrival stay loaded a while */
-    public static final ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition PLACE_PORTAL_TICKET = entity -> {
+    public static final ladder.rung1206.provided.DimensionTransition$PostDimensionTransition PLACE_PORTAL_TICKET = entity -> {
         if (entity.level() instanceof ServerLevel level) {
             BlockPos pos = BlockPos.containing(entity.position());
             level.getChunkSource().addRegionTicket(TicketType.PORTAL, new ChunkPos(pos), 3, pos);
         }
     };
 
-    public static ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition doNothing() {
+    public static ladder.rung1206.provided.DimensionTransition$PostDimensionTransition doNothing() {
         return DO_NOTHING;
     }
 
-    public static ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition playPortalSound() {
+    public static ladder.rung1206.provided.DimensionTransition$PostDimensionTransition playPortalSound() {
         return PLAY_PORTAL_SOUND;
     }
 
-    public static ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition placePortalTicket() {
+    public static ladder.rung1206.provided.DimensionTransition$PostDimensionTransition placePortalTicket() {
         return PLACE_PORTAL_TICKET;
     }
 
     // ---------------------------------------------------------------- the transition (1.21's record)
 
     public static PortalInfo transition(ServerLevel level, Vec3 pos, Vec3 speed, float yRot, float xRot, boolean missingRespawnBlock,
-            ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition post) {
+            ladder.rung1206.provided.DimensionTransition$PostDimensionTransition post) {
         return new Transition(level, pos, speed, yRot, xRot, missingRespawnBlock, post);
     }
 
     public static PortalInfo transition(ServerLevel level, Vec3 pos, Vec3 speed, float yRot, float xRot,
-            ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition post) {
+            ladder.rung1206.provided.DimensionTransition$PostDimensionTransition post) {
         return new Transition(level, pos, speed, yRot, xRot, false, post);
     }
 
     /** to the level's spawn (1.21 adjusts it to the entity: 1.20.6 has no such search, the spawn's block centre) */
     public static PortalInfo transition(ServerLevel level, Entity entity,
-            ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition post) {
+            ladder.rung1206.provided.DimensionTransition$PostDimensionTransition post) {
         return new Transition(level, Vec3.atBottomCenterOf(level.getSharedSpawnPos()), Vec3.ZERO, 0.0F, 0.0F, false, post);
     }
 
     public static PortalInfo missingRespawnBlock(ServerLevel level, Entity entity,
-            ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition post) {
+            ladder.rung1206.provided.DimensionTransition$PostDimensionTransition post) {
         return new Transition(level, Vec3.atBottomCenterOf(level.getSharedSpawnPos()), Vec3.ZERO, 0.0F, 0.0F, true, post);
     }
 
@@ -104,7 +104,7 @@ public final class PortalAdapters {
         return info instanceof Transition t && t.missingRespawnBlock;
     }
 
-    public static ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition postDimensionTransition(PortalInfo info) {
+    public static ladder.rung1206.provided.DimensionTransition$PostDimensionTransition postDimensionTransition(PortalInfo info) {
         return info instanceof Transition t ? t.post : DO_NOTHING;
     }
 

@@ -19,10 +19,10 @@ public final class Transition extends PortalInfo {
     @Nullable
     final ServerLevel newLevel;
     final boolean missingRespawnBlock;
-    final ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition post;
+    final ladder.rung1206.provided.DimensionTransition$PostDimensionTransition post;
 
     Transition(@Nullable ServerLevel newLevel, Vec3 pos, Vec3 speed, float yRot, float xRot, boolean missingRespawnBlock,
-            ladder.carried_1_20_6.net.minecraft.world.level.portal.DimensionTransition$PostDimensionTransition post) {
+            ladder.rung1206.provided.DimensionTransition$PostDimensionTransition post) {
         super(pos, speed, yRot, xRot);
         this.newLevel = newLevel;
         this.missingRespawnBlock = missingRespawnBlock;

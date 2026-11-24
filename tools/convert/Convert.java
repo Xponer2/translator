@@ -1750,10 +1750,15 @@ public class Convert {
     /** the fields the adapters' mixins add to the game's classes: "class name desc" */
     static final Set<String> adapterAddedFields = new HashSet<>();
 
-    /** whether an adapters' mixin adds this field to the class (of a carried type: the field has the carried name, 1.21's Entity.portalProcess) */
+    /** whether an adapters' mixin adds this field to the class (of a carried or provided type: the field has that name) */
     static boolean adapterAddsField(String cls, String name, String desc) {
-        return adapterAddedFields.contains(cls + " " + name + " " + desc)
-                || desc.startsWith("L") && adapterAddedFields.contains(cls + " " + name + " L" + CARRIED + desc.substring(1));
+        if (adapterAddedFields.contains(cls + " " + name + " " + desc)
+                || desc.startsWith("L") && adapterAddedFields.contains(cls + " " + name + " L" + CARRIED + desc.substring(1))) {
+            return true;
+        }
+        // (of a type the adapters provide, a P row: 1.21's Entity.portalProcess)
+        String type = desc.startsWith("L") && desc.endsWith(";") ? provided.get(desc.substring(1, desc.length() - 1)) : null;
+        return type != null && adapterAddedFields.contains(cls + " " + name + " L" + type + ";");
     }
     /** T rows: "upper owner.method upper target" -> the lower target (an injection point in that method) */
     static final Map<String, String> pointRetargets = new HashMap<>();

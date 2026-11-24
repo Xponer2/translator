@@ -25,19 +25,19 @@ abstract class EntityPortalMixin implements PortalSupport.Holder {
     @Shadow
     protected boolean isInsidePortal;
 
-    public ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor portalProcess;
+    public ladder.rung1206.provided.PortalProcessor portalProcess;
 
-    public void setAsInsidePortal(ladder.carried_1_20_6.net.minecraft.world.level.block.Portal portal, BlockPos pos) {
+    public void setAsInsidePortal(ladder.rung1206.provided.Portal portal, BlockPos pos) {
         PortalSupport.setAsInsidePortal((Entity) (Object) this, portal, pos);
     }
 
     @Override
-    public ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor ladder$portalProcess() {
+    public ladder.rung1206.provided.PortalProcessor ladder$portalProcess() {
         return this.portalProcess;
     }
 
     @Override
-    public void ladder$setPortalProcess(ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor process) {
+    public void ladder$setPortalProcess(ladder.rung1206.provided.PortalProcessor process) {
         this.portalProcess = process;
     }
 

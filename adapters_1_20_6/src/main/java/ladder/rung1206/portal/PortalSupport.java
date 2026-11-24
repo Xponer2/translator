@@ -28,16 +28,16 @@ public final class PortalSupport {
     /** the adapters' Entity mixin: 1.21's {@code Entity.portalProcess} */
     public interface Holder {
         @Nullable
-        ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor ladder$portalProcess();
+        ladder.rung1206.provided.PortalProcessor ladder$portalProcess();
 
-        void ladder$setPortalProcess(@Nullable ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor process);
+        void ladder$setPortalProcess(@Nullable ladder.rung1206.provided.PortalProcessor process);
 
         /** 1.20.6's {@code isInsidePortal = true}: its client portal effect this tick */
         void ladder$setInsidePortal();
     }
 
     /** 1.20.6's nether portal as 1.21's portal processor sees it (its teleport stays 1.20.6's: no destination here) */
-    public static final ladder.carried_1_20_6.net.minecraft.world.level.block.Portal NETHER = new ladder.carried_1_20_6.net.minecraft.world.level.block.Portal() {
+    public static final ladder.rung1206.provided.Portal NETHER = new ladder.rung1206.provided.Portal() {
         @Override
         public int getPortalTransitionTime(ServerLevel level, Entity entity) {
             return entity.getPortalWaitTime();
@@ -50,24 +50,24 @@ public final class PortalSupport {
         }
 
         @Override
-        public ladder.carried_1_20_6.net.minecraft.world.level.block.Portal.Transition getLocalTransition() {
-            return ladder.carried_1_20_6.net.minecraft.world.level.block.Portal.Transition.CONFUSION;
+        public ladder.rung1206.provided.Portal.Transition getLocalTransition() {
+            return ladder.rung1206.provided.Portal.Transition.CONFUSION;
         }
     };
 
     /** 1.21's {@code Entity.setAsInsidePortal(portal, pos)} */
-    public static void setAsInsidePortal(Entity entity, ladder.carried_1_20_6.net.minecraft.world.level.block.Portal portal, BlockPos pos) {
+    public static void setAsInsidePortal(Entity entity, ladder.rung1206.provided.Portal portal, BlockPos pos) {
         if (entity.isOnPortalCooldown()) {
             entity.setPortalCooldown();
             return;
         }
         Holder holder = (Holder) entity;
-        ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor process = holder.ladder$portalProcess();
+        ladder.rung1206.provided.PortalProcessor process = holder.ladder$portalProcess();
         if (process != null && process.isSamePortal(portal)) {
             process.updateEntryPosition(pos.immutable());
             process.setAsInsidePortalThisTick(true);
         } else {
-            holder.ladder$setPortalProcess(new ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor(portal, pos.immutable()));
+            holder.ladder$setPortalProcess(new ladder.rung1206.provided.PortalProcessor(portal, pos.immutable()));
         }
     }
 
@@ -77,7 +77,7 @@ public final class PortalSupport {
             return;
         }
         Holder holder = (Holder) entity;
-        ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor process = holder.ladder$portalProcess();
+        ladder.rung1206.provided.PortalProcessor process = holder.ladder$portalProcess();
         if (process == null) {
             return;
         }
@@ -103,9 +103,9 @@ public final class PortalSupport {
     /** 1.21's client: a confusion portal the player stands in gives the portal effect (1.20.6's, by isInsidePortal) */
     public static void clientTick(Entity player) {
         Holder holder = (Holder) player;
-        ladder.carried_1_20_6.net.minecraft.world.entity.PortalProcessor process = holder.ladder$portalProcess();
+        ladder.rung1206.provided.PortalProcessor process = holder.ladder$portalProcess();
         if (process != null && process.isInsidePortalThisTick()
-                && process.getPortalLocalTransition() == ladder.carried_1_20_6.net.minecraft.world.level.block.Portal.Transition.CONFUSION) {
+                && process.getPortalLocalTransition() == ladder.rung1206.provided.Portal.Transition.CONFUSION) {
             holder.ladder$setInsidePortal();
             process.setAsInsidePortalThisTick(false);
         }
