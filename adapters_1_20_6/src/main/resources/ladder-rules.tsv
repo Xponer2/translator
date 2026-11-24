@@ -223,6 +223,10 @@ X	com/mojang/blaze3d/vertex/BufferBuilder	<init>	(Lcom/mojang/blaze3d/vertex/Byt
 X	net/minecraft/client/renderer/MultiBufferSource	immediate	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;)Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;	ladder/rung1206/render/ByteBuffers	immediate
 X	net/minecraft/client/renderer/MultiBufferSource	immediateWithBuffers	(Ljava/util/SequencedMap;Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;)Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;	ladder/rung1206/render/ByteBuffers	immediateWithBuffers
 X	net/minecraft/client/renderer/MultiBufferSource$BufferSource	<init>	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Ljava/util/SequencedMap;)V	ladder/rung1206/render/ByteBuffers	bufferSource
+# a buffer source's byte buffers: 1.20.6's builders seen as them (the fixed ones a live map), the shared builder's last type
+F	net/minecraft/client/renderer/MultiBufferSource$BufferSource	fixedBuffers	Ljava/util/SequencedMap;	ladder/rung1206/render/ByteBuffers	fixedBuffers
+F	net/minecraft/client/renderer/MultiBufferSource$BufferSource	sharedBuffer	Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;	ladder/rung1206/render/ByteBuffers	sharedBuffer
+F	net/minecraft/client/renderer/MultiBufferSource$BufferSource	lastSharedType	Lnet/minecraft/client/renderer/RenderType;	ladder/rung1206/render/ByteBuffers	lastSharedType
 # 1.21's postHurtEnemy (an item's wear after a hit that counted; 1.20.6's items wear in hurtEnemy)
 O	net/minecraft/world/item/Item	postHurtEnemy	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;)V	ladder/rung1206/item/PostHurtApi	ladder/rung1206/item/PostHurtApi	postHurtEnemy
 X	net/minecraft/world/item/Item	postHurtEnemy	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;)V	ladder/rung1206/item/PostHurtApi	call

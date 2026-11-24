@@ -23,13 +23,130 @@ import net.minecraft.client.renderer.RenderType;
  */
 public final class ByteBuffers {
     private static final Map<ByteBufferBuilder, BufferBuilder> BUILDERS = new WeakHashMap<>();
+    /** the byte buffers of the builders made for them (weakly: a builder lives as long as its byte buffer) */
+    private static final Map<BufferBuilder, java.lang.ref.WeakReference<ByteBufferBuilder>> MADE = new WeakHashMap<>();
+    /** the byte buffers standing for 1.20.6's own builders (the buffer sources' shared and fixed ones, kept all game) */
+    private static final Map<BufferBuilder, ByteBufferBuilder> STANDING = new WeakHashMap<>();
 
     private ByteBuffers() {
     }
 
     /** the lower builder of a byte buffer (its capacity as the builder's first size) */
     public static synchronized BufferBuilder builder(ByteBufferBuilder bytes) {
-        return BUILDERS.computeIfAbsent(bytes, b -> new BufferBuilder(Math.max(256, capacity(b))));
+        return BUILDERS.computeIfAbsent(bytes, b -> {
+            BufferBuilder made = new BufferBuilder(Math.max(256, capacity(b)));
+            MADE.put(made, new java.lang.ref.WeakReference<>(b));
+            return made;
+        });
+    }
+
+    /** the byte buffer of a lower builder: the one it was made for, or a small one standing for a builder 1.20.6 made */
+    public static synchronized ByteBufferBuilder bytes(BufferBuilder builder) {
+        java.lang.ref.WeakReference<ByteBufferBuilder> made = MADE.get(builder);
+        ByteBufferBuilder bytes = made == null ? null : made.get();
+        if (bytes != null) {
+            return bytes;
+        }
+        return STANDING.computeIfAbsent(builder, b -> {
+            ByteBufferBuilder standing = new ByteBufferBuilder(256);
+            BUILDERS.put(standing, b);
+            return standing;
+        });
+    }
+
+    /** 1.21's {@code BufferSource.fixedBuffers}: 1.20.6's fixed builders seen as their byte buffers (a live view) */
+    public static java.util.SequencedMap<RenderType, ByteBufferBuilder> fixedBuffers(MultiBufferSource.BufferSource source) {
+        return new FixedBuffers(source.fixedBuffers);
+    }
+
+    /** 1.21's {@code BufferSource.sharedBuffer}: the byte buffer of 1.20.6's shared builder */
+    public static ByteBufferBuilder sharedBuffer(MultiBufferSource.BufferSource source) {
+        return bytes(source.builder);
+    }
+
+    /** 1.21's {@code BufferSource.lastSharedType}: 1.20.6's last state of the shared builder */
+    public static RenderType lastSharedType(MultiBufferSource.BufferSource source) {
+        return source.lastState.orElse(null);
+    }
+
+    /** a map of render types to byte buffers over 1.20.6's map of render types to builders (its order, its changes) */
+    static final class FixedBuffers extends java.util.AbstractMap<RenderType, ByteBufferBuilder>
+            implements java.util.SequencedMap<RenderType, ByteBufferBuilder> {
+        private final Map<RenderType, BufferBuilder> lower;
+
+        FixedBuffers(Map<RenderType, BufferBuilder> lower) {
+            this.lower = lower;
+        }
+
+        @Override
+        public int size() {
+            return lower.size();
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            return lower.containsKey(key);
+        }
+
+        @Override
+        public ByteBufferBuilder get(Object key) {
+            BufferBuilder builder = lower.get(key);
+            return builder == null ? null : bytes(builder);
+        }
+
+        @Override
+        public ByteBufferBuilder put(RenderType key, ByteBufferBuilder value) {
+            BufferBuilder old = lower.put(key, builder(value));
+            return old == null ? null : bytes(old);
+        }
+
+        @Override
+        public ByteBufferBuilder remove(Object key) {
+            BufferBuilder old = lower.remove(key);
+            return old == null ? null : bytes(old);
+        }
+
+        @Override
+        public java.util.Set<RenderType> keySet() {
+            return lower.keySet();
+        }
+
+        @Override
+        public java.util.Set<Map.Entry<RenderType, ByteBufferBuilder>> entrySet() {
+            return new java.util.AbstractSet<>() {
+                @Override
+                public int size() {
+                    return lower.size();
+                }
+
+                @Override
+                public java.util.Iterator<Map.Entry<RenderType, ByteBufferBuilder>> iterator() {
+                    java.util.Iterator<Map.Entry<RenderType, BufferBuilder>> it = lower.entrySet().iterator();
+                    return new java.util.Iterator<>() {
+                        @Override
+                        public boolean hasNext() {
+                            return it.hasNext();
+                        }
+
+                        @Override
+                        public Map.Entry<RenderType, ByteBufferBuilder> next() {
+                            Map.Entry<RenderType, BufferBuilder> e = it.next();
+                            return new java.util.AbstractMap.SimpleImmutableEntry<>(e.getKey(), bytes(e.getValue()));
+                        }
+
+                        @Override
+                        public void remove() {
+                            it.remove();
+                        }
+                    };
+                }
+            };
+        }
+
+        @Override
+        public java.util.SequencedMap<RenderType, ByteBufferBuilder> reversed() {
+            return new LinkedHashMap<>(this).reversed();
+        }
     }
 
     private static int capacity(ByteBufferBuilder bytes) {
