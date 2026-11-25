@@ -86,4 +86,43 @@ public final class EntityArgs {
         return (float) entity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_KNOCKBACK)
                 + net.minecraft.world.item.enchantment.EnchantmentHelper.getKnockbackBonus(entity);
     }
+
+    // ---------------------------------------------------------------- an arrow's weapon (1.21's constructors take it)
+
+    /** the weapon a 1.21 arrow constructor was given, until the 1.20.6 constructor it calls returns (ArrowKnockbackMixin) */
+    private static final ThreadLocal<ItemStack> PENDING_WEAPON = new ThreadLocal<>();
+
+    /** the K row's pickup stack of 1.21's {@code AbstractArrow(type, x, y, z, level, pickup, weapon)}: the weapon is handed over */
+    public static ItemStack pickupWithWeapon(net.minecraft.world.entity.EntityType<?> type, double x, double y, double z,
+            net.minecraft.world.level.Level level, ItemStack pickup, ItemStack weapon) {
+        PENDING_WEAPON.set(weapon);
+        return pickup;
+    }
+
+    /** the same for 1.21's {@code AbstractArrow(type, owner, level, pickup, weapon)} */
+    public static ItemStack ownedPickupWithWeapon(net.minecraft.world.entity.EntityType<?> type, LivingEntity owner,
+            net.minecraft.world.level.Level level, ItemStack pickup, ItemStack weapon) {
+        PENDING_WEAPON.set(weapon);
+        return pickup;
+    }
+
+    /** the same for 1.21's {@code Arrow(level, x, y, z, pickup, weapon)} */
+    public static ItemStack arrowPickupWithWeapon(net.minecraft.world.level.Level level, double x, double y, double z, ItemStack pickup,
+            ItemStack weapon) {
+        PENDING_WEAPON.set(weapon);
+        return pickup;
+    }
+
+    /** the same for 1.21's {@code Arrow(level, owner, pickup, weapon)} */
+    public static ItemStack ownedArrowPickupWithWeapon(net.minecraft.world.level.Level level, LivingEntity owner, ItemStack pickup, ItemStack weapon) {
+        PENDING_WEAPON.set(weapon);
+        return pickup;
+    }
+
+    /** the handed-over weapon, once (null: the arrow was made by 1.20.6's own constructors) */
+    public static ItemStack takePendingWeapon() {
+        ItemStack weapon = PENDING_WEAPON.get();
+        PENDING_WEAPON.remove();
+        return weapon;
+    }
 }

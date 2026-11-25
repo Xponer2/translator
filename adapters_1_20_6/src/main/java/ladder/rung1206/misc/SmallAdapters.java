@@ -498,10 +498,10 @@ public final class SmallAdapters {
                 : net.minecraft.world.item.ItemStack.EMPTY;
     }
 
-    /** 1.21's {@code entity.getWeaponItem()} of any entity: a living one's main hand, an arrow's none kept, else null (1.21's) */
+    /** 1.21's {@code entity.getWeaponItem()} of any entity: a living one's main hand, an arrow's kept one, else null (1.21's) */
     public static net.minecraft.world.item.ItemStack getWeaponItem(net.minecraft.world.entity.Entity entity) {
-        if (entity instanceof net.minecraft.world.entity.projectile.AbstractArrow) {
-            return net.minecraft.world.item.ItemStack.EMPTY;
+        if (entity instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow) {
+            return MoreAdapters.getWeaponItem(arrow);
         }
         return entity instanceof net.minecraft.world.entity.LivingEntity living ? living.getMainHandItem() : null;
     }

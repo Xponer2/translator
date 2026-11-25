@@ -167,9 +167,10 @@ public final class MoreAdapters {
         return stack;
     }
 
-    /** 1.21's {@code arrow.getWeaponItem()}: 1.20.6's arrows don't keep the weapon that shot them */
+    /** 1.21's {@code arrow.getWeaponItem()}: the weapon a 1.21 constructor gave it (ArrowKnockbackMixin), else none */
     public static ItemStack getWeaponItem(net.minecraft.world.entity.projectile.AbstractArrow arrow) {
-        return ItemStack.EMPTY;
+        ItemStack weapon = ((ladder.rung1206.entity.ArrowWeapon) arrow).ladder$weapon();
+        return weapon == null ? ItemStack.EMPTY : weapon;
     }
 
     /** the K row's resolver of 1.21's {@code new ValidationContext(reporter, params)}: none (1.21's is empty too) */
