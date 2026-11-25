@@ -4,3 +4,6 @@
 # 1.21's EnchantmentHelper.getRandomItemWith of an effect component (Quark, accessories inject into it; ExperienceOrb's
 # repair calls it: ExperienceOrbRepairMixin)
 add-static	net/minecraft/world/item/enchantment/EnchantmentHelper	getRandomItemWith	(Lnet/minecraft/core/component/DataComponentType;Lnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Predicate;)Ljava/util/Optional;	ladder/rung1206/enchantment/AddedEnchantmentHelper
+# 1.21's EnchantmentHelper.getAvailableEnchantmentResults of a candidate stream (fabric's item API and VanillaBackport
+# aim into it; 1.20.6's table search calls it: EnchantmentTableMixin)
+add-static	net/minecraft/world/item/enchantment/EnchantmentHelper	getAvailableEnchantmentResults	(ILnet/minecraft/world/item/ItemStack;Ljava/util/stream/Stream;)Ljava/util/List;	ladder/rung1206/enchantment/AddedEnchantmentHelper

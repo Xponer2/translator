@@ -49,4 +49,42 @@ public final class AddedEnchantmentHelper {
         }
         return Util.getRandomSafe(list, entity.getRandom());
     }
+
+    /**
+     * 1.21's {@code getAvailableEnchantmentResults(power, stack, possible)}: of the candidates, those the stack may take at
+     * the table (its filter: 1.20.6's test, a book's allowed enchantments or the item's own), each at its highest level
+     * the power reaches. 1.20.6's own table method calls it with its candidates (EnchantmentTableMixin), so the mods'
+     * points (fabric's filter, VanillaBackport's) see the table. No lambda: the method is copied into the game class.
+     */
+    public static List<net.minecraft.world.item.enchantment.EnchantmentInstance> getAvailableEnchantmentResults(int power, ItemStack stack,
+            java.util.stream.Stream<Holder<Enchantment>> possible) {
+        List<net.minecraft.world.item.enchantment.EnchantmentInstance> list = new ArrayList<>();
+        boolean book = stack.is(net.minecraft.world.item.Items.BOOK);
+        possible.filter(new TableCandidate(stack, book)).forEach(new HighestLevel(power, list));
+        return list;
+    }
+
+    /** 1.20.6's test of a table candidate for a stack */
+    public record TableCandidate(ItemStack stack, boolean book) implements Predicate<Holder<Enchantment>> {
+        @Override
+        public boolean test(Holder<Enchantment> holder) {
+            Enchantment enchantment = holder.value();
+            return this.book && enchantment.isAllowedOnBooks() || enchantment.canApplyAtEnchantingTable(this.stack) && enchantment.isPrimaryItem(this.stack);
+        }
+    }
+
+    /** a candidate's highest level the power reaches, into the list */
+    public record HighestLevel(int power, List<net.minecraft.world.item.enchantment.EnchantmentInstance> list)
+            implements java.util.function.Consumer<Holder<Enchantment>> {
+        @Override
+        public void accept(Holder<Enchantment> holder) {
+            Enchantment enchantment = holder.value();
+            for (int level = enchantment.getMaxLevel(); level > enchantment.getMinLevel() - 1; level--) {
+                if (this.power >= enchantment.getMinCost(level) && this.power <= enchantment.getMaxCost(level)) {
+                    this.list.add(new net.minecraft.world.item.enchantment.EnchantmentInstance(enchantment, level));
+                    break;
+                }
+            }
+        }
+    }
 }

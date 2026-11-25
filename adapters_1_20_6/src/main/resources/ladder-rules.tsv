@@ -706,7 +706,7 @@ X	net/minecraft/world/item/enchantment/EnchantmentHelper	tickEffects	(Lnet/minec
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	onHitBlock	(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/EquipmentSlot;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/level/block/state/BlockState;Ljava/util/function/Consumer;)V	ladder/rung1206/enchantment/EnchantHelpers	onHitBlock
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	forEachModifier	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V	ladder/rung1206/enchantment/EnchantHelpers	forEachModifier
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	enchantItem	(Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/item/ItemStack;ILnet/minecraft/core/RegistryAccess;Ljava/util/Optional;)Lnet/minecraft/world/item/ItemStack;	ladder/rung1206/enchantment/EnchantHelpers	enchantItem
-X	net/minecraft/world/item/enchantment/EnchantmentHelper	getAvailableEnchantmentResults	(ILnet/minecraft/world/item/ItemStack;Ljava/util/stream/Stream;)Ljava/util/List;	ladder/rung1206/enchantment/EnchantHelpers	getAvailableEnchantmentResults
+# (EnchantmentHelper.getAvailableEnchantmentResults(power, stack, possible) is a shape patch: AddedEnchantmentHelper)
 # 1.21's members of an enchantment on 1.20.6's (the definition's field opened by the access transformer), its mob spawn tag
 F	net/minecraft/world/item/enchantment/Enchantment	CODEC	Lcom/mojang/serialization/Codec;	ladder/rung1206/enchantment/EnchantMembers	codec
 X	net/minecraft/world/item/enchantment/Enchantment	definition	()Lnet/minecraft/world/item/enchantment/Enchantment$EnchantmentDefinition;	ladder/rung1206/enchantment/EnchantMembers	definition
@@ -803,6 +803,6 @@ X	com/mojang/blaze3d/vertex/VertexFormatElement	id	()I	ladder/rung1206/render/Ve
 X	com/mojang/blaze3d/vertex/VertexFormatElement	mask	()I	ladder/rung1206/render/VertexFormats	mask
 X	com/mojang/blaze3d/vertex/VertexFormatElement	elementsFromMask	(I)Ljava/util/stream/Stream;	ladder/rung1206/render/VertexFormats	elementsFromMask
 X	net/minecraft/server/level/GenerationChunkHolder	getChunkIfPresentUnchecked	(Lnet/minecraft/world/level/chunk/status/ChunkStatus;)Lnet/minecraft/world/level/chunk/ChunkAccess;	ladder/rung1206/misc/TailAdapters	getChunkIfPresentUnchecked
-# 1.21's registry data may require a non-empty registry (1.20.6 checks nothing: the flag is dropped)
-D	net/minecraft/resources/RegistryDataLoader$RegistryData	<init>	(Lnet/minecraft/resources/ResourceKey;Lcom/mojang/serialization/Codec;Z)V	(Lnet/minecraft/resources/ResourceKey;Lcom/mojang/serialization/Codec;)V	$0,$1
+# 1.21's registry data may require a non-empty registry (1.20.6 checks nothing: the flag is dropped, a K row)
+K	net/minecraft/resources/RegistryDataLoader$RegistryData	(Lnet/minecraft/resources/ResourceKey;Lcom/mojang/serialization/Codec;Z)V	(Lnet/minecraft/resources/ResourceKey;Lcom/mojang/serialization/Codec;)V	ladder/rung1206/misc/TailAdapters	$0,$1
 X	net/minecraft/resources/RegistryDataLoader$RegistryData	requiredNonEmpty	()Z	ladder/rung1206/misc/TailAdapters	requiredNonEmpty

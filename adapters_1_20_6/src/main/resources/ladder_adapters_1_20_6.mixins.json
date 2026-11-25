@@ -37,7 +37,8 @@
     "EntityPortalMixin",
     "ArrowKnockbackMixin",
     "HurtingProjectilePowerMixin",
-    "MobAttackMixin"
+    "MobAttackMixin",
+    "EnchantmentTableMixin"
   ],
   "client": [
     "RenderTypeDrawMixin",
