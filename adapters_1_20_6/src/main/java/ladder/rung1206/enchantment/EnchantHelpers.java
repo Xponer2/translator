@@ -53,7 +53,9 @@ public final class EnchantHelpers {
 
     private static final ResourceLocation REPAIR_WITH_XP = new ResourceLocation("minecraft", "repair_with_xp");
     /** mending's effect when the pack's carried code registers no effect types (no mod named them) */
-    private static final DataComponentType<?> REPAIR_WITH_XP_STANDIN = DataComponentType.builder().build();
+    // (1.20.6's builder wants a codec for the network: a unit one, never sent)
+    private static final DataComponentType<?> REPAIR_WITH_XP_STANDIN = DataComponentType.<net.minecraft.util.Unit>builder()
+            .networkSynchronized(net.minecraft.network.codec.StreamCodec.unit(net.minecraft.util.Unit.INSTANCE)).build();
 
     /** 1.21's {@code EnchantmentEffectComponents.REPAIR_WITH_XP}: the registered type, else a stand-in of the same id */
     public static DataComponentType<?> repairWithXp() {
