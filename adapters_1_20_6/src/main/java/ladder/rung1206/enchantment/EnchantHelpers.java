@@ -70,14 +70,38 @@ public final class EnchantHelpers {
         return hasEffect(enchantment, effectId(type)) && enchantment.getSlotItems(entity).containsKey(slot);
     }
 
-    /** 1.21's {@code new EnchantedItemInUse(stack, slot, entity)} (an Object: the game's classes name no carried type) */
+    /**
+     * 1.21's {@code new EnchantedItemInUse(stack, slot, entity)} (an Object: the game's classes name no carried type). The
+     * vanilla mending path makes these: a pack whose mods never name EnchantedItemInUse carries no copy of it, and then
+     * nothing but the adapters looks at the find (a stand-in of the same parts).
+     */
     public static Object inUse(ItemStack stack, EquipmentSlot slot, LivingEntity entity) {
-        return new EnchantedItemInUse(stack, slot, entity);
+        return carriedInUse() ? new EnchantedItemInUse(stack, slot, entity) : new FoundItem(stack, slot, entity);
     }
 
     /** the stack of a find of getRandomItemWith */
     public static ItemStack stackOf(Object inUse) {
-        return ((EnchantedItemInUse) inUse).itemStack();
+        return inUse instanceof FoundItem found ? found.stack() : ((EnchantedItemInUse) inUse).itemStack();
+    }
+
+    /** a find of getRandomItemWith when the pack carries no EnchantedItemInUse */
+    record FoundItem(ItemStack stack, EquipmentSlot slot, LivingEntity entity) {
+    }
+
+    private static volatile Boolean carriedInUse;
+
+    private static boolean carriedInUse() {
+        Boolean known = carriedInUse;
+        if (known == null) {
+            try {
+                Class.forName("ladder.carried_1_20_6.net.minecraft.world.item.enchantment.EnchantedItemInUse", false, EnchantHelpers.class.getClassLoader());
+                known = true;
+            } catch (ClassNotFoundException | LinkageError e) {
+                known = false;
+            }
+            carriedInUse = known;
+        }
+        return known;
     }
 
     /** the 1.20.6 enchantment that has the vanilla effect of that id (null: none, or several) */
