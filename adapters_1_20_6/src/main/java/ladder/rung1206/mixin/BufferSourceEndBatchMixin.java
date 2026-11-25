@@ -16,6 +16,9 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.VertexSorting;
+
+import ladder.rung1206.provided.MeshData;
 
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -58,9 +61,25 @@ abstract class BufferSourceEndBatchMixin {
         }
     }
 
-    /** 1.21's endBatch(type, builder): 1.20.6's end of the type's batch; the shared type, when it was this one, forgotten */
+    /**
+     * 1.21's endBatch(type, builder) in its shape: the builder builds, the mesh sorts its quads, the type draws it. 1.20.6
+     * sorts while the builder ends, so the sorting is set on it first (the mesh's sortQuads keeps the quads as they are)
+     * and the translucent order is 1.20.6's; the steps are 1.20.6's end of the type's batch. The shared type, when it was
+     * this one, forgotten.
+     */
     private void endBatch(RenderType type, BufferBuilder started) {
-        type.end(started, RenderSystem.getVertexSorting());
+        if (started.building()) {
+            VertexSorting sorting = RenderSystem.getVertexSorting();
+            boolean sort = ladder.rung1206.render.RenderTypes.sortOnUpload(type);
+            if (sort) {
+                started.setQuadSorting(sorting);
+            }
+            MeshData mesh = new MeshData(started.end());
+            if (sort) {
+                mesh.sortQuads(ladder.rung1206.render.ByteBuffers.sharedBufferIfCarried((MultiBufferSource.BufferSource) (Object) this), sorting);
+            }
+            ((ladder.rung1206.render.RenderTypeAdded) (Object) type).draw(mesh);
+        }
         if (Objects.equals(this.lastState, type.asOptional())) {
             this.lastState = Optional.empty();
         }

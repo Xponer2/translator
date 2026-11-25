@@ -72,6 +72,10 @@ tasks.named('compileJava') {
                         insn.owner = added[insn.owner]
                         insn.itf = false
                         changed = true
+                    } else if (insn.getClass().simpleName == 'TypeInsnNode' && added.containsKey(insn.desc)) {
+                        // (a cast to the template, for a call of an instance method an adapters' mixin adds to the class)
+                        insn.desc = added[insn.desc]
+                        changed = true
                     }
                 }
             }

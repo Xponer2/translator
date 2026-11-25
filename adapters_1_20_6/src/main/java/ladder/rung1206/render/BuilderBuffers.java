@@ -39,6 +39,11 @@ public final class BuilderBuffers {
             this.builder = new java.lang.ref.WeakReference<>(builder);
         }
 
+        /** the builder this byte buffer is the memory of (null once it is gone) */
+        BufferBuilder builder() {
+            return this.builder.get();
+        }
+
         @Override
         public long reserve(int bytes) {
             BufferBuilder b = this.builder.get();

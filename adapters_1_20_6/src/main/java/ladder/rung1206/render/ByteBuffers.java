@@ -25,14 +25,16 @@ public final class ByteBuffers {
     private static final Map<ByteBufferBuilder, BufferBuilder> BUILDERS = new WeakHashMap<>();
     /** the byte buffers of the builders made for them (weakly: a builder lives as long as its byte buffer) */
     private static final Map<BufferBuilder, java.lang.ref.WeakReference<ByteBufferBuilder>> MADE = new WeakHashMap<>();
-    /** the byte buffers standing for 1.20.6's own builders (the buffer sources' shared and fixed ones, kept all game) */
-    private static final Map<BufferBuilder, ByteBufferBuilder> STANDING = new WeakHashMap<>();
 
     private ByteBuffers() {
     }
 
     /** the lower builder of a byte buffer (its capacity as the builder's first size) */
     public static synchronized BufferBuilder builder(ByteBufferBuilder bytes) {
+        if (bytes instanceof BuilderBuffers.BuilderBytes view && view.builder() != null) {
+            // (the byte buffer of a builder 1.20.6 made: that builder)
+            return view.builder();
+        }
         return BUILDERS.computeIfAbsent(bytes, b -> {
             BufferBuilder made = new BufferBuilder(Math.max(256, capacity(b)));
             MADE.put(made, new java.lang.ref.WeakReference<>(b));
@@ -40,18 +42,18 @@ public final class ByteBuffers {
         });
     }
 
-    /** the byte buffer of a lower builder: the one it was made for, or a small one standing for a builder 1.20.6 made */
+    /**
+     * the byte buffer of a lower builder: the one it was made for, or for a builder 1.20.6 made, the view of its own
+     * memory (BuilderBuffers: reserve makes room at its write position; the view holds the builder weakly, so neither
+     * keeps the other alive)
+     */
     public static synchronized ByteBufferBuilder bytes(BufferBuilder builder) {
         java.lang.ref.WeakReference<ByteBufferBuilder> made = MADE.get(builder);
         ByteBufferBuilder bytes = made == null ? null : made.get();
         if (bytes != null) {
             return bytes;
         }
-        return STANDING.computeIfAbsent(builder, b -> {
-            ByteBufferBuilder standing = new ByteBufferBuilder(256);
-            BUILDERS.put(standing, b);
-            return standing;
-        });
+        return BuilderBuffers.buffer(builder);
     }
 
     /** 1.21's {@code BufferSource.fixedBuffers}: 1.20.6's fixed builders seen as their byte buffers (a live view) */
@@ -62,6 +64,30 @@ public final class ByteBuffers {
     /** 1.21's {@code BufferSource.sharedBuffer}: the byte buffer of 1.20.6's shared builder */
     public static ByteBufferBuilder sharedBuffer(MultiBufferSource.BufferSource source) {
         return bytes(source.builder);
+    }
+
+    /**
+     * the shared builder's byte buffer when the pack carries ByteBufferBuilder, else null (the vanilla draw path asks it
+     * for 1.21's sortQuads call, whose 1.20.6 form uses no buffer; a pack whose mods never name ByteBufferBuilder has none)
+     */
+    public static ByteBufferBuilder sharedBufferIfCarried(MultiBufferSource.BufferSource source) {
+        return carried() ? sharedBuffer(source) : null;
+    }
+
+    private static volatile Boolean carried;
+
+    private static boolean carried() {
+        Boolean known = carried;
+        if (known == null) {
+            try {
+                Class.forName("ladder.carried_1_20_6.com.mojang.blaze3d.vertex.ByteBufferBuilder", false, ByteBuffers.class.getClassLoader());
+                known = true;
+            } catch (ClassNotFoundException | LinkageError e) {
+                known = false;
+            }
+            carried = known;
+        }
+        return known;
     }
 
     /** 1.21's {@code BufferSource.lastSharedType}: 1.20.6's last state of the shared builder */
@@ -150,7 +176,90 @@ public final class ByteBuffers {
 
         @Override
         public java.util.SequencedMap<RenderType, ByteBufferBuilder> reversed() {
-            return new LinkedHashMap<>(this).reversed();
+            return new Reversed(this);
+        }
+    }
+
+    /**
+     * the fixed buffers in reverse order, backed by the same map (its changes show in both; an iteration walks the keys
+     * as they were when it began, its removals going to the map)
+     */
+    static final class Reversed extends java.util.AbstractMap<RenderType, ByteBufferBuilder>
+            implements java.util.SequencedMap<RenderType, ByteBufferBuilder> {
+        private final FixedBuffers forward;
+
+        Reversed(FixedBuffers forward) {
+            this.forward = forward;
+        }
+
+        @Override
+        public int size() {
+            return this.forward.size();
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            return this.forward.containsKey(key);
+        }
+
+        @Override
+        public ByteBufferBuilder get(Object key) {
+            return this.forward.get(key);
+        }
+
+        @Override
+        public ByteBufferBuilder put(RenderType key, ByteBufferBuilder value) {
+            return this.forward.put(key, value);
+        }
+
+        @Override
+        public ByteBufferBuilder remove(Object key) {
+            return this.forward.remove(key);
+        }
+
+        @Override
+        public java.util.Set<Map.Entry<RenderType, ByteBufferBuilder>> entrySet() {
+            return new java.util.AbstractSet<>() {
+                @Override
+                public int size() {
+                    return Reversed.this.forward.size();
+                }
+
+                @Override
+                public java.util.Iterator<Map.Entry<RenderType, ByteBufferBuilder>> iterator() {
+                    java.util.List<RenderType> keys = new java.util.ArrayList<>(Reversed.this.forward.keySet());
+                    java.util.Collections.reverse(keys);
+                    java.util.Iterator<RenderType> it = keys.iterator();
+                    return new java.util.Iterator<>() {
+                        private RenderType last;
+
+                        @Override
+                        public boolean hasNext() {
+                            return it.hasNext();
+                        }
+
+                        @Override
+                        public Map.Entry<RenderType, ByteBufferBuilder> next() {
+                            this.last = it.next();
+                            return new java.util.AbstractMap.SimpleImmutableEntry<>(this.last, Reversed.this.forward.get(this.last));
+                        }
+
+                        @Override
+                        public void remove() {
+                            if (this.last == null) {
+                                throw new IllegalStateException();
+                            }
+                            Reversed.this.forward.remove(this.last);
+                            this.last = null;
+                        }
+                    };
+                }
+            };
+        }
+
+        @Override
+        public java.util.SequencedMap<RenderType, ByteBufferBuilder> reversed() {
+            return this.forward;
         }
     }
 
