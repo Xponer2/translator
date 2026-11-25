@@ -73,4 +73,79 @@ public final class VertexFormats {
     public static VertexFormatBuilder builder() {
         return new VertexFormatBuilder();
     }
+
+    // ---------------------------------------------------------------- 1.21's element ids (a record with an id there)
+
+    /** 1.21's registered elements by id (vanilla's six first, as 1.21 registers them; a mod's by register) */
+    private static final VertexFormatElement[] BY_ID = new VertexFormatElement[32];
+    private static final java.util.Map<VertexFormatElement, Integer> IDS = new java.util.IdentityHashMap<>();
+    /** 1.20.6's padding element (1.21 has none): an id of its own that byId never gives (so no mod registers it) */
+    private static final int PADDING_ID = 31;
+
+    static {
+        VertexFormatElement[] vanilla = {DefaultVertexFormat.ELEMENT_POSITION, DefaultVertexFormat.ELEMENT_COLOR, DefaultVertexFormat.ELEMENT_UV0,
+                DefaultVertexFormat.ELEMENT_UV1, DefaultVertexFormat.ELEMENT_UV2, DefaultVertexFormat.ELEMENT_NORMAL};
+        for (int id = 0; id < vanilla.length; id++) {
+            BY_ID[id] = vanilla[id];
+            IDS.put(vanilla[id], id);
+        }
+        IDS.put(DefaultVertexFormat.ELEMENT_PADDING, PADDING_ID);
+    }
+
+    /** 1.21's {@code VertexFormatElement.register(id, index, type, usage, count)} */
+    public static synchronized VertexFormatElement register(int id, int index, VertexFormatElement.Type type, VertexFormatElement.Usage usage, int count) {
+        VertexFormatElement element = create(id, index, type, usage, count);
+        if (BY_ID[id] != null) {
+            throw new IllegalArgumentException("Duplicate element registration for: " + id);
+        }
+        BY_ID[id] = element;
+        return element;
+    }
+
+    /** 1.21's {@code new VertexFormatElement(id, index, type, usage, count)} */
+    public static synchronized VertexFormatElement create(int id, int index, VertexFormatElement.Type type, VertexFormatElement.Usage usage, int count) {
+        if (id < 0 || id >= BY_ID.length) {
+            throw new IllegalArgumentException("Element ID must be in range [0; " + BY_ID.length + ")");
+        }
+        VertexFormatElement element = new VertexFormatElement(index, type, usage, count);
+        IDS.put(element, id);
+        return element;
+    }
+
+    /** 1.21's {@code VertexFormatElement.byId(id)} (null: none registered) */
+    @javax.annotation.Nullable
+    public static synchronized VertexFormatElement byId(int id) {
+        return BY_ID[id];
+    }
+
+    /** 1.21's {@code element.id()}: its registered id; an element 1.20.6's code made gets a free one from the top */
+    public static synchronized int id(VertexFormatElement element) {
+        Integer id = IDS.get(element);
+        if (id != null) {
+            return id;
+        }
+        for (int free = PADDING_ID - 1; free >= 0; free--) {
+            if (BY_ID[free] == null && !IDS.containsValue(free)) {
+                IDS.put(element, free);
+                return free;
+            }
+        }
+        throw new IllegalStateException("no free vertex format element id for " + element);
+    }
+
+    /** 1.21's {@code element.mask()} */
+    public static int mask(VertexFormatElement element) {
+        return 1 << id(element);
+    }
+
+    /** 1.21's {@code VertexFormatElement.elementsFromMask(mask)}: the registered elements of the mask */
+    public static synchronized java.util.stream.Stream<VertexFormatElement> elementsFromMask(int mask) {
+        java.util.List<VertexFormatElement> found = new java.util.ArrayList<>();
+        for (int id = 0; id < BY_ID.length; id++) {
+            if (BY_ID[id] != null && (mask & 1 << id) != 0) {
+                found.add(BY_ID[id]);
+            }
+        }
+        return found.stream();
+    }
 }

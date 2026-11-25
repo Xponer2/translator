@@ -37,6 +37,9 @@
     "EntityPortalMixin"
   ],
   "client": [
+    "RenderTypeDrawMixin",
+    "ShaderUniformsMixin",
+    "VertexBufferUniformsMixin",
     "BufferBuilderMixin",
     "ClientExtensionsMixin",
     "UseDurationClientSites$HandRenderer",

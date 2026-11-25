@@ -358,7 +358,7 @@ K	net/minecraft/client/gui/screens/options/VideoSettingsScreen	(Lnet/minecraft/c
 # 1.21's render type: sortOnUpload public (1.20.6: private), a finished mesh drawn with the type's state
 X	net/minecraft/client/renderer/RenderType	sortOnUpload	()Z	ladder/rung1206/render/RenderTypes	sortOnUpload
 F	net/minecraft/client/renderer/RenderType	sortOnUpload	Z	ladder/rung1206/render/RenderTypes	sortOnUpload
-X	net/minecraft/client/renderer/RenderType	draw	(Lcom/mojang/blaze3d/vertex/MeshData;)V	ladder/rung1206/render/RenderTypes	draw
+# (RenderType.draw(MeshData) is added to the class: RenderTypeDrawMixin)
 # 1.21's jukebox songs (a data pack registry and an item component of the adapters'; the jukebox plays them: mixin.Jukebox*Mixin)
 P	net/minecraft/world/item/JukeboxSong	ladder/rung1206/provided/JukeboxSong
 P	net/minecraft/world/item/JukeboxPlayable	ladder/rung1206/provided/JukeboxPlayable
@@ -782,3 +782,10 @@ K	net/minecraft/world/entity/projectile/AbstractHurtingProjectile	(Lnet/minecraf
 K	net/minecraft/world/entity/projectile/AbstractHurtingProjectile	(Lnet/minecraft/world/entity/EntityType;DDDLnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/level/Level;)V	(Lnet/minecraft/world/entity/EntityType;DDDDDDLnet/minecraft/world/level/Level;)V	ladder/rung1206/entity/ProjectileAdapters	$0,$1,$2,$3,atPowerX,atPowerY,atPowerZ,$5
 U	net/minecraft/world/entity/projectile/AbstractArrow	doKnockback	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;)V
 X	net/minecraft/world/entity/projectile/AbstractArrow	doKnockback	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;)V	ladder/rung1206/entity/ProjectileAdapters	doKnockback
+# 1.21's vertex format element ids (a record there; 1.20.6's elements get them: VertexFormats)
+X	com/mojang/blaze3d/vertex/VertexFormatElement	register	(IILcom/mojang/blaze3d/vertex/VertexFormatElement$Type;Lcom/mojang/blaze3d/vertex/VertexFormatElement$Usage;I)Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	register
+X	com/mojang/blaze3d/vertex/VertexFormatElement	<init>	(IILcom/mojang/blaze3d/vertex/VertexFormatElement$Type;Lcom/mojang/blaze3d/vertex/VertexFormatElement$Usage;I)V	ladder/rung1206/render/VertexFormats	create
+X	com/mojang/blaze3d/vertex/VertexFormatElement	byId	(I)Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	byId
+X	com/mojang/blaze3d/vertex/VertexFormatElement	id	()I	ladder/rung1206/render/VertexFormats	id
+X	com/mojang/blaze3d/vertex/VertexFormatElement	mask	()I	ladder/rung1206/render/VertexFormats	mask
+X	com/mojang/blaze3d/vertex/VertexFormatElement	elementsFromMask	(I)Ljava/util/stream/Stream;	ladder/rung1206/render/VertexFormats	elementsFromMask
