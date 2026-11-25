@@ -760,3 +760,11 @@ M	net/minecraft/world/level/levelgen/structure/templatesystem/StructurePlaceSett
 X	net/minecraft/world/entity/TamableAnimal	tryToTeleportToOwner	()V	ladder/rung1206/misc/TailAdapters	tryToTeleportToOwner
 X	net/minecraft/world/level/Explosion	canTriggerBlocks	()Z	ladder/rung1206/misc/TailAdapters	canTriggerBlocks
 X	net/minecraft/core/Holder$Reference	getKey	()Lnet/minecraft/resources/ResourceKey;	ladder/rung1206/misc/TailAdapters	getKey
+# 1.21's projectile API: a deflection's answer, a fireball's acceleration power (1.20.6's power vector) and direction
+# constructors, an arrow's knockback hook (1.20.6 knocks back in onHitEntity: a mod's override is its own) (ProjectileAdapters)
+X	net/minecraft/world/entity/projectile/Projectile	deflect	(Lnet/minecraft/world/entity/projectile/ProjectileDeflection;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/Entity;Z)Z	ladder/rung1206/entity/ProjectileAdapters	deflect
+F	net/minecraft/world/entity/projectile/AbstractHurtingProjectile	accelerationPower	D	ladder/rung1206/entity/ProjectileAdapters	accelerationPower
+K	net/minecraft/world/entity/projectile/AbstractHurtingProjectile	(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/level/Level;)V	(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/LivingEntity;DDDLnet/minecraft/world/level/Level;)V	ladder/rung1206/entity/ProjectileAdapters	$0,$1,powerX,powerY,powerZ,$3
+K	net/minecraft/world/entity/projectile/AbstractHurtingProjectile	(Lnet/minecraft/world/entity/EntityType;DDDLnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/level/Level;)V	(Lnet/minecraft/world/entity/EntityType;DDDDDDLnet/minecraft/world/level/Level;)V	ladder/rung1206/entity/ProjectileAdapters	$0,$1,$2,$3,atPowerX,atPowerY,atPowerZ,$5
+U	net/minecraft/world/entity/projectile/AbstractArrow	doKnockback	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;)V
+X	net/minecraft/world/entity/projectile/AbstractArrow	doKnockback	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;)V	ladder/rung1206/entity/ProjectileAdapters	doKnockback

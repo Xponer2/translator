@@ -1976,7 +1976,16 @@ public class Convert {
                         m.instructions.set(field, new MethodInsnNode(Opcodes.INVOKESTATIC, f[0], f[1], desc, false));
                         continue;
                     }
-                    if (field.getOpcode() != Opcodes.GETSTATIC) {
+                    if (field.getOpcode() == Opcodes.PUTFIELD || field.getOpcode() == Opcodes.PUTSTATIC) {
+                        // a write: to the adapter's setter beside the getter (set<Getter>, the object first), when it has one
+                        // (1.21's AbstractHurtingProjectile.accelerationPower over 1.20.6's power vector)
+                        String setter = "set" + Character.toUpperCase(f[1].charAt(0)) + f[1].substring(1);
+                        String desc = field.getOpcode() == Opcodes.PUTFIELD ? "(L" + declaring + ";" + field.desc + ")V" : "(" + field.desc + ")V";
+                        Set<String> methods = adapterMethods.get(f[0]);
+                        if (methods != null && methods.contains(setter + " " + remapper.mapMethodDesc(desc))) {
+                            m.instructions.set(field, new MethodInsnNode(Opcodes.INVOKESTATIC, f[0], setter, desc, false));
+                            continue;
+                        }
                         problem("a write to " + field.owner + "." + field.name + ", which the adapters give: not possible");
                         continue;
                     }
