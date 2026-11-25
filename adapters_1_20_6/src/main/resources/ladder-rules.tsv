@@ -448,7 +448,7 @@ X	net/minecraft/world/level/Level	getDayTimeFraction	()F	ladder/rung1206/misc/Da
 X	net/minecraft/world/level/Level	setDayTimeFraction	(F)V	ladder/rung1206/misc/DayTime	setDayTimeFraction
 # 1.21's dispenser helper and an arrow's weapon
 X	net/minecraft/core/dispenser/DefaultDispenseItemBehavior	consumeWithRemainder	(Lnet/minecraft/core/dispenser/BlockSource;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/ItemStack;	ladder/rung1206/misc/MoreAdapters	consumeWithRemainder
-X	net/minecraft/world/entity/projectile/AbstractArrow	getWeaponItem	()Lnet/minecraft/world/item/ItemStack;	ladder/rung1206/misc/MoreAdapters	getWeaponItem
+# (an arrow's getWeaponItem is added to the class: ArrowKnockbackMixin)
 # the registries of 1.21's enchantment effects (made by the adapters with their 1.21 ids)
 F	net/minecraft/core/registries/Registries	ENCHANTMENT_EFFECT_COMPONENT_TYPE	Lnet/minecraft/resources/ResourceKey;	ladder/rung1206/enchantment/EnchantRegistries	enchantmentEffectComponentTypeKey
 F	net/minecraft/core/registries/BuiltInRegistries	ENCHANTMENT_EFFECT_COMPONENT_TYPE	Lnet/minecraft/core/Registry;	ladder/rung1206/enchantment/EnchantRegistries	enchantmentEffectComponentType
@@ -798,3 +798,4 @@ X	com/mojang/blaze3d/vertex/VertexFormatElement	byId	(I)Lcom/mojang/blaze3d/vert
 X	com/mojang/blaze3d/vertex/VertexFormatElement	id	()I	ladder/rung1206/render/VertexFormats	id
 X	com/mojang/blaze3d/vertex/VertexFormatElement	mask	()I	ladder/rung1206/render/VertexFormats	mask
 X	com/mojang/blaze3d/vertex/VertexFormatElement	elementsFromMask	(I)Ljava/util/stream/Stream;	ladder/rung1206/render/VertexFormats	elementsFromMask
+X	net/minecraft/server/level/GenerationChunkHolder	getChunkIfPresentUnchecked	(Lnet/minecraft/world/level/chunk/status/ChunkStatus;)Lnet/minecraft/world/level/chunk/ChunkAccess;	ladder/rung1206/misc/TailAdapters	getChunkIfPresentUnchecked

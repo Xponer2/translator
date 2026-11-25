@@ -36,7 +36,8 @@
     "InvulnerabilityMixin",
     "EntityPortalMixin",
     "ArrowKnockbackMixin",
-    "HurtingProjectilePowerMixin"
+    "HurtingProjectilePowerMixin",
+    "MobAttackMixin"
   ],
   "client": [
     "RenderTypeDrawMixin",

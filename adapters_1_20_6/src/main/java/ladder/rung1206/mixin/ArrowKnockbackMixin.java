@@ -65,6 +65,11 @@ abstract class ArrowKnockbackMixin extends Projectile implements ArrowWeapon {
         return this.ladder$weapon;
     }
 
+    /** 1.21's {@code getWeaponItem()} (added to the class: a mod arrow overrides it, or calls super): the kept weapon */
+    public ItemStack getWeaponItem() {
+        return this.ladder$weapon == null ? ItemStack.EMPTY : this.ladder$weapon;
+    }
+
     protected void doKnockback(LivingEntity target, DamageSource source) {
         if (this.knockback > 0) {
             double resistance = Math.max(0.0, 1.0 - target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE));

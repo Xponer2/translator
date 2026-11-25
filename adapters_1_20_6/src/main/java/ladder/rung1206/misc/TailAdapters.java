@@ -80,4 +80,13 @@ public final class TailAdapters {
     public static <T> ResourceKey<T> getKey(Holder.Reference<T> holder) {
         return holder.unwrapKey().orElse(null);
     }
+
+    /** 1.21's {@code GenerationChunkHolder.getChunkIfPresentUnchecked(status)}: 1.20.6's holder's done chunk of that status, else null */
+    @Nullable
+    public static net.minecraft.world.level.chunk.ChunkAccess getChunkIfPresentUnchecked(net.minecraft.server.level.ChunkHolder holder,
+            net.minecraft.world.level.chunk.status.ChunkStatus status) {
+        java.util.concurrent.CompletableFuture<net.minecraft.server.level.ChunkResult<net.minecraft.world.level.chunk.ChunkAccess>> future =
+                holder.getFutureIfPresentUnchecked(status);
+        return future == null ? null : future.getNow(net.minecraft.server.level.ChunkHolder.UNLOADED_CHUNK).orElse(null);
+    }
 }
