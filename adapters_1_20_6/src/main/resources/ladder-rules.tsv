@@ -37,6 +37,7 @@
 # T <owner> <method> <upper target> <lower target>
 #                                             a mixin's injection point in that method of the game: 1.20.6's code
 #                                             makes the lower call there for the same value (the handler fits both)
+#                                             ("<lower target> after": the point just after that call)
 # W <class> <lower class>                     a class whose code is another class's below: a mixin into it lands on
 #                                             the lower class (its injectors' methods by M rows, their handlers'
 #                                             values by A rows); the mods' other uses of the class aren't moved
@@ -736,8 +737,8 @@ M	net/neoforged/neoforge/common/extensions/IItemExtension	isPrimaryItemFor	(Lnet
 T	net/minecraft/world/level/storage/loot/functions/EnchantedCountIncreaseFunction	run	Lnet/minecraft/world/item/enchantment/EnchantmentHelper;getEnchantmentLevel(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/LivingEntity;)I	Lnet/minecraft/world/level/storage/loot/LootContext;getLootingModifier()I
 T	net/minecraft/world/level/storage/loot/predicates/LootItemRandomChanceWithEnchantedBonusCondition	test	Lnet/minecraft/world/item/enchantment/EnchantmentHelper;getEnchantmentLevel(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/LivingEntity;)I	Lnet/minecraft/world/level/storage/loot/LootContext;getLootingModifier()I
 # a falling block's tick: 1.21 handles portals right after the move, 1.20.6 has no portal call there (a mixin at
-# 1.21's portal call goes in just before the move: the tick's same place, one call earlier)
-T	net/minecraft/world/entity/item/FallingBlockEntity	tick	Lnet/minecraft/world/entity/item/FallingBlockEntity;handlePortal()V	Lnet/minecraft/world/entity/item/FallingBlockEntity;move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V
+# 1.21's portal call goes in just after the move: the same place of the tick)
+T	net/minecraft/world/entity/item/FallingBlockEntity	tick	Lnet/minecraft/world/entity/item/FallingBlockEntity;handlePortal()V	Lnet/minecraft/world/entity/item/FallingBlockEntity;move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V after
 # 1.21's supported item check of an enchantment (a mod's mixin): 1.20.6's canEnchant (calls take the X row)
 M	net/minecraft/world/item/enchantment/Enchantment	isSupportedItem	(Lnet/minecraft/world/item/ItemStack;)Z	canEnchant	(Lnet/minecraft/world/item/ItemStack;)Z
 # NeoForge 21's tool tags, fake player check, the vertex texture element, the frame time of overlay and highlight events
@@ -784,13 +785,12 @@ X	net/minecraft/world/entity/TamableAnimal	tryToTeleportToOwner	()V	ladder/rung1
 X	net/minecraft/world/level/Explosion	canTriggerBlocks	()Z	ladder/rung1206/misc/TailAdapters	canTriggerBlocks
 X	net/minecraft/core/Holder$Reference	getKey	()Lnet/minecraft/resources/ResourceKey;	ladder/rung1206/misc/TailAdapters	getKey
 # 1.21's projectile API: a deflection's answer, a fireball's acceleration power (1.20.6's power vector) and direction
-# constructors, an arrow's knockback hook (1.20.6 knocks back in onHitEntity: a mod's override is its own) (ProjectileAdapters)
+# constructors (ProjectileAdapters)
 X	net/minecraft/world/entity/projectile/Projectile	deflect	(Lnet/minecraft/world/entity/projectile/ProjectileDeflection;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/Entity;Z)Z	ladder/rung1206/entity/ProjectileAdapters	deflect
 F	net/minecraft/world/entity/projectile/AbstractHurtingProjectile	accelerationPower	D	ladder/rung1206/entity/ProjectileAdapters	accelerationPower
 K	net/minecraft/world/entity/projectile/AbstractHurtingProjectile	(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/level/Level;)V	(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/LivingEntity;DDDLnet/minecraft/world/level/Level;)V	ladder/rung1206/entity/ProjectileAdapters	$0,$1,powerX,powerY,powerZ,$3
 K	net/minecraft/world/entity/projectile/AbstractHurtingProjectile	(Lnet/minecraft/world/entity/EntityType;DDDLnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/level/Level;)V	(Lnet/minecraft/world/entity/EntityType;DDDDDDLnet/minecraft/world/level/Level;)V	ladder/rung1206/entity/ProjectileAdapters	$0,$1,$2,$3,atPowerX,atPowerY,atPowerZ,$5
-U	net/minecraft/world/entity/projectile/AbstractArrow	doKnockback	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;)V
-X	net/minecraft/world/entity/projectile/AbstractArrow	doKnockback	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;)V	ladder/rung1206/entity/ProjectileAdapters	doKnockback
+# (an arrow's doKnockback is added to the class, 1.20.6's hit knocks back through it: ArrowKnockbackMixin)
 # 1.21's vertex format element ids (a record there; 1.20.6's elements get them: VertexFormats)
 X	com/mojang/blaze3d/vertex/VertexFormatElement	register	(IILcom/mojang/blaze3d/vertex/VertexFormatElement$Type;Lcom/mojang/blaze3d/vertex/VertexFormatElement$Usage;I)Lcom/mojang/blaze3d/vertex/VertexFormatElement;	ladder/rung1206/render/VertexFormats	register
 X	com/mojang/blaze3d/vertex/VertexFormatElement	<init>	(IILcom/mojang/blaze3d/vertex/VertexFormatElement$Type;Lcom/mojang/blaze3d/vertex/VertexFormatElement$Usage;I)V	ladder/rung1206/render/VertexFormats	create

@@ -34,7 +34,9 @@
     "LootEnchantmentFields$CountIncrease",
     "LootEnchantmentFields$RandomChance",
     "InvulnerabilityMixin",
-    "EntityPortalMixin"
+    "EntityPortalMixin",
+    "ArrowKnockbackMixin",
+    "HurtingProjectilePowerMixin"
   ],
   "client": [
     "RenderTypeDrawMixin",

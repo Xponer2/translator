@@ -6160,7 +6160,15 @@ public class Convert {
                     }
                 }
                 if (retarget != null) {
-                    // a T row: the call 1.20.6's code makes there for the same value
+                    // a T row: the call 1.20.6's code makes there for the same value; "<target> after": the point just
+                    // after that call (the upper call came right after it: a falling block's portal call after its move)
+                    if (retarget.endsWith(" after")) {
+                        retarget = retarget.substring(0, retarget.length() - " after".length());
+                        if (!a.values.contains("shift")) {
+                            a.values.add("shift");
+                            a.values.add(new String[] {"Lorg/spongepowered/asm/mixin/injection/At$Shift;", "AFTER"});
+                        }
+                    }
                     a.values.set(i + 1, retarget);
                     continue;
                 }

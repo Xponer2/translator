@@ -81,9 +81,18 @@ public final class PortalSupport {
         if (process == null) {
             return;
         }
-        boolean nether = process.isSamePortal(NETHER);
         // 1.21's canUsePortal(false): not a passenger, alive (1.20.6's canChangeDimensions also leaves out vehicles)
-        if (process.processPortalTeleportation(level, entity, !nether && entity.canChangeDimensions() && entity.isAlive())) {
+        boolean canUse = entity.canChangeDimensions() && entity.isAlive();
+        if (process.isSamePortal(NETHER)) {
+            // 1.20.6's nether portal: the processor counts the wait as 1.21's does (mods read it), the teleport and its
+            // cooldown stay 1.20.6's own (handleNetherPortal)
+            process.processPortalTeleportation(level, entity, canUse);
+            if (process.hasExpired() && !process.isInsidePortalThisTick()) {
+                holder.ladder$setPortalProcess(null);
+            }
+            return;
+        }
+        if (process.processPortalTeleportation(level, entity, canUse)) {
             level.getProfiler().push("portal");
             entity.setPortalCooldown();
             PortalInfo transition = process.getPortalDestination(level, entity);
