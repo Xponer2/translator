@@ -1958,9 +1958,11 @@ public class Convert {
                 if (insn instanceof FieldInsnNode field) {
                     String[] f = fieldRedirects.get(field.owner + "." + field.name + " " + field.desc);
                     String declaring = field.owner;
-                    if (f == null && (Stage0.platform(field.owner) || field.getOpcode() == Opcodes.GETFIELD)) {
+                    if (f == null && (Stage0.platform(field.owner) || field.getOpcode() == Opcodes.GETFIELD
+                            || field.getOpcode() == Opcodes.PUTFIELD && mixinTargets.containsKey(node.name))) {
                         // an inherited field read through a subclass (SwordItem.BASE_ATTACK_DAMAGE_UUID, Item's; a mod's
-                        // armour item reading ArmorItem.material)
+                        // armour item reading ArmorItem.material); a mixin's write of its target's field (a @Shadow:
+                        // sodium's vertexPointer after it pushed vertices)
                         Stage0.Ref declared = resolve(field.owner, field.name, field.desc, false);
                         f = declared == null ? null : fieldRedirects.get(declared.cls() + "." + field.name + " " + field.desc);
                         declaring = declared == null ? declaring : declared.cls();
@@ -4731,6 +4733,11 @@ public class Convert {
                 continue;
             }
             Stage0.Ref end = bridgeEnds.get(bridge[0] + "." + bridge[1]);
+            if (end == null && level + 2 == versions.size()) {
+                // (calls of it take an X row's adapter, and an M row names the hook below: 1.21's setNormal(pose, x, y, z)
+                // is 1.20.6's normal; the override is that hook's, under its lower name)
+                end = movedMember(level, ref);
+            }
             // (a mixin's method: its bridge is added to the targets with it, when none of them declares the lower method)
             MethodNode g = end == null || mixinTargets.containsKey(node.name) && !bridgeableMixin(node, end, itf) ? null : overrideBridge(node, m, end, itf);
             if (g == null) {
@@ -6211,6 +6218,27 @@ public class Convert {
                 String mDesc = m.substring(m.indexOf(' ') + 1);
                 if (!mName.equals(name) || desc != null && !mDesc.equals(desc)) {
                     continue;
+                }
+                if (name.equals("<init>") && currentHandler != null) {
+                    // (an M row of a constructor: 1.21 sets up the object where 1.20.6 does in a method, BufferBuilder's
+                    // (bytes, mode, format) constructor 1.20.6's begin(mode, format): the injector goes there, its
+                    // handler's values by the A row's plan)
+                    Stage0.Ref moved = null;
+                    for (String[] row : memberMoves) {
+                        if (row[0].equals(o) && row[1].equals("<init>") && row[2].equals(mDesc)) {
+                            Stage0.Version bottom = versions.get(versions.size() - 1);
+                            String lowerOwner = Stage0.mapClass(top, bottom, o);
+                            String decl = lowerOwner == null ? null : bottom.declaring(lowerOwner, row[3], row[4], true);
+                            moved = decl == null ? null : new Stage0.Ref('M', decl, row[3], row[4]);
+                        }
+                    }
+                    if (moved != null) {
+                        handlerFixes.add(new HandlerFix(currentHandler[0], currentHandler[1], currentHandler[2], currentHandler[3],
+                                remapper.mapMethodDesc(mDesc), moved, false));
+                        results.add(moved.name() + (desc != null ? moved.desc() : ""));
+                        qualified.add(moved.name() + moved.desc());
+                        continue;
+                    }
                 }
                 if (name.equals("<init>")) {
                     String lowerInit = currentHandler == null ? null : lowerConstructor(o, mDesc);
