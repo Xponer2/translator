@@ -89,4 +89,9 @@ public final class TailAdapters {
                 holder.getFutureIfPresentUnchecked(status);
         return future == null ? null : future.getNow(net.minecraft.server.level.ChunkHolder.UNLOADED_CHUNK).orElse(null);
     }
+
+    /** 1.21's {@code RegistryData.requiredNonEmpty()}: 1.20.6's registry data has no such check (none required) */
+    public static boolean requiredNonEmpty(net.minecraft.resources.RegistryDataLoader.RegistryData<?> data) {
+        return false;
+    }
 }

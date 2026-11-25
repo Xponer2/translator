@@ -803,3 +803,6 @@ X	com/mojang/blaze3d/vertex/VertexFormatElement	id	()I	ladder/rung1206/render/Ve
 X	com/mojang/blaze3d/vertex/VertexFormatElement	mask	()I	ladder/rung1206/render/VertexFormats	mask
 X	com/mojang/blaze3d/vertex/VertexFormatElement	elementsFromMask	(I)Ljava/util/stream/Stream;	ladder/rung1206/render/VertexFormats	elementsFromMask
 X	net/minecraft/server/level/GenerationChunkHolder	getChunkIfPresentUnchecked	(Lnet/minecraft/world/level/chunk/status/ChunkStatus;)Lnet/minecraft/world/level/chunk/ChunkAccess;	ladder/rung1206/misc/TailAdapters	getChunkIfPresentUnchecked
+# 1.21's registry data may require a non-empty registry (1.20.6 checks nothing: the flag is dropped)
+D	net/minecraft/resources/RegistryDataLoader$RegistryData	<init>	(Lnet/minecraft/resources/ResourceKey;Lcom/mojang/serialization/Codec;Z)V	(Lnet/minecraft/resources/ResourceKey;Lcom/mojang/serialization/Codec;)V	$0,$1
+X	net/minecraft/resources/RegistryDataLoader$RegistryData	requiredNonEmpty	()Z	ladder/rung1206/misc/TailAdapters	requiredNonEmpty
