@@ -1079,6 +1079,15 @@ public class Convert {
                     fixInterfaceCalls(remapped);
                     applyLambdaFixes(remapped, lambdaFixes);
                     applyHandlerFixes(node.name, remapped);
+                    for (String[] rename : renameAfterRemap.getOrDefault(node.name, List.of())) {
+                        // (a mixin's @Overwrite of a hook an M row renames below: the lower method's own name)
+                        for (MethodNode rm : remapped.methods) {
+                            if (rm.name.equals(rename[0]) && rm.desc.equals(rename[1])) {
+                                rm.name = rename[2];
+                            }
+                        }
+                    }
+                    renameAfterRemap.remove(node.name);
                     lowerOverrides.addAll(addAfterRemap.getOrDefault(node.name, List.of()));
                     addAfterRemap.remove(node.name);
                     for (MethodNode g : lowerOverrides) {
@@ -4572,6 +4581,9 @@ public class Convert {
     /** class -> methods to add once it is remapped (written in the bottom version's names) */
     static final Map<String, List<MethodNode>> addAfterRemap = new HashMap<>();
 
+    /** a class's methods to rename once it is remapped: (name, desc) in the lower names, the new name */
+    static final Map<String, List<String[]>> renameAfterRemap = new HashMap<>();
+
     /**
      * A super call of a bridged method: a private helper of the class (added after remapping, in the bottom version's
      * names) converts the values down, calls the superclass's lower method with invokespecial, converts the result up.
@@ -4738,6 +4750,14 @@ public class Convert {
                 // (calls of it take an X row's adapter, and an M row names the hook below: 1.21's setNormal(pose, x, y, z)
                 // is 1.20.6's normal; the override is that hook's, under its lower name)
                 end = movedMember(level, ref);
+            }
+            if (end != null && mixinTargets.containsKey(node.name) && remapper.mapMethodDesc(m.desc).equals(end.desc())
+                    && MixinPoints.annotations(m).stream().anyMatch(a -> a.desc.equals("Lorg/spongepowered/asm/mixin/Overwrite;"))) {
+                // a mixin's @Overwrite of a hook the lower game names otherwise with the same values (embeddium's and
+                // sodium's of VertexConsumer.setNormal(pose, x, y, z), 1.20.6's normal): it overwrites the lower method
+                renameAfterRemap.computeIfAbsent(node.name, k -> new ArrayList<>())
+                        .add(new String[] {remapper.mapMethodName(node.name, m.name, m.desc), end.desc(), end.name()});
+                continue;
             }
             // (a mixin's method: its bridge is added to the targets with it, when none of them declares the lower method)
             MethodNode g = end == null || mixinTargets.containsKey(node.name) && !bridgeableMixin(node, end, itf) ? null : overrideBridge(node, m, end, itf);
