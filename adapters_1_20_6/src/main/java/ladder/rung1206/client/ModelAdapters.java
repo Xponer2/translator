@@ -47,7 +47,7 @@ public final class ModelAdapters {
     }
 
     /** 1.21's sprite getter of ModelBakery.bakeModels (an A row's plan), over 1.20.6's function of a location and a material */
-    public static ladder.carried_1_20_6.net.minecraft.client.resources.model.ModelBakery$TextureGetter textureGetter(
+    public static ladder.rung1206.provided.TextureGetter textureGetter(
             BiFunction<ResourceLocation, Material, TextureAtlasSprite> sprites) {
         return sprites::apply;
     }
@@ -102,7 +102,7 @@ public final class ModelAdapters {
 
     /** 1.21's {@code bakery.new ModelBakerImpl(sprites, location)}: 1.20.6's takes the sprites by model id */
     public static net.minecraft.client.resources.model.ModelBakery.ModelBakerImpl modelBaker(net.minecraft.client.resources.model.ModelBakery bakery,
-            ladder.carried_1_20_6.net.minecraft.client.resources.model.ModelBakery$TextureGetter sprites, ModelResourceLocation location) {
+            ladder.rung1206.provided.TextureGetter sprites, ModelResourceLocation location) {
         return bakery.new ModelBakerImpl((id, material) -> sprites.get(new ModelResourceLocation(id, location.getVariant()), material), location);
     }
 

@@ -79,15 +79,31 @@ abstract class ModelBakerImplMixin {
         return this.bakeUncached(model, state, this.modelTextureGetter);
     }
 
+    /** a top-level location whose model the next bakeUncached bakes (1.21's bakeModels): cached as bake caches it */
+    @Unique
+    private ResourceLocation ladder$cacheAs;
+
+    /** the next bakeUncached bakes this top-level location's model: 1.20.6's baking takes it, and caches as bake does */
+    public void ladder$topLevel(ResourceLocation location) {
+        this.ladder$location = location;
+        this.ladder$cacheAs = location;
+    }
+
     /** 1.21's bakeUncached(model, state, sprites): 1.20.6's baking of a model (a generated item model, or the model's own) */
     public BakedModel bakeUncached(UnbakedModel model, ModelState state, Function<Material, TextureAtlasSprite> sprites) {
         // (taken once: a model's own direct call of bakeUncached while it bakes has no location of its own)
         ResourceLocation location = this.ladder$location != null ? this.ladder$location : ModelAdapters.unknownModel();
+        ResourceLocation cacheAs = this.ladder$cacheAs;
         this.ladder$location = null;
+        this.ladder$cacheAs = null;
         ModelBaker baker = (ModelBaker) (Object) this;
         if (model instanceof BlockModel block && block.getRootModel() == ModelBakery.GENERATION_MARKER) {
             return ModelBakery.ITEM_MODEL_GENERATOR.generateBlockModel(sprites, block).bake(baker, block, sprites, state, location, false);
         }
-        return model.bake(baker, sprites, state, location);
+        BakedModel baked = model.bake(baker, sprites, state, location);
+        if (cacheAs != null) {
+            this.this$0.bakedCache.put(new ModelBakery.BakedCacheKey(cacheAs, state.getRotation(), state.isUvLocked()), baked);
+        }
+        return baked;
     }
 }

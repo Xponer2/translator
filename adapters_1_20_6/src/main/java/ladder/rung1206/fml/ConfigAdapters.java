@@ -26,16 +26,63 @@ public final class ConfigAdapters {
 
     /** ConfigTracker.registerConfig(type, spec, container, fileName) */
     public static ModConfig registerConfig(ConfigTracker tracker, ModConfig.Type type, IConfigSpec<?> spec, ModContainer container, String fileName) {
-        ModConfig config = new ModConfig(type, spec, container, fileName);
+        IConfigSpec<?> lower = lower(spec);
+        ModConfig config = new ModConfig(type, lower, container, fileName);
+        registered(lower, config);
         container.addConfig(config);
         return config;
     }
 
     /** ConfigTracker.registerConfig(type, spec, container): the file named by the mod and the type, as both versions name it */
     public static ModConfig registerConfig(ConfigTracker tracker, ModConfig.Type type, IConfigSpec<?> spec, ModContainer container) {
-        ModConfig config = new ModConfig(type, spec, container);
+        IConfigSpec<?> lower = lower(spec);
+        ModConfig config = new ModConfig(type, lower, container);
+        registered(lower, config);
         container.addConfig(config);
         return config;
+    }
+
+    /** {@code container.registerConfig(type, spec)}: a mod's FML 4 spec in FML 3's wrapper */
+    public static void registerConfig(ModContainer container, ModConfig.Type type, IConfigSpec<?> spec) {
+        IConfigSpec<?> lower = lower(spec);
+        ModConfig config = new ModConfig(type, lower, container);
+        registered(lower, config);
+        container.addConfig(config);
+    }
+
+    /** {@code container.registerConfig(type, spec, fileName)}: a mod's FML 4 spec in FML 3's wrapper */
+    public static void registerConfig(ModContainer container, ModConfig.Type type, IConfigSpec<?> spec, String fileName) {
+        IConfigSpec<?> lower = lower(spec);
+        ModConfig config = new ModConfig(type, lower, container, fileName);
+        registered(lower, config);
+        container.addConfig(config);
+    }
+
+    /**
+     * a spec as FML 3 takes it: a mod's own FML 4 spec (ConfigSpec4, by the O rows) in FML 3's wrapper, any other (FML 3's
+     * own, NeoForge 20.6's ModConfigSpec) as it is. (The wrapper class is touched only for such a spec: its mod names FML
+     * 4's loaded config, so the pack carries it.)
+     */
+    static IConfigSpec<?> lower(IConfigSpec<?> spec) {
+        return spec instanceof ConfigSpec4 four ? new Spec4Wrapper(four) : spec;
+    }
+
+    /**
+     * FML 4's {@code spec.isCorrect(config)} of an unmodifiable view: a mod's FML 4 spec answers it as it is; FML 3's spec
+     * (20.6's ModConfigSpec) takes a commented config (the config itself, or a copy of it)
+     */
+    public static boolean isCorrect(IConfigSpec<?> spec, com.electronwill.nightconfig.core.UnmodifiableCommentedConfig config) {
+        if (spec instanceof ConfigSpec4 four) {
+            return four.isCorrect(config);
+        }
+        return spec.isCorrect(config instanceof com.electronwill.nightconfig.core.CommentedConfig commented ? commented
+                : com.electronwill.nightconfig.core.CommentedConfig.copy(config));
+    }
+
+    private static void registered(IConfigSpec<?> lower, ModConfig config) {
+        if (lower instanceof Spec4Wrapper wrapper) {
+            wrapper.registered(config);
+        }
     }
 
     /** ConfigTracker.acceptSyncedConfig(config, bytes): the server's values of a synced config */

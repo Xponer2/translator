@@ -1780,7 +1780,8 @@ public class Convert {
     static final Map<String, List<MethodNode>> adapterAdded = new HashMap<>();
 
     static boolean added(MethodNode m) {
-        if (m.name.startsWith("<") || m.name.startsWith("ladder$") || m.name.startsWith("lambda$") || (m.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_SYNTHETIC)) != 0) {
+        // (javac's own lambdas are synthetic; a method the adapters name as a game's lambda, 1.21's lambda$bakeModels$6, isn't)
+        if (m.name.startsWith("<") || m.name.startsWith("ladder$") || (m.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_SYNTHETIC)) != 0) {
             return false;
         }
         // annotated: an injector, a shadow, an accessor... (a plain method is merged as it is)
@@ -6263,8 +6264,13 @@ public class Convert {
                     continue;
                 }
                 String below = Stage0.mapClass(top, versions.get(versions.size() - 1), o);
-                if (below != null && shapeAdded(below, mName, remapper.mapMethodDesc(mDesc))) {
-                    // a method the adapters' shape patch gives the bottom class in the upper shape: the injector's target
+                if (below != null && (shapeAdded(below, mName, remapper.mapMethodDesc(mDesc)) || currentHandler != null
+                        && currentHandler[3].equals("Lcom/llamalad7/mixinextras/injector/wrapmethod/WrapMethod;")
+                        && adapterAddsMethod(below, mName, remapper.mapMethodDesc(mDesc)))) {
+                    // a method the adapters' shape patch gives the bottom class in the upper shape: the injector's target;
+                    // so is the method an adapters' mixin gives it for a wrap of the whole method (1.21's
+                    // GameRenderer.renderLevel(DeltaTracker), which the frame calls: sodium-extra's wrap), whose points
+                    // inside stay the lower method's
                     results.add(mName + (desc != null ? remapper.mapMethodDesc(mDesc) : ""));
                     qualified.add(mName + remapper.mapMethodDesc(mDesc));
                     continue;
@@ -6435,6 +6441,64 @@ public class Convert {
         String owner = call.substring(0, call.lastIndexOf('.')), name = call.substring(call.lastIndexOf('.') + 1);
         checkAdapter(owner, name, desc.toString(), "A plan " + token);
         code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, name, desc.toString(), false));
+    }
+
+    /**
+     * A call injector (@Redirect, @WrapOperation) whose handler ends with its method's arguments (the optional capture of
+     * the target method's arguments) where the method changed below by an A row's plan: a wrapper takes the handler's own
+     * parameters, then the lower method's, and calls the handler with the plan's upper arguments. False otherwise.
+     */
+    static boolean capturedArguments(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan, String planOwner) {
+        if (plan == null || up.length == 0 || hp.length < up.length
+                || !Arrays.equals(Arrays.copyOfRange(hp, hp.length - up.length, hp.length), up) || Arrays.equals(up, low)) {
+            return false;
+        }
+        boolean isStatic = (h.access & Opcodes.ACC_STATIC) != 0;
+        int head = hp.length - up.length;
+        Type[] wrapped = new Type[head + low.length];
+        System.arraycopy(hp, 0, wrapped, 0, head);
+        System.arraycopy(low, 0, wrapped, head, low.length);
+        MethodNode g = new MethodNode(h.access, "ladder$wrap$" + h.name, Type.getMethodDescriptor(Type.getReturnType(h.desc), wrapped), null,
+                h.exceptions.toArray(new String[0]));
+        g.visibleAnnotations = h.visibleAnnotations;
+        g.invisibleAnnotations = h.invisibleAnnotations;
+        int[] placeOf = new int[hp.length];
+        for (int i = 0; i < hp.length; i++) {
+            placeOf[i] = i < head ? i : -1;
+        }
+        g.visibleParameterAnnotations = moveParameterAnnotations(h.visibleParameterAnnotations, placeOf, wrapped.length);
+        g.invisibleParameterAnnotations = moveParameterAnnotations(h.invisibleParameterAnnotations, placeOf, wrapped.length);
+        h.visibleAnnotations = null;
+        h.invisibleAnnotations = null;
+        h.visibleParameterAnnotations = null;
+        h.invisibleParameterAnnotations = null;
+        InsnList code = g.instructions;
+        int slot = 0;
+        if (!isStatic) {
+            code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            slot = 1;
+        }
+        int[] slots = new int[wrapped.length];
+        for (int i = 0; i < wrapped.length; i++) {
+            slots[i] = slot;
+            slot += wrapped[i].getSize();
+        }
+        for (int i = 0; i < head; i++) {
+            code.add(new VarInsnNode(wrapped[i].getOpcode(Opcodes.ILOAD), slots[i]));
+        }
+        int[] lowSlots = Arrays.copyOfRange(slots, head, wrapped.length);
+        for (int i = 0; i < up.length; i++) {
+            // (an upper argument by the plan: "this" is the object of the injector's method, never the redirected call's)
+            planArgument(code, plan[i], low, lowSlots, up[i], isStatic ? -1 : 0, planOwner);
+        }
+        boolean privateHandler = (h.access & Opcodes.ACC_PRIVATE) != 0;
+        code.add(new MethodInsnNode(isStatic ? Opcodes.INVOKESTATIC : privateHandler ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, out.name,
+                h.name, h.desc, false));
+        code.add(new InsnNode(Type.getReturnType(h.desc).getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 2 + 2 * up.length;
+        out.methods.add(g);
+        return true;
     }
 
     /**
@@ -6783,6 +6847,11 @@ public class Convert {
                     || conversion(upRet, lowRet) == 16);
             if (!inject && distinct && valueBridge(out, h, hp, f, up, low, upRet, lowRet)) {
                 // an injector of another kind whose values convert both ways (a float of 1.21 a double of 1.20.6)
+                continue;
+            }
+            if (!inject && !f.call() && distinct && capturedArguments(out, h, hp, up, low, plan, planOwner)) {
+                // a call injector that captures its method's arguments after its own (a @Redirect's optional capture:
+                // Iceberg's of 21's gatherTooltipComponentsFromElements, an M row's lower method below): the A row's values
                 continue;
             }
             if (!inject && !f.call() && distinct && argsOnlyLocals(out, h, hp, up, low, plan, planOwner)) {
