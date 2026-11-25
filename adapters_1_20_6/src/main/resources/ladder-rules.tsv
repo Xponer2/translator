@@ -62,7 +62,7 @@ X	com/mojang/blaze3d/vertex/VertexBuffer	upload	(Lcom/mojang/blaze3d/vertex/Mesh
 X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
 X	com/mojang/blaze3d/vertex/BufferBuilder	addVertex	(FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
 X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(FFFIFFIIFFF)V	ladder/rung1206/render/VertexAdapters	addVertex
-X	com/mojang/blaze3d/vertex/BufferBuilder	addVertex	(FFFIFFIIFFF)V	ladder/rung1206/render/VertexAdapters	addVertex
+# (a builder's whole vertex: the adapters' mixin gives the builder 1.21's addVertex, BufferBuilderAddVertexMixin)
 X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(Lorg/joml/Vector3f;)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
 X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(Lcom/mojang/blaze3d/vertex/PoseStack$Pose;Lorg/joml/Vector3f;)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
 X	com/mojang/blaze3d/vertex/VertexConsumer	addVertex	(Lcom/mojang/blaze3d/vertex/PoseStack$Pose;FFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;	ladder/rung1206/render/VertexAdapters	addVertex
@@ -233,6 +233,10 @@ F	com/mojang/blaze3d/vertex/BufferBuilder	buffer	Lcom/mojang/blaze3d/vertex/Byte
 F	com/mojang/blaze3d/vertex/BufferBuilder	vertexPointer	J	ladder/rung1206/render/BuilderViews	vertexPointer
 F	com/mojang/blaze3d/vertex/BufferBuilder	elementsToFill	I	ladder/rung1206/render/BuilderViews	elementsToFill
 F	com/mojang/blaze3d/vertex/BufferBuilder	vertexSize	I	ladder/rung1206/render/BuilderViews	vertexSize
+F	com/mojang/blaze3d/vertex/BufferBuilder	offsetsByElement	[I	ladder/rung1206/render/BuilderViews	offsetsByElement
+# 1.21's render types of a dying dragon's rays (1.20.6 draws them as lightning), made as 1.21 makes them
+X	net/minecraft/client/renderer/RenderType	dragonRays	()Lnet/minecraft/client/renderer/RenderType;	ladder/rung1206/render/DragonRayTypes	dragonRays
+X	net/minecraft/client/renderer/RenderType	dragonRaysDepth	()Lnet/minecraft/client/renderer/RenderType;	ladder/rung1206/render/DragonRayTypes	dragonRaysDepth
 M	com/mojang/blaze3d/vertex/BufferBuilder	<init>	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V	begin	(Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V
 A	com/mojang/blaze3d/vertex/BufferBuilder	begin	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V	(Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V	ladder/rung1206/render/BuilderBuffers.buffer(this) $0 $1
 X	net/minecraft/client/renderer/MultiBufferSource	immediate	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;)Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;	ladder/rung1206/render/ByteBuffers	immediate

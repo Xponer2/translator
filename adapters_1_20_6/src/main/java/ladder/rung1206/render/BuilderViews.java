@@ -61,6 +61,32 @@ public final class BuilderViews {
         return w;
     }
 
+    private static final Map<com.mojang.blaze3d.vertex.VertexFormat, int[]> OFFSETS = new WeakHashMap<>();
+
+    /** 1.21's {@code offsetsByElement}: the format's offset of each element by its 1.21 id (-1: not in the format) */
+    public static int[] offsetsByElement(BufferBuilder builder) {
+        com.mojang.blaze3d.vertex.VertexFormat format = builder.format;
+        if (format == null) {
+            int[] none = new int[32];
+            java.util.Arrays.fill(none, -1);
+            return none;
+        }
+        synchronized (OFFSETS) {
+            return OFFSETS.computeIfAbsent(format, f -> {
+                int[] offsets = new int[32];
+                java.util.Arrays.fill(offsets, -1);
+                List<VertexFormatElement> elements = f.getElements();
+                for (int i = 0; i < elements.size(); i++) {
+                    int id = VertexFormats.id(elements.get(i));
+                    if (id >= 0 && id < offsets.length) {
+                        offsets[id] = f.getOffset(i);
+                    }
+                }
+                return offsets;
+            });
+        }
+    }
+
     /** 1.21's {@code vertexSize}: the format's vertex size */
     public static int vertexSize(BufferBuilder builder) {
         return builder.format == null ? 0 : builder.format.getVertexSize();

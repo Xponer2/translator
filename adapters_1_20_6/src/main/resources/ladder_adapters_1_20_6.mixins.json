@@ -47,6 +47,7 @@
     "TesselatorBeginMixin",
     "EnderDragonRaysMixin",
     "BufferSourceEndBatchMixin",
+    "BufferBuilderAddVertexMixin",
     "ClientExtensionsMixin",
     "UseDurationClientSites$HandRenderer",
     "UseDurationClientSites$Properties",

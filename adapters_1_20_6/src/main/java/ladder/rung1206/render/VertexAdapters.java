@@ -324,17 +324,25 @@ public final class VertexAdapters {
         return addVertex(consumer, pose.pose(), position.x(), position.y(), position.z());
     }
 
-    /** 1.21's whole vertex: 1.20.6's with the colour as four floats (it ends itself) */
+    /**
+     * 1.21's whole vertex of a consumer: a builder's own addVertex (the adapters' mixin gives the builder 1.21's, which
+     * mods' mixins aim at), another consumer's 1.20.6 whole vertex
+     */
     public static void addVertex(VertexConsumer consumer, float x, float y, float z, int color, float u, float v, int overlay, int light,
+            float nx, float ny, float nz) {
+        if (consumer instanceof BufferBuilder) {
+            ((BufferBuilderAdded) (Object) consumer).addVertex(x, y, z, color, u, v, overlay, light, nx, ny, nz);
+            return;
+        }
+        addWholeVertex(consumer, x, y, z, color, u, v, overlay, light, nx, ny, nz);
+    }
+
+    /** 1.21's whole vertex as 1.20.6 writes one: its whole-vertex call, the colour as four floats (it ends itself) */
+    public static void addWholeVertex(VertexConsumer consumer, float x, float y, float z, int color, float u, float v, int overlay, int light,
             float nx, float ny, float nz) {
         endVertex(consumer);
         consumer.vertex(x, y, z, FastColor.ARGB32.red(color) / 255.0F, FastColor.ARGB32.green(color) / 255.0F,
                 FastColor.ARGB32.blue(color) / 255.0F, FastColor.ARGB32.alpha(color) / 255.0F, u, v, overlay, light, nx, ny, nz);
-    }
-
-    public static void addVertex(BufferBuilder builder, float x, float y, float z, int color, float u, float v, int overlay, int light,
-            float nx, float ny, float nz) {
-        addVertex((VertexConsumer) builder, x, y, z, color, u, v, overlay, light, nx, ny, nz);
     }
 
     /** 1.21's {@code setColor(r, g, b, a)} */
