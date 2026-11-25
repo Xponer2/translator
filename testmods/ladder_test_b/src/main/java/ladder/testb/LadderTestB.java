@@ -1047,6 +1047,28 @@ public final class LadderTestB {
                 results.put("supports.anvil", "error " + e);
             }
             try {
+                // vanilla mending: an experience orb a player touches repairs a damaged mending item in the hand, the
+                // rest of its experience going to the player (the first orb all into the pickaxe, the second partly)
+                Holder<Enchantment> mending = level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.MENDING);
+                net.minecraft.server.level.ServerPlayer mender = net.neoforged.neoforge.common.util.FakePlayerFactory.get(level,
+                        new com.mojang.authlib.GameProfile(java.util.UUID.fromString("6c2a4f5e-6b1d-4e2a-9f0c-1d2e3f4a5b6c"), "ladder_mender"));
+                ItemStack pick = new ItemStack(Items.DIAMOND_PICKAXE);
+                pick.enchant(mending, 1);
+                pick.setDamageValue(100);
+                mender.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, pick);
+                StringBuilder mended = new StringBuilder();
+                for (int value : new int[] {30, 30, 7}) {
+                    net.minecraft.world.entity.ExperienceOrb orb = new net.minecraft.world.entity.ExperienceOrb(level, 8.5, 141.0, 8.5, value);
+                    mender.takeXpDelay = 0;
+                    orb.playerTouch(mender);
+                    ItemStack held = mender.getMainHandItem();
+                    mended.append(held.getDamageValue()).append('/').append(mender.totalExperience).append('/').append(orb.isRemoved()).append(';');
+                }
+                results.put("mending", mended.toString());
+            } catch (RuntimeException | LinkageError e) {
+                results.put("mending", "error " + e);
+            }
+            try {
                 // the containers ask the stack (21.1): a named pouch fits neither a shulker box nor a bundle
                 ItemStack pouch = new ItemStack(POUCH.get());
                 ItemStack namedPouch = new ItemStack(POUCH.get());
