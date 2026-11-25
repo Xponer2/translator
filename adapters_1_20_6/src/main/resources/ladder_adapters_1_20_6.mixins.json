@@ -38,7 +38,8 @@
     "ArrowKnockbackMixin",
     "HurtingProjectilePowerMixin",
     "MobAttackMixin",
-    "EnchantmentTableMixin"
+    "EnchantmentTableMixin",
+    "XpOrbTargetingMixin"
   ],
   "client": [
     "RenderTypeDrawMixin",

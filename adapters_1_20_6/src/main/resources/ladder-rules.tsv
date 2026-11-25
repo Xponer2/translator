@@ -659,6 +659,11 @@ M	net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl	onDisconnect	(
 A	net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	(Lnet/minecraft/network/chat/Component;)V	ladder/rung1206/misc/SmallAdapters.disconnection(0)
 M	net/minecraft/client/multiplayer/ClientHandshakePacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	onDisconnect	(Lnet/minecraft/network/chat/Component;)V
 A	net/minecraft/client/multiplayer/ClientHandshakePacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	(Lnet/minecraft/network/chat/Component;)V	ladder/rung1206/misc/SmallAdapters.disconnection(0)
+# (the same of a server connection)
+M	net/minecraft/server/network/ServerCommonPacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	onDisconnect	(Lnet/minecraft/network/chat/Component;)V
+A	net/minecraft/server/network/ServerCommonPacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	(Lnet/minecraft/network/chat/Component;)V	ladder/rung1206/misc/SmallAdapters.disconnection(0)
+M	net/minecraft/server/network/ServerGamePacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	onDisconnect	(Lnet/minecraft/network/chat/Component;)V
+A	net/minecraft/server/network/ServerGamePacketListenerImpl	onDisconnect	(Lnet/minecraft/network/DisconnectionDetails;)V	(Lnet/minecraft/network/chat/Component;)V	ladder/rung1206/misc/SmallAdapters.disconnection(0)
 # 1.21's camera directions (fresh vectors: a reader may change its copy)
 F	net/minecraft/client/Camera	FORWARDS	Lorg/joml/Vector3f;	ladder/rung1206/misc/SmallAdapters	cameraForwards
 F	net/minecraft/client/Camera	UP	Lorg/joml/Vector3f;	ladder/rung1206/misc/SmallAdapters	cameraUp
@@ -825,3 +830,5 @@ K	net/minecraft/resources/RegistryDataLoader$RegistryData	(Lnet/minecraft/resour
 X	net/minecraft/resources/RegistryDataLoader$RegistryData	requiredNonEmpty	()Z	ladder/rung1206/misc/TailAdapters	requiredNonEmpty
 # 1.21's game test grid that may keep the last batch (1.20.6 has no such choice: the flag is dropped)
 K	net/minecraft/gametest/framework/StructureGridSpawner	(Lnet/minecraft/core/BlockPos;IZ)V	(Lnet/minecraft/core/BlockPos;I)V	ladder/rung1206/misc/TailAdapters	$0,$1
+# NeoForge 21's choice of the player an experience orb follows (posted where 1.20.6 takes the nearest: XpOrbTargetingMixin)
+P	net/neoforged/neoforge/entity/XpOrbTargetingEvent	ladder/rung1206/provided/event/XpOrbTargetingEvent
