@@ -47,6 +47,7 @@
     "SingleQuadParticleMixin",
     "OptionsSubScreenMixin",
     "ModelBakeryMixin",
+    "ModelBakerImplMixin",
     "OptionsScreenSites$Video",
     "OptionsScreenSites$Sound",
     "OptionsScreenSites$Controls",
