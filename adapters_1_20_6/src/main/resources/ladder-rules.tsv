@@ -225,6 +225,15 @@ F	net/minecraft/tags/EnchantmentTags	CURSE	Lnet/minecraft/tags/TagKey;	ladder/ru
 F	net/minecraft/tags/EnchantmentTags	TREASURE	Lnet/minecraft/tags/TagKey;	ladder/rung1206/misc/EnchantmentEffects	treasure
 # 1.21's byte buffers under the builders and buffer sources (1.20.6's builders keep their own memory)
 X	com/mojang/blaze3d/vertex/BufferBuilder	<init>	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V	ladder/rung1206/render/ByteBuffers	create
+# 1.21's BufferBuilder internals the renderer mods use, as views of 1.20.6's builder (its ByteBuffer, write position,
+# format): the byte buffer (reserve makes room at the write position), the vertex's address, the elements left, the size;
+# a mixin into the (bytes, mode, format) constructor goes into begin(mode, format), where 1.20.6 takes the format
+F	com/mojang/blaze3d/vertex/BufferBuilder	buffer	Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;	ladder/rung1206/render/BuilderBuffers	buffer
+F	com/mojang/blaze3d/vertex/BufferBuilder	vertexPointer	J	ladder/rung1206/render/BuilderViews	vertexPointer
+F	com/mojang/blaze3d/vertex/BufferBuilder	elementsToFill	I	ladder/rung1206/render/BuilderViews	elementsToFill
+F	com/mojang/blaze3d/vertex/BufferBuilder	vertexSize	I	ladder/rung1206/render/BuilderViews	vertexSize
+M	com/mojang/blaze3d/vertex/BufferBuilder	<init>	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V	begin	(Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V
+A	com/mojang/blaze3d/vertex/BufferBuilder	begin	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V	(Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)V	ladder/rung1206/render/BuilderBuffers.buffer(this) $0 $1
 X	net/minecraft/client/renderer/MultiBufferSource	immediate	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;)Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;	ladder/rung1206/render/ByteBuffers	immediate
 X	net/minecraft/client/renderer/MultiBufferSource	immediateWithBuffers	(Ljava/util/SequencedMap;Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;)Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;	ladder/rung1206/render/ByteBuffers	immediateWithBuffers
 X	net/minecraft/client/renderer/MultiBufferSource$BufferSource	<init>	(Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;Ljava/util/SequencedMap;)V	ladder/rung1206/render/ByteBuffers	bufferSource
