@@ -51,6 +51,7 @@
     "BufferSourceEndBatchMixin",
     "BufferBuilderAddVertexMixin",
     "GameRendererLevelMixin",
+    "BufferBuilderRawVertexMixin",
     "MinecraftSearchTreesMixin",
     "ClientPacketListenerRecipesMixin",
     "ClientExtensionsMixin",
