@@ -6075,6 +6075,33 @@ public class Convert {
     static final Set<String> VALUE_INJECTORS = Set.of("Lorg/spongepowered/asm/mixin/injection/ModifyVariable;",
             "Lcom/llamalad7/mixinextras/injector/ModifyReturnValue;");
 
+    /** whether a plain method selector names a method of the targets in the top version (patterns count as naming one) */
+    static boolean matchesAbove(String selector, List<String> targets) {
+        if (selector.contains("*") || selector.startsWith("^") || selector.startsWith("/")) {
+            return true;
+        }
+        String owner = null, rest = selector;
+        if (rest.startsWith("L") && rest.contains(";")) {
+            owner = rest.substring(1, rest.indexOf(';'));
+            rest = rest.substring(rest.indexOf(';') + 1);
+        }
+        String name = rest.contains("(") ? rest.substring(0, rest.indexOf('(')) : rest;
+        String desc = rest.contains("(") ? rest.substring(rest.indexOf('(')) : null;
+        for (String o : owner != null ? List.of(owner) : targets) {
+            Stage0.Cls info = versions.get(0).classes.get(o);
+            if (info == null) {
+                // (a mod's own class, or one the top version hasn't: not judged here)
+                return true;
+            }
+            for (String m : info.methods) {
+                if (m.substring(0, m.indexOf(' ')).equals(name) && (desc == null || m.substring(m.indexOf(' ') + 1).equals(desc))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     static void remapAnnotation(AnnotationNode a, List<String> targets, Remapper remapper, String where) {
         if (a.values == null || !(a.desc.startsWith("Lorg/spongepowered/asm/mixin/") || a.desc.startsWith("Lcom/llamalad7/mixinextras/"))) {
             return;
@@ -6105,8 +6132,16 @@ public class Convert {
                 }
                 a.values.set(i + 1, mapped);
             } else if (key.equals("method") && value instanceof List<?> selectors) {
+                // (an injector of several selectors, some for another version (1.21.2's submitRays beside 1.21's
+                // renderRays): one that names nothing above stays as it is while another names a method; Mixin needs one)
+                boolean someAbove = selectors.size() > 1 && selectors.stream().anyMatch(s -> s instanceof String sel && matchesAbove(sel, targets));
                 List<Object> mapped = new ArrayList<>();
                 for (Object s : selectors) {
+                    if (someAbove && s instanceof String sel && !matchesAbove(sel, targets)) {
+                        unverified.add("mixin selector " + sel + " for another version, beside one of " + versions.get(0).id + " (" + where + ")");
+                        mapped.add(s);
+                        continue;
+                    }
                     mapped.add(s instanceof String sel ? methodSelector(sel, targets, remapper, where) : s);
                 }
                 a.values.set(i + 1, mapped);
