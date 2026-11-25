@@ -69,6 +69,11 @@ public final class ByteBuffers {
         return source.lastState.orElse(null);
     }
 
+    /** a write of 1.21's {@code BufferSource.lastSharedType} (a buffer source of a mod's own): 1.20.6's last state */
+    public static void setLastSharedType(MultiBufferSource.BufferSource source, RenderType type) {
+        source.lastState = java.util.Optional.ofNullable(type);
+    }
+
     /** a map of render types to byte buffers over 1.20.6's map of render types to builders (its order, its changes) */
     static final class FixedBuffers extends java.util.AbstractMap<RenderType, ByteBufferBuilder>
             implements java.util.SequencedMap<RenderType, ByteBufferBuilder> {
