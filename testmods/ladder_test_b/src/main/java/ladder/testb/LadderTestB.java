@@ -288,6 +288,17 @@ public final class LadderTestB {
     static final DeferredHolder<net.minecraft.world.entity.EntityType<?>, net.minecraft.world.entity.EntityType<SubMarker>> SUB_MARKER = ENTITIES.register("sub_marker",
             () -> net.minecraft.world.entity.EntityType.Builder.<SubMarker>of(SubMarker::new, net.minecraft.world.entity.MobCategory.MISC).sized(0.5F, 0.5F).build("sub_marker"));
 
+    /** an arrow whose hit the test makes itself (1.21's onHitEntity, protected) */
+    static final class HitArrow extends net.minecraft.world.entity.projectile.Arrow {
+        HitArrow(net.minecraft.world.level.Level level, net.minecraft.world.entity.LivingEntity shooter, ItemStack pickup, ItemStack weapon) {
+            super(level, shooter, pickup, weapon);
+        }
+
+        void hit(net.minecraft.world.entity.Entity target) {
+            this.onHitEntity(new net.minecraft.world.phys.EntityHitResult(target));
+        }
+    }
+
     static final class BigZombie extends net.minecraft.world.entity.monster.Zombie {
         static final net.minecraft.network.syncher.EntityDataAccessor<String> TITLE = net.minecraft.network.syncher.SynchedEntityData.defineId(BigZombie.class,
                 net.minecraft.network.syncher.EntityDataSerializers.STRING);
@@ -1067,6 +1078,60 @@ public final class LadderTestB {
                 results.put("mending", mended.toString());
             } catch (RuntimeException | LinkageError e) {
                 results.put("mending", "error " + e);
+            }
+            try {
+                // a mob's leash: put on, its leash data live (a holder set through it is the mob's), dropped, and saved
+                net.minecraft.server.level.ServerPlayer first = net.neoforged.neoforge.common.util.FakePlayerFactory.get(level,
+                        new com.mojang.authlib.GameProfile(java.util.UUID.fromString("7d3b5a6f-7c2e-4f3b-8a1d-2e3f4a5b6c7d"), "ladder_leash_a"));
+                net.minecraft.server.level.ServerPlayer second = net.neoforged.neoforge.common.util.FakePlayerFactory.get(level,
+                        new com.mojang.authlib.GameProfile(java.util.UUID.fromString("8e4c6b7a-8d3f-4a4c-9b2e-3f4a5b6c7d8e"), "ladder_leash_b"));
+                net.minecraft.world.entity.animal.Cow cow = EntityType.COW.create(level);
+                cow.setPos(8.5, 141.0, 8.5);
+                StringBuilder leash = new StringBuilder();
+                leash.append(cow.isLeashed()).append('/').append(cow.getLeashData() == null).append(';');
+                cow.setLeashedTo(first, false);
+                net.minecraft.world.entity.Leashable.LeashData data = cow.getLeashData();
+                leash.append(cow.isLeashed()).append('/').append(cow.getLeashHolder() == first).append('/').append(data != null && data.leashHolder == first).append(';');
+                data.setLeashHolder(second);
+                leash.append(cow.getLeashHolder() == second).append('/').append(cow.getLeashData() == data).append(';');
+                CompoundTag saved = new CompoundTag();
+                cow.addAdditionalSaveData(saved);
+                leash.append(saved.contains("leash")).append('/').append(saved.contains("leash", 10) && saved.getCompound("leash").hasUUID("UUID")
+                        && saved.getCompound("leash").getUUID("UUID").equals(second.getUUID())).append(';');
+                net.minecraft.world.entity.animal.Cow loaded = EntityType.COW.create(level);
+                loaded.readAdditionalSaveData(saved);
+                net.minecraft.world.entity.Leashable.LeashData loadedData = loaded.getLeashData();
+                leash.append(loadedData != null && loadedData.delayedLeashInfo != null && loadedData.delayedLeashInfo.left().map(second.getUUID()::equals).orElse(false))
+                        .append(';');
+                cow.dropLeash(false, false);
+                leash.append(cow.isLeashed()).append('/').append(cow.getLeashData() == null).append(';');
+                results.put("leash", leash.toString());
+            } catch (RuntimeException | LinkageError e) {
+                results.put("leash", "error " + e);
+            }
+            try {
+                // an arrow from a Punch 2 bow hits a still zombie: the hit's knockback (the shooter behind the arrow, so the
+                // hurt knockback's direction is the arrow's either way) and the punch push, the damage, the arrow gone
+                Holder<Enchantment> punch = level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.PUNCH);
+                net.minecraft.server.level.ServerPlayer archer = net.neoforged.neoforge.common.util.FakePlayerFactory.get(level,
+                        new com.mojang.authlib.GameProfile(java.util.UUID.fromString("9f5d7c8b-9e4a-4b5d-8c3f-4a5b6c7d8e9f"), "ladder_archer"));
+                archer.setPos(8.5, 141.0, 4.5);
+                ItemStack bow = new ItemStack(Items.BOW);
+                bow.enchant(punch, 2);
+                Zombie still = EntityType.ZOMBIE.create(level);
+                still.setPos(8.5, 141.0, 8.5);
+                still.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+                float before = still.getHealth();
+                HitArrow arrow = new HitArrow(level, archer, new ItemStack(Items.ARROW), bow);
+                arrow.setPos(8.5, 141.5, 7.5);
+                arrow.setDeltaMovement(0.0, 0.0, 1.5);
+                arrow.setCritArrow(false);
+                arrow.hit(still);
+                net.minecraft.world.phys.Vec3 moved = still.getDeltaMovement();
+                results.put("arrowKnockback", String.format(java.util.Locale.ROOT, "%.3f/%.3f/%.3f;%s;%s", moved.x, moved.y, moved.z,
+                        before - still.getHealth(), arrow.isRemoved()));
+            } catch (RuntimeException | LinkageError e) {
+                results.put("arrowKnockback", "error " + e);
             }
             try {
                 // the containers ask the stack (21.1): a named pouch fits neither a shulker box nor a bundle
