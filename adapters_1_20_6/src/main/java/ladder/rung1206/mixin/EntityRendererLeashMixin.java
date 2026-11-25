@@ -68,6 +68,36 @@ abstract class EntityRendererLeashMixin<T extends Entity> {
         }
     }
 
+    // an overwrite, not an injector: the mods' points are 1.21's second frustum test, of a leashed entity's holder
+    // (embeddium's culling); 1.20.6's MobRenderer tests a mob's holder again after this, with the same answer
+    /**
+     * @author ladder
+     * @reason 1.21's shouldRender: 1.20.6's test of the entity's box, then a leashed entity's holder's box
+     */
+    @Overwrite
+    public boolean shouldRender(T entity, net.minecraft.client.renderer.culling.Frustum frustum, double camX, double camY, double camZ) {
+        if (!entity.shouldRender(camX, camY, camZ)) {
+            return false;
+        } else if (entity.noCulling) {
+            return true;
+        }
+        net.minecraft.world.phys.AABB box = entity.getBoundingBoxForCulling().inflate(0.5);
+        if (box.hasNaN() || box.getSize() == 0.0) {
+            box = new net.minecraft.world.phys.AABB(entity.getX() - 2.0, entity.getY() - 2.0, entity.getZ() - 2.0, entity.getX() + 2.0,
+                    entity.getY() + 2.0, entity.getZ() + 2.0);
+        }
+        if (frustum.isVisible(box)) {
+            return true;
+        }
+        if (entity instanceof Leashable leashable) {
+            Entity holder = leashable.getLeashHolder();
+            if (holder != null) {
+                return frustum.isVisible(holder.getBoundingBoxForCulling());
+            }
+        }
+        return false;
+    }
+
     /** 1.21's EntityRenderer.renderLeash: 1.20.6's MobRenderer.renderLeash for any entity */
     private <E extends Entity> void renderLeash(T entity, float partialTick, PoseStack pose, MultiBufferSource buffers, E holder) {
         pose.pushPose();
