@@ -43,6 +43,7 @@
     "BufferBuilderMixin",
     "TesselatorBeginMixin",
     "EnderDragonRaysMixin",
+    "BufferSourceEndBatchMixin",
     "ClientExtensionsMixin",
     "UseDurationClientSites$HandRenderer",
     "UseDurationClientSites$Properties",
