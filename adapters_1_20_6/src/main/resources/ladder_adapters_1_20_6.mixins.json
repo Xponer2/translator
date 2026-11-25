@@ -41,6 +41,8 @@
     "ShaderUniformsMixin",
     "VertexBufferUniformsMixin",
     "BufferBuilderMixin",
+    "TesselatorBeginMixin",
+    "EnderDragonRaysMixin",
     "ClientExtensionsMixin",
     "UseDurationClientSites$HandRenderer",
     "UseDurationClientSites$Properties",

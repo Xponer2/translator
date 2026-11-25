@@ -52,7 +52,7 @@ M	net/minecraft/client/gui/LayeredDraw$Layer	render	(Lnet/minecraft/client/gui/G
 # 1.21's vertex API: buffers begun by the tesselator, built into MeshData, vertices ended by the next one
 P	com/mojang/blaze3d/vertex/MeshData	ladder/rung1206/provided/MeshData
 P	com/mojang/blaze3d/vertex/MeshData$DrawState	ladder/rung1206/provided/MeshData$DrawState
-X	com/mojang/blaze3d/vertex/Tesselator	begin	(Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;Lcom/mojang/blaze3d/vertex/VertexFormat;)Lcom/mojang/blaze3d/vertex/BufferBuilder;	ladder/rung1206/render/VertexAdapters	begin
+# (Tesselator.begin: the adapters' mixin gives the tesselator 1.21's own, TesselatorBeginMixin)
 X	com/mojang/blaze3d/vertex/BufferBuilder	buildOrThrow	()Lcom/mojang/blaze3d/vertex/MeshData;	ladder/rung1206/render/VertexAdapters	buildOrThrow
 X	com/mojang/blaze3d/vertex/BufferBuilder	build	()Lcom/mojang/blaze3d/vertex/MeshData;	ladder/rung1206/render/VertexAdapters	build
 X	com/mojang/blaze3d/vertex/BufferUploader	drawWithShader	(Lcom/mojang/blaze3d/vertex/MeshData;)V	ladder/rung1206/render/VertexAdapters	drawWithShader
