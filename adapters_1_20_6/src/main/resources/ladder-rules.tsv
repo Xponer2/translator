@@ -37,6 +37,9 @@
 # T <owner> <method> <upper target> <lower target>
 #                                             a mixin's injection point in that method of the game: 1.20.6's code
 #                                             makes the lower call there for the same value (the handler fits both)
+# W <class> <lower class>                     a class whose code is another class's below: a mixin into it lands on
+#                                             the lower class (its injectors' methods by M rows, their handlers'
+#                                             values by A rows); the mods' other uses of the class aren't moved
 # NeoForge 21.1's supportsEnchantment (1.21 asks Enchantment.canEnchant at the anvil, enchant_randomly and /enchant)
 # 1.21's DeltaTracker (the frame's time): the client's own from 1.20.6's timer; a partial tick where 1.20.6 passes one
 P	net/minecraft/client/DeltaTracker	ladder/rung1206/provided/DeltaTracker
@@ -229,6 +232,18 @@ X	net/minecraft/client/renderer/MultiBufferSource$BufferSource	<init>	(Lcom/moja
 F	net/minecraft/client/renderer/MultiBufferSource$BufferSource	fixedBuffers	Ljava/util/SequencedMap;	ladder/rung1206/render/ByteBuffers	fixedBuffers
 F	net/minecraft/client/renderer/MultiBufferSource$BufferSource	sharedBuffer	Lcom/mojang/blaze3d/vertex/ByteBufferBuilder;	ladder/rung1206/render/ByteBuffers	sharedBuffer
 F	net/minecraft/client/renderer/MultiBufferSource$BufferSource	lastSharedType	Lnet/minecraft/client/renderer/RenderType;	ladder/rung1206/render/ByteBuffers	lastSharedType
+# 1.21's SectionCompiler (a section's meshes) is 1.20.6's RebuildTask.compile: the mods' mixins land there, their handlers'
+# values from the task (its section's origin, region, renderers; the sorting of the camera's position), the compiler's
+# renderers the game's; its results are the task's compile results
+W	net/minecraft/client/renderer/chunk/SectionCompiler	net/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask
+R	net/minecraft/client/renderer/chunk/SectionCompiler$Results	net/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask$CompileResults
+M	net/minecraft/client/renderer/chunk/SectionCompiler	compile	(Lnet/minecraft/core/SectionPos;Lnet/minecraft/client/renderer/chunk/RenderChunkRegion;Lcom/mojang/blaze3d/vertex/VertexSorting;Lnet/minecraft/client/renderer/SectionBufferBuilderPack;)Lnet/minecraft/client/renderer/chunk/SectionCompiler$Results;	compile	(FFFLnet/minecraft/client/renderer/SectionBufferBuilderPack;)Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask$CompileResults;
+M	net/minecraft/client/renderer/chunk/SectionCompiler	compile	(Lnet/minecraft/core/SectionPos;Lnet/minecraft/client/renderer/chunk/RenderChunkRegion;Lcom/mojang/blaze3d/vertex/VertexSorting;Lnet/minecraft/client/renderer/SectionBufferBuilderPack;Ljava/util/List;)Lnet/minecraft/client/renderer/chunk/SectionCompiler$Results;	compile	(FFFLnet/minecraft/client/renderer/SectionBufferBuilderPack;)Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask$CompileResults;
+M	net/minecraft/client/renderer/chunk/SectionCompiler	handleBlockEntity	(Lnet/minecraft/client/renderer/chunk/SectionCompiler$Results;Lnet/minecraft/world/level/block/entity/BlockEntity;)V	handleBlockEntity	(Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask$CompileResults;Lnet/minecraft/world/level/block/entity/BlockEntity;)V
+A	net/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask	compile	(Lnet/minecraft/core/SectionPos;Lnet/minecraft/client/renderer/chunk/RenderChunkRegion;Lcom/mojang/blaze3d/vertex/VertexSorting;Lnet/minecraft/client/renderer/SectionBufferBuilderPack;)Lnet/minecraft/client/renderer/chunk/SectionCompiler$Results;	(FFFLnet/minecraft/client/renderer/SectionBufferBuilderPack;)Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask$CompileResults;	ladder/rung1206/render/SectionAdapters.origin(this) ladder/rung1206/render/SectionAdapters.region(this) ladder/rung1206/render/SectionAdapters.sorting(0,1,2) $3
+A	net/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask	compile	(Lnet/minecraft/core/SectionPos;Lnet/minecraft/client/renderer/chunk/RenderChunkRegion;Lcom/mojang/blaze3d/vertex/VertexSorting;Lnet/minecraft/client/renderer/SectionBufferBuilderPack;Ljava/util/List;)Lnet/minecraft/client/renderer/chunk/SectionCompiler$Results;	(FFFLnet/minecraft/client/renderer/SectionBufferBuilderPack;)Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask$CompileResults;	ladder/rung1206/render/SectionAdapters.origin(this) ladder/rung1206/render/SectionAdapters.region(this) ladder/rung1206/render/SectionAdapters.sorting(0,1,2) $3 ladder/rung1206/render/SectionAdapters.renderers(this)
+F	net/minecraft/client/renderer/chunk/SectionCompiler	blockRenderer	Lnet/minecraft/client/renderer/block/BlockRenderDispatcher;	ladder/rung1206/render/SectionAdapters	blockRenderer
+F	net/minecraft/client/renderer/chunk/SectionCompiler	blockEntityRenderer	Lnet/minecraft/client/renderer/blockentity/BlockEntityRenderDispatcher;	ladder/rung1206/render/SectionAdapters	blockEntityRenderer
 # 1.21's postHurtEnemy (an item's wear after a hit that counted; 1.20.6's items wear in hurtEnemy)
 O	net/minecraft/world/item/Item	postHurtEnemy	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;)V	ladder/rung1206/item/PostHurtApi	ladder/rung1206/item/PostHurtApi	postHurtEnemy
 X	net/minecraft/world/item/Item	postHurtEnemy	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;)V	ladder/rung1206/item/PostHurtApi	call
@@ -657,7 +672,7 @@ M	net/minecraft/world/entity/Entity	onRemovedFromLevel	()V	onRemovedFromWorld	()
 D	net/minecraft/world/entity/LivingEntity	dropExperience	(Lnet/minecraft/world/entity/Entity;)V	()V	-
 A	net/minecraft/world/entity/LivingEntity	dropExperience	(Lnet/minecraft/world/entity/Entity;)V	()V	null
 # 1.21's EnchantmentHelper of effect components: 1.20.6's enchantments for the vanilla effects, the mods' data ones by their files
-X	net/minecraft/world/item/enchantment/EnchantmentHelper	getRandomItemWith	(Lnet/minecraft/core/component/DataComponentType;Lnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Predicate;)Ljava/util/Optional;	ladder/rung1206/enchantment/EnchantHelpers	getRandomItemWith
+# (getRandomItemWith of an effect component: the shape patch gives EnchantmentHelper 1.21's own, shape-patches.tsv)
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	runIterationOnEquipment	(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/enchantment/EnchantmentHelper$EnchantmentInSlotVisitor;)V	ladder/rung1206/enchantment/EnchantHelpers	runIterationOnEquipment
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	runIterationOnItem	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/EquipmentSlot;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/enchantment/EnchantmentHelper$EnchantmentInSlotVisitor;)V	ladder/rung1206/enchantment/EnchantHelpers	runIterationOnItem
 X	net/minecraft/world/item/enchantment/EnchantmentHelper	runIterationOnItem	(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/enchantment/EnchantmentHelper$EnchantmentVisitor;)V	ladder/rung1206/enchantment/EnchantHelpers	runIterationOnItem

@@ -44,8 +44,38 @@ public final class EnchantHelpers {
 
     /** the effect component type's 1.21 id (the adapters' registry of 1.21's types), or null */
     static ResourceLocation effectId(DataComponentType<?> type) {
+        if (type == REPAIR_WITH_XP_STANDIN) {
+            return REPAIR_WITH_XP;
+        }
         var registry = EnchantRegistries.enchantmentEffectComponentType();
         return registry == null || type == null ? null : registry.getKey(type);
+    }
+
+    private static final ResourceLocation REPAIR_WITH_XP = new ResourceLocation("minecraft", "repair_with_xp");
+    /** mending's effect when the pack's carried code registers no effect types (no mod named them) */
+    private static final DataComponentType<?> REPAIR_WITH_XP_STANDIN = DataComponentType.builder().build();
+
+    /** 1.21's {@code EnchantmentEffectComponents.REPAIR_WITH_XP}: the registered type, else a stand-in of the same id */
+    public static DataComponentType<?> repairWithXp() {
+        var registry = EnchantRegistries.enchantmentEffectComponentType();
+        Object type = registry == null ? null : registry.get(REPAIR_WITH_XP);
+        return type instanceof DataComponentType<?> found ? found : REPAIR_WITH_XP_STANDIN;
+    }
+
+    /** 1.21's getRandomItemWith test of one enchantment of a stack in a slot: it has the effect and acts in that slot */
+    public static boolean randomSearchMatches(Holder<Enchantment> holder, DataComponentType<?> type, EquipmentSlot slot, LivingEntity entity) {
+        Enchantment enchantment = holder.value();
+        return hasEffect(enchantment, effectId(type)) && enchantment.getSlotItems(entity).containsKey(slot);
+    }
+
+    /** 1.21's {@code new EnchantedItemInUse(stack, slot, entity)} (an Object: the game's classes name no carried type) */
+    public static Object inUse(ItemStack stack, EquipmentSlot slot, LivingEntity entity) {
+        return new EnchantedItemInUse(stack, slot, entity);
+    }
+
+    /** the stack of a find of getRandomItemWith */
+    public static ItemStack stackOf(Object inUse) {
+        return ((EnchantedItemInUse) inUse).itemStack();
     }
 
     /** the 1.20.6 enchantment that has the vanilla effect of that id (null: none, or several) */

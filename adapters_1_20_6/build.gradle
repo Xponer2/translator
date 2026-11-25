@@ -20,3 +20,66 @@ def carried = rootProject.file(findProperty('ladder.carried1206') ?: 'out/conver
 dependencies {
     compileOnly files(carried)
 }
+
+// The calls of an @AddedTo template's static methods (shape patches copy them into a game class) become calls of the game
+// class's: the adapters' bytecode makes the call 1.21 makes there (a mod's injection point), though javac only knows the
+// template. ASM from Maven Central, loaded for this step alone.
+repositories {
+    mavenCentral()
+}
+configurations {
+    addedToRewrite
+}
+dependencies {
+    addedToRewrite 'org.ow2.asm:asm:9.8'
+    addedToRewrite 'org.ow2.asm:asm-tree:9.8'
+}
+tasks.named('compileJava') {
+    def asm = configurations.addedToRewrite
+    doLast {
+        def loader = new URLClassLoader(asm.files.collect { it.toURI().toURL() } as URL[], getClass().classLoader)
+        def reader = loader.loadClass('org.objectweb.asm.ClassReader')
+        def node = loader.loadClass('org.objectweb.asm.tree.ClassNode')
+        def writer = loader.loadClass('org.objectweb.asm.ClassWriter')
+        def classes = []
+        destinationDirectory.get().asFile.eachFileRecurse(groovy.io.FileType.FILES) { if (it.name.endsWith('.class')) classes << it }
+        def parse = { File f ->
+            def n = node.getConstructor().newInstance()
+            reader.getConstructor(byte[]).newInstance([f.bytes] as Object[]).accept(n, 0)
+            n
+        }
+        def added = [:]
+        classes.each { f ->
+            def n = parse(f)
+            n.invisibleAnnotations?.each { a ->
+                if (a.desc == 'Lladder/rung1206/shape/AddedTo;') {
+                    added[n.name] = a.values[1]
+                }
+            }
+        }
+        if (added.isEmpty()) {
+            return
+        }
+        classes.each { f ->
+            def n = parse(f)
+            if (added.containsKey(n.name)) {
+                return
+            }
+            boolean changed = false
+            n.methods.each { m ->
+                m.instructions.each { insn ->
+                    if (insn.getClass().simpleName == 'MethodInsnNode' && added.containsKey(insn.owner)) {
+                        insn.owner = added[insn.owner]
+                        insn.itf = false
+                        changed = true
+                    }
+                }
+            }
+            if (changed) {
+                def w = writer.getConstructor(int).newInstance(0)
+                n.accept(w)
+                f.bytes = w.toByteArray()
+            }
+        }
+    }
+}

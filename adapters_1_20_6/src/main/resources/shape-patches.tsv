@@ -1,0 +1,6 @@
+# Shape patches (ladder.rung1206.shape.ShapePatches): edits of 1.20.6 classes that give a 1.21 mod mixin its point and keep
+# 1.20.6 behaviour. Each class must be a target of ShapeTargetsMixin.
+# kind	owner	name	desc	template
+# 1.21's EnchantmentHelper.getRandomItemWith of an effect component (Quark, accessories inject into it; ExperienceOrb's
+# repair calls it: ExperienceOrbRepairMixin)
+add-static	net/minecraft/world/item/enchantment/EnchantmentHelper	getRandomItemWith	(Lnet/minecraft/core/component/DataComponentType;Lnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Predicate;)Ljava/util/Optional;	ladder/rung1206/enchantment/AddedEnchantmentHelper

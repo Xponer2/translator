@@ -2,8 +2,11 @@
   "required": true,
   "minVersion": "0.8",
   "package": "ladder.rung1206.mixin",
+  "plugin": "ladder.rung1206.shape.ShapePlugin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ShapeTargetsMixin",
+    "ExperienceOrbRepairMixin",
     "EntityAccess",
     "UseDurationMixin",
     "StackUseDurationMixin",

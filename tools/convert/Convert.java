@@ -94,6 +94,13 @@ public class Convert {
     /** NeoForge classes renamed below (no intermediary for NeoForge): the rungs' R rows. */
     static final Map<String, String> NEOFORGE_MOVES = new HashMap<>();
 
+    /**
+     * W rows: an upper class whose code is another class's below (1.21's SectionCompiler is 1.20.6's RebuildTask): a mixin
+     * into it lands on the lower class, its injectors' methods by M rows (their handlers' values by A rows). The mods'
+     * other uses of the class aren't moved.
+     */
+    static final Map<String, String> mixinMoves = new HashMap<>();
+
     /** The problems a cached class or member walk found: added again for every mod that meets it. */
     static final Map<String, List<String>> cachedProblems = new HashMap<>();
     static List<String> collecting;
@@ -1065,6 +1072,7 @@ public class Convert {
                     redirectCarried(node);
                     if (landsAbove != null) {
                         shadowsAbove = shadowsAbove(node, mixinTargets.get(node.name));
+                        moveMixinTargets(node);
                     }
                     ClassNode remapped = new ClassNode();
                     node.accept(new ClassRemapper(remapped, remapper));
@@ -1629,6 +1637,8 @@ public class Convert {
                     case "D" -> lowerDefaults.put(c[1] + "." + c[2] + " " + c[3], new String[] {c[4], c[5], c[1]});
                     // a class renamed below with the same members: its uses get the lower name
                     case "R" -> NEOFORGE_MOVES.put(c[1], c[2]);
+                    // a class whose code is another class's below: a mixin into it lands there (its methods by M rows)
+                    case "W" -> mixinMoves.put(c[1], c[2]);
                     // a member (of the owner and its subclasses) that is another one below: bridged to it
                     case "M" -> memberMoves.add(new String[] {c[1], c[2], c[3], c[4], c[5]});
                     // a static field below that the adapters give: its reads go to their getter
@@ -1971,7 +1981,9 @@ public class Convert {
                     }
                     if (field.getOpcode() == Opcodes.GETFIELD) {
                         // an instance field: the getter takes the object (1.20.5's ArmorItem.material holder of 1.20.4's material)
-                        String desc = "(L" + declaring + ";)" + field.desc;
+                        // (a mixin's own field of a class a W row moves: the object is the lower class's)
+                        String object = mixinTargets.containsKey(node.name) ? mixinMoves.getOrDefault(declaring, declaring) : declaring;
+                        String desc = "(L" + object + ";)" + field.desc;
                         checkAdapter(f[0], f[1], desc, "F " + declaring + "." + field.name);
                         m.instructions.set(field, new MethodInsnNode(Opcodes.INVOKESTATIC, f[0], f[1], desc, false));
                         continue;
@@ -2468,6 +2480,12 @@ public class Convert {
             switch (s.outcome()) {
                 case SAME, RENAMED -> cur = s.to();
                 case CHANGED -> {
+                    if (i + 2 == versions.size() && cur.kind() == 'M' && Stage0.mapClass(from, to, cur.cls()) != null
+                            && shapeAdded(Stage0.mapClass(from, to, cur.cls()), cur.name(), remapper.mapMethodDesc(cur.desc()))) {
+                        // the adapters' shape patch gives the bottom class this method in the upper shape beside the
+                        // lower one of the same name (1.21's EnchantmentHelper.getRandomItemWith of an effect component)
+                        return new Stage0.Ref(cur.kind(), Stage0.mapClass(from, to, cur.cls()), cur.name(), cur.desc());
+                    }
                     // (an M row names the lower hook itself: it wins over the one found by the name, 1.21's
                     // getRecipeFor(type, input, level, last) whose game call sites below are getRecipeFor(type, container, level))
                     Stage0.Ref named = cur.name().equals("<init>") ? null : movedMember(i, cur);
@@ -2603,6 +2621,10 @@ public class Convert {
                     // a class an R row renames below: the member is the renamed class's
                     lowerOwner = NEOFORGE_MOVES.get(cur.cls());
                 }
+                if (lowerOwner == null && currentHandler != null && mixinMoves.containsKey(cur.cls())) {
+                    // (a mixin's injector into a class a W row moves: the method is the lower class's)
+                    lowerOwner = mixinMoves.get(cur.cls());
+                }
                 String decl = lowerOwner == null ? null : to.declaring(lowerOwner, row[3], row[4], true);
                 if (decl == null) {
                     // the hook is missing on the way down but there at the bottom (NeoForge 21.0 has no writeClientSideData,
@@ -2611,6 +2633,9 @@ public class Convert {
                     String bottomOwner = Stage0.mapClass(from, bottom, cur.cls());
                     if (bottomOwner == null && NEOFORGE_MOVES.containsKey(cur.cls())) {
                         bottomOwner = NEOFORGE_MOVES.get(cur.cls());
+                    }
+                    if (bottomOwner == null && currentHandler != null && mixinMoves.containsKey(cur.cls())) {
+                        bottomOwner = mixinMoves.get(cur.cls());
                     }
                     decl = bottomOwner == null ? null : bottom.declaring(bottomOwner, row[3], row[4], true);
                 }
@@ -5436,6 +5461,44 @@ public class Convert {
 
     // ---------------------------------------------------------------- mixins
 
+    /** A mixin's targets a W row moves: the lower class (its injectors' selectors already name the lower methods) */
+    static void moveMixinTargets(ClassNode node) {
+        if (mixinMoves.isEmpty()) {
+            return;
+        }
+        // (an inner class entry naming the moved class as an outer one, SectionCompiler$Results: the inner class is
+        // another class's below, an R row's, and the moved class isn't there)
+        node.innerClasses.removeIf(c -> c.outerName != null && mixinMoves.containsKey(c.outerName));
+        for (List<AnnotationNode> list : Arrays.asList(node.visibleAnnotations, node.invisibleAnnotations)) {
+            if (list == null) {
+                continue;
+            }
+            for (AnnotationNode a : list) {
+                if (!"Lorg/spongepowered/asm/mixin/Mixin;".equals(a.desc) || a.values == null) {
+                    continue;
+                }
+                for (int i = 0; i + 1 < a.values.size(); i += 2) {
+                    Object v = a.values.get(i + 1);
+                    if ("value".equals(a.values.get(i)) && v instanceof List<?> types) {
+                        List<Object> moved = new ArrayList<>();
+                        for (Object t : types) {
+                            String lower = t instanceof Type type ? mixinMoves.get(type.getInternalName()) : null;
+                            moved.add(lower != null ? Type.getObjectType(lower) : t);
+                        }
+                        a.values.set(i + 1, moved);
+                    } else if ("targets".equals(a.values.get(i)) && v instanceof List<?> names) {
+                        List<Object> moved = new ArrayList<>();
+                        for (Object n : names) {
+                            String lower = mixinMoves.get(String.valueOf(n).replace('.', '/'));
+                            moved.add(lower != null ? lower.replace('/', '.') : n);
+                        }
+                        a.values.set(i + 1, moved);
+                    }
+                }
+            }
+        }
+    }
+
     static List<String> mixinTargetsOf(ClassNode node) {
         List<String> targets = new ArrayList<>();
         for (List<AnnotationNode> list : Arrays.asList(node.visibleAnnotations, node.invisibleAnnotations)) {
@@ -6128,6 +6191,13 @@ public class Convert {
                     results.add("<init>" + remapper.mapMethodDesc(mDesc));
                     continue;
                 }
+                String below = Stage0.mapClass(top, versions.get(versions.size() - 1), o);
+                if (below != null && shapeAdded(below, mName, remapper.mapMethodDesc(mDesc))) {
+                    // a method the adapters' shape patch gives the bottom class in the upper shape: the injector's target
+                    results.add(mName + (desc != null ? remapper.mapMethodDesc(mDesc) : ""));
+                    qualified.add(mName + remapper.mapMethodDesc(mDesc));
+                    continue;
+                }
                 String lambda = mName.startsWith("lambda$") ? lambdaBelow(o, mName, mDesc) : null;
                 if (lambda != null) {
                     // a lambda numbered otherwise below (1.21's lambda$startSleepInBed$13 is 1.20.6's $12): the one of the
@@ -6297,6 +6367,103 @@ public class Convert {
     }
 
     /**
+     * A value injector (not an @Inject) whose handler takes, by MixinExtras' {@code @Local(argsOnly = true)}, an argument
+     * of the upper method the lower one hasn't (1.21's SectionCompiler.compile region, 1.20.6's RebuildTask's field): a
+     * wrapper of the handler's other parameters is the injector, the argument made by the A row's plan from the object.
+     * Only plans of the object alone (no lower argument: a value injector sees none); false otherwise.
+     */
+    static boolean argsOnlyLocals(ClassNode out, MethodNode h, Type[] hp, Type[] up, Type[] low, String[] plan, String planOwner) {
+        if (plan == null || (h.access & Opcodes.ACC_STATIC) != 0) {
+            return false;
+        }
+        int[] upperOf = new int[hp.length];
+        Arrays.fill(upperOf, -1);
+        boolean any = false;
+        for (int i = 0; i < hp.length; i++) {
+            AnnotationNode local = null;
+            for (List<AnnotationNode>[] all : Arrays.asList(h.visibleParameterAnnotations, h.invisibleParameterAnnotations)) {
+                if (all != null && i < all.length && all[i] != null) {
+                    for (AnnotationNode a : all[i]) {
+                        if (a.desc.equals("Lcom/llamalad7/mixinextras/sugar/Local;")) {
+                            local = a;
+                        }
+                    }
+                }
+            }
+            boolean argsOnly = local != null && Boolean.TRUE.equals(MixinPoints.value(local, "argsOnly"));
+            boolean changed = Arrays.asList(up).contains(hp[i]) && !Arrays.asList(low).contains(hp[i]);
+            if (!argsOnly) {
+                if (changed && i > 0) {
+                    // (another handler parameter of a type the lower method lost: not handled here)
+                    return false;
+                }
+                continue;
+            }
+            int k = -1;
+            for (int j = 0; j < up.length; j++) {
+                if (up[j].equals(hp[i])) {
+                    if (k >= 0) {
+                        return false;
+                    }
+                    k = j;
+                }
+            }
+            if (k < 0 || !changed || plan[k].indexOf('(') < 0) {
+                return false;
+            }
+            String args = plan[k].substring(plan[k].indexOf('(') + 1, plan[k].length() - 1).trim();
+            if (!args.equals("this")) {
+                return false;
+            }
+            upperOf[i] = k;
+            any = true;
+        }
+        if (!any) {
+            return false;
+        }
+        List<Type> kept = new ArrayList<>();
+        int[] placeOf = new int[hp.length];
+        for (int i = 0; i < hp.length; i++) {
+            placeOf[i] = upperOf[i] >= 0 ? -1 : kept.size();
+            if (upperOf[i] < 0) {
+                kept.add(hp[i]);
+            }
+        }
+        MethodNode g = new MethodNode(h.access, "ladder$wrap$" + h.name, Type.getMethodDescriptor(Type.getReturnType(h.desc), kept.toArray(new Type[0])),
+                null, h.exceptions.toArray(new String[0]));
+        g.visibleAnnotations = h.visibleAnnotations;
+        g.invisibleAnnotations = h.invisibleAnnotations;
+        g.visibleParameterAnnotations = moveParameterAnnotations(h.visibleParameterAnnotations, placeOf, kept.size());
+        g.invisibleParameterAnnotations = moveParameterAnnotations(h.invisibleParameterAnnotations, placeOf, kept.size());
+        h.visibleAnnotations = null;
+        h.invisibleAnnotations = null;
+        h.visibleParameterAnnotations = null;
+        h.invisibleParameterAnnotations = null;
+        InsnList code = g.instructions;
+        code.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        int slot = 1;
+        int[] slots = new int[kept.size()];
+        for (int i = 0; i < kept.size(); i++) {
+            slots[i] = slot;
+            slot += kept.get(i).getSize();
+        }
+        for (int i = 0; i < hp.length; i++) {
+            if (upperOf[i] >= 0) {
+                planArgument(code, plan[upperOf[i]], low, new int[low.length], up[upperOf[i]], 0, planOwner);
+            } else {
+                code.add(new VarInsnNode(hp[i].getOpcode(Opcodes.ILOAD), slots[placeOf[i]]));
+            }
+        }
+        boolean privateHandler = (h.access & Opcodes.ACC_PRIVATE) != 0;
+        code.add(new MethodInsnNode(privateHandler ? Opcodes.INVOKESPECIAL : Opcodes.INVOKEVIRTUAL, out.name, h.name, h.desc, false));
+        code.add(new InsnNode(Type.getReturnType(h.desc).getOpcode(Opcodes.IRETURN)));
+        g.maxLocals = slot;
+        g.maxStack = slot + 4;
+        out.methods.add(g);
+        return true;
+    }
+
+    /**
      * A @ModifyArg of a call whose parameters changed below (1.21's CombatRules.getDamageAfterAbsorb took the entity
      * first, 1.20.6's doesn't): the argument it modifies is there below too, of the same type, at another place (the
      * parameters mapped in order, the lower-only and upper-only ones skipped); its index (given, or the only argument of
@@ -6412,6 +6579,10 @@ public class Convert {
                     // renderArmorPiece of 6 parameters beside the one of 12; 21.0's is the 6 alone)
                     Type[] hp0 = Type.getArgumentTypes(remapper.mapMethodDesc(x.desc())), low0 = Type.getArgumentTypes(x.end().desc());
                     Type[] up0 = Type.getArgumentTypes(x.upperDesc());
+                    if (hp0.length > 0 && hp0[0].getSort() == Type.OBJECT && hp0[0].getInternalName().startsWith("org/spongepowered/asm/mixin/injection/callback/")) {
+                        // a handler that takes none of the method's arguments (its CallbackInfo first) fits any method
+                        return true;
+                    }
                     return !Arrays.equals(up0, low0) && hp0.length > low0.length && Arrays.equals(Arrays.copyOf(hp0, low0.length), low0)
                             && hp0[low0.length].getSort() == Type.OBJECT && hp0[low0.length].getInternalName().startsWith("org/spongepowered/asm/mixin/injection/callback/");
                 }
@@ -6541,6 +6712,11 @@ public class Convert {
                     || conversion(upRet, lowRet) == 16);
             if (!inject && distinct && valueBridge(out, h, hp, f, up, low, upRet, lowRet)) {
                 // an injector of another kind whose values convert both ways (a float of 1.21 a double of 1.20.6)
+                continue;
+            }
+            if (!inject && !f.call() && distinct && argsOnlyLocals(out, h, hp, up, low, plan, planOwner)) {
+                // a value injector whose @Local(argsOnly = true) takes an upper argument the lower method hasn't: the A
+                // row's value of it, made from the object
                 continue;
             }
             if (f.call() && distinct && modifyArgIndex(h, f, up, low)) {
